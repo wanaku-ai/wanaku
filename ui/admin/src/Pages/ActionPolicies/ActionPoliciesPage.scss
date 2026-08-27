@@ -1,0 +1,39 @@
+@use "@carbon/react/scss/spacing" as *;
+@use "@carbon/react/scss/theme" as *;
+
+.action-policies {
+  padding: $spacing-07;
+
+  h2 { margin-bottom: $spacing-05; }
+  h4 { margin: $spacing-05 0 $spacing-03; }
+}
+
+.action-policies__notification { padding: 0 $spacing-07; }
+
+.action-policies__summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: $spacing-03;
+  margin-bottom: $spacing-06;
+
+  .cds--tile { display: flex; flex-direction: column; gap: $spacing-03; }
+  span { color: $text-secondary; }
+  strong { overflow-wrap: anywhere; }
+}
+
+.action-policies__history { margin-top: $spacing-08; }
+.policy-rule { padding-bottom: $spacing-05; }
+.policy-rule__tags { display: flex; flex-wrap: wrap; gap: $spacing-03; margin-bottom: $spacing-04; }
+.policy-empty { padding: $spacing-05; color: $text-secondary; }
+.policy-json { padding: $spacing-05; overflow-x: auto; background: $layer-02; }
+
+.revision-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: $spacing-05;
+  margin-bottom: $spacing-06;
+
+  div { display: flex; flex-direction: column; align-items: flex-start; gap: $spacing-03; min-width: 0; }
+  span { color: $text-secondary; }
+  code { overflow-wrap: anywhere; }
+}
