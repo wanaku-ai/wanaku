@@ -133,7 +133,7 @@ pub struct ForwardEntry {
     pub status_message: Option<String>,
 }
 
-fn default_available() -> bool {
+const fn default_available() -> bool {
     true
 }
 
