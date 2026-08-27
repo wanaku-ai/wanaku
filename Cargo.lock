@@ -5090,6 +5090,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "wanaku-feature-action-policy"
+version = "0.3.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "wanaku-feature-evaluator"
 version = "0.3.0"
 dependencies = [
