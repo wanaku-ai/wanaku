@@ -56,6 +56,7 @@ filter_chains:
       - filter: wanaku_namespace        # Extract namespace from path
       - filter: wanaku_well_known       # RFC 9728 OAuth metadata (feature)
       - filter: wanaku_mcp_init         # Initialize MCP context
+      - filter: wanaku_action_policy    # Deterministic static action policy
       - filter: wanaku_evaluator        # Evaluator engine (feature)
       - filter: wanaku_tool_list        # Handle tools/list
       - filter: wanaku_tool_call        # Handle tools/call
@@ -289,8 +290,9 @@ pub trait Feature: Send + Sync {
 1. **Metrics** (`features/metrics/`) — exposes an in-memory metrics snapshot
 2. **Intercept** (`features/intercept/`) — records request/response interactions for conversation history
 3. **MCP Metadata** (`features/mcp-metadata/`) — RFC 9728 OAuth Protected Resource Metadata and well-known endpoints
-4. **Evaluator** (`features/evaluator/`) — WASM-based LLM evaluation engine for trigger→evaluate→act pipelines
-5. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
+4. **Action policy** (`features/action-policy/`) — deterministic allow and deny rules for MCP actions
+5. **Evaluator** (`features/evaluator/`) — WASM-based LLM evaluation engine for trigger→evaluate→act pipelines
+6. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
 
 See [Features](./features.md) for how to create your own.
 
@@ -447,6 +449,7 @@ These are all solvable (implement traits, add filters), but they're not in scope
 ## Related Docs
 
 - [Configuration](./configuration.md) — all env vars and YAML options
+- [Action Policies](./action-policies.md) — schema, matching, decisions, and revisions
 - [Features](./features.md) — enable evaluators, create custom features
 - [Management API](./management-api.md) — REST API reference
 - [Contributing: Admin UI](./contributing-admin-ui.md) — customize the embedded UI

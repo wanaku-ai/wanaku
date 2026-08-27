@@ -24,3 +24,6 @@ tracing = { workspace = true }
 wanaku-filters = { workspace = true }
 wanaku-infra = { workspace = true }
 wanaku-types = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

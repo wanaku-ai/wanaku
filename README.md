@@ -129,6 +129,7 @@ Contributors working on the project may want to refer to the development documen
 - [Features / Plugins](docs/features.md) - Feature crate system
 - [Plugin Development](docs/plugin-development-guide.md) - Guide for writing new feature crates
 - [Evaluator Engine](docs/evaluator-engine.md) - WASM-based evaluator
+- [Action Policies](docs/action-policies.md) - Deterministic MCP action rules
 - [Contributing](CONTRIBUTING.md) - Contribution guidelines
 - [Security](SECURITY.md) - Security policy
 

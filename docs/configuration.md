@@ -113,6 +113,12 @@ If the startup `wanaku.yaml` evaluator configuration is identical to the persist
 
 **Limitation:** File persistence supports one writer. Use a shared external persistence implementation before you run multiple replicas.
 
+### Action Policy Revision Persistence
+
+Action-policy revision history uses the same persistence settings. Wanaku writes `action-policy-revisions.json` in `WANAKU_PERSIST_PATH`. The action-policy stream is independent from the evaluator stream.
+
+Wanaku writes the file after each revision change. Wanaku validates and installs the persisted active policy during startup. See [Action Policies](./action-policies.md) for the policy schema and lifecycle.
+
 ### Admin UI Override
 
 The admin UI is embedded in the binary. To serve UI files from a directory on disk instead of the embedded bundle:
@@ -259,6 +265,7 @@ filter_chains:
       - filter: wanaku_namespace
       - filter: wanaku_well_known
       - filter: wanaku_mcp_init
+      - filter: wanaku_action_policy
       - filter: wanaku_evaluator
       - filter: wanaku_tool_list
       - filter: wanaku_tool_call
@@ -369,6 +376,7 @@ Wanaku loads these top-level sections from `wanaku.yaml`:
 - `forwards` — core forward bootstrap configuration
 - `llm_connections` — named LLM connections (model/url/api_key) for evaluators; config-only, never exposed via the management API
 - `evaluators` — evaluator feature configuration
+- `action_policy` — declarative action-policy rules
 - `plugins` — plugin service mappings owned by the plugins feature
 
 Wanaku discovers tools, resources, and prompts from the configured forwards.
