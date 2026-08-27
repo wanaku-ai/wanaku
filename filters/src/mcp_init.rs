@@ -44,15 +44,24 @@ impl McpInitFilter {
                         "listChanged": false
                     }
                 },
-                "serverInfo": {
-                    "name": "wanaku-server",
-                    "version": "0.3.0"
-                }
+                "serverInfo": Self::server_info()
             }
         });
 
         let response_body = Bytes::from(response.to_string());
         Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+    }
+
+    /// Builds the `serverInfo` object advertised to MCP clients during initialization.
+    ///
+    /// The `name` is kept as the fixed literal `wanaku-server` (the client-visible
+    /// server name), while the `version` is resolved dynamically at compile time from
+    /// the crate version so it never drifts out of sync with releases.
+    fn server_info() -> serde_json::Value {
+        serde_json::json!({
+            "name": "wanaku-server",
+            "version": env!("CARGO_PKG_VERSION"),
+        })
     }
 
     fn handle_notification() -> Result<FilterAction, FilterError> {
@@ -71,5 +80,26 @@ impl McpInitFilter {
 
         let response_body = Bytes::from(response.to_string());
         Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn server_info_name_is_wanaku_server() {
+        // The client-visible server name must remain `wanaku-server` regardless of the
+        // crate name (`wanaku-filters`), so this must stay a fixed literal.
+        let info = McpInitFilter::server_info();
+        assert_eq!(info["name"], "wanaku-server");
+    }
+
+    #[test]
+    fn server_info_version_matches_crate_version() {
+        // The version is resolved dynamically at compile time and inherits the
+        // workspace version, so it stays in sync with releases automatically.
+        let info = McpInitFilter::server_info();
+        assert_eq!(info["version"], env!("CARGO_PKG_VERSION"));
     }
 }
