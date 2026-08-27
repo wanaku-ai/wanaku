@@ -43,10 +43,10 @@ const ID_PREFIX: &str = "wk-";
 
 fn find_existing_id(messages: &[serde_json::Value]) -> Option<String> {
     for msg in messages {
-        if msg.get("role").and_then(|r| r.as_str()) != Some("system") {
+        if msg.get("role").and_then(serde_json::Value::as_str) != Some("system") {
             continue;
         }
-        let content = msg.get("content").and_then(|c| c.as_str())?;
+        let content = msg.get("content").and_then(serde_json::Value::as_str)?;
         if let Some(pos) = content.find(ID_PREFIX) {
             let start = pos;
             let id: String = content[start..]
@@ -66,7 +66,7 @@ fn inject_system_prompt(body_bytes: &[u8], conversation_id: &str) -> (Option<Byt
         return (None, conversation_id.to_owned());
     };
 
-    let Some(messages) = parsed.get_mut("messages").and_then(|m| m.as_array_mut()) else {
+    let Some(messages) = parsed.get_mut("messages").and_then(serde_json::Value::as_array_mut) else {
         return (None, conversation_id.to_owned());
     };
 
