@@ -48,8 +48,7 @@ fn find_existing_id(messages: &[serde_json::Value]) -> Option<String> {
         }
         let content = msg.get("content").and_then(|c| c.as_str())?;
         if let Some(pos) = content.find(ID_PREFIX) {
-            let start = pos;
-            let id: String = content[start..]
+            let id: String = content[pos..]
                 .chars()
                 .take_while(|c| c.is_ascii_alphanumeric() || *c == '-')
                 .collect();
