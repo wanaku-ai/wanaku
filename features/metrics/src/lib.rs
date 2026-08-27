@@ -4,7 +4,7 @@
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 
-use wanaku_apis::metrics::MetricsStore;
+use wanaku_infra::metrics::MetricsStore;
 use wanaku_types::feature::{Feature, HttpContext};
 
 pub struct MetricsFeature {

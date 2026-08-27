@@ -14,8 +14,8 @@ use praxis_protocol::{ListenerPipelines, Protocol as _};
 use praxis_protocol::http::PingoraHttp;
 use tracing::info;
 
-use wanaku_apis::persistence::FilePersistence;
-use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_infra::persistence::FilePersistence;
+use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::feature::Feature;
 use wanaku_types::registry::{ForwardEntry, ForwardRegistry};
 
@@ -28,7 +28,7 @@ fn main() {
     praxis_core::logging::init_tracing(&config)
         .unwrap_or_else(|e| fatal(&e));
 
-    let metrics_store = wanaku_apis::metrics::MetricsStore::new();
+    let metrics_store = wanaku_infra::metrics::MetricsStore::new();
 
     let wanaku_registry = match FilePersistence::from_config() {
         Some(backend) => {
@@ -146,7 +146,7 @@ fn setup_management_service(
 
 fn build_features(
     args: &ServerArgs,
-    metrics_store: &wanaku_apis::metrics::MetricsStore,
+    metrics_store: &wanaku_infra::metrics::MetricsStore,
 ) -> Vec<Box<dyn Feature>> {
     let mut evaluator = wanaku_feature_evaluator::EvaluatorFeature::new()
         .with_metrics(metrics_store.clone());

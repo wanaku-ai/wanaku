@@ -1,7 +1,7 @@
 use http::{Response, StatusCode};
 use tracing::{info, warn};
 
-use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::registry::{
     ForwardEntry, ForwardRegistry, NamespaceEntry, NamespaceRegistry,
     PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry,
@@ -225,7 +225,7 @@ pub(super) async fn handle_forward_create(registry: &InMemoryRegistry, body: &st
         }
     };
 
-    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address).await {
+    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "forward discovery failed");
@@ -285,7 +285,7 @@ pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &s
     remove_forwarded_resources(registry, &forward.address);
     remove_forwarded_prompts(registry, &forward.address);
 
-    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address).await {
+    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %name, error = %e, "forward refresh discovery failed");
@@ -310,7 +310,7 @@ pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &s
 }
 
 pub async fn discover_and_update_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) {
-    let discovery = match wanaku_apis::mcp_client::discover_forward(&forward.address).await {
+    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "forward discovery failed at startup");
@@ -342,7 +342,7 @@ pub async fn discover_and_update_forward(registry: &InMemoryRegistry, forward: &
 }
 
 pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
-    let tools = match wanaku_apis::mcp_client::list_tools(&forward.address).await {
+    let tools = match wanaku_infra::mcp_client::list_tools(&forward.address).await {
         Ok(t) => t,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "failed to discover tools from forward");
@@ -396,7 +396,7 @@ fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry
 }
 
 pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
-    let resources = match wanaku_apis::mcp_client::list_resources(&forward.address).await {
+    let resources = match wanaku_infra::mcp_client::list_resources(&forward.address).await {
         Ok(r) => r,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "failed to discover resources from forward");
@@ -404,7 +404,7 @@ pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forwar
         }
     };
 
-    let templates = match wanaku_apis::mcp_client::list_resource_templates(&forward.address).await {
+    let templates = match wanaku_infra::mcp_client::list_resource_templates(&forward.address).await {
         Ok(t) => t,
         Err(e) => {
             tracing::debug!(forward = %forward.name, error = %e, "no resource templates from forward (may not be supported)");
@@ -547,7 +547,7 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
 }
 
 pub async fn discover_prompts_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
-    let prompts = match wanaku_apis::mcp_client::list_prompts(&forward.address).await {
+    let prompts = match wanaku_infra::mcp_client::list_prompts(&forward.address).await {
         Ok(p) => p,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "failed to discover prompts from forward");
@@ -637,7 +637,7 @@ fn remove_forwarded_prompts(registry: &InMemoryRegistry, address: &str) {
 #[cfg(test)]
 mod forward_helpers_tests {
     use super::*;
-    use wanaku_apis::registry::InMemoryRegistry;
+    use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::registry::{PromptEntry, PromptRegistry, ToolEntry, ToolRegistry, ResourceRegistry, FORWARD_ADDRESS_LABEL};
     use wanaku_types::registry::{PromptMessage, PromptRole};
     use std::collections::HashMap;
@@ -802,7 +802,7 @@ mod tests {
     use std::collections::HashMap;
 
     use http::Response;
-    use wanaku_apis::registry::InMemoryRegistry;
+    use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::registry::{
         ForwardEntry, ForwardRegistry,
         PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry,

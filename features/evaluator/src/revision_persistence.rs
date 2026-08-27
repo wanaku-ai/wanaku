@@ -7,7 +7,7 @@
 //! lets revision history and rollback survive a restart.
 //!
 //! The file backend mirrors
-//! [`wanaku_apis::persistence::FilePersistence`]: an atomic write to a
+//! [`wanaku_infra::persistence::FilePersistence`]: an atomic write to a
 //! temporary file followed by a rename.
 
 use std::io::Write;

@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
-use wanaku_apis::metrics::{MetricsStore, SkipReason};
-use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_infra::metrics::{MetricsStore, SkipReason};
+use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::interactions::{InMemoryInteractionStore, InteractionStore};
 use wanaku_types::mcp::McpContext;
 use wanaku_types::registry::ToolRegistry;

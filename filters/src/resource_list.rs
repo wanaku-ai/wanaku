@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::trace;
-use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::registry::ResourceRegistry;
 
 crate::body_filter_boilerplate!(ResourceListFilter, "wanaku_resource_list");

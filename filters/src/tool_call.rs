@@ -4,7 +4,7 @@ use bytes::Bytes;
 use http::{HeaderName, HeaderValue};
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::config::ENV;
 use wanaku_types::registry::{ToolEntry, ToolRegistry};
 
@@ -151,7 +151,7 @@ impl ToolCallFilter {
 
         tracing::debug!("Invoking tool {tool_name} with a tracking id of {tracking_id}");
 
-        match wanaku_apis::mcp_client::call_tool(&tool.uri, tool_name, arguments, forward_headers)
+        match wanaku_infra::mcp_client::call_tool(&tool.uri, tool_name, arguments, forward_headers)
             .await
         {
             Ok(call_result) => {

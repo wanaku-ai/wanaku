@@ -28,7 +28,7 @@ serde_yaml = { workspace = true }
 tracing = { workspace = true }
 wasmtime = { version = "47", features = ["component-model"] }
 wasmtime-wasi = "47"
-wanaku-apis = { workspace = true }
+wanaku-infra = { workspace = true }
 wanaku-types = { workspace = true }
 wanaku-filters = { workspace = true }
 

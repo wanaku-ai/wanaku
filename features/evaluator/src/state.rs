@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard, RwLock};
 
-use wanaku_apis::metrics::MetricsStore;
+use wanaku_infra::metrics::MetricsStore;
 
 use crate::config::{EvaluatorDef, LlmConnection};
 use crate::engine::CompiledEvaluator;

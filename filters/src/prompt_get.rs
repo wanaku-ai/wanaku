@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::registry::PromptRegistry;
 
 crate::body_filter_boilerplate!(PromptGetFilter, "wanaku_prompt_get");
@@ -122,7 +122,7 @@ impl PromptGetFilter {
             Some(parsed.arguments.clone())
         };
 
-        match wanaku_apis::mcp_client::get_prompt(forward_address, prompt_name, arguments).await {
+        match wanaku_infra::mcp_client::get_prompt(forward_address, prompt_name, arguments).await {
             Ok(result) => {
                 let response = serde_json::json!({
                     "jsonrpc": "2.0",

@@ -28,9 +28,9 @@ Default configs: `server/src/default.yaml` (embedded, pipeline), `wanaku.yaml` (
 
 ## Architecture
 
-**Workspace:** `types/` (shared types, traits, Feature trait, context structs — zero heavy deps), `apis/` (infra: LLM client, MCP client, metrics, persistence, registry impl), `filters/` (core MCP filters), `features/` (self-contained feature crates: mcp-metadata, evaluator, intercept, chat), `server/` (binary, pipeline, mgmt API), `ui/admin/` (React embedded UI).
+**Workspace:** `types/` (shared types, traits, Feature trait, context structs — zero heavy deps), `infra/` (infra: LLM client, MCP client, metrics, persistence, registry impl), `filters/` (core MCP filters), `features/` (self-contained feature crates: mcp-metadata, evaluator, intercept, chat), `server/` (binary, pipeline, mgmt API), `ui/admin/` (React embedded UI).
 
-Feature crates that only need `Feature`/`HttpContext`/registry traits depend on `wanaku-types`; crates needing concrete infra (LLM calls, MCP forwarding, metrics counters, file persistence) also depend on `wanaku-apis`. See [docs/architecture.md](docs/architecture.md) for the full boundary.
+Feature crates that only need `Feature`/`HttpContext`/registry traits depend on `wanaku-types`; crates needing concrete infra (LLM calls, MCP forwarding, metrics counters, file persistence) also depend on `wanaku-infra`. See [docs/architecture.md](docs/architecture.md) for the full boundary.
 
 **Context structs** (`types/src/`): group related parameters to keep function signatures under the clippy `too-many-arguments-threshold` (5). Use `Type::new(...)` to construct:
 - `HttpContext` (`feature.rs`) — HTTP method, path, query, body, headers. Passed to `Feature::handle_route`.
@@ -52,7 +52,7 @@ See [docs/architecture.md](docs/architecture.md) for filter order, metadata cont
 
 ### Registry Architecture
 
-**InMemoryRegistry** (`apis/src/registry.rs`):
+**InMemoryRegistry** (`infra/src/registry.rs`):
 - Implements ToolRegistry, ResourceRegistry, PromptRegistry, NamespaceRegistry, ForwardRegistry
 - Clone-safe `Arc<DashMap>` — shared between pipeline and mgmt API
 - Injected via `PipelineExtension`, accessed via `ctx.extensions.get::<InMemoryRegistry>()`
@@ -178,13 +178,13 @@ tracing::debug!(method = ?ctx.get_metadata("mcp.method"), namespace = ?ctx.get_m
 
 See [docs/features.md](docs/features.md) for the Feature trait, lifecycle, and creating custom features. See [docs/architecture.md](docs/architecture.md) for how features fit into the pipeline.
 
-**Shared LLM:** `apis/src/llm.rs` — `LlmClient` (OpenAI `/chat/completions`), `HotSwap<T>` (runtime config), `sanitize()`/`strip_markdown_fences()`/`extract_content()` utilities.
+**Shared LLM:** `infra/src/llm.rs` — `LlmClient` (OpenAI `/chat/completions`), `HotSwap<T>` (runtime config), `sanitize()`/`strip_markdown_fences()`/`extract_content()` utilities.
 
 ## Testing
 
 ```bash
 cargo test                         # all
-cargo test -p wanaku-apis   # single crate
+cargo test -p wanaku-infra  # single crate
 cargo test -- --nocapture          # tracing output
 ```
 

@@ -229,8 +229,8 @@ pub const DEFAULT_NAMESPACE: &str = "default";
 
 /// Injects the request-ID tracking argument into a tool's input schema.
 ///
-/// Exposed for [`InMemoryRegistry`](../../wanaku_apis/registry/struct.InMemoryRegistry.html)
-/// (in `wanaku-apis`), which calls this when request-ID injection is enabled.
+/// Exposed for [`InMemoryRegistry`](../../wanaku_infra/registry/struct.InMemoryRegistry.html)
+/// (in `wanaku-infra`), which calls this when request-ID injection is enabled.
 pub fn inject_request_id_arg(schema: &mut serde_json::Value) {
     let arg = crate::correlation::REQUEST_ID_ARG;
 
