@@ -14,7 +14,7 @@ use http::{Response, StatusCode};
 use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
 
-use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::feature::{Feature, HttpContext};
 
 use self::handlers::{
@@ -197,7 +197,7 @@ pub(crate) async fn dispatch(
 #[cfg(test)]
 mod dispatch_tests {
     use super::*;
-    use wanaku_apis::registry::InMemoryRegistry;
+    use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::feature::{Feature, HttpContext};
 
     fn parse_body(resp: &http::Response<Vec<u8>>) -> serde_json::Value {

@@ -212,7 +212,7 @@ mod trigger {
 
 mod state {
     use super::*;
-    use wanaku_apis::metrics::MetricsStore;
+    use wanaku_infra::metrics::MetricsStore;
 
     #[test]
     fn load_and_list_evaluators() {
@@ -819,7 +819,7 @@ mod engine {
     use std::sync::Arc;
     use wanaku_feature_evaluator::engine::CompiledEvaluator;
     use wanaku_feature_evaluator::schema::CompiledSchema;
-    use wanaku_apis::registry::InMemoryRegistry;
+    use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::interactions::InMemoryInteractionStore;
 
     macro_rules! require_wasm {

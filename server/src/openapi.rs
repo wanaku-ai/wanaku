@@ -2,7 +2,7 @@
 
 use utoipa::OpenApi;
 
-use wanaku_apis::metrics::{
+use wanaku_infra::metrics::{
     DecisionSnapshot, DurationSnapshot, EvaluatorSnapshot, FilterSnapshot,
     GaugeSnapshot, LlmSnapshot, MetricsSnapshot, PipelineSnapshot, SchemaSnapshot, WasmSnapshot,
 };

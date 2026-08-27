@@ -8,7 +8,7 @@ use wasmtime_wasi::{WasiCtxBuilder, WasiCtxView, WasiView};
 
 use crate::schema::CompiledSchema;
 
-use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::interactions::InMemoryInteractionStore;
 
 use crate::action::ActionResult;

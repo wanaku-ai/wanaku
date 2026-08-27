@@ -18,7 +18,7 @@ http = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-wanaku-apis = { workspace = true }
+wanaku-infra = { workspace = true }
 wanaku-types = { workspace = true }
 praxis-filter = { workspace = true }
 serde_yaml = { workspace = true }

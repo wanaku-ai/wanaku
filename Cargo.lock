@@ -5090,23 +5090,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wanaku-apis"
-version = "0.3.0"
-dependencies = [
- "dashmap 6.2.1",
- "http",
- "reqwest 0.12.28",
- "rmcp",
- "serde",
- "serde_json",
- "thiserror 2.0.20",
- "tokio",
- "tracing",
- "utoipa",
- "wanaku-types",
-]
-
-[[package]]
 name = "wanaku-feature-evaluator"
 version = "0.3.0"
 dependencies = [
@@ -5120,9 +5103,9 @@ dependencies = [
  "serde_json",
  "serial_test",
  "tracing",
- "wanaku-apis",
  "wanaku-feature-evaluator",
  "wanaku-filters",
+ "wanaku-infra",
  "wanaku-types",
  "wasmtime",
  "wasmtime-wasi",
@@ -5154,8 +5137,8 @@ dependencies = [
  "reqwest 0.12.28",
  "serde_json",
  "tracing",
- "wanaku-apis",
  "wanaku-filters",
+ "wanaku-infra",
  "wanaku-types",
  "yaml_serde",
 ]
@@ -5168,7 +5151,7 @@ dependencies = [
  "http",
  "praxis-proxy-filter",
  "serde_json",
- "wanaku-apis",
+ "wanaku-infra",
  "wanaku-types",
  "yaml_serde",
 ]
@@ -5199,9 +5182,26 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.20",
  "tracing",
- "wanaku-apis",
+ "wanaku-infra",
  "wanaku-types",
  "yaml_serde",
+]
+
+[[package]]
+name = "wanaku-infra"
+version = "0.3.0"
+dependencies = [
+ "dashmap 6.2.1",
+ "http",
+ "reqwest 0.12.28",
+ "rmcp",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+ "tokio",
+ "tracing",
+ "utoipa",
+ "wanaku-types",
 ]
 
 [[package]]
@@ -5224,13 +5224,13 @@ dependencies = [
  "tokio",
  "tracing",
  "utoipa",
- "wanaku-apis",
  "wanaku-feature-evaluator",
  "wanaku-feature-intercept",
  "wanaku-feature-mcp-metadata",
  "wanaku-feature-metrics",
  "wanaku-feature-plugins",
  "wanaku-filters",
+ "wanaku-infra",
  "wanaku-types",
  "yaml_serde",
 ]

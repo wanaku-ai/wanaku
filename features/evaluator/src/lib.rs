@@ -41,7 +41,7 @@ impl EvaluatorFeature {
     }
 
     #[must_use]
-    pub fn with_metrics(mut self, store: wanaku_apis::metrics::MetricsStore) -> Self {
+    pub fn with_metrics(mut self, store: wanaku_infra::metrics::MetricsStore) -> Self {
         self.state = self.state.with_metrics(store);
         self
     }

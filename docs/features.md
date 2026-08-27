@@ -119,7 +119,7 @@ edition = "2024"
 
 [dependencies]
 wanaku-types = { workspace = true }
-wanaku-apis = { workspace = true }  # required by wanaku-filters' body_filter_boilerplate! macro
+wanaku-infra = { workspace = true }  # required by wanaku-filters' body_filter_boilerplate! macro
 wanaku-filters = { workspace = true }
 praxis-filter = { workspace = true }
 async-trait = { workspace = true }
@@ -331,10 +331,10 @@ let counter = ctx.extensions.get::<Arc<AtomicU64>>();
 
 ### Hot-Reloadable Config
 
-Use `HotSwap<T>` from `wanaku_apis::llm` for runtime-reconfigurable state:
+Use `HotSwap<T>` from `wanaku_infra::llm` for runtime-reconfigurable state:
 
 ```rust
-use wanaku_apis::llm::HotSwap;
+use wanaku_infra::llm::HotSwap;
 
 pub struct MyFeature {
     config: HotSwap<MyConfig>,
@@ -356,10 +356,10 @@ let config = feature_state.config.get();
 
 ### LLM Integration
 
-Use `LlmClient` from `wanaku_apis::llm` for OpenAI-compatible LLM calls:
+Use `LlmClient` from `wanaku_infra::llm` for OpenAI-compatible LLM calls:
 
 ```rust
-use wanaku_apis::llm::LlmClient;
+use wanaku_infra::llm::LlmClient;
 
 let client = LlmClient::new("http://localhost:11434/v1", "llama3.1:8b", "")?;
 let response = client.chat("You are a concise assistant.", user_prompt).await?;

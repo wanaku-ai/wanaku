@@ -40,7 +40,7 @@ serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 tokio = { workspace = true, features = ["rt", "sync", "time", "fs"] }
 tracing = { workspace = true }
-wanaku-apis = { workspace = true, features = ["openapi"] }
+wanaku-infra = { workspace = true, features = ["openapi"] }
 wanaku-types = { workspace = true, features = ["openapi"] }
 wanaku-filters = { workspace = true }
 wanaku-feature-evaluator = { workspace = true }

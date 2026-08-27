@@ -7,7 +7,7 @@ bindgen!({
 
 pub use wanaku::evaluator::types;
 
-use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::interactions::{InMemoryInteractionStore, InteractionStore};
 use wanaku_types::registry::ToolRegistry;
 

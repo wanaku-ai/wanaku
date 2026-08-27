@@ -57,12 +57,12 @@ macro_rules! body_filter_boilerplate {
                 }
                 let start = std::time::Instant::now();
                 let result = self.handle_body(ctx, body).await;
-                if let Some(store) = ctx.extensions.get::<wanaku_apis::metrics::MetricsStore>() {
+                if let Some(store) = ctx.extensions.get::<wanaku_infra::metrics::MetricsStore>() {
                     let filter_result = match &result {
-                        Ok(praxis_filter::FilterAction::Continue) => wanaku_apis::metrics::FilterResult::Continue,
-                        Ok(praxis_filter::FilterAction::Reject(_)) => wanaku_apis::metrics::FilterResult::Reject,
-                        Ok(_) => wanaku_apis::metrics::FilterResult::Other,
-                        Err(_) => wanaku_apis::metrics::FilterResult::Error,
+                        Ok(praxis_filter::FilterAction::Continue) => wanaku_infra::metrics::FilterResult::Continue,
+                        Ok(praxis_filter::FilterAction::Reject(_)) => wanaku_infra::metrics::FilterResult::Reject,
+                        Ok(_) => wanaku_infra::metrics::FilterResult::Other,
+                        Err(_) => wanaku_infra::metrics::FilterResult::Error,
                     };
                     store.record_filter_result($filter_name, &filter_result, start.elapsed());
                 }

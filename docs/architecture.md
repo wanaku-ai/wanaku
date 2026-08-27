@@ -172,7 +172,7 @@ Wanaku uses the praxis-ai `McpFilter` classifier to parse JSON-RPC and set the `
 
 ## The Registry
 
-The registry is the source of truth for tools, resources, prompts, namespaces, and forwards. `InMemoryRegistry` in `apis/src/registry.rs` implements this in-memory data structure.
+The registry is the source of truth for tools, resources, prompts, namespaces, and forwards. `InMemoryRegistry` in `infra/src/registry.rs` implements this in-memory data structure.
 
 **Key design:**
 

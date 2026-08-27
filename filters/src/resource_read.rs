@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_apis::registry::InMemoryRegistry;
+use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::registry::ResourceRegistry;
 
 crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
@@ -137,7 +137,7 @@ impl ResourceReadFilter {
 
         trace!(uri = %resource_uri, forward = %forward_address, "forwarding resources/read to remote MCP server");
 
-        match wanaku_apis::mcp_client::read_resource(forward_address, resource_uri).await {
+        match wanaku_infra::mcp_client::read_resource(forward_address, resource_uri).await {
             Ok(contents) => {
                 let response = serde_json::json!({
                     "jsonrpc": "2.0",
