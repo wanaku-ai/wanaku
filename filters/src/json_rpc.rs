@@ -49,7 +49,8 @@ impl McpRequestView {
         })
     }
 
-    fn params(&self) -> Result<&Map<String, Value>, RequestViewError> {
+    /// Return the typed JSON-RPC params object.
+    pub fn params(&self) -> Result<&Map<String, Value>, RequestViewError> {
         match self.request.get("params") {
             None => Err(RequestViewError::MissingParams),
             Some(Value::Object(params)) => Ok(params),

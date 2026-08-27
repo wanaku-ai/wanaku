@@ -285,6 +285,38 @@ mod tests {
         assert_eq!(inference_host_header_value(&env), "127.0.0.1:11434");
     }
 
+    #[test]
+    fn action_policy_runs_before_evaluator() {
+        let yaml: Value =
+            serde_yaml::from_str(super::DEFAULT_CONFIG).expect("default.yaml must parse");
+        let chains = yaml["filter_chains"]
+            .as_sequence()
+            .expect("filter chains");
+        let router = chains
+            .iter()
+            .find(|chain| chain["name"].as_str() == Some("mcp_router"))
+            .expect("MCP router");
+        let filters: Vec<&str> = router["filters"]
+            .as_sequence()
+            .expect("filters")
+            .iter()
+            .filter_map(|entry| entry["filter"].as_str())
+            .collect();
+        let policy = filters
+            .iter()
+            .position(|name| *name == "wanaku_action_policy")
+            .expect("action-policy filter");
+        let init = filters
+            .iter()
+            .position(|name| *name == "wanaku_mcp_init")
+            .expect("MCP init filter");
+        let evaluator = filters
+            .iter()
+            .position(|name| *name == "wanaku_evaluator")
+            .expect("evaluator filter");
+        assert!(init < policy && policy < evaluator);
+    }
+
     /// Guards against the `headers`/`request_set`/`Host` lookup silently
     /// drifting out of sync with `default.yaml` (e.g. a filter rename or
     /// reorder) and falling back to the unpatched placeholder value.

@@ -161,6 +161,7 @@ fn build_features(
         Box::new(wanaku_feature_metrics::MetricsFeature::new(metrics_store.clone())),
         Box::new(wanaku_feature_intercept::InterceptFeature::new()),
         Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
+        Box::new(wanaku_feature_action_policy::ActionPolicyFeature::new()),
         Box::new(evaluator),
         Box::new(wanaku_feature_plugins::PluginsFeature::new(args.plugins_path.as_deref())),
     ]

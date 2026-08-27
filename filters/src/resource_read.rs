@@ -46,6 +46,24 @@ fn matches_uri_template(template: &str, uri: &str) -> bool {
     pos == uri.len()
 }
 
+/// Resolve the registry resource used for one exact requested URI.
+///
+/// The returned entry can use either an exact location or a URI template.
+#[must_use]
+pub fn find_resource_in_namespace(
+    registry: &InMemoryRegistry,
+    namespace: &str,
+    uri: &str,
+) -> Option<wanaku_types::registry::ResourceEntry> {
+    registry
+        .list_resources_in_namespace(namespace)
+        .into_iter()
+        .find(|resource| {
+            (!resource.is_template() && resource.location == uri)
+                || (resource.is_template() && matches_uri_template(&resource.location, uri))
+        })
+}
+
 struct ParsedBody {
     id: serde_json::Value,
     uri: Option<String>,
@@ -89,20 +107,13 @@ impl ResourceReadFilter {
             return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
         };
 
-        let resources = registry.list_resources_in_namespace(namespace);
-        let resource = resources.iter().find(|r| !r.is_template() && r.location == resource_uri)
-            .or_else(|| resources.iter().find(|r| r.is_template() && matches_uri_template(&r.location, resource_uri)));
-
-        let resource = match resource {
-            Some(r) => r.clone(),
-            None => {
-                warn!(uri = %resource_uri, namespace = %namespace, "resource not found in registry");
-                return Ok(crate::response::json_rpc_error(
-                    &parsed.id,
-                    crate::response::JSONRPC_INVALID_PARAMS,
-                    &format!("resource not found: {resource_uri}"),
-                ));
-            }
+        let Some(resource) = find_resource_in_namespace(registry, namespace, resource_uri) else {
+            warn!(uri = %resource_uri, namespace = %namespace, "resource not found in registry");
+            return Ok(crate::response::json_rpc_error(
+                &parsed.id,
+                crate::response::JSONRPC_INVALID_PARAMS,
+                &format!("resource not found: {resource_uri}"),
+            ));
         };
 
         if resource.is_mcp_forward() {

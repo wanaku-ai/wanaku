@@ -5093,9 +5093,18 @@ dependencies = [
 name = "wanaku-feature-action-policy"
 version = "0.3.0"
 dependencies = [
+ "async-trait",
+ "bytes",
+ "http",
+ "praxis-proxy-filter",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
+ "tracing",
+ "wanaku-filters",
+ "wanaku-infra",
+ "wanaku-types",
+ "yaml_serde",
 ]
 
 [[package]]
@@ -5233,6 +5242,7 @@ dependencies = [
  "tokio",
  "tracing",
  "utoipa",
+ "wanaku-feature-action-policy",
  "wanaku-feature-evaluator",
  "wanaku-feature-intercept",
  "wanaku-feature-mcp-metadata",
