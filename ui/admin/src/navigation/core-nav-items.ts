@@ -13,4 +13,6 @@ export const CORE_NAV_ITEMS: NavItem[] = [
   { id: "forwards", label: "Forwards", route: Links.Forwards, source: "core", order: 70 },
   { id: "evaluators", label: "Evaluators", route: Links.Evaluators, source: "core", order: 80 },
   { id: "plugins", label: "Installed Plugins", route: Links.Plugins, source: "core", section: "Admin", order: 90 },
+
+  { id: "downloads", label: "CLI Downloads", route: Links.Downloads, source: "core", order: 100 },
 ];
