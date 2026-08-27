@@ -5,12 +5,17 @@
 
 mod engine;
 pub mod filter;
+mod handlers;
 mod matcher;
 mod predicate;
+pub mod revision;
+pub mod revision_persistence;
+mod routes;
 mod schema;
 mod state;
 mod validation;
 
+use crate::routes::ActionPolicyRoute;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 use wanaku_types::feature::{Feature, HttpContext};
@@ -39,6 +44,15 @@ impl ActionPolicyFeature {
         Self {
             state: ActionPolicyState::new(),
         }
+    }
+
+    #[must_use]
+    pub fn with_revision_persistence(
+        mut self,
+        persistence: std::sync::Arc<dyn revision_persistence::RevisionPersistence>,
+    ) -> Self {
+        self.state = self.state.with_revision_persistence(persistence);
+        self
     }
 }
 
@@ -77,12 +91,28 @@ impl Feature for ActionPolicyFeature {
         })]
     }
 
-    async fn handle_route(&self, _ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
-        None
+    async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
+        use handlers::{
+            handle_activate_revision, handle_active_revision, handle_effective,
+            handle_get_revision, handle_list_revisions, handle_update,
+        };
+        Some(
+            match routes::resolve_action_policy_route(ctx.method, ctx.path) {
+                ActionPolicyRoute::Effective => handle_effective(&self.state),
+                ActionPolicyRoute::Update => handle_update(&self.state, ctx.body.unwrap_or("")),
+                ActionPolicyRoute::ListRevisions => handle_list_revisions(&self.state),
+                ActionPolicyRoute::ActiveRevision => handle_active_revision(&self.state),
+                ActionPolicyRoute::GetRevision(id) => handle_get_revision(&self.state, id),
+                ActionPolicyRoute::ActivateRevision(id) => {
+                    handle_activate_revision(&self.state, id, ctx.body.unwrap_or(""))
+                }
+                ActionPolicyRoute::NotFound => return None,
+            },
+        )
     }
 
     fn load_yaml_config(&self, root: &serde_yaml::Value) {
-        self.state.load_yaml(root.get("action_policy"));
+        self.state.reconcile_startup(root.get("action_policy"));
     }
 
     fn load_env_config(&self) {}
