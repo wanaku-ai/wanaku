@@ -12,6 +12,15 @@ name = "wanaku_feature_action_policy"
 workspace = true
 
 [dependencies]
+async-trait = { workspace = true }
+bytes = { workspace = true }
+http = { workspace = true }
+praxis-filter = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }
 thiserror = { workspace = true }
+tracing = { workspace = true }
+wanaku-filters = { workspace = true }
+wanaku-infra = { workspace = true }
+wanaku-types = { workspace = true }
