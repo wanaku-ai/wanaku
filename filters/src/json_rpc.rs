@@ -25,11 +25,11 @@ impl JsonRpcParams {
             return Self::default();
         };
 
-        let name = params.get("name").and_then(|n| n.as_str()).map(str::to_owned);
-        let uri = params.get("uri").and_then(|u| u.as_str()).map(str::to_owned);
+        let name = params.get("name").and_then(serde_json::Value::as_str).map(str::to_owned);
+        let uri = params.get("uri").and_then(serde_json::Value::as_str).map(str::to_owned);
         let arguments = params
             .get("arguments")
-            .and_then(|a| a.as_object())
+            .and_then(serde_json::Value::as_object)
             .cloned()
             .unwrap_or_default();
 
