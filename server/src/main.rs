@@ -148,6 +148,13 @@ fn build_features(
     args: &ServerArgs,
     metrics_store: &wanaku_infra::metrics::MetricsStore,
 ) -> Vec<Box<dyn Feature>> {
+    let mut action_policy = wanaku_feature_action_policy::ActionPolicyFeature::new();
+    if let Some(backend) =
+        wanaku_feature_action_policy::revision_persistence::FileRevisionPersistence::from_config()
+    {
+        info!("action policy revision persistence enabled");
+        action_policy = action_policy.with_revision_persistence(backend);
+    }
     let mut evaluator = wanaku_feature_evaluator::EvaluatorFeature::new()
         .with_metrics(metrics_store.clone());
     if let Some(backend) =
@@ -161,7 +168,7 @@ fn build_features(
         Box::new(wanaku_feature_metrics::MetricsFeature::new(metrics_store.clone())),
         Box::new(wanaku_feature_intercept::InterceptFeature::new()),
         Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
-        Box::new(wanaku_feature_action_policy::ActionPolicyFeature::new()),
+        Box::new(action_policy),
         Box::new(evaluator),
         Box::new(wanaku_feature_plugins::PluginsFeature::new(args.plugins_path.as_deref())),
     ]
