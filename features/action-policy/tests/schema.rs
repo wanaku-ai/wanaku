@@ -320,6 +320,98 @@ fn comparisons_preserve_json_types_and_empty_values() -> Result<(), Box<dyn std:
 }
 
 #[test]
+#[expect(clippy::too_many_lines, reason = "present-value predicate truth table")]
+fn present_value_predicate_operators_match_and_reject_as_typed()
+-> Result<(), Box<dyn std::error::Error>> {
+    let document = json!({"value": 7});
+    let cases = [
+        (
+            Predicate::Exists {
+                pointer: "/value".to_owned(),
+                value: true,
+            },
+            true,
+        ),
+        (
+            Predicate::Exists {
+                pointer: "/value".to_owned(),
+                value: false,
+            },
+            false,
+        ),
+        (
+            Predicate::Equals {
+                pointer: "/value".to_owned(),
+                value: json!(7),
+            },
+            true,
+        ),
+        (
+            Predicate::Equals {
+                pointer: "/value".to_owned(),
+                value: json!(8),
+            },
+            false,
+        ),
+        (
+            Predicate::NotEquals {
+                pointer: "/value".to_owned(),
+                value: json!(8),
+            },
+            true,
+        ),
+        (
+            Predicate::NotEquals {
+                pointer: "/value".to_owned(),
+                value: json!(7),
+            },
+            false,
+        ),
+        (
+            Predicate::OneOf {
+                pointer: "/value".to_owned(),
+                values: vec![json!(6), json!(7)],
+            },
+            true,
+        ),
+        (
+            Predicate::OneOf {
+                pointer: "/value".to_owned(),
+                values: vec![json!(6), json!(8)],
+            },
+            false,
+        ),
+        (
+            Predicate::NotOneOf {
+                pointer: "/value".to_owned(),
+                values: vec![json!(6), json!(8)],
+            },
+            true,
+        ),
+        (
+            Predicate::NotOneOf {
+                pointer: "/value".to_owned(),
+                values: vec![json!(6), json!(7)],
+            },
+            false,
+        ),
+    ];
+    for (index, (predicate, expected)) in cases.into_iter().enumerate() {
+        let mut candidate = rule(&format!("predicate-{index}"));
+        candidate.predicates.push(predicate);
+        let compiled = ActionPolicy {
+            rules: vec![candidate],
+        }
+        .compile()?;
+        assert_eq!(
+            compiled.rules()[0].predicates()[0].matches(&document),
+            expected
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn validates_json_pointers_and_non_empty_set_operands() {
     for pointer in ["missing-slash", "/bad~2escape", "/trailing~"] {
         let mut candidate = rule("bad-pointer");

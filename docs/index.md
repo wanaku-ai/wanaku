@@ -32,6 +32,7 @@ All in a single binary with no runtime dependencies (except libc).
 - **[Configuration](./configuration.md)** — all environment variables and YAML config options
 - **[Authentication](./auth.md)** — set up oauth2-proxy with Keycloak
 - **[Management API](./management-api.md)** — REST API reference for tools, resources, etc.
+- **[Action Policies](./action-policies.md)** — deterministic rules for MCP actions
 - **[FAQ](./faq.md)** — common issues and troubleshooting
 
 ### Understanding the System

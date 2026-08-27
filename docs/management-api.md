@@ -129,6 +129,19 @@ Use this body to bind a namespace:
 
 See [Evaluator Engine](evaluator-engine.md) for the evaluator configuration schema.
 
+### Action Policies
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/action-policies` | Get the effective policy. |
+| `PUT` | `/api/v1/action-policies` | Validate and activate a policy. |
+| `GET` | `/api/v1/action-policies/revisions` | List policy revision metadata. |
+| `GET` | `/api/v1/action-policies/revisions/active` | Get the active policy revision. |
+| `GET` | `/api/v1/action-policies/revisions/{id}` | Get one policy revision. |
+| `POST` | `/api/v1/action-policies/revisions/{id}/activate` | Activate a prior policy as a new revision. |
+
+The update and activation requests accept an optional `expected_revision`. Wanaku returns `409 Conflict` if the value does not equal the active revision. See [Action Policies](action-policies.md) for request examples and validation behavior.
+
 ### Inference Proxy (not part of this API)
 
 Chat completions do not go through the management API. Wanaku exposes a
