@@ -1,9 +1,10 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
+use wanaku_types::revision::{RevisionHistory, RevisionHistoryError, RevisionRecord};
 use wanaku_types::time::iso_now;
+
+pub use wanaku_types::revision::{ActivationStatus, RevisionId, RevisionMetadata, RevisionOrigin};
 
 use crate::config::EvaluatorDef;
 use crate::revision_persistence::{RevisionPersistence, RevisionsSnapshot};
@@ -12,49 +13,21 @@ use crate::revision_persistence::{RevisionPersistence, RevisionsSnapshot};
 /// beyond this limit are silently dropped.
 const DEFAULT_MAX_HISTORY: usize = 50;
 
-/// Unique identifier for an evaluator configuration revision.
-pub type RevisionId = u64;
-
-/// Where a configuration revision originated.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum RevisionOrigin {
-    /// Loaded from `wanaku.yaml` at server startup.
-    Startup,
-    /// Submitted through the management API.
-    Api,
-}
-
-/// Whether a revision was successfully activated.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum ActivationStatus {
-    /// The revision is currently active.
-    Active,
-    /// The revision was once active but has been replaced by a newer one.
-    Superseded,
-    /// Activation was rejected because validation or compilation failed.
-    Rejected,
-}
-
-/// Metadata attached to every configuration revision.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RevisionMetadata {
-    pub id: RevisionId,
-    pub created_at: String,
-    pub activated_at: Option<String>,
-    pub status: ActivationStatus,
-    pub checksum: String,
-    pub origin: RevisionOrigin,
-    pub actor: Option<String>,
-    pub failure_reason: Option<String>,
-}
-
 /// An immutable evaluator configuration revision.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Revision {
     pub metadata: RevisionMetadata,
     pub evaluators: Vec<EvaluatorDef>,
+}
+
+impl RevisionRecord for Revision {
+    fn metadata(&self) -> &RevisionMetadata {
+        &self.metadata
+    }
+
+    fn metadata_mut(&mut self) -> &mut RevisionMetadata {
+        &mut self.metadata
+    }
 }
 
 /// Errors that can occur during revision operations.
@@ -108,58 +81,21 @@ pub struct RecordRevisionParams {
 /// rollback survive a restart.
 #[derive(Clone)]
 pub struct RevisionStore {
-    inner: Arc<RwLock<RevisionStoreInner>>,
+    history: RevisionHistory<Revision>,
     persistence: Option<Arc<dyn RevisionPersistence>>,
 }
 
-struct RevisionStoreInner {
-    revisions: Vec<Revision>,
-    active_id: Option<RevisionId>,
-    max_history: usize,
-    /// The next revision ID to assign. Instance-scoped (not a process global)
-    /// so it can be seeded from persisted history at startup, keeping IDs
-    /// monotonic across restarts.
-    next_id: RevisionId,
-}
+struct PersistenceAdapter<'a>(&'a dyn RevisionPersistence);
 
-impl RevisionStoreInner {
-    fn check_concurrency(
-        &self,
-        expected: Option<RevisionId>,
-    ) -> Result<(), RevisionError> {
-        if let Some(expected) = expected {
-            let actual = self.active_id.unwrap_or(0);
-            if actual != expected {
-                return Err(RevisionError::Conflict { expected, actual });
-            }
-        }
-        Ok(())
+impl wanaku_types::revision::RevisionPersistence<Revision> for PersistenceAdapter<'_> {
+    type Error = wanaku_types::persistence::PersistenceError;
+
+    fn load(&self) -> Result<RevisionsSnapshot, Self::Error> {
+        self.0.load()
     }
 
-    fn mark_previous_superseded(&mut self) {
-        if let Some(prev_id) = self.active_id
-            && let Some(prev) = self
-                .revisions
-                .iter_mut()
-                .find(|r| r.metadata.id == prev_id)
-        {
-            prev.metadata.status = ActivationStatus::Superseded;
-        }
-    }
-
-    fn trim_history(&mut self) {
-        while self.revisions.len() > self.max_history {
-            let is_active =
-                self.active_id == Some(self.revisions[0].metadata.id);
-            if is_active && self.revisions.len() <= self.max_history + 1 {
-                break;
-            }
-            if is_active {
-                self.revisions.remove(1);
-            } else {
-                self.revisions.remove(0);
-            }
-        }
+    fn save(&self, snapshot: &RevisionsSnapshot) -> Result<(), Self::Error> {
+        self.0.save(snapshot)
     }
 }
 
@@ -174,12 +110,7 @@ impl RevisionStore {
     #[must_use]
     pub fn with_max_history(max_history: usize) -> Self {
         Self {
-            inner: Arc::new(RwLock::new(RevisionStoreInner {
-                revisions: Vec::new(),
-                active_id: None,
-                max_history,
-                next_id: 1,
-            })),
+            history: RevisionHistory::new(max_history),
             persistence: None,
         }
     }
@@ -189,13 +120,15 @@ impl RevisionStore {
     /// the highest persisted ID so IDs stay monotonic across restarts.
     #[must_use]
     pub fn with_persistence(backend: Arc<dyn RevisionPersistence>) -> Self {
+        Self::with_max_history_and_persistence(DEFAULT_MAX_HISTORY, backend)
+    }
+
+    fn with_max_history_and_persistence(
+        max_history: usize,
+        backend: Arc<dyn RevisionPersistence>,
+    ) -> Self {
         let store = Self {
-            inner: Arc::new(RwLock::new(RevisionStoreInner {
-                revisions: Vec::new(),
-                active_id: None,
-                max_history: DEFAULT_MAX_HISTORY,
-                next_id: 1,
-            })),
+            history: RevisionHistory::new(max_history),
             persistence: Some(backend),
         };
         store.load_persisted();
@@ -209,31 +142,25 @@ impl RevisionStore {
         let Some(backend) = self.persistence.as_ref() else {
             return;
         };
-        let snapshot = match backend.load() {
+        let adapter = PersistenceAdapter(backend.as_ref());
+        let snapshot = match wanaku_types::revision::RevisionPersistence::load(&adapter) {
             Ok(s) => s,
             Err(e) => {
                 tracing::error!(error = %e, "failed to load persisted evaluator revisions; starting empty");
                 return;
             }
         };
-        let Ok(mut guard) = self.inner.write() else {
+        let count = snapshot.revisions.len();
+        let active_id = snapshot.active_id;
+        let next_id = snapshot.next_id;
+        if self.history.restore(snapshot).is_err() {
             tracing::warn!("revision store lock poisoned; persisted revisions not loaded");
             return;
-        };
-        let max_id = snapshot
-            .revisions
-            .iter()
-            .map(|r| r.metadata.id)
-            .max()
-            .unwrap_or(0);
-        guard.next_id = snapshot.next_id.max(max_id.saturating_add(1)).max(1);
-        guard.revisions = snapshot.revisions;
-        guard.active_id = snapshot.active_id;
-        guard.trim_history();
+        }
         tracing::info!(
-            count = guard.revisions.len(),
-            active = ?guard.active_id,
-            next_id = guard.next_id,
+            count,
+            active = ?active_id,
+            next_id,
             "loaded persisted evaluator revisions"
         );
     }
@@ -246,18 +173,12 @@ impl RevisionStore {
         let Some(backend) = self.persistence.as_ref() else {
             return;
         };
-        let snapshot = {
-            let Ok(guard) = self.inner.read() else {
-                tracing::warn!("revision store lock poisoned; skipping persist");
-                return;
-            };
-            RevisionsSnapshot {
-                revisions: guard.revisions.clone(),
-                active_id: guard.active_id,
-                next_id: guard.next_id,
-            }
+        let Ok(snapshot) = self.history.snapshot() else {
+            tracing::warn!("revision store lock poisoned; skipping persist");
+            return;
         };
-        if let Err(e) = backend.save(&snapshot) {
+        let adapter = PersistenceAdapter(backend.as_ref());
+        if let Err(e) = wanaku_types::revision::RevisionPersistence::save(&adapter, &snapshot) {
             tracing::error!(error = %e, "failed to persist evaluator revisions");
         }
     }
@@ -271,42 +192,22 @@ impl RevisionStore {
 
     /// Return the currently active revision, if any.
     pub fn active_revision(&self) -> Option<Revision> {
-        let guard = self.inner.read().ok()?;
-        let active_id = guard.active_id?;
-        guard
-            .revisions
-            .iter()
-            .find(|r| r.metadata.id == active_id)
-            .cloned()
+        self.history.active_revision()
     }
 
     /// Return the ID of the currently active revision, if any.
     pub fn active_revision_id(&self) -> Option<RevisionId> {
-        self.inner.read().ok().and_then(|g| g.active_id)
+        self.history.active_revision_id()
     }
 
     /// List all stored revisions, newest first.
     pub fn list_revisions(&self) -> Vec<RevisionMetadata> {
-        self.inner
-            .read()
-            .map(|guard| {
-                let mut metas: Vec<_> =
-                    guard.revisions.iter().map(|r| r.metadata.clone()).collect();
-                metas.sort_by_key(|m| std::cmp::Reverse(m.id));
-                metas
-            })
-            .unwrap_or_default()
+        self.history.list_metadata()
     }
 
     /// Retrieve a specific revision by ID.
     pub fn get_revision(&self, id: RevisionId) -> Option<Revision> {
-        self.inner.read().ok().and_then(|guard| {
-            guard
-                .revisions
-                .iter()
-                .find(|r| r.metadata.id == id)
-                .cloned()
-        })
+        self.history.get(id)
     }
 
     /// Record a new revision with the given evaluator definitions and origin.
@@ -340,28 +241,11 @@ impl RevisionStore {
         &self,
         params: &RecordRevisionParams,
     ) -> Result<Revision, RevisionError> {
-        let Ok(mut guard) = self.inner.write() else {
-            return Err(RevisionError::ValidationFailed(
-                "internal lock error".to_owned(),
-            ));
-        };
-
-        guard.check_concurrency(params.expected_revision)?;
-
-        // Allocate the ID before committing it, so a checksum failure in
-        // build_revision leaves next_id untouched (no gaps).
-        let id = guard.next_id;
-        let revision = build_revision(id, params)?;
-        guard.next_id = id.saturating_add(1);
-
-        if params.activate {
-            guard.mark_previous_superseded();
-            guard.active_id = Some(id);
-        }
-
-        guard.revisions.push(revision.clone());
-        guard.trim_history();
-        Ok(revision)
+        self.history
+            .commit(params.expected_revision, params.activate, |id| {
+                build_revision(id, params)
+            })
+            .map_err(map_history_error)
     }
 
     /// Restore a previous revision by creating a new revision with the same
@@ -382,14 +266,36 @@ impl RevisionStore {
 
         // Verify the optimistic concurrency precondition before the caller
         // tries to activate.
-        if let Some(expected) = expected_revision {
-            let actual = self.active_revision_id().unwrap_or(0);
-            if actual != expected {
-                return Err(RevisionError::Conflict { expected, actual });
-            }
-        }
+        self.history
+            .check_concurrency(expected_revision)
+            .map_err(RevisionError::from)?;
 
         Ok(defs)
+    }
+}
+
+fn map_history_error(error: RevisionHistoryError<RevisionError>) -> RevisionError {
+    match error {
+        RevisionHistoryError::Conflict { expected, actual } => {
+            RevisionError::Conflict { expected, actual }
+        }
+        RevisionHistoryError::Build(error) => error,
+        RevisionHistoryError::Lock => {
+            RevisionError::ValidationFailed("internal lock error".to_owned())
+        }
+    }
+}
+
+impl From<RevisionHistoryError<()>> for RevisionError {
+    fn from(error: RevisionHistoryError<()>) -> Self {
+        match error {
+            RevisionHistoryError::Conflict { expected, actual } => {
+                Self::Conflict { expected, actual }
+            }
+            RevisionHistoryError::Build(()) | RevisionHistoryError::Lock => {
+                Self::ValidationFailed("internal lock error".to_owned())
+            }
+        }
     }
 }
 
@@ -449,12 +355,9 @@ pub fn config_checksum(defs: &[EvaluatorDef]) -> Option<String> {
 /// bounded history absorbs it and checksums are stable again thereafter. A
 /// stronger hash is not worth a new dependency for this use.
 fn compute_checksum(defs: &[EvaluatorDef]) -> Result<String, RevisionError> {
-    let json = serde_json::to_string(defs).map_err(|e| {
+    wanaku_types::revision::checksum(&defs).map_err(|e| {
         RevisionError::ValidationFailed(format!("failed to serialize evaluator config: {e}"))
-    })?;
-    let mut hasher = DefaultHasher::new();
-    json.hash(&mut hasher);
-    Ok(format!("{:016x}", hasher.finish()))
+    })
 }
 
 #[cfg(test)]
@@ -768,13 +671,14 @@ mod tests {
     impl RevisionPersistence for MemoryPersistence {
         fn load(&self) -> Result<RevisionsSnapshot, PersistenceError> {
             let guard = self.saved.lock().unwrap();
-            let snapshot = guard.as_ref().map_or_else(RevisionsSnapshot::default, |s| {
-                RevisionsSnapshot {
-                    revisions: s.revisions.clone(),
-                    active_id: s.active_id,
-                    next_id: s.next_id,
-                }
-            });
+            let snapshot =
+                guard
+                    .as_ref()
+                    .map_or_else(RevisionsSnapshot::default, |s| RevisionsSnapshot {
+                        revisions: s.revisions.clone(),
+                        active_id: s.active_id,
+                        next_id: s.next_id,
+                    });
             Ok(snapshot)
         }
 
@@ -850,14 +754,7 @@ mod tests {
         let backend = Arc::new(MemoryPersistence::default());
 
         // Record more than the history bound so early IDs are trimmed away.
-        let store = {
-            let s = RevisionStore::with_persistence(backend.clone());
-            // Shrink the bound so the test stays small.
-            if let Ok(mut g) = s.inner.write() {
-                g.max_history = 3;
-            }
-            s
-        };
+        let store = RevisionStore::with_max_history_and_persistence(3, backend.clone());
         for i in 0..5 {
             store
                 .record_revision(&active_params(
@@ -866,12 +763,7 @@ mod tests {
                 ))
                 .unwrap();
         }
-        let highest = store
-            .list_revisions()
-            .iter()
-            .map(|m| m.id)
-            .max()
-            .unwrap();
+        let highest = store.list_revisions().iter().map(|m| m.id).max().unwrap();
 
         // Restart and record again: the new ID must exceed the highest ever
         // assigned, not just the highest still in the trimmed history.

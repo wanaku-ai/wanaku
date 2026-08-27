@@ -14,26 +14,14 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
 use wanaku_types::persistence::PersistenceError;
 
-use crate::revision::{Revision, RevisionId};
+use crate::revision::Revision;
 
 /// The persistent form of a revision store: the full history plus the active
 /// revision ID and the next revision counter needed to resume ID assignment
 /// after a restart.
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct RevisionsSnapshot {
-    #[serde(default)]
-    pub revisions: Vec<Revision>,
-    #[serde(default)]
-    pub active_id: Option<RevisionId>,
-    /// The next revision ID to assign. Persisted so IDs stay monotonic across
-    /// restarts even after history trimming removes the highest-numbered
-    /// revisions from `revisions`.
-    #[serde(default)]
-    pub next_id: RevisionId,
-}
+pub type RevisionsSnapshot = wanaku_types::revision::RevisionSnapshot<Revision>;
 
 /// A backend that loads and stores evaluator revision history.
 pub trait RevisionPersistence: Send + Sync {
@@ -99,8 +87,9 @@ mod tests {
 
     #[test]
     fn load_missing_file_returns_empty() {
-        let backend =
-            FileRevisionPersistence::new("/tmp/wanaku-nonexistent-revisions/evaluator-revisions.json");
+        let backend = FileRevisionPersistence::new(
+            "/tmp/wanaku-nonexistent-revisions/evaluator-revisions.json",
+        );
         let snapshot = backend.load();
         assert!(snapshot.is_ok(), "loading missing file should return Ok");
         if let Ok(s) = snapshot {
