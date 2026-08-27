@@ -39,11 +39,8 @@ impl PromptGetFilter {
         let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
         let parsed = parse_body(body, json_rpc_id);
 
-        let prompt_name = match &parsed.name {
-            Some(n) => n.clone(),
-            None => {
-                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INVALID_PARAMS, "missing name in prompts/get"));
-            }
+        let Some(prompt_name) = parsed.name.as_deref() else {
+            return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INVALID_PARAMS, "missing name in prompts/get"));
         };
 
         trace!(prompt = %prompt_name, namespace = %namespace, "handling MCP prompts/get request");
@@ -53,7 +50,7 @@ impl PromptGetFilter {
             return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
         };
 
-        let Some(prompt) = registry.get_prompt_in_namespace(namespace, &prompt_name) else {
+        let Some(prompt) = registry.get_prompt_in_namespace(namespace, prompt_name) else {
             warn!(prompt = %prompt_name, "prompt not found in registry");
             return Ok(crate::response::json_rpc_error(
                 &parsed.id,
@@ -64,7 +61,7 @@ impl PromptGetFilter {
 
         if prompt.messages.is_empty()
             && let Some(ref uri) = prompt.configuration_uri {
-                return self.handle_forwarded_get(uri, &prompt_name, &parsed).await;
+                return self.handle_forwarded_get(uri, prompt_name, &parsed).await;
             }
 
         let messages: Vec<serde_json::Value> = prompt
