@@ -74,11 +74,8 @@ impl ResourceReadFilter {
         let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
         let parsed = parse_body(body, json_rpc_id);
 
-        let resource_uri = match &parsed.uri {
-            Some(u) => u.clone(),
-            None => {
-                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INVALID_PARAMS, "missing uri in resources/read"));
-            }
+        let Some(resource_uri) = parsed.uri.as_deref() else {
+            return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INVALID_PARAMS, "missing uri in resources/read"));
         };
 
         let namespace = ctx
@@ -94,7 +91,7 @@ impl ResourceReadFilter {
 
         let resources = registry.list_resources_in_namespace(namespace);
         let resource = resources.iter().find(|r| !r.is_template() && r.location == resource_uri)
-            .or_else(|| resources.iter().find(|r| r.is_template() && matches_uri_template(&r.location, &resource_uri)));
+            .or_else(|| resources.iter().find(|r| r.is_template() && matches_uri_template(&r.location, resource_uri)));
 
         let resource = match resource {
             Some(r) => r.clone(),
@@ -109,7 +106,7 @@ impl ResourceReadFilter {
         };
 
         if resource.is_mcp_forward() {
-            return self.handle_forwarded_read(&resource, &resource_uri, &parsed).await;
+            return self.handle_forwarded_read(&resource, resource_uri, &parsed).await;
         }
 
         warn!(uri = %resource_uri, resource_type = %resource.type_, "unsupported resource type — only MCP-forwarded resources are supported");
