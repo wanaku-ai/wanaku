@@ -23,7 +23,7 @@ pub struct HttpContext<'a> {
 impl<'a> HttpContext<'a> {
     /// Creates a new HTTP context from the request components.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         method: &'a str,
         path: &'a str,
         query: Option<&'a str>,

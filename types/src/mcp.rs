@@ -25,7 +25,7 @@ pub struct McpContext<'a> {
 impl<'a> McpContext<'a> {
     /// Creates a new MCP context from the parsed request state.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         method: &'a str,
         tool_name: Option<&'a str>,
         arguments: &'a HashMap<String, String>,
