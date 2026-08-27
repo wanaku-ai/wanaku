@@ -1,0 +1,57 @@
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/theme' as *;
+
+.cli-downloads-page {
+  .cli-package-section {
+    margin-top: $spacing-06;
+  }
+
+  .cli-package-section-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: $spacing-04;
+  }
+
+  .cli-package-grid {
+    margin: 0;
+  }
+
+  .cli-package-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-03;
+    height: 100%;
+    margin-bottom: $spacing-05;
+  }
+
+  .cli-package-tile-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-03;
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: $text-primary;
+    }
+  }
+
+  .cli-package-requirement {
+    font-size: 0.75rem;
+    color: $text-secondary;
+  }
+
+  .cli-package-description {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    flex-grow: 1;
+  }
+
+  .cli-downloads-footer {
+    margin-top: $spacing-06;
+    font-size: 0.875rem;
+    color: $text-secondary;
+  }
+}

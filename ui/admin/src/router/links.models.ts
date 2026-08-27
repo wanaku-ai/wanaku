@@ -10,6 +10,7 @@ export const enum Links {
   Forwards = "/forwards",
   Evaluators = "/evaluators",
   Plugins = "/plugins-admin",
+  CliDownloads = "/cli-downloads",
   Logout = "/logout"
 }
 

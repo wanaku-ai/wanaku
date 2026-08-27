@@ -69,6 +69,10 @@ export function buildRouter(pluginPages: PluginPage[]) {
           path: Links.Plugins,
           lazy: async () => import("./Pages/Plugins"),
         },
+        {
+          path: Links.CliDownloads,
+          lazy: async () => import("./Pages/CliDownloads"),
+        },
         ...pluginRoutes,
       ],
     },

@@ -47,7 +47,7 @@ docker pull quay.io/wanaku/wanaku-server-headless:early-access
 
 ### 2. Download the CLI
 
-The Wanaku CLI is a separate package. Download the latest `wanaku` binary from the [wanaku-barn early access release page](https://github.com/wanaku-ai/wanaku-barn/releases/tag/early-access).
+The Wanaku CLI is a separate package. Download the latest `wanaku` binary from the [wanaku-barn early access release page](https://github.com/wanaku-ai/wanaku-barn/releases/tag/early-access), or use the **CLI Downloads** page in the admin UI (`http://localhost:8080/admin`) to pick the right package for your platform.
 
 ```bash
 chmod +x wanaku
