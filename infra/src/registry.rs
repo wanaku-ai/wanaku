@@ -93,11 +93,11 @@ impl InMemoryRegistry {
             }
             self.prompts.insert(prompt.name.clone(), prompt);
         }
-        for forward in snapshot.forwards {
-            self.forwards.insert(forward.name.clone(), forward);
-        }
         for namespace in snapshot.namespaces {
             self.namespaces.insert(namespace.name.clone(), namespace);
+        }
+        for forward in snapshot.forwards {
+            self.insert_forward(forward);
         }
 
         tracing::info!("loaded registry from persistence backend");
@@ -128,6 +128,34 @@ impl InMemoryRegistry {
                 save();
             }
         }
+    }
+
+    fn insert_forward(&self, mut forward: ForwardEntry) {
+        let namespace = forward
+            .namespace
+            .clone()
+            .unwrap_or_else(|| DEFAULT_NAMESPACE.to_owned());
+        forward.namespace = Some(namespace.clone());
+
+        if let Err(reason) = wanaku_types::registry::validate_namespace_name(&namespace) {
+            tracing::warn!(
+                forward = %forward.name,
+                namespace = %namespace,
+                error = %reason,
+                "forward references an invalid namespace name; skipping namespace auto-registration"
+            );
+        } else {
+            self.namespaces
+                .entry(namespace.clone())
+                .or_insert_with(|| NamespaceEntry {
+                    name: namespace,
+                    labels: HashMap::new(),
+                    auth_required: None,
+                    audience: None,
+                });
+        }
+
+        self.forwards.insert(forward.name.clone(), forward);
     }
 }
 
@@ -396,31 +424,8 @@ impl ForwardRegistry for InMemoryRegistry {
         self.forwards.get(name).map(|entry| entry.value().clone())
     }
 
-    fn register_forward(&self, mut forward: ForwardEntry) {
-        let namespace = forward.namespace.clone().unwrap_or_else(|| DEFAULT_NAMESPACE.to_owned());
-        forward.namespace = Some(namespace.clone());
-
-        // Ensure the namespace referenced by the forward exists in the namespace
-        // registry. This is idempotent: multiple forwards that reference the same
-        // namespace create a single entry, and an existing entry (for example, one
-        // created through the management API) is never clobbered.
-        if let Err(reason) = wanaku_types::registry::validate_namespace_name(&namespace) {
-            tracing::warn!(
-                forward = %forward.name,
-                namespace = %namespace,
-                error = %reason,
-                "forward references an invalid namespace name; skipping namespace auto-registration"
-            );
-        } else {
-            self.namespaces.entry(namespace.clone()).or_insert_with(|| NamespaceEntry {
-                name: namespace,
-                labels: HashMap::new(),
-                auth_required: None,
-                audience: None,
-            });
-        }
-
-        self.forwards.insert(forward.name.clone(), forward);
+    fn register_forward(&self, forward: ForwardEntry) {
+        self.insert_forward(forward);
         self.persist();
     }
 
@@ -680,5 +685,43 @@ mod tests {
         );
         // The forward itself is still registered.
         assert!(registry.get_forward("example-mcp").is_some());
+    }
+
+    #[test]
+    fn load_persisted_registers_namespace_referenced_by_forward() {
+        struct SnapshotBackend {
+            forward: ForwardEntry,
+        }
+
+        impl PersistenceBackend for SnapshotBackend {
+            fn load(
+                &self,
+            ) -> Result<RegistrySnapshot, wanaku_types::persistence::PersistenceError> {
+                Ok(RegistrySnapshot {
+                    forwards: vec![self.forward.clone()],
+                    ..RegistrySnapshot::default()
+                })
+            }
+
+            fn save(
+                &self,
+                _snapshot: &RegistrySnapshot,
+            ) -> Result<(), wanaku_types::persistence::PersistenceError> {
+                Ok(())
+            }
+        }
+
+        let backend = Arc::new(SnapshotBackend {
+            forward: sample_forward("persisted-forward", Some("persisted-ns")),
+        });
+        let registry = InMemoryRegistry::with_persistence(backend);
+
+        registry.load_persisted();
+
+        assert!(registry.get_forward("persisted-forward").is_some());
+        assert!(
+            registry.get_namespace("persisted-ns").is_some(),
+            "a persisted forward namespace should be registered when the snapshot omits it"
+        );
     }
 }
