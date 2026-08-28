@@ -31,7 +31,7 @@ impl ToolCallFilter {
             return Ok(FilterAction::Continue);
         };
 
-        if method != "tools/call" {
+        if method != crate::TOOLS_CALL {
             return Ok(FilterAction::Continue);
         }
 

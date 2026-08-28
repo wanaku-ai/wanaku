@@ -17,9 +17,9 @@ impl McpInitFilter {
         let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
 
         match method {
-            "initialize" => self.handle_initialize(&json_rpc_id),
-            "notifications/initialized" => Self::handle_notification(),
-            "ping" => Self::handle_ping(&json_rpc_id),
+            crate::INITIALIZE => self.handle_initialize(&json_rpc_id),
+            crate::NOTIFICATIONS_INITIALIZED => Self::handle_notification(),
+            crate::PING => Self::handle_ping(&json_rpc_id),
             _ => Ok(FilterAction::Continue),
         }
     }

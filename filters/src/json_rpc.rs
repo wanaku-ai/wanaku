@@ -27,7 +27,7 @@ impl McpRequestView {
     }
 
     pub fn tool_call(&self) -> Result<ToolCallRequest<'_>, RequestViewError> {
-        self.require_method("tools/call")?;
+        self.require_method(crate::TOOLS_CALL)?;
         Ok(ToolCallRequest {
             name: self.required_param_string("name")?,
             arguments: self.optional_param_object("arguments")?,
@@ -35,14 +35,14 @@ impl McpRequestView {
     }
 
     pub fn resource_read(&self) -> Result<ResourceReadRequest<'_>, RequestViewError> {
-        self.require_method("resources/read")?;
+        self.require_method(crate::RESOURCES_READ)?;
         Ok(ResourceReadRequest {
             uri: self.required_param_string("uri")?,
         })
     }
 
     pub fn prompt_get(&self) -> Result<PromptGetRequest<'_>, RequestViewError> {
-        self.require_method("prompts/get")?;
+        self.require_method(crate::PROMPTS_GET)?;
         Ok(PromptGetRequest {
             name: self.required_param_string("name")?,
             arguments: self.optional_param_object("arguments")?,

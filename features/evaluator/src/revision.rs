@@ -383,7 +383,7 @@ mod tests {
         EvaluatorDef {
             name: name.to_owned(),
             trigger: TriggerDef {
-                method: "tools/call".to_owned(),
+                method: wanaku_types::TOOLS_CALL.to_owned(),
                 namespace: None,
             },
             llm: LlmDef {

@@ -16,7 +16,7 @@ impl ToolListFilter {
             return Ok(FilterAction::Continue);
         };
 
-        if method != "tools/list" {
+        if method != crate::TOOLS_LIST {
             return Ok(FilterAction::Continue);
         }
 

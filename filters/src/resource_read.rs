@@ -85,7 +85,7 @@ impl ResourceReadFilter {
             return Ok(FilterAction::Continue);
         };
 
-        if method != "resources/read" {
+        if method != crate::RESOURCES_READ {
             return Ok(FilterAction::Continue);
         }
 

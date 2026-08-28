@@ -287,7 +287,7 @@ fn dispatch_action(
             Ok(FilterAction::Continue)
         }
         ActionResult::FilterTools(tool_names) => {
-            if method != "tools/list" {
+            if method != wanaku_types::TOOLS_LIST {
                 tracing::warn!(evaluator = %evaluator_name, "filter_tools called on non-tools/list, ignoring");
                 return Ok(FilterAction::Continue);
             }

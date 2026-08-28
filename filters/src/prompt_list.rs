@@ -17,7 +17,7 @@ impl PromptListFilter {
             return Ok(FilterAction::Continue);
         };
 
-        if method != "prompts/list" {
+        if method != crate::PROMPTS_LIST {
             return Ok(FilterAction::Continue);
         }
 

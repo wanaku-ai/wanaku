@@ -17,8 +17,8 @@ impl ResourceListFilter {
             return Ok(FilterAction::Continue);
         };
 
-        let is_list = method == "resources/list";
-        let is_template_list = method == "resources/templates/list";
+        let is_list = method == crate::RESOURCES_LIST;
+        let is_template_list = method == crate::RESOURCES_TEMPLATES_LIST;
         if !is_list && !is_template_list {
             return Ok(FilterAction::Continue);
         }
