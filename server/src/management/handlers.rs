@@ -1177,6 +1177,38 @@ mod tests {
     }
 
     #[test]
+    fn forward_namespace_appears_in_namespace_list() {
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(ForwardEntry {
+            name: "example-mcp".to_owned(),
+            address: "http://localhost:9090/mcp".to_owned(),
+            namespace: Some("test-ns".to_owned()),
+            server_info: None,
+            labels: HashMap::new(),
+            available: false,
+            status_message: None,
+        });
+
+        let names: Vec<String> = data_field(&handle_namespace_list(&registry))
+            .as_array()
+            .map(|entries| {
+                entries
+                    .iter()
+                    .filter_map(|e| e.get("name").and_then(|v| v.as_str()).map(str::to_owned))
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        assert!(
+            names.iter().any(|n| n == "test-ns"),
+            "namespace referenced by a forward should be listed by GET /api/v1/namespaces, got {names:?}"
+        );
+
+        // The namespace should also be individually retrievable.
+        assert_eq!(handle_namespace_get(&registry, "test-ns").status(), 200);
+    }
+
+    #[test]
     fn namespace_delete_existing() {
         let registry = InMemoryRegistry::new();
         handle_namespace_create(&registry, r#"{"name":"del-ns"}"#);

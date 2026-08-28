@@ -397,9 +397,29 @@ impl ForwardRegistry for InMemoryRegistry {
     }
 
     fn register_forward(&self, mut forward: ForwardEntry) {
-        if forward.namespace.is_none() {
-            forward.namespace = Some(DEFAULT_NAMESPACE.to_owned());
+        let namespace = forward.namespace.clone().unwrap_or_else(|| DEFAULT_NAMESPACE.to_owned());
+        forward.namespace = Some(namespace.clone());
+
+        // Ensure the namespace referenced by the forward exists in the namespace
+        // registry. This is idempotent: multiple forwards that reference the same
+        // namespace create a single entry, and an existing entry (for example, one
+        // created through the management API) is never clobbered.
+        if let Err(reason) = wanaku_types::registry::validate_namespace_name(&namespace) {
+            tracing::warn!(
+                forward = %forward.name,
+                namespace = %namespace,
+                error = %reason,
+                "forward references an invalid namespace name; skipping namespace auto-registration"
+            );
+        } else {
+            self.namespaces.entry(namespace.clone()).or_insert_with(|| NamespaceEntry {
+                name: namespace,
+                labels: HashMap::new(),
+                auth_required: None,
+                audience: None,
+            });
         }
+
         self.forwards.insert(forward.name.clone(), forward);
         self.persist();
     }
@@ -580,5 +600,85 @@ mod tests {
         let props = stored.input_schema["properties"].as_object().expect("has properties");
         assert_eq!(props.len(), 2, "x-request-id should be injected when flag is enabled");
         assert!(props.contains_key("x-request-id"));
+    }
+
+    fn sample_forward(name: &str, namespace: Option<&str>) -> ForwardEntry {
+        ForwardEntry {
+            name: name.to_owned(),
+            address: "http://localhost:9090/mcp".to_owned(),
+            namespace: namespace.map(str::to_owned),
+            server_info: None,
+            labels: HashMap::new(),
+            available: false,
+            status_message: None,
+        }
+    }
+
+    #[test]
+    fn register_forward_registers_referenced_namespace() {
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(sample_forward("example-mcp", Some("test-ns")));
+
+        let namespace = registry.get_namespace("test-ns");
+        assert!(namespace.is_some(), "namespace referenced by forward should be registered");
+        assert_eq!(namespace.expect("namespace should exist").name, "test-ns");
+        assert!(
+            registry.list_namespaces().iter().any(|ns| ns.name == "test-ns"),
+            "namespace referenced by forward should appear in list_namespaces"
+        );
+    }
+
+    #[test]
+    fn register_forward_without_namespace_uses_default() {
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(sample_forward("example-mcp", None));
+
+        let forward = registry.get_forward("example-mcp").expect("forward should exist");
+        assert_eq!(forward.namespace.as_deref(), Some(DEFAULT_NAMESPACE));
+        assert!(registry.get_namespace(DEFAULT_NAMESPACE).is_some());
+    }
+
+    #[test]
+    fn multiple_forwards_share_single_namespace_entry() {
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(sample_forward("forward-a", Some("shared-ns")));
+        registry.register_forward(sample_forward("forward-b", Some("shared-ns")));
+
+        let matching: Vec<_> =
+            registry.list_namespaces().into_iter().filter(|ns| ns.name == "shared-ns").collect();
+        assert_eq!(matching.len(), 1, "multiple forwards should create a single namespace entry");
+    }
+
+    #[test]
+    fn register_forward_does_not_clobber_existing_namespace() {
+        let registry = InMemoryRegistry::new();
+        let mut labels = HashMap::new();
+        labels.insert("team".to_owned(), "finance".to_owned());
+        registry.register_namespace(NamespaceEntry {
+            name: "test-ns".to_owned(),
+            labels: labels.clone(),
+            auth_required: Some(true),
+            audience: Some("finance-audience".to_owned()),
+        });
+
+        registry.register_forward(sample_forward("example-mcp", Some("test-ns")));
+
+        let namespace = registry.get_namespace("test-ns").expect("namespace should exist");
+        assert_eq!(namespace.labels, labels, "existing namespace metadata must be preserved");
+        assert_eq!(namespace.auth_required, Some(true));
+        assert_eq!(namespace.audience.as_deref(), Some("finance-audience"));
+    }
+
+    #[test]
+    fn register_forward_with_invalid_namespace_skips_auto_registration() {
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(sample_forward("example-mcp", Some("Invalid NS")));
+
+        assert!(
+            registry.get_namespace("Invalid NS").is_none(),
+            "invalid namespace names should not be auto-registered"
+        );
+        // The forward itself is still registered.
+        assert!(registry.get_forward("example-mcp").is_some());
     }
 }
