@@ -28,7 +28,7 @@ impl PromptGetFilter {
             return Ok(FilterAction::Continue);
         };
 
-        if method != "prompts/get" {
+        if method != crate::PROMPTS_GET {
             return Ok(FilterAction::Continue);
         }
 
