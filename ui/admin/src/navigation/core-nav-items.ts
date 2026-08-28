@@ -15,5 +15,5 @@ export const CORE_NAV_ITEMS: NavItem[] = [
   { id: "action-policies", label: "Action Policies", route: Links.ActionPolicies, source: "core", section: "Admin", order: 89 },
   { id: "plugins", label: "Installed Plugins", route: Links.Plugins, source: "core", section: "Admin", order: 90 },
 
-  { id: "downloads", label: "CLI Downloads", route: Links.Downloads, source: "core", order: 100 },
+  { id: "downloads", label: "CLI Downloads", route: Links.Downloads, source: "core", section: "Developer", order: 42 },
 ];
