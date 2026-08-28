@@ -16,6 +16,14 @@ test.describe('CLI Downloads', () => {
     expect(title).toBe('CLI Downloads');
   });
 
+  test('lists CLI Downloads in the Developer menu', async ({ page }) => {
+    await downloads.goto();
+    const headerNavigation = page.getByRole('navigation', { name: 'Wanaku' });
+    await headerNavigation.getByRole('link', { name: 'Developer', exact: true }).click();
+
+    await expect(headerNavigation.getByRole('link', { name: 'CLI Downloads' })).toBeVisible();
+  });
+
   test('lists CLI packages with download links', async () => {
     await downloads.goto();
     await expect(downloads.downloadButtons().first()).toBeVisible({ timeout: 5_000 });
