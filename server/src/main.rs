@@ -90,7 +90,7 @@ struct ServiceDeps {
     features: Vec<Box<dyn Feature>>,
 }
 
-fn load_config(args: &ServerArgs, wanaku_registry: &InMemoryRegistry, features: &Vec<Box<dyn Feature>>) {
+fn load_config(args: &ServerArgs, wanaku_registry: &InMemoryRegistry, features: &[Box<dyn Feature>]) {
     let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
     if let Some(ref yaml) = wanaku_config {
         load_core_config(yaml, wanaku_registry);
