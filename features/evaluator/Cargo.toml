@@ -26,7 +26,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 tracing = { workspace = true }
-wasmtime = { version = "47", features = ["component-model"] }
+wasmtime = { version = "48", features = ["component-model"] }
 wasmtime-wasi = "47"
 wanaku-infra = { workspace = true }
 wanaku-types = { workspace = true }
