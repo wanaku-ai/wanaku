@@ -1,3 +1,5 @@
+use std::fmt::Write as _;
+
 use wanaku_infra::llm::{self, LlmClient};
 use wanaku_infra::metrics::MetricsStore;
 use wanaku_types::mcp::McpContext;
@@ -62,10 +64,11 @@ fn build_context_prompt(mcp: &McpContext<'_>) -> String {
                             .and_then(serde_json::Value::as_str)
                             .unwrap_or("");
                         if !content.is_empty() {
-                            prompt.push_str(&format!(
-                                "[{role}]: {}\n",
+                            let _ = writeln!(
+                                prompt,
+                                "[{role}]: {}",
                                 llm::sanitize(content, 1000)
-                            ));
+                            );
                         }
                     }
                 }
@@ -73,31 +76,33 @@ fn build_context_prompt(mcp: &McpContext<'_>) -> String {
         }
     }
 
-    prompt.push_str(&format!("## Request: {}\n\n", mcp.method));
+    let _ = write!(prompt, "## Request: {}\n\n", mcp.method);
 
     if let Some(name) = mcp.tool_name {
-        prompt.push_str(&format!("Tool: {name}\n"));
+        let _ = writeln!(prompt, "Tool: {name}");
     }
 
     if !mcp.arguments.is_empty() {
         prompt.push_str("Arguments:\n");
         for (key, value) in mcp.arguments {
-            prompt.push_str(&format!(
-                "  {}: {}\n",
+            let _ = writeln!(
+                prompt,
+                "  {}: {}",
                 llm::sanitize(key, 500),
                 llm::sanitize(value, 500)
-            ));
+            );
         }
     }
 
     if !mcp.tools.is_empty() {
         prompt.push_str("\n## Available Tools\n\n");
         for tool in mcp.tools {
-            prompt.push_str(&format!(
-                "- {}: {}\n",
+            let _ = writeln!(
+                prompt,
+                "- {}: {}",
                 tool.name,
                 llm::sanitize(&tool.description, 200)
-            ));
+            );
         }
     }
 
