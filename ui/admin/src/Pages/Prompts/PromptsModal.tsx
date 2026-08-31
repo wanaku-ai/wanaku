@@ -95,7 +95,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onSubmit, onRequestClo
                   id="namespace"
                   labelText="Select a Namespace"
                   value={selectedNamespace}
-                  onChange={namespace => setSelectedNamespace(namespace.id!)}
+                  onChange={namespace => setSelectedNamespace(namespace.name)}
                 />
               </Stack>
             </TabPanel>

@@ -57,7 +57,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
         labelText="Select a Namespace"
         helperText="Choose a Namespace from the list (optional)"
         value={selectedNamespace ?? undefined}
-        onChange={namespace => setSelectedNamespace(namespace.id)}
+        onChange={namespace => setSelectedNamespace(namespace.name)}
       />
     </Modal>
   );

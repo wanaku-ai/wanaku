@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Top-level evaluator configuration containing multiple evaluator definitions.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct EvaluatorsConfig {
     #[serde(default)]
     pub evaluators: Vec<EvaluatorDef>,
@@ -11,6 +12,7 @@ pub struct EvaluatorsConfig {
 
 /// A single evaluator definition: trigger + LLM operation + processor.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct EvaluatorDef {
     pub name: String,
     pub trigger: TriggerDef,
@@ -38,6 +40,7 @@ pub struct LlmConnection {
 
 /// What triggers this evaluator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct TriggerDef {
     pub method: String,
     #[serde(default)]
@@ -53,6 +56,7 @@ pub struct TriggerDef {
 /// `model`/`url`/`api_key` in a client payload into a clear 400 instead of
 /// silently dropping it.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct LlmDef {
     pub operation: LlmOperation,
@@ -64,6 +68,7 @@ pub struct LlmDef {
 
 /// The type of cognitive operation the LLM performs.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum LlmOperation {
     Classify,
@@ -73,12 +78,15 @@ pub enum LlmOperation {
 
 /// Reference to a WASM processor module.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct ProcessorRef {
+    #[cfg_attr(feature = "openapi", schema(value_type = String))]
     pub path: PathBuf,
 }
 
 /// What to do when a WASM action fails.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum ErrorPolicy {
     Continue,

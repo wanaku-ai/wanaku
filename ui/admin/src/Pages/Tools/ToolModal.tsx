@@ -77,8 +77,8 @@ export const ToolModal: React.FC<ToolModalProps> = ({
   
   function findNamespace(id: string | undefined | null): NamespaceEntry | undefined {
     return id
-      ? namespaces.find(namespace => namespace.id === id)
-      : namespaces.find(namespace => namespace.path === "default")
+      ? namespaces.find(namespace => namespace.name === id)
+      : namespaces.find(namespace => namespace.name === "default")
   }
 
   function otherTools(): ToolEntry[] {
@@ -103,7 +103,7 @@ export const ToolModal: React.FC<ToolModalProps> = ({
   function validateToolName(toolName: string, namespaceId: string | null | undefined) {
     const nsId: string | undefined = namespaceId ?? undefined;
     setToolNameInvalid(toolNameAlreadyExists(toolName, nsId))
-    setToolNameInvalidText(`This tool name already exists in namespace: ${findNamespace(nsId)!.path}`)
+    setToolNameInvalidText(`This tool name already exists in namespace: ${findNamespace(nsId)!.name}`)
   }
   
   function validateInputSchema(schema: string) {
@@ -181,8 +181,8 @@ export const ToolModal: React.FC<ToolModalProps> = ({
               helperText="Choose a Namespace from the list"
               value={selectedNamespace ?? undefined}
               onChange={namespace => {
-                setSelectedNamespace(namespace.id ?? undefined)
-                validateToolName(toolName, namespace.id)
+                setSelectedNamespace(namespace.name)
+                validateToolName(toolName, namespace.name)
               }}
             />
           </TabPanel>

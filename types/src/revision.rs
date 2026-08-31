@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub type RevisionId = u64;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum RevisionOrigin {
     Startup,
@@ -14,6 +15,7 @@ pub enum RevisionOrigin {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ActivationStatus {
     Active,
@@ -22,6 +24,7 @@ pub enum ActivationStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct RevisionMetadata {
     pub id: RevisionId,
     pub created_at: String,

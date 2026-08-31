@@ -3,6 +3,7 @@
 
 //! Transport-neutral action-policy schema and matcher compilation.
 
+pub mod api;
 mod engine;
 pub mod filter;
 mod handlers;

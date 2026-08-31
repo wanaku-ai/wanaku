@@ -39,7 +39,7 @@ export const NamespaceSelect : React.FC<NamespaceSelectProps> = ({ id, labelText
   }
 
   function findNamespaceAmong(id: string, namespaces: readonly NamespaceEntry[]): NamespaceEntry | undefined {
-    return namespaces.find(namespace => namespace.id == id)
+    return namespaces.find(namespace => namespace.name === id)
   }
 
   function defaultNamespace(): NamespaceEntry | undefined {
@@ -47,7 +47,7 @@ export const NamespaceSelect : React.FC<NamespaceSelectProps> = ({ id, labelText
   }
 
   function findDefaultNamespaceAmong(namespaces: readonly NamespaceEntry[]): NamespaceEntry | undefined {
-    return namespaces.find(namespace => namespace.path == "default")
+    return namespaces.find(namespace => namespace.name === "default")
   }
 
   return (
@@ -55,7 +55,7 @@ export const NamespaceSelect : React.FC<NamespaceSelectProps> = ({ id, labelText
       id={id || "namespace"}
       labelText={labelText || ""}
       helperText={helperText || ""}
-      value={selectedNamespace?.id ?? defaultNamespace()?.id ?? undefined}
+      value={selectedNamespace?.name ?? defaultNamespace()?.name}
       onChange={(event) => {
         const namespace = findNamespace(event.target.value)
         if (namespace) {
@@ -67,10 +67,10 @@ export const NamespaceSelect : React.FC<NamespaceSelectProps> = ({ id, labelText
       <SelectItem disabled hidden text="Choose a namespace" value="" />
       {namespaces.map((namespace: NamespaceEntry) => (
         <SelectItem
-          key={namespace.id ?? namespace.name}
-          id={namespace.id ?? ""}
-          text={namespace.path ?? namespace.name}
-          value={namespace.id ?? ""}
+          key={namespace.name}
+          id={namespace.name}
+          text={namespace.name}
+          value={namespace.name}
         />
       ))}
     </Select>

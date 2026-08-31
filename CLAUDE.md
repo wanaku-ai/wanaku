@@ -81,6 +81,13 @@ See [docs/management-api.md](docs/management-api.md) for full route reference an
 
 See [docs/contributing-admin-ui.md](docs/contributing-admin-ui.md) for stack, conventions, page patterns, API client, and styling.
 
+**OpenAPI updates required:** When you add or change a management API route, request, response, or schema, update the Utoipa declarations and tests in `server/src/openapi.rs`. Then regenerate the committed OpenAPI document and admin UI client:
+```bash
+cd ui/admin
+yarn run generate-api
+```
+Commit `ui/admin/openapi.json` and all generated changes in `ui/admin/src/api/` and `ui/admin/src/models/`. Do not replace generated API contracts with handwritten types.
+
 **E2E tests required** — Playwright in `tests/e2e/ui/`: page objects in `pages/`, test data in `helpers/test-data.ts`, API setup in `helpers/api-helpers.ts`, specs in `tests/`. Min: page title, add modal, delete. Run `cd tests/e2e/ui && npx playwright test`.
 
 ## Filter Implementation

@@ -15,6 +15,7 @@ workspace = true
 # Exposes test-only seeding helpers (see `EvaluatorState::load_evaluators`)
 # that bypass validation and revision recording. Never enable in production.
 test-util = []
+openapi = ["dep:utoipa", "wanaku-types/openapi"]
 
 [dependencies]
 async-trait = { workspace = true }
@@ -26,6 +27,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 tracing = { workspace = true }
+utoipa = { version = "5.5", optional = true }
 wasmtime = { version = "48", features = ["component-model"] }
 wasmtime-wasi = "48"
 wanaku-infra = { workspace = true }

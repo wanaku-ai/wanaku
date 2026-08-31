@@ -10,6 +10,636 @@
     "version": "0.3.0"
   },
   "paths": {
+    "/api/v1/action-policies": {
+      "get": {
+        "tags": [
+          "Action Policies"
+        ],
+        "operationId": "get_effective_action_policy",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_ActionPolicyRevisionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Action Policies"
+        ],
+        "operationId": "update_action_policy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateActionPolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_ActionPolicyRevisionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/action-policies/revisions": {
+      "get": {
+        "tags": [
+          "Action Policies"
+        ],
+        "operationId": "list_action_policy_revisions",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Vec_RevisionMetadata"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/action-policies/revisions/active": {
+      "get": {
+        "tags": [
+          "Action Policies"
+        ],
+        "operationId": "get_active_action_policy_revision",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_ActionPolicyRevisionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/action-policies/revisions/{id}": {
+      "get": {
+        "tags": [
+          "Action Policies"
+        ],
+        "operationId": "get_action_policy_revision",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_ActionPolicyRevisionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/action-policies/revisions/{id}/activate": {
+      "post": {
+        "tags": [
+          "Action Policies"
+        ],
+        "operationId": "activate_action_policy_revision",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivateRevisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_ActionPolicyRevisionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluators": {
+      "get": {
+        "tags": [
+          "Evaluators"
+        ],
+        "operationId": "list_evaluators",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Vec_EvaluatorDef"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Evaluators"
+        ],
+        "operationId": "update_evaluators",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEvaluatorsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_EvaluatorRevisionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid evaluator configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Evaluator configuration rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluators/llm-connections": {
+      "get": {
+        "tags": [
+          "Evaluators"
+        ],
+        "operationId": "list_evaluator_llm_connections",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Vec_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluators/namespaces": {
+      "get": {
+        "tags": [
+          "Evaluators"
+        ],
+        "operationId": "list_evaluator_bindings",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_HashMap_String_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluators/namespaces/{namespace}": {
+      "put": {
+        "tags": [
+          "Evaluators"
+        ],
+        "operationId": "bind_evaluator_namespace",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BindNamespaceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_NamespaceBinding"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Evaluators"
+        ],
+        "operationId": "unbind_evaluator_namespace",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_UnbindNamespaceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluators/revisions": {
+      "get": {
+        "tags": [
+          "Evaluators"
+        ],
+        "operationId": "list_evaluator_revisions",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Vec_RevisionMetadata"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluators/revisions/active": {
+      "get": {
+        "tags": [
+          "Evaluators"
+        ],
+        "operationId": "get_active_evaluator_revision",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_EvaluatorRevisionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluators/revisions/{id}": {
+      "get": {
+        "tags": [
+          "Evaluators"
+        ],
+        "operationId": "get_evaluator_revision",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_EvaluatorRevisionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluators/revisions/{id}/activate": {
+      "post": {
+        "tags": [
+          "Evaluators"
+        ],
+        "operationId": "activate_evaluator_revision",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivateRevisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_EvaluatorRevisionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/forwards": {
       "get": {
         "tags": [
@@ -184,6 +814,24 @@
         }
       }
     },
+    "/api/v1/management/info": {
+      "get": {
+        "tags": [
+          "Management"
+        ],
+        "operationId": "get_info",
+        "responses": {
+          "200": {
+            "description": "Server name and version",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/management/statistics": {
       "get": {
         "tags": [
@@ -269,6 +917,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid namespace name"
           }
         }
       }
@@ -599,6 +1250,66 @@
   },
   "components": {
     "schemas": {
+      "ActionPolicy": {
+        "type": "object",
+        "description": "A complete action-policy document.",
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Rule"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ActionPolicyRevisionResponse": {
+        "type": "object",
+        "required": [
+          "revision",
+          "policy"
+        ],
+        "properties": {
+          "policy": {
+            "$ref": "#/components/schemas/ActionPolicy"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/RevisionMetadata"
+          }
+        }
+      },
+      "ActivateRevisionRequest": {
+        "type": "object",
+        "properties": {
+          "expected_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "ActivationStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "superseded",
+          "rejected"
+        ]
+      },
+      "BindNamespaceRequest": {
+        "type": "object",
+        "required": [
+          "conversation_id"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": "string"
+          }
+        }
+      },
       "DecisionSnapshot": {
         "type": "object",
         "required": [
@@ -662,6 +1373,66 @@
           "total_ms": {
             "type": "number",
             "format": "double"
+          }
+        }
+      },
+      "Effect": {
+        "type": "string",
+        "enum": [
+          "allow",
+          "deny"
+        ]
+      },
+      "ErrorPolicy": {
+        "type": "string",
+        "description": "What to do when a WASM action fails.",
+        "enum": [
+          "continue",
+          "block"
+        ]
+      },
+      "EvaluatorDef": {
+        "type": "object",
+        "description": "A single evaluator definition: trigger + LLM operation + processor.",
+        "required": [
+          "name",
+          "trigger",
+          "llm",
+          "processor"
+        ],
+        "properties": {
+          "llm": {
+            "$ref": "#/components/schemas/LlmDef"
+          },
+          "name": {
+            "type": "string"
+          },
+          "on_error": {
+            "$ref": "#/components/schemas/ErrorPolicy"
+          },
+          "processor": {
+            "$ref": "#/components/schemas/ProcessorRef"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/TriggerDef"
+          }
+        }
+      },
+      "EvaluatorRevisionResponse": {
+        "type": "object",
+        "required": [
+          "revision",
+          "evaluators"
+        ],
+        "properties": {
+          "evaluators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluatorDef"
+            }
+          },
+          "revision": {
+            "$ref": "#/components/schemas/RevisionMetadata"
           }
         }
       },
@@ -852,6 +1623,37 @@
           }
         }
       },
+      "LlmDef": {
+        "type": "object",
+        "description": "LLM operation configuration.\n\nCarries only what an evaluator *does* with the LLM (operation, prompt,\nresult schema) plus a reference to a named [`LlmConnection`] configured\nin `wanaku.yaml`. Connection details (model/url/api_key) are deliberately\nnot fields here: `deny_unknown_fields` turns any legacy inline\n`model`/`url`/`api_key` in a client payload into a clear 400 instead of\nsilently dropping it.",
+        "required": [
+          "operation",
+          "prompt",
+          "connection"
+        ],
+        "properties": {
+          "connection": {
+            "type": "string"
+          },
+          "operation": {
+            "$ref": "#/components/schemas/LlmOperation"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "result_schema": {}
+        },
+        "additionalProperties": false
+      },
+      "LlmOperation": {
+        "type": "string",
+        "description": "The type of cognitive operation the LLM performs.",
+        "enum": [
+          "classify",
+          "filter",
+          "augment"
+        ]
+      },
       "LlmSnapshot": {
         "type": "object",
         "required": [
@@ -880,6 +1682,43 @@
             "minimum": 0
           }
         }
+      },
+      "ManagementErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "data": {},
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "MatchExpression": {
+        "type": "object",
+        "description": "A named matcher and its literal pattern.",
+        "required": [
+          "matcher",
+          "value"
+        ],
+        "properties": {
+          "matcher": {
+            "$ref": "#/components/schemas/MatchKind"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MatchKind": {
+        "type": "string",
+        "enum": [
+          "exact",
+          "glob",
+          "prefix"
+        ]
       },
       "McpServerInfo": {
         "type": "object",
@@ -961,6 +1800,21 @@
           }
         }
       },
+      "NamespaceBinding": {
+        "type": "object",
+        "required": [
+          "namespace",
+          "conversation_id"
+        ],
+        "properties": {
+          "conversation_id": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          }
+        }
+      },
       "NamespaceEntry": {
         "type": "object",
         "required": [
@@ -979,12 +1833,6 @@
               "null"
             ]
           },
-          "id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "labels": {
             "type": "object",
             "additionalProperties": {
@@ -995,9 +1843,6 @@
             }
           },
           "name": {
-            "type": "string"
-          },
-          "path": {
             "type": "string"
           }
         }
@@ -1048,6 +1893,131 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "Predicate": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "pointer",
+              "value",
+              "operator"
+            ],
+            "properties": {
+              "operator": {
+                "type": "string",
+                "enum": [
+                  "exists"
+                ]
+              },
+              "pointer": {
+                "type": "string"
+              },
+              "value": {
+                "type": "boolean"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "pointer",
+              "value",
+              "operator"
+            ],
+            "properties": {
+              "operator": {
+                "type": "string",
+                "enum": [
+                  "equals"
+                ]
+              },
+              "pointer": {
+                "type": "string"
+              },
+              "value": {}
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "pointer",
+              "value",
+              "operator"
+            ],
+            "properties": {
+              "operator": {
+                "type": "string",
+                "enum": [
+                  "not_equals"
+                ]
+              },
+              "pointer": {
+                "type": "string"
+              },
+              "value": {}
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "pointer",
+              "values",
+              "operator"
+            ],
+            "properties": {
+              "operator": {
+                "type": "string",
+                "enum": [
+                  "one_of"
+                ]
+              },
+              "pointer": {
+                "type": "string"
+              },
+              "values": {
+                "type": "array",
+                "items": {}
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "pointer",
+              "values",
+              "operator"
+            ],
+            "properties": {
+              "operator": {
+                "type": "string",
+                "enum": [
+                  "not_one_of"
+                ]
+              },
+              "pointer": {
+                "type": "string"
+              },
+              "values": {
+                "type": "array",
+                "items": {}
+              }
+            }
+          }
+        ],
+        "description": "A typed comparison against a JSON Pointer."
+      },
+      "ProcessorRef": {
+        "type": "object",
+        "description": "Reference to a WASM processor module.",
+        "required": [
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
           }
         }
       },
@@ -1191,6 +2161,110 @@
           }
         }
       },
+      "RevisionMetadata": {
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "status",
+          "checksum",
+          "origin"
+        ],
+        "properties": {
+          "activated_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "actor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checksum": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "failure_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/u64"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/RevisionOrigin"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ActivationStatus"
+          }
+        }
+      },
+      "RevisionOrigin": {
+        "type": "string",
+        "enum": [
+          "startup",
+          "api"
+        ]
+      },
+      "Rule": {
+        "type": "object",
+        "description": "One stable, independently auditable policy rule.",
+        "required": [
+          "id",
+          "effect"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "effect": {
+            "$ref": "#/components/schemas/Effect"
+          },
+          "id": {
+            "type": "string"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A safe message that can be returned to an action caller."
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "predicates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Predicate"
+            }
+          },
+          "reason_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "selectors": {
+            "$ref": "#/components/schemas/Selectors"
+          }
+        },
+        "additionalProperties": false
+      },
       "SchemaSnapshot": {
         "type": "object",
         "required": [
@@ -1221,6 +2295,73 @@
             "minimum": 0
           }
         }
+      },
+      "Selectors": {
+        "type": "object",
+        "description": "Transport-neutral action selectors.",
+        "properties": {
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "namespace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "operation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The action operation. MCP adapters use values such as `tools/call`."
+          },
+          "target_name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatchExpression"
+              }
+            ]
+          },
+          "target_type": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TargetType"
+              }
+            ]
+          },
+          "uri": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatchExpression"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "TargetType": {
+        "type": "string",
+        "enum": [
+          "tool",
+          "resource",
+          "prompt"
+        ]
       },
       "ToolEntry": {
         "type": "object",
@@ -1280,6 +2421,313 @@
           }
         }
       },
+      "TriggerDef": {
+        "type": "object",
+        "description": "What triggers this evaluator.",
+        "required": [
+          "method"
+        ],
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UnbindNamespaceResponse": {
+        "type": "object",
+        "required": [
+          "unbound"
+        ],
+        "properties": {
+          "unbound": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateActionPolicyRequest": {
+        "type": "object",
+        "required": [
+          "policy"
+        ],
+        "properties": {
+          "expected_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "policy": {
+            "$ref": "#/components/schemas/ActionPolicy"
+          }
+        }
+      },
+      "UpdateEvaluatorsRequest": {
+        "type": "object",
+        "properties": {
+          "evaluators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluatorDef"
+            }
+          },
+          "expected_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WanakuResponse_ActionPolicyRevisionResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "revision",
+              "policy"
+            ],
+            "properties": {
+              "policy": {
+                "$ref": "#/components/schemas/ActionPolicy"
+              },
+              "revision": {
+                "$ref": "#/components/schemas/RevisionMetadata"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_EvaluatorRevisionResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "revision",
+              "evaluators"
+            ],
+            "properties": {
+              "evaluators": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EvaluatorDef"
+                }
+              },
+              "revision": {
+                "$ref": "#/components/schemas/RevisionMetadata"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_HashMap_String_String": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_NamespaceBinding": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "namespace",
+              "conversation_id"
+            ],
+            "properties": {
+              "conversation_id": {
+                "type": "string"
+              },
+              "namespace": {
+                "type": "string"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_UnbindNamespaceResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "unbound"
+            ],
+            "properties": {
+              "unbound": {
+                "type": "string"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_Vec_EvaluatorDef": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A single evaluator definition: trigger + LLM operation + processor.",
+              "required": [
+                "name",
+                "trigger",
+                "llm",
+                "processor"
+              ],
+              "properties": {
+                "llm": {
+                  "$ref": "#/components/schemas/LlmDef"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "on_error": {
+                  "$ref": "#/components/schemas/ErrorPolicy"
+                },
+                "processor": {
+                  "$ref": "#/components/schemas/ProcessorRef"
+                },
+                "trigger": {
+                  "$ref": "#/components/schemas/TriggerDef"
+                }
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_Vec_RevisionMetadata": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "created_at",
+                "status",
+                "checksum",
+                "origin"
+              ],
+              "properties": {
+                "activated_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "actor": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "checksum": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "failure_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "$ref": "#/components/schemas/u64"
+                },
+                "origin": {
+                  "$ref": "#/components/schemas/RevisionOrigin"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/ActivationStatus"
+                }
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_Vec_String": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "WasmSnapshot": {
         "type": "object",
         "required": [
@@ -1302,6 +2750,11 @@
             "minimum": 0
           }
         }
+      },
+      "u64": {
+        "type": "integer",
+        "format": "int64",
+        "minimum": 0
       }
     }
   }

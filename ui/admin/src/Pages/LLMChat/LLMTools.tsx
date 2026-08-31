@@ -66,7 +66,7 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
   /* Check that selectedNamespace exists. Reset it to "default" if it doesn't */
   async function checkSelectedNamespace() {
     console.log("Checking selected namespace")
-    let namespaces: NamespaceEntry[] = await fetchNamespaces()
+    const namespaces: NamespaceEntry[] = await fetchNamespaces()
     if (!namespaces.find(namespace => namespace.name === selectedNamespace.name)) {
       console.log("Selected namespace not found, resetting to default")
       setNamespace({ name: "default" })
@@ -80,7 +80,7 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
     if (namespace.name === "default") {
       return tools.filter(tool => !tool.namespace || tool.namespace === "default")
     }
-    const nsKey = namespace.id || namespace.name || namespace.path
+    const nsKey = namespace.name
     return tools.filter(tool => tool.namespace === nsKey).sort((a, b) => a.name!.localeCompare(b.name!))
   }
 
