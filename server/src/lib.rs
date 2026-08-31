@@ -264,6 +264,7 @@ mod tests {
             ui_path: None,
             cors_origin: "*".to_owned(),
             forward_headers: Vec::new(),
+            forward_healthcheck_interval: Some(std::time::Duration::from_secs(30)),
         }
     }
 
