@@ -126,7 +126,7 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
                 labelText="Select a Namespace"
                 helperText="Choose a Namespace from the list"
                 value={namespace ?? undefined}
-                onChange={namespace => setNamespace(namespace.id ?? undefined)}
+                onChange={namespace => setNamespace(namespace.name)}
               />
             </TabPanel>
             <TabPanel>

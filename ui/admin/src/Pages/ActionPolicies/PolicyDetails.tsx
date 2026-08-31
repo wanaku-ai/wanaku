@@ -1,14 +1,14 @@
 import { Accordion, AccordionItem, StructuredListBody, StructuredListCell, StructuredListRow, StructuredListWrapper, Tag } from "@carbon/react";
-import type { ActionPolicy, ActionPolicyRule, JsonValue, PolicyPredicate } from "../../hooks/api/use-action-policies";
+import type { ActionPolicy, ActionPolicyRule, PolicyPredicate } from "../../hooks/api/use-action-policies";
 
 interface PolicyDetailsProps {
   policy: ActionPolicy;
 }
 
-const displayJson = (value: JsonValue | undefined): string => value === undefined ? "—" : JSON.stringify(value);
+const displayJson = (value: unknown): string => value === undefined ? "—" : JSON.stringify(value);
 
 const selectorEntries = (rule: ActionPolicyRule): Array<[string, string]> => {
-  const { selectors } = rule;
+  const selectors = rule.selectors ?? {};
   const entries: Array<[string, string]> = [];
   if (selectors.namespace) entries.push(["Namespace", selectors.namespace]);
   if (selectors.operation) entries.push(["Operation", selectors.operation]);
@@ -20,7 +20,7 @@ const selectorEntries = (rule: ActionPolicyRule): Array<[string, string]> => {
 };
 
 const predicateValue = (predicate: PolicyPredicate): string =>
-  predicate.values ? displayJson(predicate.values) : displayJson(predicate.value);
+  "values" in predicate ? displayJson(predicate.values) : displayJson(predicate.value);
 
 const RuleDetails = ({ rule }: { rule: ActionPolicyRule }) => (
   <div className="policy-rule">
@@ -66,11 +66,12 @@ const RuleDetails = ({ rule }: { rule: ActionPolicyRule }) => (
 );
 
 export const PolicyDetails = ({ policy }: PolicyDetailsProps) => {
-  if (policy.rules.length === 0) return <p className="policy-empty">This policy has no rules.</p>;
+  const rules = policy.rules ?? [];
+  if (rules.length === 0) return <p className="policy-empty">This policy has no rules.</p>;
 
   return (
     <Accordion align="start">
-      {policy.rules.map((rule) => (
+      {rules.map((rule) => (
         <AccordionItem key={rule.id} title={`${rule.id} — ${rule.effect}`}>
           <RuleDetails rule={rule} />
         </AccordionItem>

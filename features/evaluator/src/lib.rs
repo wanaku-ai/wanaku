@@ -2,6 +2,7 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 pub mod action;
+pub mod api;
 pub mod config;
 pub mod engine;
 pub mod filter;

@@ -10,7 +10,7 @@ type PageState =
   | { status: "error"; message: string }
   | { status: "success"; active?: ActionPolicyRevision; revisions: ActionPolicyRevision[] };
 
-const formatDate = (value?: string): string => value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Not activated";
+const formatDate = (value?: string | null): string => value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Not activated";
 
 const statusTagType = (status: ActionPolicyRevision["revision"]["status"]): "green" | "gray" | "red" => {
   if (status === "active") return "green";
@@ -63,7 +63,7 @@ export const ActionPoliciesPage = () => {
                 <div className="action-policies__summary">
                   <Tile><span>Revision</span><strong>{state.active.revision.id}</strong></Tile>
                   <Tile><span>Status</span><Tag type={statusTagType(state.active.revision.status)}>{state.active.revision.status}</Tag></Tile>
-                  <Tile><span>Rules</span><strong>{state.active.policy.rules.length}</strong></Tile>
+                  <Tile><span>Rules</span><strong>{state.active.policy.rules?.length ?? 0}</strong></Tile>
                   <Tile><span>Activated</span><strong>{formatDate(state.active.revision.activated_at)}</strong></Tile>
                 </div>
                 <PolicyDetails policy={state.active.policy} />

@@ -7,14 +7,11 @@
  */
 import type { NamespaceEntryAudience } from "./namespaceEntryAudience";
 import type { NamespaceEntryAuthRequired } from "./namespaceEntryAuthRequired";
-import type { NamespaceEntryId } from "./namespaceEntryId";
 import type { NamespaceEntryLabels } from "./namespaceEntryLabels";
 
 export interface NamespaceEntry {
   audience?: NamespaceEntryAudience;
   authRequired?: NamespaceEntryAuthRequired;
-  id?: NamespaceEntryId;
   labels?: NamespaceEntryLabels;
   name: string;
-  path?: string;
 }

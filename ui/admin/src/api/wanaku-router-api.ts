@@ -6,16 +6,667 @@
  * OpenAPI spec version: 0.3.0
  */
 import type {
+  ActivateActionPolicyRevision200,
+  ActivateEvaluatorRevision200,
+  ActivateRevisionRequest,
+  BindEvaluatorNamespace200,
+  BindNamespaceRequest,
   ForwardEntry,
+  GetActionPolicyRevision200,
+  GetActiveActionPolicyRevision200,
+  GetActiveEvaluatorRevision200,
+  GetEffectiveActionPolicy200,
+  GetEvaluatorRevision200,
   Interaction,
+  ListActionPolicyRevisions200Item,
+  ListEvaluatorBindings200,
+  ListEvaluatorRevisions200Item,
+  ListEvaluators200Item,
+  ManagementErrorResponse,
   MetricsSnapshot,
   NamespaceEntry,
   PromptEntry,
   ResourceEntry,
   ToolEntry,
+  UnbindEvaluatorNamespace200,
+  UpdateActionPolicy200,
+  UpdateActionPolicyRequest,
+  UpdateEvaluators200,
+  UpdateEvaluatorsRequest,
 } from "../models";
 
 import { customFetch } from "../custom-fetch";
+export type getEffectiveActionPolicyResponse200 = {
+  data: GetEffectiveActionPolicy200;
+  status: 200;
+};
+
+export type getEffectiveActionPolicyResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type getEffectiveActionPolicyResponseSuccess =
+  getEffectiveActionPolicyResponse200 & {
+    headers: Headers;
+  };
+export type getEffectiveActionPolicyResponseError =
+  getEffectiveActionPolicyResponse404 & {
+    headers: Headers;
+  };
+
+export type getEffectiveActionPolicyResponse =
+  | getEffectiveActionPolicyResponseSuccess
+  | getEffectiveActionPolicyResponseError;
+
+export const getGetEffectiveActionPolicyUrl = () => {
+  return `/api/v1/action-policies`;
+};
+
+export const getEffectiveActionPolicy = async (
+  options?: RequestInit,
+): Promise<getEffectiveActionPolicyResponse> => {
+  return customFetch<getEffectiveActionPolicyResponse>(
+    getGetEffectiveActionPolicyUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type updateActionPolicyResponse200 = {
+  data: UpdateActionPolicy200;
+  status: 200;
+};
+
+export type updateActionPolicyResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type updateActionPolicyResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type updateActionPolicyResponse422 = {
+  data: ManagementErrorResponse;
+  status: 422;
+};
+
+export type updateActionPolicyResponseSuccess =
+  updateActionPolicyResponse200 & {
+    headers: Headers;
+  };
+export type updateActionPolicyResponseError = (
+  | updateActionPolicyResponse400
+  | updateActionPolicyResponse409
+  | updateActionPolicyResponse422
+) & {
+  headers: Headers;
+};
+
+export type updateActionPolicyResponse =
+  | updateActionPolicyResponseSuccess
+  | updateActionPolicyResponseError;
+
+export const getUpdateActionPolicyUrl = () => {
+  return `/api/v1/action-policies`;
+};
+
+export const updateActionPolicy = async (
+  updateActionPolicyRequest: UpdateActionPolicyRequest,
+  options?: RequestInit,
+): Promise<updateActionPolicyResponse> => {
+  return customFetch<updateActionPolicyResponse>(getUpdateActionPolicyUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateActionPolicyRequest),
+  });
+};
+
+export type listActionPolicyRevisionsResponse200 = {
+  data: ListActionPolicyRevisions200Item[];
+  status: 200;
+};
+
+export type listActionPolicyRevisionsResponseSuccess =
+  listActionPolicyRevisionsResponse200 & {
+    headers: Headers;
+  };
+export type listActionPolicyRevisionsResponse =
+  listActionPolicyRevisionsResponseSuccess;
+
+export const getListActionPolicyRevisionsUrl = () => {
+  return `/api/v1/action-policies/revisions`;
+};
+
+export const listActionPolicyRevisions = async (
+  options?: RequestInit,
+): Promise<listActionPolicyRevisionsResponse> => {
+  return customFetch<listActionPolicyRevisionsResponse>(
+    getListActionPolicyRevisionsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type getActiveActionPolicyRevisionResponse200 = {
+  data: GetActiveActionPolicyRevision200;
+  status: 200;
+};
+
+export type getActiveActionPolicyRevisionResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type getActiveActionPolicyRevisionResponseSuccess =
+  getActiveActionPolicyRevisionResponse200 & {
+    headers: Headers;
+  };
+export type getActiveActionPolicyRevisionResponseError =
+  getActiveActionPolicyRevisionResponse404 & {
+    headers: Headers;
+  };
+
+export type getActiveActionPolicyRevisionResponse =
+  | getActiveActionPolicyRevisionResponseSuccess
+  | getActiveActionPolicyRevisionResponseError;
+
+export const getGetActiveActionPolicyRevisionUrl = () => {
+  return `/api/v1/action-policies/revisions/active`;
+};
+
+export const getActiveActionPolicyRevision = async (
+  options?: RequestInit,
+): Promise<getActiveActionPolicyRevisionResponse> => {
+  return customFetch<getActiveActionPolicyRevisionResponse>(
+    getGetActiveActionPolicyRevisionUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type getActionPolicyRevisionResponse200 = {
+  data: GetActionPolicyRevision200;
+  status: 200;
+};
+
+export type getActionPolicyRevisionResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type getActionPolicyRevisionResponseSuccess =
+  getActionPolicyRevisionResponse200 & {
+    headers: Headers;
+  };
+export type getActionPolicyRevisionResponseError =
+  getActionPolicyRevisionResponse404 & {
+    headers: Headers;
+  };
+
+export type getActionPolicyRevisionResponse =
+  | getActionPolicyRevisionResponseSuccess
+  | getActionPolicyRevisionResponseError;
+
+export const getGetActionPolicyRevisionUrl = (id: number) => {
+  return `/api/v1/action-policies/revisions/${id}`;
+};
+
+export const getActionPolicyRevision = async (
+  id: number,
+  options?: RequestInit,
+): Promise<getActionPolicyRevisionResponse> => {
+  return customFetch<getActionPolicyRevisionResponse>(
+    getGetActionPolicyRevisionUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type activateActionPolicyRevisionResponse200 = {
+  data: ActivateActionPolicyRevision200;
+  status: 200;
+};
+
+export type activateActionPolicyRevisionResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type activateActionPolicyRevisionResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type activateActionPolicyRevisionResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type activateActionPolicyRevisionResponse422 = {
+  data: ManagementErrorResponse;
+  status: 422;
+};
+
+export type activateActionPolicyRevisionResponseSuccess =
+  activateActionPolicyRevisionResponse200 & {
+    headers: Headers;
+  };
+export type activateActionPolicyRevisionResponseError = (
+  | activateActionPolicyRevisionResponse400
+  | activateActionPolicyRevisionResponse404
+  | activateActionPolicyRevisionResponse409
+  | activateActionPolicyRevisionResponse422
+) & {
+  headers: Headers;
+};
+
+export type activateActionPolicyRevisionResponse =
+  | activateActionPolicyRevisionResponseSuccess
+  | activateActionPolicyRevisionResponseError;
+
+export const getActivateActionPolicyRevisionUrl = (id: number) => {
+  return `/api/v1/action-policies/revisions/${id}/activate`;
+};
+
+export const activateActionPolicyRevision = async (
+  id: number,
+  activateRevisionRequest?: ActivateRevisionRequest,
+  options?: RequestInit,
+): Promise<activateActionPolicyRevisionResponse> => {
+  return customFetch<activateActionPolicyRevisionResponse>(
+    getActivateActionPolicyRevisionUrl(id),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(activateRevisionRequest),
+    },
+  );
+};
+
+export type listEvaluatorsResponse200 = {
+  data: ListEvaluators200Item[];
+  status: 200;
+};
+
+export type listEvaluatorsResponseSuccess = listEvaluatorsResponse200 & {
+  headers: Headers;
+};
+export type listEvaluatorsResponse = listEvaluatorsResponseSuccess;
+
+export const getListEvaluatorsUrl = () => {
+  return `/api/v1/evaluators`;
+};
+
+export const listEvaluators = async (
+  options?: RequestInit,
+): Promise<listEvaluatorsResponse> => {
+  return customFetch<listEvaluatorsResponse>(getListEvaluatorsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type updateEvaluatorsResponse200 = {
+  data: UpdateEvaluators200;
+  status: 200;
+};
+
+export type updateEvaluatorsResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type updateEvaluatorsResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type updateEvaluatorsResponse422 = {
+  data: ManagementErrorResponse;
+  status: 422;
+};
+
+export type updateEvaluatorsResponseSuccess = updateEvaluatorsResponse200 & {
+  headers: Headers;
+};
+export type updateEvaluatorsResponseError = (
+  | updateEvaluatorsResponse400
+  | updateEvaluatorsResponse409
+  | updateEvaluatorsResponse422
+) & {
+  headers: Headers;
+};
+
+export type updateEvaluatorsResponse =
+  | updateEvaluatorsResponseSuccess
+  | updateEvaluatorsResponseError;
+
+export const getUpdateEvaluatorsUrl = () => {
+  return `/api/v1/evaluators`;
+};
+
+export const updateEvaluators = async (
+  updateEvaluatorsRequest: UpdateEvaluatorsRequest,
+  options?: RequestInit,
+): Promise<updateEvaluatorsResponse> => {
+  return customFetch<updateEvaluatorsResponse>(getUpdateEvaluatorsUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateEvaluatorsRequest),
+  });
+};
+
+export type listEvaluatorLlmConnectionsResponse200 = {
+  data: string[];
+  status: 200;
+};
+
+export type listEvaluatorLlmConnectionsResponseSuccess =
+  listEvaluatorLlmConnectionsResponse200 & {
+    headers: Headers;
+  };
+export type listEvaluatorLlmConnectionsResponse =
+  listEvaluatorLlmConnectionsResponseSuccess;
+
+export const getListEvaluatorLlmConnectionsUrl = () => {
+  return `/api/v1/evaluators/llm-connections`;
+};
+
+export const listEvaluatorLlmConnections = async (
+  options?: RequestInit,
+): Promise<listEvaluatorLlmConnectionsResponse> => {
+  return customFetch<listEvaluatorLlmConnectionsResponse>(
+    getListEvaluatorLlmConnectionsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type listEvaluatorBindingsResponse200 = {
+  data: ListEvaluatorBindings200;
+  status: 200;
+};
+
+export type listEvaluatorBindingsResponseSuccess =
+  listEvaluatorBindingsResponse200 & {
+    headers: Headers;
+  };
+export type listEvaluatorBindingsResponse =
+  listEvaluatorBindingsResponseSuccess;
+
+export const getListEvaluatorBindingsUrl = () => {
+  return `/api/v1/evaluators/namespaces`;
+};
+
+export const listEvaluatorBindings = async (
+  options?: RequestInit,
+): Promise<listEvaluatorBindingsResponse> => {
+  return customFetch<listEvaluatorBindingsResponse>(
+    getListEvaluatorBindingsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type bindEvaluatorNamespaceResponse200 = {
+  data: BindEvaluatorNamespace200;
+  status: 200;
+};
+
+export type bindEvaluatorNamespaceResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type bindEvaluatorNamespaceResponseSuccess =
+  bindEvaluatorNamespaceResponse200 & {
+    headers: Headers;
+  };
+export type bindEvaluatorNamespaceResponseError =
+  bindEvaluatorNamespaceResponse400 & {
+    headers: Headers;
+  };
+
+export type bindEvaluatorNamespaceResponse =
+  | bindEvaluatorNamespaceResponseSuccess
+  | bindEvaluatorNamespaceResponseError;
+
+export const getBindEvaluatorNamespaceUrl = (namespace: string) => {
+  return `/api/v1/evaluators/namespaces/${namespace}`;
+};
+
+export const bindEvaluatorNamespace = async (
+  namespace: string,
+  bindNamespaceRequest: BindNamespaceRequest,
+  options?: RequestInit,
+): Promise<bindEvaluatorNamespaceResponse> => {
+  return customFetch<bindEvaluatorNamespaceResponse>(
+    getBindEvaluatorNamespaceUrl(namespace),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(bindNamespaceRequest),
+    },
+  );
+};
+
+export type unbindEvaluatorNamespaceResponse200 = {
+  data: UnbindEvaluatorNamespace200;
+  status: 200;
+};
+
+export type unbindEvaluatorNamespaceResponseSuccess =
+  unbindEvaluatorNamespaceResponse200 & {
+    headers: Headers;
+  };
+export type unbindEvaluatorNamespaceResponse =
+  unbindEvaluatorNamespaceResponseSuccess;
+
+export const getUnbindEvaluatorNamespaceUrl = (namespace: string) => {
+  return `/api/v1/evaluators/namespaces/${namespace}`;
+};
+
+export const unbindEvaluatorNamespace = async (
+  namespace: string,
+  options?: RequestInit,
+): Promise<unbindEvaluatorNamespaceResponse> => {
+  return customFetch<unbindEvaluatorNamespaceResponse>(
+    getUnbindEvaluatorNamespaceUrl(namespace),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export type listEvaluatorRevisionsResponse200 = {
+  data: ListEvaluatorRevisions200Item[];
+  status: 200;
+};
+
+export type listEvaluatorRevisionsResponseSuccess =
+  listEvaluatorRevisionsResponse200 & {
+    headers: Headers;
+  };
+export type listEvaluatorRevisionsResponse =
+  listEvaluatorRevisionsResponseSuccess;
+
+export const getListEvaluatorRevisionsUrl = () => {
+  return `/api/v1/evaluators/revisions`;
+};
+
+export const listEvaluatorRevisions = async (
+  options?: RequestInit,
+): Promise<listEvaluatorRevisionsResponse> => {
+  return customFetch<listEvaluatorRevisionsResponse>(
+    getListEvaluatorRevisionsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type getActiveEvaluatorRevisionResponse200 = {
+  data: GetActiveEvaluatorRevision200;
+  status: 200;
+};
+
+export type getActiveEvaluatorRevisionResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type getActiveEvaluatorRevisionResponseSuccess =
+  getActiveEvaluatorRevisionResponse200 & {
+    headers: Headers;
+  };
+export type getActiveEvaluatorRevisionResponseError =
+  getActiveEvaluatorRevisionResponse404 & {
+    headers: Headers;
+  };
+
+export type getActiveEvaluatorRevisionResponse =
+  | getActiveEvaluatorRevisionResponseSuccess
+  | getActiveEvaluatorRevisionResponseError;
+
+export const getGetActiveEvaluatorRevisionUrl = () => {
+  return `/api/v1/evaluators/revisions/active`;
+};
+
+export const getActiveEvaluatorRevision = async (
+  options?: RequestInit,
+): Promise<getActiveEvaluatorRevisionResponse> => {
+  return customFetch<getActiveEvaluatorRevisionResponse>(
+    getGetActiveEvaluatorRevisionUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type getEvaluatorRevisionResponse200 = {
+  data: GetEvaluatorRevision200;
+  status: 200;
+};
+
+export type getEvaluatorRevisionResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type getEvaluatorRevisionResponseSuccess =
+  getEvaluatorRevisionResponse200 & {
+    headers: Headers;
+  };
+export type getEvaluatorRevisionResponseError =
+  getEvaluatorRevisionResponse404 & {
+    headers: Headers;
+  };
+
+export type getEvaluatorRevisionResponse =
+  | getEvaluatorRevisionResponseSuccess
+  | getEvaluatorRevisionResponseError;
+
+export const getGetEvaluatorRevisionUrl = (id: number) => {
+  return `/api/v1/evaluators/revisions/${id}`;
+};
+
+export const getEvaluatorRevision = async (
+  id: number,
+  options?: RequestInit,
+): Promise<getEvaluatorRevisionResponse> => {
+  return customFetch<getEvaluatorRevisionResponse>(
+    getGetEvaluatorRevisionUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type activateEvaluatorRevisionResponse200 = {
+  data: ActivateEvaluatorRevision200;
+  status: 200;
+};
+
+export type activateEvaluatorRevisionResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type activateEvaluatorRevisionResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type activateEvaluatorRevisionResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type activateEvaluatorRevisionResponse422 = {
+  data: ManagementErrorResponse;
+  status: 422;
+};
+
+export type activateEvaluatorRevisionResponseSuccess =
+  activateEvaluatorRevisionResponse200 & {
+    headers: Headers;
+  };
+export type activateEvaluatorRevisionResponseError = (
+  | activateEvaluatorRevisionResponse400
+  | activateEvaluatorRevisionResponse404
+  | activateEvaluatorRevisionResponse409
+  | activateEvaluatorRevisionResponse422
+) & {
+  headers: Headers;
+};
+
+export type activateEvaluatorRevisionResponse =
+  | activateEvaluatorRevisionResponseSuccess
+  | activateEvaluatorRevisionResponseError;
+
+export const getActivateEvaluatorRevisionUrl = (id: number) => {
+  return `/api/v1/evaluators/revisions/${id}/activate`;
+};
+
+export const activateEvaluatorRevision = async (
+  id: number,
+  activateRevisionRequest?: ActivateRevisionRequest,
+  options?: RequestInit,
+): Promise<activateEvaluatorRevisionResponse> => {
+  return customFetch<activateEvaluatorRevisionResponse>(
+    getActivateEvaluatorRevisionUrl(id),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(activateRevisionRequest),
+    },
+  );
+};
+
 export type listForwardsResponse200 = {
   data: ForwardEntry[];
   status: 200;
@@ -216,6 +867,29 @@ export const clearInteractions = async (
   });
 };
 
+export type getInfoResponse200 = {
+  data: unknown;
+  status: 200;
+};
+
+export type getInfoResponseSuccess = getInfoResponse200 & {
+  headers: Headers;
+};
+export type getInfoResponse = getInfoResponseSuccess;
+
+export const getGetInfoUrl = () => {
+  return `/api/v1/management/info`;
+};
+
+export const getInfo = async (
+  options?: RequestInit,
+): Promise<getInfoResponse> => {
+  return customFetch<getInfoResponse>(getGetInfoUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
 export type getStatisticsResponse200 = {
   data: unknown;
   status: 200;
@@ -290,10 +964,21 @@ export type createNamespaceResponse200 = {
   status: 200;
 };
 
+export type createNamespaceResponse400 = {
+  data: void;
+  status: 400;
+};
+
 export type createNamespaceResponseSuccess = createNamespaceResponse200 & {
   headers: Headers;
 };
-export type createNamespaceResponse = createNamespaceResponseSuccess;
+export type createNamespaceResponseError = createNamespaceResponse400 & {
+  headers: Headers;
+};
+
+export type createNamespaceResponse =
+  | createNamespaceResponseSuccess
+  | createNamespaceResponseError;
 
 export const getCreateNamespaceUrl = () => {
   return `/api/v1/namespaces`;

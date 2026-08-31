@@ -5,6 +5,7 @@ use serde_json::Value;
 
 /// A complete action-policy document.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct ActionPolicy {
     #[serde(default)]
@@ -13,6 +14,7 @@ pub struct ActionPolicy {
 
 /// One stable, independently auditable policy rule.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Rule {
     pub id: String,
@@ -33,6 +35,7 @@ pub struct Rule {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum Effect {
     Allow,
@@ -41,6 +44,7 @@ pub enum Effect {
 
 /// Transport-neutral action selectors.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Selectors {
     #[serde(default)]
@@ -59,6 +63,7 @@ pub struct Selectors {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum TargetType {
     Tool,
@@ -68,6 +73,7 @@ pub enum TargetType {
 
 /// A named matcher and its literal pattern.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct MatchExpression {
     pub matcher: MatchKind,
@@ -75,6 +81,7 @@ pub struct MatchExpression {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum MatchKind {
     Exact,
@@ -84,6 +91,7 @@ pub enum MatchKind {
 
 /// A typed comparison against a JSON Pointer.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(tag = "operator", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Predicate {
     Exists { pointer: String, value: bool },

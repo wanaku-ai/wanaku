@@ -1,122 +1,78 @@
 import { useCallback } from "react";
-import { customFetch } from "../../custom-fetch";
+import {
+  bindEvaluatorNamespace,
+  listEvaluatorBindings,
+  listEvaluatorLlmConnections,
+  listEvaluators as listEvaluatorsRequest,
+  unbindEvaluatorNamespace,
+  updateEvaluators as updateEvaluatorsRequest,
+  type bindEvaluatorNamespaceResponse,
+  type bindEvaluatorNamespaceResponseSuccess,
+  type listEvaluatorBindingsResponse,
+  type listEvaluatorLlmConnectionsResponse,
+  type listEvaluatorsResponse,
+  type unbindEvaluatorNamespaceResponse,
+  type unbindEvaluatorNamespaceResponseSuccess,
+  type updateEvaluatorsResponse,
+  type updateEvaluatorsResponseSuccess,
+} from "../../api/wanaku-router-api";
+import type { EvaluatorDef } from "../../models";
 
-export interface EvaluatorTrigger {
-  method: string;
-  namespace?: string;
-}
+export type { EvaluatorDef } from "../../models";
 
-export interface EvaluatorLlm {
-  operation: "classify" | "filter" | "augment";
-  prompt: string;
-  connection: string;
-}
-
-export interface EvaluatorProcessor {
-  path: string;
-}
-
-export interface EvaluatorDef {
-  name: string;
-  trigger: EvaluatorTrigger;
-  llm: EvaluatorLlm;
-  processor: EvaluatorProcessor;
-  on_error: "continue" | "block";
-}
-
-export interface EvaluatorsResponse {
-  status: number;
-  data: EvaluatorDef[];
-  headers: Headers;
-}
-
-export interface BindingsResponse {
-  status: number;
-  data: Record<string, string>;
-  headers: Headers;
-}
-
-export interface SimpleResponse {
-  status: number;
-  data: unknown;
-  headers: Headers;
-}
-
-export interface LlmConnectionsResponse {
-  status: number;
-  data: string[];
-  headers: Headers;
-}
+export type EvaluatorsResponse = listEvaluatorsResponse;
+export type BindingsResponse = listEvaluatorBindingsResponse;
+export type SimpleResponse = updateEvaluatorsResponse;
+export type LlmConnectionsResponse = listEvaluatorLlmConnectionsResponse;
 
 export const useEvaluators = () => {
   const listEvaluators = useCallback(
-    (options?: RequestInit): Promise<EvaluatorsResponse> => {
-      return customFetch<EvaluatorsResponse>("/api/v1/evaluators", {
-        ...options,
-        method: "GET",
-      });
-    },
-    []
+    (options?: RequestInit): Promise<EvaluatorsResponse> => listEvaluatorsRequest(options),
+    [],
   );
 
   const updateEvaluators = useCallback(
-    (evaluators: EvaluatorDef[], options?: RequestInit): Promise<SimpleResponse> => {
-      return customFetch<SimpleResponse>("/api/v1/evaluators", {
-        ...options,
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...options?.headers,
-        },
-        body: JSON.stringify({ evaluators }),
-      });
+    async (evaluators: EvaluatorDef[], options?: RequestInit): Promise<updateEvaluatorsResponseSuccess> => {
+      const response: updateEvaluatorsResponse = await updateEvaluatorsRequest({ evaluators }, options);
+      if (response.status !== 200) throw new Error(`Failed to update evaluators (${response.status})`);
+      return response;
     },
-    []
+    [],
   );
 
   const listLlmConnections = useCallback(
-    (options?: RequestInit): Promise<LlmConnectionsResponse> => {
-      return customFetch<LlmConnectionsResponse>("/api/v1/evaluators/llm-connections", {
-        ...options,
-        method: "GET",
-      });
-    },
-    []
+    (options?: RequestInit): Promise<LlmConnectionsResponse> => listEvaluatorLlmConnections(options),
+    [],
   );
 
   const listBindings = useCallback(
-    (options?: RequestInit): Promise<BindingsResponse> => {
-      return customFetch<BindingsResponse>("/api/v1/evaluators/namespaces", {
-        ...options,
-        method: "GET",
-      });
-    },
-    []
+    (options?: RequestInit): Promise<BindingsResponse> => listEvaluatorBindings(options),
+    [],
   );
 
   const bindNamespace = useCallback(
-    (namespace: string, conversationId: string, options?: RequestInit): Promise<SimpleResponse> => {
-      return customFetch<SimpleResponse>(`/api/v1/evaluators/namespaces/${encodeURIComponent(namespace)}`, {
-        ...options,
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...options?.headers,
-        },
-        body: JSON.stringify({ conversation_id: conversationId }),
-      });
+    async (
+      namespace: string,
+      conversationId: string,
+      options?: RequestInit,
+    ): Promise<bindEvaluatorNamespaceResponseSuccess> => {
+      const response: bindEvaluatorNamespaceResponse = await bindEvaluatorNamespace(
+        namespace,
+        { conversation_id: conversationId },
+        options,
+      );
+      if (response.status !== 200) throw new Error(`Failed to bind namespace (${response.status})`);
+      return response;
     },
-    []
+    [],
   );
 
   const unbindNamespace = useCallback(
-    (namespace: string, options?: RequestInit): Promise<SimpleResponse> => {
-      return customFetch<SimpleResponse>(`/api/v1/evaluators/namespaces/${encodeURIComponent(namespace)}`, {
-        ...options,
-        method: "DELETE",
-      });
+    async (namespace: string, options?: RequestInit): Promise<unbindEvaluatorNamespaceResponseSuccess> => {
+      const response: unbindEvaluatorNamespaceResponse = await unbindEvaluatorNamespace(namespace, options);
+      return response;
     },
-    []
+    [],
   );
 
   return {

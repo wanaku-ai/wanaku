@@ -1,81 +1,32 @@
 import { useCallback } from "react";
-import { customFetch } from "../../custom-fetch";
+import {
+  getActionPolicyRevision,
+  getEffectiveActionPolicy,
+  listActionPolicyRevisions,
+  type getActionPolicyRevisionResponseSuccess,
+  type getEffectiveActionPolicyResponseSuccess,
+} from "../../api/wanaku-router-api";
 
-export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
-
-export interface MatchExpression {
-  matcher: "exact" | "glob" | "prefix";
-  value: string;
-}
-
-export interface PolicySelectors {
-  namespace?: string;
-  operation?: string;
-  target_type?: "tool" | "resource" | "prompt";
-  target_name?: MatchExpression;
-  labels?: Record<string, string>;
-  uri?: MatchExpression;
-}
-
-export interface PolicyPredicate {
-  operator: "exists" | "equals" | "not_equals" | "one_of" | "not_one_of";
-  pointer: string;
-  value?: JsonValue;
-  values?: JsonValue[];
-}
-
-export interface ActionPolicyRule {
-  id: string;
-  description?: string;
-  effect: "allow" | "deny";
-  selectors: PolicySelectors;
-  predicates?: PolicyPredicate[];
-  reason_code?: string;
-  message?: string;
-  metadata?: Record<string, JsonValue>;
-}
-
-export interface ActionPolicy {
-  rules: ActionPolicyRule[];
-}
-
-export interface RevisionMetadata {
-  id: number;
-  created_at: string;
-  activated_at?: string;
-  status: "active" | "superseded" | "rejected";
-  checksum: string;
-  origin: "startup" | "api";
-  actor?: string;
-  failure_reason?: string;
-}
-
-export interface ActionPolicyRevision {
-  revision: RevisionMetadata;
-  policy: ActionPolicy;
-}
-
-interface ApiResponse<T> {
-  status: number;
-  data: T;
-  headers: Headers;
-}
+export type {
+  ActionPolicy,
+  ActionPolicyRevisionResponse as ActionPolicyRevision,
+  Predicate as PolicyPredicate,
+  RevisionMetadata,
+  Rule as ActionPolicyRule,
+} from "../../models";
 
 export const useActionPolicies = () => {
-  const getActivePolicy = useCallback(
-    () => customFetch<ApiResponse<ActionPolicyRevision>>("/api/v1/action-policies", { method: "GET" }),
-    [],
-  );
-
-  const listRevisions = useCallback(
-    () => customFetch<ApiResponse<RevisionMetadata[]>>("/api/v1/action-policies/revisions", { method: "GET" }),
-    [],
-  );
-
-  const getRevision = useCallback(
-    (id: number) => customFetch<ApiResponse<ActionPolicyRevision>>(`/api/v1/action-policies/revisions/${id}`, { method: "GET" }),
-    [],
-  );
+  const getActivePolicy = useCallback(async (): Promise<getEffectiveActionPolicyResponseSuccess> => {
+    const response = await getEffectiveActionPolicy();
+    if (response.status !== 200) throw new Error("No active action policy revision found");
+    return response;
+  }, []);
+  const listRevisions = useCallback(() => listActionPolicyRevisions(), []);
+  const getRevision = useCallback(async (id: number): Promise<getActionPolicyRevisionResponseSuccess> => {
+    const response = await getActionPolicyRevision(id);
+    if (response.status !== 200) throw new Error(`Action policy revision ${id} was not found`);
+    return response;
+  }, []);
 
   return { getActivePolicy, listRevisions, getRevision };
 };

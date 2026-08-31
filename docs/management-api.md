@@ -118,6 +118,10 @@ The evaluator uses these interactions as conversation history.
 | `GET` | `/api/v1/evaluators/namespaces` | List namespace-to-conversation bindings. |
 | `PUT` | `/api/v1/evaluators/namespaces/{namespace}` | Bind a namespace to a conversation. |
 | `DELETE` | `/api/v1/evaluators/namespaces/{namespace}` | Remove a namespace binding. |
+| `GET` | `/api/v1/evaluators/revisions` | List evaluator revision metadata. |
+| `GET` | `/api/v1/evaluators/revisions/active` | Get the active evaluator revision. |
+| `GET` | `/api/v1/evaluators/revisions/{id}` | Get one evaluator revision. |
+| `POST` | `/api/v1/evaluators/revisions/{id}/activate` | Activate a prior evaluator configuration as a new revision. |
 
 Use this body to bind a namespace:
 
@@ -128,6 +132,8 @@ Use this body to bind a namespace:
 ```
 
 See [Evaluator Engine](evaluator-engine.md) for the evaluator configuration schema.
+
+The OpenAPI document contains all evaluator request and response schemas. Run `yarn run generate-api` in `ui/admin` after you change an evaluator route or schema.
 
 ### Action Policies
 
@@ -141,6 +147,8 @@ See [Evaluator Engine](evaluator-engine.md) for the evaluator configuration sche
 | `POST` | `/api/v1/action-policies/revisions/{id}/activate` | Activate a prior policy as a new revision. |
 
 The update and activation requests accept an optional `expected_revision`. Wanaku returns `409 Conflict` if the value does not equal the active revision. See [Action Policies](action-policies.md) for request examples and validation behavior.
+
+The OpenAPI document contains all action-policy request and response schemas. Run `yarn run generate-api` in `ui/admin` after you change an action-policy route or schema.
 
 ### Inference Proxy (not part of this API)
 
