@@ -104,6 +104,7 @@ fn load_config(args: &ServerArgs, wanaku_registry: &InMemoryRegistry, features: 
     }
 }
 
+#[expect(clippy::too_many_lines, reason = "service registration is sequential")]
 fn setup_management_service(
     config: &praxis_core::config::Config,
     pipelines: &praxis_protocol::ListenerPipelines,
@@ -130,6 +131,8 @@ fn setup_management_service(
         );
     }
 
+    let mgmt_registry = deps.mgmt_registry.clone();
+
     let mgmt_addr = &wanaku_types::config::ENV.mgmt_listen;
     let mgmt = wanaku_server::management::WanakuManagementService::new(
         deps.mgmt_registry,
@@ -142,6 +145,33 @@ fn setup_management_service(
     mgmt_service.add_tcp(mgmt_addr);
     server.server_mut().add_service(mgmt_service);
     info!(address = %mgmt_addr, "management API enabled");
+
+    register_forward_reconnect_service(mgmt_registry, server);
+}
+
+/// Registers the periodic background service that re-probes forwards currently
+/// marked unavailable, flipping them back to available once they recover. This
+/// runs on the persistent Pingora runtime (the startup discovery runtime is a
+/// one-shot). Disabled when `WANAKU_FORWARD_HEALTHCHECK_INTERVAL` is `0`.
+fn register_forward_reconnect_service(
+    registry: InMemoryRegistry,
+    server: &mut PingoraServerRuntime,
+) {
+    let Some(interval) = wanaku_types::config::ENV.forward_healthcheck_interval else {
+        info!("forward reconnect loop disabled (WANAKU_FORWARD_HEALTHCHECK_INTERVAL=0)");
+        return;
+    };
+
+    let task = wanaku_server::management::reconnect_service(registry, interval);
+    let reconnect_service = pingora_core::services::background::GenBackgroundService::new(
+        "wanaku-forward-reconnect".to_owned(),
+        task,
+    );
+    server.server_mut().add_service(reconnect_service);
+    info!(
+        interval_secs = interval.as_secs(),
+        "forward reconnect loop enabled"
+    );
 }
 
 fn build_features(

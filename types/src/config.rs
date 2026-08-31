@@ -40,6 +40,16 @@ const WANAKU_CORS_ORIGIN: &str = "WANAKU_CORS_ORIGIN";
 /// on individual `ToolEntry` records.
 const WANAKU_FORWARD_HEADERS: &str = "WANAKU_FORWARD_HEADERS";
 
+/// Interval, in seconds, between background re-checks of forwards that are
+/// currently marked unavailable. A previously unreachable forward is probed
+/// again on each tick and flipped back to available once it recovers, without
+/// requiring a manual refresh. Defaults to `30`. Set to `0` to disable the
+/// background reconnect loop entirely.
+const WANAKU_FORWARD_HEALTHCHECK_INTERVAL: &str = "WANAKU_FORWARD_HEALTHCHECK_INTERVAL";
+
+/// Default interval (seconds) between background forward reconnect probes.
+const DEFAULT_FORWARD_HEALTHCHECK_INTERVAL_SECS: u64 = 30;
+
 /// File-persistence settings, present only when enabled.
 #[derive(Debug, Clone)]
 pub struct PersistEnv {
@@ -67,12 +77,16 @@ pub struct WanakuEnv {
     pub cors_origin: String,
     /// Global allowlist of HTTP header names forwarded to downstream tool calls.
     pub forward_headers: Vec<String>,
+    /// Interval between background re-checks of unavailable forwards.
+    /// `None` disables the background reconnect loop.
+    pub forward_healthcheck_interval: Option<std::time::Duration>,
 }
 
 /// Global configuration, initialized lazily on first access.
 pub static ENV: LazyLock<WanakuEnv> = LazyLock::new(WanakuEnv::from_env);
 
 impl WanakuEnv {
+    #[expect(clippy::too_many_lines, reason = "sequential env var parsing")]
     fn from_env() -> Self {
         let backend = std::env::var(WANAKU_PERSIST_BACKEND)
             .unwrap_or_else(|_| "file".to_owned());
@@ -107,8 +121,25 @@ impl WanakuEnv {
                 .map(|s| s.trim().to_lowercase())
                 .filter(|s| !s.is_empty())
                 .collect(),
+            forward_healthcheck_interval: parse_healthcheck_interval(
+                std::env::var(WANAKU_FORWARD_HEALTHCHECK_INTERVAL).ok().as_deref(),
+            ),
         }
     }
+}
+
+/// Parses the forward health-check interval from its raw env value.
+///
+/// Returns `None` (loop disabled) when the value is `"0"` or explicitly
+/// blank/whitespace. Falls back to the default interval when the value is
+/// absent or cannot be parsed as a number of seconds.
+fn parse_healthcheck_interval(raw: Option<&str>) -> Option<std::time::Duration> {
+    let secs = match raw.map(str::trim) {
+        None => DEFAULT_FORWARD_HEALTHCHECK_INTERVAL_SECS,
+        Some("") => return None,
+        Some(value) => value.parse::<u64>().unwrap_or(DEFAULT_FORWARD_HEALTHCHECK_INTERVAL_SECS),
+    };
+    (secs > 0).then(|| std::time::Duration::from_secs(secs))
 }
 
 struct ParsedUpstream {
@@ -169,7 +200,34 @@ fn split_authority(authority: &str) -> (&str, Option<&str>) {
 
 #[cfg(test)]
 mod tests {
-    use super::parse_upstream;
+    use super::{parse_healthcheck_interval, parse_upstream};
+    use std::time::Duration;
+
+    #[test]
+    fn healthcheck_interval_defaults_when_absent() {
+        assert_eq!(parse_healthcheck_interval(None), Some(Duration::from_secs(30)));
+    }
+
+    #[test]
+    fn healthcheck_interval_parses_custom_value() {
+        assert_eq!(parse_healthcheck_interval(Some("60")), Some(Duration::from_secs(60)));
+    }
+
+    #[test]
+    fn healthcheck_interval_zero_disables() {
+        assert_eq!(parse_healthcheck_interval(Some("0")), None);
+    }
+
+    #[test]
+    fn healthcheck_interval_blank_disables() {
+        assert_eq!(parse_healthcheck_interval(Some("")), None);
+        assert_eq!(parse_healthcheck_interval(Some("   ")), None);
+    }
+
+    #[test]
+    fn healthcheck_interval_invalid_falls_back_to_default() {
+        assert_eq!(parse_healthcheck_interval(Some("abc")), Some(Duration::from_secs(30)));
+    }
 
     #[test]
     fn bare_host_port_unchanged() {

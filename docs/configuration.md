@@ -22,6 +22,7 @@ These control core server behavior:
 | `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on all HTTP responses (management API, MCP endpoint, inference proxy, and CORS preflight) |
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata endpoint |
 | `WANAKU_FORWARD_HEADERS` | _(unset = none)_ | Comma-separated list of HTTP header names to forward from incoming MCP requests to downstream tool invocations (e.g., `Authorization,DPoP`). Per-tool overrides via the `wanaku.forward_headers` label. |
+| `WANAKU_FORWARD_HEALTHCHECK_INTERVAL` | `30` | Interval, in seconds, of the background loop that re-probes forwards currently marked unavailable and flips them back to available once they recover — no manual refresh required. Set to `0` to disable the loop. |
 
 **Example:**
 

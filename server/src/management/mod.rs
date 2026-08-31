@@ -1,4 +1,5 @@
 mod handlers;
+mod reconnect;
 mod response;
 mod routes;
 #[cfg(feature = "ui")]
@@ -6,6 +7,7 @@ mod ui;
 
 pub use handlers::discover_and_update_forward;
 pub use handlers::discover_tools_from_forward;
+pub use reconnect::{ForwardReconnectService, reconnect_service};
 pub use handlers::discover_resources_from_forward;
 pub use handlers::discover_prompts_from_forward;
 
