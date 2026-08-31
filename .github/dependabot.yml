@@ -4,6 +4,17 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      wasmtime:
+        applies-to: version-updates
+        patterns:
+          - "wasmtime"
+          - "wasmtime-wasi"
+      wasmtime-security:
+        applies-to: security-updates
+        patterns:
+          - "wasmtime"
+          - "wasmtime-wasi"
   - package-ecosystem: github-actions
     directory: /
     schedule:
