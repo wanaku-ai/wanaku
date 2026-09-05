@@ -380,6 +380,8 @@ Wanaku loads these top-level sections from `wanaku.yaml`:
 - `action_policy` — declarative action-policy rules
 - `plugins` — plugin service mappings owned by the plugins feature
 
+The shared [Governance Posture](./governance-posture.md) model defines fail-safe defaults and namespace overrides. Runtime loading of the `governance` section is not implemented yet.
+
 Wanaku discovers tools, resources, and prompts from the configured forwards.
 
 **Evaluator configuration** (see [Evaluator Engine](./evaluator-engine.md) for full details):

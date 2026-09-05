@@ -130,6 +130,7 @@ Contributors working on the project may want to refer to the development documen
 - [Plugin Development](docs/plugin-development-guide.md) - Guide for writing new feature crates
 - [Evaluator Engine](docs/evaluator-engine.md) - WASM-based evaluator
 - [Action Policies](docs/action-policies.md) - Deterministic MCP action rules
+- [Governance Posture](docs/governance-posture.md) - Enforcement modes and fail-safe behavior
 - [Contributing](CONTRIBUTING.md) - Contribution guidelines
 - [Security](SECURITY.md) - Security policy
 
