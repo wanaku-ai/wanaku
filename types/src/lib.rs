@@ -3,6 +3,7 @@
 pub mod config;
 pub mod correlation;
 pub mod feature;
+pub mod governance;
 pub mod http_response;
 pub mod interactions;
 pub mod mcp;
