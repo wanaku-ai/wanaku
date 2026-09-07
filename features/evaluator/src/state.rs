@@ -636,3 +636,207 @@ fn validate_triggers(defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
 fn collect_wasm_paths(def: &EvaluatorDef) -> Vec<PathBuf> {
     vec![def.processor.path.clone()]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{
+        ErrorPolicy, LlmConnection, LlmDef, LlmOperation, ProcessorRef, TriggerDef,
+    };
+    use wanaku_types::registry::DEFAULT_NAMESPACE;
+    use wanaku_types::{TOOLS_CALL, TOOLS_LIST};
+
+    fn test_evaluator(name: &str) -> EvaluatorDef {
+        EvaluatorDef {
+            name: name.to_owned(),
+            trigger: TriggerDef {
+                method: TOOLS_CALL.to_owned(),
+                namespace: None,
+            },
+            llm: LlmDef {
+                operation: LlmOperation::Classify,
+                prompt: "test".to_owned(),
+                connection: "test-connection".to_owned(),
+                result_schema: None,
+            },
+            processor: ProcessorRef {
+                path: PathBuf::from("/test.wasm"),
+            },
+            on_error: ErrorPolicy::Continue,
+        }
+    }
+
+    fn connection(name: &str) -> LlmConnection {
+        LlmConnection {
+            name: name.to_owned(),
+            model: "llama3.2".to_owned(),
+            url: "http://localhost:11434".to_owned(),
+            api_key: String::new(),
+        }
+    }
+
+    // ---- validate_evaluator_names ----
+
+    #[test]
+    fn validate_names_accepts_unique_non_empty() {
+        let defs = vec![test_evaluator("a"), test_evaluator("b")];
+        assert!(validate_evaluator_names(&defs).is_ok());
+    }
+
+    #[test]
+    fn validate_names_rejects_empty() {
+        let defs = vec![test_evaluator("")];
+        assert!(validate_evaluator_names(&defs).is_err());
+    }
+
+    #[test]
+    fn validate_names_rejects_duplicates() {
+        let defs = vec![test_evaluator("dup"), test_evaluator("dup")];
+        assert!(validate_evaluator_names(&defs).is_err());
+    }
+
+    // ---- validate_triggers ----
+
+    #[test]
+    fn validate_triggers_accepts_non_empty_method() {
+        let defs = vec![test_evaluator("a")];
+        assert!(validate_triggers(&defs).is_ok());
+    }
+
+    #[test]
+    fn validate_triggers_rejects_empty_method() {
+        let mut def = test_evaluator("a");
+        def.trigger.method = String::new();
+        assert!(validate_triggers(&[def]).is_err());
+    }
+
+    // ---- collect_errors / collect_wasm_paths ----
+
+    #[test]
+    fn collect_errors_concatenates() {
+        let out = collect_errors(vec!["w1".to_owned()], vec!["s1".to_owned(), "s2".to_owned()]);
+        assert_eq!(out, vec!["w1", "s1", "s2"]);
+    }
+
+    #[test]
+    fn collect_wasm_paths_returns_processor_path() {
+        let def = test_evaluator("a");
+        assert_eq!(collect_wasm_paths(&def), vec![PathBuf::from("/test.wasm")]);
+    }
+
+    // ---- matches_active ----
+
+    #[test]
+    fn matches_active_is_false_without_active_revision() {
+        assert!(!EvaluatorState::matches_active(None, &[test_evaluator("a")]));
+    }
+
+    // ---- load_llm_connections ----
+
+    #[test]
+    fn load_connections_accepts_unique() {
+        let state = EvaluatorState::new();
+        assert!(state
+            .load_llm_connections(vec![connection("a"), connection("b")])
+            .is_ok());
+        assert_eq!(state.list_llm_connections(), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn load_connections_rejects_empty_name() {
+        let state = EvaluatorState::new();
+        assert!(state.load_llm_connections(vec![connection("")]).is_err());
+    }
+
+    #[test]
+    fn load_connections_rejects_duplicates_atomically() {
+        let state = EvaluatorState::new();
+        // Seed a valid connection first.
+        state.load_llm_connections(vec![connection("existing")]).unwrap();
+        // A batch with duplicates must be rejected wholesale and leave the
+        // previously loaded set untouched.
+        let err = state.load_llm_connections(vec![connection("dup"), connection("dup")]);
+        assert!(err.is_err());
+        assert_eq!(state.list_llm_connections(), vec!["existing"]);
+    }
+
+    #[test]
+    fn get_llm_connection_returns_loaded_and_none_for_missing() {
+        let state = EvaluatorState::new();
+        state.load_llm_connections(vec![connection("a")]).unwrap();
+        assert_eq!(state.get_llm_connection("a").map(|c| c.name), Some("a".to_owned()));
+        assert!(state.get_llm_connection("missing").is_none());
+    }
+
+    #[test]
+    fn list_llm_connections_is_sorted() {
+        let state = EvaluatorState::new();
+        state
+            .load_llm_connections(vec![connection("zeta"), connection("alpha"), connection("mid")])
+            .unwrap();
+        assert_eq!(state.list_llm_connections(), vec!["alpha", "mid", "zeta"]);
+    }
+
+    // ---- namespace bindings ----
+
+    #[test]
+    fn bind_get_unbind_namespace() {
+        let state = EvaluatorState::new();
+        assert!(state.get_binding("prod").is_none());
+
+        state.bind_namespace("prod", "wk-123");
+        assert_eq!(state.get_binding("prod").as_deref(), Some("wk-123"));
+
+        let all = state.list_bindings();
+        assert_eq!(all.get("prod").map(String::as_str), Some("wk-123"));
+
+        state.unbind_namespace("prod");
+        assert!(state.get_binding("prod").is_none());
+    }
+
+    #[test]
+    fn bind_namespace_overwrites_existing() {
+        let state = EvaluatorState::new();
+        state.bind_namespace("prod", "wk-1");
+        state.bind_namespace("prod", "wk-2");
+        assert_eq!(state.get_binding("prod").as_deref(), Some("wk-2"));
+        assert_eq!(state.list_bindings().len(), 1);
+    }
+
+    // ---- validate_llm_connections ----
+
+    #[test]
+    fn validate_llm_connections_rejects_unknown_reference() {
+        let state = EvaluatorState::new();
+        // No connections loaded, so any reference is dangling.
+        assert!(state.validate_llm_connections(&[test_evaluator("a")]).is_err());
+    }
+
+    #[test]
+    fn validate_llm_connections_accepts_known_reference() {
+        let state = EvaluatorState::new();
+        state.load_llm_connections(vec![connection("test-connection")]).unwrap();
+        assert!(state.validate_llm_connections(&[test_evaluator("a")]).is_ok());
+    }
+
+    // ---- find_matching via test-only seeding ----
+
+    #[test]
+    fn find_matching_returns_evaluator_for_matching_trigger() {
+        let state = EvaluatorState::new();
+        state.load_evaluators(vec![test_evaluator("eval-1")]);
+
+        let found = state.find_matching(TOOLS_CALL, DEFAULT_NAMESPACE);
+        assert_eq!(found.map(|e| e.name), Some("eval-1".to_owned()));
+
+        assert!(state.find_matching(TOOLS_LIST, DEFAULT_NAMESPACE).is_none());
+    }
+
+    #[test]
+    fn list_evaluators_reflects_seeded_snapshot() {
+        let state = EvaluatorState::new();
+        assert!(state.list_evaluators().is_empty());
+        state.load_evaluators(vec![test_evaluator("a"), test_evaluator("b")]);
+        assert_eq!(state.list_evaluators().len(), 2);
+    }
+}

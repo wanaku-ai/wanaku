@@ -88,7 +88,9 @@ fn resolve_revision_route(method: &str, suffix: &str) -> EvaluatorRoute {
         };
     }
 
-    let segment = suffix.strip_prefix('/').unwrap_or(suffix);
+    let Some(segment) = suffix.strip_prefix('/') else {
+        return EvaluatorRoute::NotFound;
+    };
 
     if segment == "active" && method == "GET" {
         return EvaluatorRoute::ActiveRevision;
@@ -291,4 +293,139 @@ pub(crate) fn handle_unbind_namespace(
     state.unbind_namespace(namespace);
     info!(namespace = %namespace, "namespace unbound");
     json_ok(&serde_json::json!({"unbound": namespace}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn resolve(method: &str, path: &str) -> EvaluatorRoute {
+        resolve_evaluator_route(method, path)
+    }
+
+    #[test]
+    fn unknown_prefix_is_not_found() {
+        assert_eq!(resolve("GET", "/api/v1/other"), EvaluatorRoute::NotFound);
+        assert_eq!(resolve("GET", "/"), EvaluatorRoute::NotFound);
+    }
+
+    #[test]
+    fn list_and_update_evaluators() {
+        assert_eq!(resolve("GET", "/api/v1/evaluators"), EvaluatorRoute::ListEvaluators);
+        assert_eq!(resolve("GET", "/api/v1/evaluators/"), EvaluatorRoute::ListEvaluators);
+        assert_eq!(resolve("PUT", "/api/v1/evaluators"), EvaluatorRoute::UpdateEvaluators);
+        assert_eq!(resolve("DELETE", "/api/v1/evaluators"), EvaluatorRoute::NotFound);
+    }
+
+    #[test]
+    fn llm_connections_route() {
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/llm-connections"),
+            EvaluatorRoute::ListLlmConnections
+        );
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/llm-connections/"),
+            EvaluatorRoute::ListLlmConnections
+        );
+        assert_eq!(
+            resolve("PUT", "/api/v1/evaluators/llm-connections"),
+            EvaluatorRoute::NotFound
+        );
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/llm-connections/extra"),
+            EvaluatorRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn namespace_bindings_list() {
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/namespaces"),
+            EvaluatorRoute::ListBindings
+        );
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/namespaces/"),
+            EvaluatorRoute::ListBindings
+        );
+    }
+
+    #[test]
+    fn namespace_bind_and_unbind() {
+        assert_eq!(
+            resolve("PUT", "/api/v1/evaluators/namespaces/prod"),
+            EvaluatorRoute::BindNamespace("prod".to_owned())
+        );
+        assert_eq!(
+            resolve("DELETE", "/api/v1/evaluators/namespaces/prod"),
+            EvaluatorRoute::UnbindNamespace("prod".to_owned())
+        );
+    }
+
+    #[test]
+    fn namespace_with_nested_segment_is_not_found() {
+        assert_eq!(
+            resolve("PUT", "/api/v1/evaluators/namespaces/a/b"),
+            EvaluatorRoute::NotFound
+        );
+        assert_eq!(
+            resolve("POST", "/api/v1/evaluators/namespaces/prod"),
+            EvaluatorRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn revision_list_and_active() {
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/revisions"),
+            EvaluatorRoute::ListRevisions
+        );
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/revisions/"),
+            EvaluatorRoute::ListRevisions
+        );
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/revisions/active"),
+            EvaluatorRoute::ActiveRevision
+        );
+    }
+
+    #[test]
+    fn revision_get_and_activate_by_id() {
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/revisions/42"),
+            EvaluatorRoute::GetRevision(42)
+        );
+        assert_eq!(
+            resolve("POST", "/api/v1/evaluators/revisions/42/activate"),
+            EvaluatorRoute::ActivateRevision(42)
+        );
+    }
+
+    #[test]
+    fn revision_invalid_id_is_not_found() {
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/revisions/not-a-number"),
+            EvaluatorRoute::NotFound
+        );
+        assert_eq!(
+            resolve("POST", "/api/v1/evaluators/revisions/42/unknown"),
+            EvaluatorRoute::NotFound
+        );
+        assert_eq!(
+            resolve("PUT", "/api/v1/evaluators/revisions/42"),
+            EvaluatorRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn revision_prefix_requires_path_separator() {
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/revisionsactive"),
+            EvaluatorRoute::NotFound
+        );
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/revisions42"),
+            EvaluatorRoute::NotFound
+        );
+    }
 }
