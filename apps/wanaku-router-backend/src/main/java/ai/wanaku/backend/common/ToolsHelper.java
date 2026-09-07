@@ -89,11 +89,14 @@ public class ToolsHelper {
             ToolManager.ToolDefinition toolDefinition =
                     toolManager.newTool(toolReference.getName()).setDescription(description);
 
-            final boolean required = isRequired(toolReference);
 
             InputSchema inputSchema = toolReference.getInputSchema();
             if (inputSchema != null) {
-                inputSchema.getProperties().forEach((key, value) -> addArgument(key, value, toolDefinition, required));
+                inputSchema.getProperties().forEach((key, value) -> {
+                    boolean required = inputSchema.getRequired() != null
+                            && inputSchema.getRequired().contains(key);
+                    addArgument(key, value, toolDefinition, required);
+                });
             }
 
             if (namespace != null) {
