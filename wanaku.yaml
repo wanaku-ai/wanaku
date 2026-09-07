@@ -6,6 +6,15 @@ forwards:
     address: "http://localhost:8181/mcp"
     namespace: "test-ns"
 
+# Governance uses fail-safe defaults. Namespace entries override only the
+# fields that they specify. See docs/governance-posture.md.
+governance:
+  default:
+    mode: enforce
+    no_match: deny
+    on_failure: deny
+    audit_level: basic
+
 # Sample evaluator configuration. See docs/evaluator-engine.md for the full guide.
 # LLM connections are config-only: they can't be set or read through the
 # management API, only here.

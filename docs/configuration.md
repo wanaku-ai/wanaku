@@ -378,9 +378,10 @@ Wanaku loads these top-level sections from `wanaku.yaml`:
 - `llm_connections` — named LLM connections (model/url/api_key) for evaluators; config-only, never exposed via the management API
 - `evaluators` — evaluator feature configuration
 - `action_policy` — declarative action-policy rules
+- `governance` — global governance posture and namespace overrides
 - `plugins` — plugin service mappings owned by the plugins feature
 
-The shared [Governance Posture](./governance-posture.md) model defines fail-safe defaults and namespace overrides. Runtime loading of the `governance` section is not implemented yet.
+The [Governance Posture](./governance-posture.md) model defines fail-safe defaults and namespace overrides. Wanaku validates the section during startup. Invalid governance configuration stops startup.
 
 Wanaku discovers tools, resources, and prompts from the configured forwards.
 

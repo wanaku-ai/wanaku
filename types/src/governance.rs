@@ -1,3 +1,11 @@
+#![cfg_attr(
+    feature = "openapi",
+    allow(
+        clippy::large_stack_frames,
+        reason = "utoipa::ToSchema generates large schema implementations"
+    )
+)]
+
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};

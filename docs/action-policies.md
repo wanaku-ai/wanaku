@@ -2,7 +2,7 @@
 
 Action policies give Wanaku a deterministic authorization layer for MCP actions. They complement the evaluator. Use action policies for rules that depend on known names, labels, URIs, and structured request values. Use evaluators for contextual or semantic decisions.
 
-The [Governance Posture](./governance-posture.md) model defines the planned behavior for unmatched actions, policy failures, audit-only evaluation, and disabled scopes. The current action-policy filter does not apply this posture model yet.
+The [Governance Posture](./governance-posture.md) model defines the behavior for unmatched actions, policy failures, audit-only evaluation, and disabled scopes. The action-policy filter resolves the global posture and namespace override before it evaluates a request.
 
 ## Configure a policy
 

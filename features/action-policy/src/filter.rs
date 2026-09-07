@@ -4,6 +4,9 @@ use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use wanaku_filters::json_rpc::{McpRequestView, RequestViewError};
 use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_types::governance::{
+    EnforcementMode, FailureBehavior, GovernanceConfig, GovernancePosture, NoMatchBehavior,
+};
 use wanaku_types::registry::{DEFAULT_NAMESPACE, ToolRegistry};
 
 use crate::{
@@ -16,6 +19,8 @@ const INVALID_ACTION_REASON_CODE: &str = "invalid_action_request";
 const INVALID_ACTION_MESSAGE: &str = "The action request is invalid.";
 const INVALID_POLICY_REASON_CODE: &str = "action_policy_invalid";
 const INVALID_POLICY_MESSAGE: &str = "The action policy is unavailable.";
+const NO_MATCH_REASON_CODE: &str = "governance_no_match";
+const NO_MATCH_MESSAGE: &str = "No governance policy permits this action.";
 
 wanaku_filters::body_filter_boilerplate!(ActionPolicyFilter, "wanaku_action_policy");
 
@@ -35,15 +40,34 @@ impl ActionPolicyFilter {
         let id = wanaku_filters::response::json_rpc_id_from_metadata(
             ctx.get_metadata(wanaku_filters::MCP_ID_KEY),
         );
+        let namespace = ctx
+            .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
+            .unwrap_or(DEFAULT_NAMESPACE);
+        let posture = ctx
+            .extensions
+            .get::<GovernanceConfig>()
+            .cloned()
+            .unwrap_or_default()
+            .resolve(namespace);
+        if posture.mode == EnforcementMode::Disabled {
+            tracing::warn!(
+                namespace,
+                reason = posture.disabled_reason.as_deref().unwrap_or("unspecified"),
+                "governance is disabled for namespace"
+            );
+            return Ok(FilterAction::Continue);
+        }
         let Some(state) = ctx.extensions.get::<ActionPolicyState>() else {
-            return Ok(policy_error(
-                &id,
-                INVALID_POLICY_REASON_CODE,
-                INVALID_POLICY_MESSAGE,
-            ));
+            return Ok(apply_failure(&posture, &id));
         };
         let snapshot = state.snapshot();
-        Ok(evaluate_snapshot(ctx, body.as_ref(), snapshot, &id))
+        Ok(evaluate_snapshot(
+            ctx,
+            body.as_ref(),
+            snapshot,
+            &posture,
+            &id,
+        ))
     }
 }
 
@@ -51,17 +75,16 @@ fn evaluate_snapshot(
     ctx: &HttpFilterContext<'_>,
     body: Option<&Bytes>,
     snapshot: PolicySnapshot,
+    posture: &GovernancePosture,
     id: &serde_json::Value,
 ) -> FilterAction {
     let policy = match snapshot {
         PolicySnapshot::Valid(policy) => policy,
-        PolicySnapshot::Unconfigured => return FilterAction::Continue,
-        PolicySnapshot::Invalid => {
-            return policy_error(id, INVALID_POLICY_REASON_CODE, INVALID_POLICY_MESSAGE);
-        }
+        PolicySnapshot::Unconfigured => return apply_no_match(posture, id),
+        PolicySnapshot::Invalid => return apply_failure(posture, id),
     };
     let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
-        return policy_error(id, INVALID_POLICY_REASON_CODE, INVALID_POLICY_MESSAGE);
+        return apply_failure(posture, id);
     };
     evaluate_request(RequestEvaluation {
         method: ctx
@@ -72,6 +95,7 @@ fn evaluate_snapshot(
             .unwrap_or(DEFAULT_NAMESPACE),
         body,
         policy: &policy,
+        posture,
         registry,
         id,
     })
@@ -87,6 +111,7 @@ struct RequestEvaluation<'a> {
     namespace: &'a str,
     body: Option<&'a Bytes>,
     policy: &'a crate::CompiledPolicy,
+    posture: &'a GovernancePosture,
     registry: &'a InMemoryRegistry,
     id: &'a serde_json::Value,
 }
@@ -97,6 +122,7 @@ fn evaluate_request(input: RequestEvaluation<'_>) -> FilterAction {
         namespace,
         body,
         policy,
+        posture,
         registry,
         id,
     } = input;
@@ -107,6 +133,14 @@ fn evaluate_request(input: RequestEvaluation<'_>) -> FilterAction {
         return policy_error(id, INVALID_ACTION_REASON_CODE, INVALID_ACTION_MESSAGE);
     };
     let decision = PolicyEngine::evaluate(PolicyState::Available(policy), &context);
+    if posture.mode == EnforcementMode::Audit {
+        tracing::info!(
+            namespace,
+            decision = ?decision,
+            "action-policy decision recorded in audit mode"
+        );
+        return FilterAction::Continue;
+    }
     match &decision {
         PolicyDecision::ExplicitDeny { .. } => policy_error(
             id,
@@ -117,8 +151,31 @@ fn evaluate_request(input: RequestEvaluation<'_>) -> FilterAction {
                 .deny_message()
                 .unwrap_or(crate::DEFAULT_DENY_MESSAGE),
         ),
-        PolicyDecision::ExplicitAllow { .. } | PolicyDecision::NoMatch => FilterAction::Continue,
+        PolicyDecision::ExplicitAllow { .. } => FilterAction::Continue,
+        PolicyDecision::NoMatch => apply_no_match(posture, id),
         PolicyDecision::PolicyUnavailable | PolicyDecision::PolicyInvalid => {
+            apply_failure(posture, id)
+        }
+    }
+}
+
+fn apply_no_match(posture: &GovernancePosture, id: &serde_json::Value) -> FilterAction {
+    if posture.mode == EnforcementMode::Audit {
+        return FilterAction::Continue;
+    }
+    match posture.no_match {
+        NoMatchBehavior::Allow => FilterAction::Continue,
+        NoMatchBehavior::Deny => policy_error(id, NO_MATCH_REASON_CODE, NO_MATCH_MESSAGE),
+    }
+}
+
+fn apply_failure(posture: &GovernancePosture, id: &serde_json::Value) -> FilterAction {
+    if posture.mode == EnforcementMode::Audit {
+        return FilterAction::Continue;
+    }
+    match posture.on_failure {
+        FailureBehavior::Allow => FilterAction::Continue,
+        FailureBehavior::Deny => {
             policy_error(id, INVALID_POLICY_REASON_CODE, INVALID_POLICY_MESSAGE)
         }
     }
@@ -218,6 +275,7 @@ fn policy_error(id: &serde_json::Value, reason_code: &str, message: &str) -> Fil
 mod tests {
     use super::*;
     use crate::DEFAULT_DENY_REASON_CODE;
+    use wanaku_types::TOOLS_CALL;
     use wanaku_types::registry::{
         PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry,
     };
@@ -261,6 +319,7 @@ mod tests {
     #[expect(clippy::too_many_lines, reason = "three governed MCP method fixtures")]
     fn denies_tool_resource_and_prompt_actions() {
         let registry = InMemoryRegistry::new();
+        let posture = GovernancePosture::default();
         registry.register_tool(ToolEntry {
             name: "delete".to_owned(),
             description: String::new(),
@@ -334,6 +393,7 @@ mod tests {
                 namespace: DEFAULT_NAMESPACE,
                 body: Some(&body),
                 policy: &policy,
+                posture: &posture,
                 registry: &registry,
                 id: &id,
             });
@@ -344,6 +404,10 @@ mod tests {
     #[test]
     fn explicit_allow_and_no_match_continue() {
         let registry = InMemoryRegistry::new();
+        let posture = GovernancePosture {
+            no_match: NoMatchBehavior::Allow,
+            ..GovernancePosture::default()
+        };
         let policy = compile_policy(&serde_json::json!({
             "id": "allow", "effect": "allow",
             "selectors": {"operation": "tools/call"}
@@ -356,6 +420,7 @@ mod tests {
                 namespace: DEFAULT_NAMESPACE,
                 body: Some(&body),
                 policy: &policy,
+                posture: &posture,
                 registry: &registry,
                 id: &id,
             }),
@@ -369,6 +434,7 @@ mod tests {
                 namespace: DEFAULT_NAMESPACE,
                 body: Some(&body),
                 policy: &policy,
+                posture: &posture,
                 registry: &registry,
                 id: &id,
             }),
@@ -383,6 +449,10 @@ mod tests {
     )]
     fn resource_name_comes_from_registry_and_tool_uri_is_not_exposed() {
         let registry = InMemoryRegistry::new();
+        let posture = GovernancePosture {
+            no_match: NoMatchBehavior::Allow,
+            ..GovernancePosture::default()
+        };
         registry.register_resource(ResourceEntry {
             name: "registered-name".to_owned(),
             description: String::new(),
@@ -426,6 +496,7 @@ mod tests {
                 namespace: DEFAULT_NAMESPACE,
                 body: Some(&resource_body),
                 policy: &resource_policy,
+                posture: &posture,
                 registry: &registry,
                 id: &id,
             }),
@@ -449,6 +520,7 @@ mod tests {
                 namespace: DEFAULT_NAMESPACE,
                 body: Some(&tool_body),
                 policy: &tool_uri_policy,
+                posture: &posture,
                 registry: &registry,
                 id: &id,
             }),
@@ -459,6 +531,7 @@ mod tests {
     #[test]
     fn malformed_governed_request_is_safely_rejected() {
         let registry = InMemoryRegistry::new();
+        let posture = GovernancePosture::default();
         let policy = compile_policy(&serde_json::json!({
             "id": "deny", "effect": "deny", "selectors": {"operation": "tools/call"}
         }));
@@ -469,10 +542,75 @@ mod tests {
             namespace: DEFAULT_NAMESPACE,
             body: Some(&malformed),
             policy: &policy,
+            posture: &posture,
             registry: &registry,
             id: &id,
         });
         assert_denied(action, INVALID_ACTION_REASON_CODE);
+    }
+
+    #[test]
+    fn posture_behaviors_are_applied() {
+        let id = serde_json::json!(7);
+        let permissive = GovernancePosture {
+            no_match: NoMatchBehavior::Allow,
+            on_failure: FailureBehavior::Allow,
+            ..GovernancePosture::default()
+        };
+
+        assert!(matches!(
+            apply_no_match(&permissive, &id),
+            FilterAction::Continue
+        ));
+        assert!(matches!(
+            apply_failure(&permissive, &id),
+            FilterAction::Continue
+        ));
+        assert_denied(
+            apply_no_match(&GovernancePosture::default(), &id),
+            NO_MATCH_REASON_CODE,
+        );
+        assert_denied(
+            apply_failure(&GovernancePosture::default(), &id),
+            INVALID_POLICY_REASON_CODE,
+        );
+
+        let audit = GovernancePosture {
+            mode: EnforcementMode::Audit,
+            ..GovernancePosture::default()
+        };
+        assert!(matches!(
+            apply_no_match(&audit, &id),
+            FilterAction::Continue
+        ));
+        assert!(matches!(apply_failure(&audit, &id), FilterAction::Continue));
+    }
+
+    #[test]
+    fn audit_mode_does_not_enforce_policy_denial() {
+        let registry = InMemoryRegistry::new();
+        let policy = compile_policy(&serde_json::json!({
+            "id": "deny", "effect": "deny", "selectors": {"operation": TOOLS_CALL}
+        }));
+        let posture = GovernancePosture {
+            mode: EnforcementMode::Audit,
+            ..GovernancePosture::default()
+        };
+        let body = request(TOOLS_CALL, &serde_json::json!({"name": "unsafe"}));
+        let id = serde_json::json!(7);
+
+        assert!(matches!(
+            evaluate_request(RequestEvaluation {
+                method: TOOLS_CALL,
+                namespace: DEFAULT_NAMESPACE,
+                body: Some(&body),
+                policy: &policy,
+                posture: &posture,
+                registry: &registry,
+                id: &id,
+            }),
+            FilterAction::Continue
+        ));
     }
 
     #[test]
