@@ -17,6 +17,7 @@ use tracing::info;
 use wanaku_infra::persistence::FilePersistence;
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::feature::Feature;
+use wanaku_types::governance::GovernanceConfig;
 use wanaku_types::registry::{ForwardEntry, ForwardRegistry};
 
 #[expect(clippy::too_many_lines, reason = "server bootstrap")]
@@ -43,9 +44,11 @@ fn main() {
     // Paired with InterceptFeature: adds x-request-id to tool schemas for conversation tracking
     wanaku_registry.enable_request_id_injection();
 
+    let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
+    let governance = load_governance_config(wanaku_config.as_ref()).unwrap_or_else(|e| fatal(&e));
     let features: Vec<Box<dyn Feature>> = build_features(&args, &metrics_store);
 
-    load_config(&args, &wanaku_registry, &features);
+    load_config(wanaku_config.as_ref(), &wanaku_registry, &features);
 
     let mut filter_registry = wanaku_server::build_full_registry();
     for feature in &features {
@@ -56,6 +59,7 @@ fn main() {
         health_registry: build_health_registry(&config.clusters),
         kv_stores: praxis_core::kv::KvStoreRegistry::new(),
         mgmt_registry: wanaku_registry.clone(),
+        governance,
         features,
     };
 
@@ -77,6 +81,7 @@ fn build_pipelines(config: &Config, wanaku_registry: &InMemoryRegistry, filter_r
         &service_deps.health_registry,
         &service_deps.kv_stores,
         wanaku_registry,
+        &service_deps.governance,
         &service_deps.features,
     );
     wanaku_server::pipelines::resolve_pipelines(config, &pipeline_deps)
@@ -87,12 +92,16 @@ struct ServiceDeps {
     health_registry: praxis_core::health::HealthRegistry,
     kv_stores: praxis_core::kv::KvStoreRegistry,
     mgmt_registry: InMemoryRegistry,
+    governance: GovernanceConfig,
     features: Vec<Box<dyn Feature>>,
 }
 
-fn load_config(args: &ServerArgs, wanaku_registry: &InMemoryRegistry, features: &[Box<dyn Feature>]) {
-    let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
-    if let Some(ref yaml) = wanaku_config {
+fn load_config(
+    wanaku_config: Option<&serde_yaml::Value>,
+    wanaku_registry: &InMemoryRegistry,
+    features: &[Box<dyn Feature>],
+) {
+    if let Some(yaml) = wanaku_config {
         load_core_config(yaml, wanaku_registry);
         for feature in features {
             feature.load_yaml_config(yaml);
@@ -102,6 +111,21 @@ fn load_config(args: &ServerArgs, wanaku_registry: &InMemoryRegistry, features: 
     for feature in features {
         feature.load_env_config();
     }
+}
+
+fn load_governance_config(
+    root: Option<&serde_yaml::Value>,
+) -> Result<GovernanceConfig, String> {
+    let config = root
+        .and_then(|value| value.get("governance"))
+        .map(|value| serde_yaml::from_value::<GovernanceConfig>(value.clone()))
+        .transpose()
+        .map_err(|error| format!("invalid governance configuration: {error}"))?
+        .unwrap_or_default();
+    config
+        .validate()
+        .map_err(|error| format!("invalid governance configuration: {error}"))?;
+    Ok(config)
 }
 
 #[expect(clippy::too_many_lines, reason = "service registration is sequential")]
@@ -282,4 +306,59 @@ fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
 fn fatal(err: &dyn std::fmt::Display) -> ! {
     eprintln!("fatal: {err}");
     std::process::exit(1)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::load_governance_config;
+    use wanaku_types::governance::{
+        AuditLevel, EnforcementMode, FailureBehavior, NoMatchBehavior,
+    };
+
+    #[test]
+    fn absent_governance_config_uses_fail_safe_defaults() {
+        let config = load_governance_config(None).unwrap();
+        let posture = config.resolve("default");
+
+        assert_eq!(posture.mode, EnforcementMode::Enforce);
+        assert_eq!(posture.no_match, NoMatchBehavior::Deny);
+        assert_eq!(posture.on_failure, FailureBehavior::Deny);
+        assert_eq!(posture.audit_level, AuditLevel::Basic);
+    }
+
+    #[test]
+    fn governance_config_loads_namespace_overrides() {
+        let root: serde_yaml::Value = serde_yaml::from_str(
+            r#"
+governance:
+  namespaces:
+    sandbox:
+      mode: audit
+      no_match: allow
+"#,
+        )
+        .unwrap();
+        let config = load_governance_config(Some(&root)).unwrap();
+        let posture = config.resolve("sandbox");
+
+        assert_eq!(posture.mode, EnforcementMode::Audit);
+        assert_eq!(posture.no_match, NoMatchBehavior::Allow);
+        assert_eq!(posture.on_failure, FailureBehavior::Deny);
+    }
+
+    #[test]
+    fn governance_config_rejects_disabled_scope_without_reason() {
+        let root: serde_yaml::Value = serde_yaml::from_str(
+            r#"
+governance:
+  namespaces:
+    maintenance:
+      mode: disabled
+"#,
+        )
+        .unwrap();
+
+        let error = load_governance_config(Some(&root)).unwrap_err();
+        assert!(error.contains("requires a reason"));
+    }
 }

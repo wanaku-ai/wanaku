@@ -8,6 +8,7 @@ use tracing::info;
 
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::feature::Feature;
+use wanaku_types::governance::GovernanceConfig;
 
 /// Dependencies needed to build filter pipelines for all listeners.
 ///
@@ -23,6 +24,8 @@ pub struct PipelineDeps<'a> {
     pub kv_stores: &'a praxis_core::kv::KvStoreRegistry,
     /// Wanaku in-memory registry (tools, resources, prompts, namespaces, forwards).
     pub wanaku_registry: &'a InMemoryRegistry,
+    /// Immutable governance posture configuration.
+    pub governance: &'a GovernanceConfig,
     /// Wanaku feature crates that provide pipeline extensions and filters.
     pub features: &'a [Box<dyn Feature>],
 }
@@ -35,14 +38,32 @@ impl<'a> PipelineDeps<'a> {
         health_registry: &'a praxis_core::health::HealthRegistry,
         kv_stores: &'a praxis_core::kv::KvStoreRegistry,
         wanaku_registry: &'a InMemoryRegistry,
+        governance: &'a GovernanceConfig,
         features: &'a [Box<dyn Feature>],
     ) -> Self {
-        Self { filter_registry, health_registry, kv_stores, wanaku_registry, features }
+        Self {
+            filter_registry,
+            health_registry,
+            kv_stores,
+            wanaku_registry,
+            governance,
+            features,
+        }
     }
 }
 
 struct RegistryExtension {
     registry: InMemoryRegistry,
+}
+
+struct GovernanceExtension {
+    config: GovernanceConfig,
+}
+
+impl PipelineExtension for GovernanceExtension {
+    fn prepare(&self, extensions: &mut RequestExtensions) {
+        extensions.insert(self.config.clone());
+    }
 }
 
 impl PipelineExtension for RegistryExtension {
@@ -99,6 +120,9 @@ pub fn resolve_pipelines(
 
         pipeline.add_pipeline_extension(Box::new(RegistryExtension {
             registry: deps.wanaku_registry.clone(),
+        }));
+        pipeline.add_pipeline_extension(Box::new(GovernanceExtension {
+            config: deps.governance.clone(),
         }));
 
         for feature in deps.features {

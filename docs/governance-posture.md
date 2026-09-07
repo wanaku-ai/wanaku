@@ -3,7 +3,7 @@
 Governance posture defines how Wanaku handles policy decisions, unmatched actions, and evaluation failures. The model keeps these controls separate. This separation makes the effective behavior explicit for each namespace.
 
 > [!IMPORTANT]
-> The current implementation provides the shared posture types, default values, namespace resolution, and configuration validation. It does not load this model from `wanaku.yaml` or apply it in the action-policy and evaluator filters yet. Do not use the example configuration in production until runtime integration is complete.
+> Wanaku applies the posture model to action policies. Evaluator integration is not complete. The evaluator still uses its current error policy and execution behavior.
 
 ## Posture settings
 
@@ -40,7 +40,7 @@ The decision model keeps an explicit allow separate from an allow that comes fro
 
 `deny` rejects an action when governance cannot produce a decision. This value is the default.
 
-The failure behavior is for unavailable or invalid policy state and evaluation failures. Runtime integration will apply it to LLM, schema, processor, WASM, registry, and internal failures.
+The failure behavior applies to unavailable or invalid action-policy state and missing runtime state. Evaluator integration will apply it to LLM, schema, processor, WASM, registry, and internal failures.
 
 ## Global posture and namespace overrides
 
@@ -48,7 +48,7 @@ The model contains one global posture and a map of namespace overrides. An overr
 
 Namespace resolution uses the namespace name as the map key. It does not use declaration order. One request resolves one posture value for its namespace.
 
-The following example shows the configuration shape that the shared types accept:
+Add the `governance` section to `wanaku.yaml`:
 
 ```yaml
 governance:
@@ -73,6 +73,21 @@ The effective `sandbox` posture uses `on_failure: deny` from the global posture.
 
 Unknown fields cause deserialization to fail. An empty namespace name causes validation to fail.
 
+Wanaku validates this configuration during startup. Wanaku stops startup if the configuration is invalid. If the section is absent, Wanaku uses the fail-safe defaults.
+
+## Action-policy behavior
+
+The action-policy filter applies the effective namespace posture as follows:
+
+| Condition | `enforce` | `audit` | `disabled` |
+| --- | --- | --- | --- |
+| Explicit allow | Allow | Record and allow | Skip evaluation |
+| Explicit deny | Deny | Record and allow | Skip evaluation |
+| No matching rule | Apply `no_match` | Record and allow | Skip evaluation |
+| Invalid or unavailable policy | Apply `on_failure` | Record and allow | Skip evaluation |
+
+Basic and full audit levels have the same result for deterministic action policies. Action-policy evaluation does not call an LLM and does not have evaluator side effects.
+
 ## Current implementation boundary
 
 The shared model is in `types/src/governance.rs`. It provides:
@@ -85,11 +100,8 @@ The shared model is in `types/src/governance.rs`. It provides:
 
 The following work remains for complete runtime support:
 
-- Load and validate `governance` from `wanaku.yaml`.
-- Capture the effective posture in an immutable request snapshot.
-- Apply the posture in the action-policy and evaluator filters.
+- Apply the posture in the evaluator filter.
 - Suppress evaluator side effects in audit mode.
 - Add readiness status, audit events, and bounded metrics.
 
 See [issue #1872](https://github.com/wanaku-ai/wanaku/issues/1872) for the complete acceptance criteria.
-
