@@ -18,22 +18,6 @@ import ai.wanaku.capabilities.sdk.api.types.Property;
 public class ToolsHelper {
     private static final Logger LOG = Logger.getLogger(ToolsHelper.class);
 
-    private static boolean isRequired(CallableReference toolReference) {
-        boolean required = false;
-
-        InputSchema inputSchema = toolReference.getInputSchema();
-        if (inputSchema == null) {
-            return false;
-        }
-
-        List<String> requiredList = inputSchema.getRequired();
-
-        if (requiredList != null) {
-            required = requiredList.contains(toolReference.getName());
-        }
-        return required;
-    }
-
     private static Class<?> toType(Property property) {
         return switch (property.getType().toLowerCase()) {
             case "string" -> String.class;
@@ -88,7 +72,6 @@ public class ToolsHelper {
             String description = toolReference.getDescription() != null ? toolReference.getDescription() : "";
             ToolManager.ToolDefinition toolDefinition =
                     toolManager.newTool(toolReference.getName()).setDescription(description);
-
 
             InputSchema inputSchema = toolReference.getInputSchema();
             if (inputSchema != null) {
