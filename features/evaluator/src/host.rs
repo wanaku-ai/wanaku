@@ -158,3 +158,207 @@ fn tool_entry_to_wit(t: wanaku_types::registry::ToolEntry) -> types::ToolEntry {
         namespace: t.namespace,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    use http::StatusCode;
+    use wanaku::evaluator::conversation::Host as _;
+    use wanaku::evaluator::registry::Host as _;
+    use wanaku::evaluator::response::Host as _;
+    use wanaku::evaluator::validation::Host as _;
+    use wanaku_types::interactions::Interaction;
+
+    fn host_state() -> HostState {
+        HostState {
+            registry: InMemoryRegistry::new(),
+            interactions: InMemoryInteractionStore::new(16),
+            action: ActionResult::Pass,
+            evaluator_name: "test-eval".to_owned(),
+            compiled_schema: None,
+            wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
+            wasi_table: wasmtime::component::ResourceTable::new(),
+        }
+    }
+
+    fn sample_tool(name: &str) -> wanaku_types::registry::ToolEntry {
+        wanaku_types::registry::ToolEntry {
+            name: name.to_owned(),
+            description: "desc".to_owned(),
+            uri: "uri".to_owned(),
+            type_: "http".to_owned(),
+            input_schema: serde_json::Value::Null,
+            labels: HashMap::new(),
+            id: None,
+            namespace: None,
+            configuration_uri: None,
+            secrets_uri: None,
+        }
+    }
+
+    // ---- response action setters ----
+
+    #[test]
+    fn response_pass_sets_pass() {
+        let mut state = host_state();
+        state.block("bad".to_owned());
+        state.pass();
+        assert!(matches!(state.action, ActionResult::Pass));
+    }
+
+    #[test]
+    fn response_block_sets_block_with_reason() {
+        let mut state = host_state();
+        state.block("policy violation".to_owned());
+        assert!(matches!(state.action, ActionResult::Block(r) if r == "policy violation"));
+    }
+
+    #[test]
+    fn response_warn_sets_warn() {
+        let mut state = host_state();
+        state.warn("heads up".to_owned());
+        assert!(matches!(state.action, ActionResult::Warn(m) if m == "heads up"));
+    }
+
+    #[test]
+    fn response_filter_tools_sets_filter() {
+        let mut state = host_state();
+        state.filter_tools(vec!["a".to_owned(), "b".to_owned()]);
+        assert!(matches!(state.action, ActionResult::FilterTools(names) if names == vec!["a", "b"]));
+    }
+
+    #[test]
+    fn response_reject_malformed_sets_reject() {
+        let mut state = host_state();
+        state.reject_malformed("bad json".to_owned());
+        assert!(matches!(state.action, ActionResult::RejectMalformed(r) if r == "bad json"));
+    }
+
+    #[test]
+    fn response_set_metadata_sets_metadata() {
+        let mut state = host_state();
+        state.set_metadata("k".to_owned(), "v".to_owned());
+        assert!(matches!(state.action, ActionResult::SetMetadata(k, v) if k == "k" && v == "v"));
+    }
+
+    // ---- validation ----
+
+    #[test]
+    fn verify_llm_result_passes_through_without_schema() {
+        let mut state = host_state();
+        let raw = "anything goes".to_owned();
+        assert_eq!(state.verify_llm_result(raw.clone()), Ok(raw));
+    }
+
+    // ---- registry lookups ----
+
+    #[test]
+    fn list_tools_reflects_registry() {
+        let mut state = host_state();
+        state.registry.register_tool(sample_tool("alpha"));
+        let tools = state.list_tools();
+        assert_eq!(tools.len(), 1);
+        assert_eq!(tools[0].name, "alpha");
+        assert_eq!(tools[0].tool_type, "http");
+    }
+
+    #[test]
+    fn get_tool_returns_none_for_missing() {
+        let mut state = host_state();
+        assert!(state.get_tool("missing".to_owned()).is_none());
+    }
+
+    #[test]
+    fn get_tool_returns_registered() {
+        let mut state = host_state();
+        state.registry.register_tool(sample_tool("alpha"));
+        let entry = state.get_tool("alpha".to_owned()).expect("tool present");
+        assert_eq!(entry.name, "alpha");
+    }
+
+    #[test]
+    fn copy_tool_to_namespace_moves_and_reports() {
+        let mut state = host_state();
+        state.registry.register_tool(sample_tool("alpha"));
+        assert!(state.copy_tool_to_namespace("alpha".to_owned(), "prod".to_owned()));
+        let copied = state
+            .get_tool("alpha".to_owned())
+            .expect("copied tool present");
+        assert_eq!(copied.namespace.as_deref(), Some("prod"));
+        assert!(!state.copy_tool_to_namespace("missing".to_owned(), "prod".to_owned()));
+    }
+
+    // ---- conversation history parsing ----
+
+    fn interaction(conv: &str, messages: &serde_json::Value) -> Interaction {
+        Interaction {
+            epoch_ms: 0,
+            path: "/v1/chat/completions".to_owned(),
+            conversation_id: Some(conv.to_owned()),
+            completion_id: None,
+            model: None,
+            request_body: serde_json::json!({ "messages": messages }),
+            response_body: serde_json::Value::Null,
+            status_code: StatusCode::OK.as_u16(),
+            duration_ms: 0,
+        }
+    }
+
+    #[test]
+    fn get_history_parses_messages() {
+        let mut state = host_state();
+        state.interactions.record(interaction(
+            "wk-1",
+            &serde_json::json!([
+                {"role": "user", "content": "hi"},
+                {"role": "assistant", "content": "hello"},
+            ]),
+        ));
+
+        let history = state.get_history("wk-1".to_owned());
+        assert_eq!(history.len(), 2);
+        assert_eq!(history[0].role, "user");
+        assert_eq!(history[0].content, "hi");
+        assert_eq!(history[1].role, "assistant");
+        assert_eq!(history[1].content, "hello");
+    }
+
+    #[test]
+    fn get_history_skips_empty_content_and_defaults_role() {
+        let mut state = host_state();
+        state.interactions.record(interaction(
+            "wk-1",
+            &serde_json::json!([
+                {"role": "user", "content": ""},
+                {"content": "no role"},
+            ]),
+        ));
+
+        let history = state.get_history("wk-1".to_owned());
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0].role, "unknown");
+        assert_eq!(history[0].content, "no role");
+    }
+
+    #[test]
+    fn get_history_empty_for_unknown_conversation() {
+        let mut state = host_state();
+        assert!(state.get_history("nope".to_owned()).is_empty());
+    }
+
+    // ---- tool_entry_to_wit ----
+
+    #[test]
+    fn tool_entry_to_wit_maps_fields() {
+        let mut src = sample_tool("t1");
+        src.namespace = Some("ns".to_owned());
+        let wit = tool_entry_to_wit(src);
+        assert_eq!(wit.name, "t1");
+        assert_eq!(wit.description, "desc");
+        assert_eq!(wit.uri, "uri");
+        assert_eq!(wit.tool_type, "http");
+        assert_eq!(wit.namespace.as_deref(), Some("ns"));
+    }
+}

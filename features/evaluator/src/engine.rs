@@ -105,3 +105,48 @@ impl CompiledEvaluator {
         store.into_data().action
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write as _;
+
+    fn assert_compile_error(result: Result<CompiledEvaluator, String>) {
+        match result {
+            Ok(_) => unreachable!("expected compilation to fail"),
+            Err(err) => assert!(
+                err.contains("failed to compile WASM component"),
+                "unexpected error: {err}"
+            ),
+        }
+    }
+
+    #[test]
+    fn from_file_missing_path_is_err() {
+        let path = Path::new("/nonexistent/definitely-not-here.wasm");
+        assert_compile_error(CompiledEvaluator::from_file("missing", path));
+    }
+
+    #[test]
+    fn from_file_garbage_bytes_is_err() {
+        let mut file = tempfile::Builder::new()
+            .suffix(".wasm")
+            .tempfile()
+            .expect("create temp file");
+        file.write_all(b"this is not valid wasm at all")
+            .expect("write garbage");
+        file.flush().expect("flush");
+
+        assert_compile_error(CompiledEvaluator::from_file("garbage", file.path()));
+    }
+
+    #[test]
+    fn from_file_empty_file_is_err() {
+        let file = tempfile::Builder::new()
+            .suffix(".wasm")
+            .tempfile()
+            .expect("create temp file");
+        let result = CompiledEvaluator::from_file("empty", file.path());
+        assert!(result.is_err(), "empty file must fail to compile");
+    }
+}
