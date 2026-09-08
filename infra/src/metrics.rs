@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use dashmap::DashMap;
@@ -15,6 +15,7 @@ struct StoreInner {
     evaluators: DashMap<String, EvaluatorCounters>,
     pipeline: PipelineCounters,
     gauges: GaugeValues,
+    audit_storage_failures: AtomicCounter,
 }
 
 // ---------------------------------------------------------------------------
@@ -53,7 +54,10 @@ struct DurationAccumulator {
 
 impl DurationAccumulator {
     fn record(&self, duration: Duration) {
-        #[expect(clippy::cast_possible_truncation, reason = "sub-second durations fit in u64 nanoseconds")]
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "sub-second durations fit in u64 nanoseconds"
+        )]
         let ns = duration.as_nanos() as u64;
         self.count.fetch_add(1, Ordering::Relaxed);
         self.sum_ns.fetch_add(ns, Ordering::Relaxed);
@@ -168,12 +172,7 @@ impl MetricsStore {
         Self::default()
     }
 
-    pub fn record_filter_result(
-        &self,
-        filter: &str,
-        result: &FilterResult,
-        duration: Duration,
-    ) {
+    pub fn record_filter_result(&self, filter: &str, result: &FilterResult, duration: Duration) {
         let counters = self.0.filters.entry(filter.to_owned()).or_default();
         match result {
             FilterResult::Continue => counters.requests_continue.increment(),
@@ -277,7 +276,10 @@ impl MetricsStore {
     }
 
     #[must_use]
-    #[expect(clippy::too_many_lines, reason = "snapshot assembly maps all metric groups")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "snapshot assembly maps all metric groups"
+    )]
     pub fn snapshot(&self) -> MetricsSnapshot {
         let filters = self
             .0
@@ -361,7 +363,16 @@ impl MetricsStore {
             evaluators,
             pipeline,
             gauges,
+            audit: AuditSnapshot {
+                storage_failures: self.0.audit_storage_failures.get(),
+            },
         }
+    }
+}
+
+impl wanaku_types::audit::AuditFailureObserver for MetricsStore {
+    fn record_storage_failure(&self) {
+        self.0.audit_storage_failures.increment();
     }
 }
 
@@ -376,6 +387,13 @@ pub struct MetricsSnapshot {
     pub evaluators: HashMap<String, EvaluatorSnapshot>,
     pub pipeline: PipelineSnapshot,
     pub gauges: GaugeSnapshot,
+    pub audit: AuditSnapshot,
+}
+
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub struct AuditSnapshot {
+    pub storage_failures: u64,
 }
 
 #[derive(Serialize)]
@@ -470,9 +488,21 @@ mod tests {
     #[test]
     fn filter_result_recording() {
         let store = MetricsStore::new();
-        store.record_filter_result("test_filter", &FilterResult::Continue, Duration::from_millis(1));
-        store.record_filter_result("test_filter", &FilterResult::Continue, Duration::from_millis(2));
-        store.record_filter_result("test_filter", &FilterResult::Reject, Duration::from_millis(3));
+        store.record_filter_result(
+            "test_filter",
+            &FilterResult::Continue,
+            Duration::from_millis(1),
+        );
+        store.record_filter_result(
+            "test_filter",
+            &FilterResult::Continue,
+            Duration::from_millis(2),
+        );
+        store.record_filter_result(
+            "test_filter",
+            &FilterResult::Reject,
+            Duration::from_millis(3),
+        );
 
         let snap = store.snapshot();
         let f = &snap.filters["test_filter"];
@@ -581,12 +611,17 @@ mod tests {
         assert!(snap.filters.is_empty());
         assert!(snap.evaluators.is_empty());
         assert_eq!(snap.gauges.evaluators_loaded, 0);
+        assert_eq!(snap.audit.storage_failures, 0);
     }
 
     #[test]
     fn separate_filters_tracked_independently() {
         let store = MetricsStore::new();
-        store.record_filter_result("filter_a", &FilterResult::Continue, Duration::from_millis(1));
+        store.record_filter_result(
+            "filter_a",
+            &FilterResult::Continue,
+            Duration::from_millis(1),
+        );
         store.record_filter_result("filter_b", &FilterResult::Reject, Duration::from_millis(2));
 
         let snap = store.snapshot();

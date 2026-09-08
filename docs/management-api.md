@@ -37,6 +37,10 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `GET` | `/health` | Get the server health. |
 | `GET` | `/healthz` | Get the server health. |
 | `GET` | `/openapi.json` | Get the OpenAPI document. |
+| `GET` | `/api/v1/audit/events` | List audit events with pagination and filters. |
+| `GET` | `/api/v1/audit/events/{id}` | Get one audit event. |
+| `GET` | `/api/v1/audit/schema` | Get the audit schema version. |
+| `GET` | `/api/v1/audit/health` | Get audit-store health and the dropped-event count. |
 | `GET` | `/api/v1/management/info` | Get the server name and version. |
 | `GET` | `/api/v1/management/statistics` | Get registry counts. |
 | `GET` | `/api/v1/tools` | List tools. |

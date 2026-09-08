@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+    "features/audit",
     "features/action-policy",
     "features/evaluator",
     "features/intercept",
@@ -50,6 +51,7 @@ wanaku-types = { version = "0.3.0", path = "types" }
 wanaku-filters = { version = "0.3.0", path = "filters" }
 wanaku-feature-evaluator = { version = "0.3.0", path = "features/evaluator" }
 wanaku-feature-action-policy = { version = "0.3.0", path = "features/action-policy" }
+wanaku-feature-audit = { version = "0.3.0", path = "features/audit" }
 wanaku-feature-intercept = { version = "0.3.0", path = "features/intercept" }
 wanaku-feature-mcp-metadata = { version = "0.3.0", path = "features/mcp-metadata" }
 wanaku-feature-metrics = { version = "0.3.0", path = "features/metrics" }
