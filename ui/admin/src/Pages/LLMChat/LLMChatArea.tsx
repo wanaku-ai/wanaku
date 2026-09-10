@@ -14,6 +14,8 @@ import {getInferenceUrl} from "../../custom-fetch"
 import {getErrorMessage} from "../../utils/error"
 import {selectedToolsJson} from "./utils"
 import {connectMCPClient} from "./mcp"
+import {listModels} from "../../hooks/api/use-models"
+import {validateExtraLlmParameters} from "./extra-llm-parameters"
 
 
 interface ChatMessage {
@@ -27,13 +29,15 @@ interface ChatMessage {
 interface LLMChatAreaProps {
   config: LlmConfig
   onSystemPromptChange: (systemPrompt: string) => void
+  onError: (error: string) => void
 }
 
-export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPromptChange }) => {
+export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPromptChange, onError }) => {
   
   const [userPrompt, setUserPrompt] = useState("")
   const [displayedMessages, setDisplayedMessages] = useState<ChatMessage[]>([])
   const [isRunning, setIsRunning] = useState(false)
+  const [sendDisabled, setSendDisabled] = useState(isSendUnavailable())
   
   const chatHistory = useRef<ChatMessage[]>([])
   const abortController = useRef(new AbortController())
@@ -50,15 +54,42 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
       || message.role === "tool")
   }
   
+  function isSendUnavailable(): boolean {
+    return !userPrompt.length
+      || !config.selectedModel
+      || !config.apiKey
+  }
+  
+  async function validateSelectedModel(): Promise<boolean> {
+    const models = await listModels(config.apiKey!)
+    return models.includes(config.selectedModel)
+  }
+  
   async function runPrompt(signal: AbortSignal) {
+    if (!userPrompt) {
+      throw new Error("User prompt cannot be empty")
+    }
+    if (!config.apiKey) {
+      throw new Error("API key is required")
+    }
+    if (!config.selectedModel) {
+      throw new Error("Model is required")
+    }
+    const selectedModelValid = await validateSelectedModel()
+    if (! selectedModelValid) {
+       throw new Error("Selected model is not valid")
+    }
+    validateExtraLlmParameters(config.extraLlmParams)
     try {
       chatHistory.current.push({ role: "user", content: userPrompt })
       setDisplayedMessages(chatHistory.current)
       setIsRunning(true)
+      setSendDisabled(true)
       
       async function send(): Promise<Response> {
         const extraLlmParams = config.extraLlmParams ? JSON.parse(config.extraLlmParams) : {}
         return await fetch(getInferenceUrl("/v1/chat/completions"), {
+          signal,
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -116,7 +147,19 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
                   name: toolName,
                   arguments: toolArgs
                 })
-                const toolResultText = (toolResult.content as Array<{ text: string }>)[0].text
+                const toolResultType = (toolResult.content as any).type
+                let toolResultText = ""
+                if (toolResultType === "text") {
+                  toolResultText = (toolResult.content as Array<{ text: string }>)[0].text
+                } else if (toolResultType === "image") {
+                  toolResultText = "[image]"
+                } else if (toolResultType === "audio") {
+                  toolResultText = "[audio]"
+                } else if (toolResultType === "resource") {
+                  toolResultText = "[resource]"
+                } else {
+                  toolResultText = `Unknown type: ${toolResultType}`
+                }
                 chatHistory.current.push({
                   role: "tool",
                   name: toolName,
@@ -151,6 +194,7 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
       }
     } finally {
       setIsRunning(false)
+      setSendDisabled(isSendUnavailable())
     }
   }
   
@@ -163,9 +207,13 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
             size="lg"
             renderIcon={Send}
             iconDescription="Send"
-            disabled={isRunning}
+            disabled={sendDisabled}
             onClick={() => {
-              runPrompt(abortController.current.signal)
+              runPrompt(abortController.current.signal).catch((error)=>  {
+                if (error instanceof Error) {
+                  onError(error.message)
+                }
+              })
             }}>
             Send
           </Button>
@@ -209,7 +257,9 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
             placeholder="Type your prompt here..."
             value={userPrompt}
             onChange={(event) => {
-              setUserPrompt(event.target.value)
+              const userPrompt = event.target.value
+              setUserPrompt(userPrompt)
+              setSendDisabled(userPrompt.length === 0)
             }}
             rows={4}
           />

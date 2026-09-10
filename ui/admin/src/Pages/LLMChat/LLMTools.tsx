@@ -119,7 +119,7 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
             checked={isAllSelected()}
             indeterminate={isSomeSelected()}
             onChange={(_, { checked }) => {
-              const selection = checked ? [...tools] : []
+              const selection = checked ? [...filteredTools()] : []
               onSelectionChange(namespace, selection)
             }}
           />
