@@ -245,3 +245,7 @@ impl HttpFilter for InterceptFilter {
         Ok(FilterAction::Continue)
     }
 }
+
+#[cfg(test)]
+#[path = "filter_test.rs"]
+mod tests;
