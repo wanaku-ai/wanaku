@@ -77,6 +77,9 @@ export const LLMChatPage: React.FC = () => {
         <Column lg={12}>
           <LLMChatArea
             config={config}
+            onError={(error: string) => {
+              setErrorMessage(error)
+            }}
             onSystemPromptChange={(systemPrompt) => {
               applyConfigChange({ ...config, systemPrompt })
             }}
