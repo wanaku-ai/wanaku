@@ -5,7 +5,6 @@ import {
   Grid,
   Tile,
   ClickableTile,
-  InlineNotification,
   SkeletonText,
   SkeletonPlaceholder,
   DataTable,
@@ -40,13 +39,15 @@ interface SystemStatistics {
   dataStoresCount?: number;
 }
 import "./DashboardPage.scss";
+import {useErrorNotification} from "../../hooks/error-notifications"
+import {ErrorNotification} from "../../components/ErrorNotification"
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [statistics, setStatistics] = useState<SystemStatistics | null>(null);
   const [metrics, setMetrics] = useState<MetricsSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { errorMessage, setErrorMessage } = useErrorNotification()
   const { getStatistics } = useStatistics();
   const { getMetrics } = useMetrics();
 
@@ -82,18 +83,6 @@ export const DashboardPage: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => {
-        setErrorMessage(null);
-      }, 10_000);
-
-      return () => {
-        clearTimeout(timer);
-      };
-    }
-  }, [errorMessage]);
 
   const filterEntries = metrics
     ? Object.entries(metrics.filters).sort(([a], [b]) => a.localeCompare(b))
@@ -188,13 +177,9 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="dashboard-page">
       {errorMessage && (
-        <InlineNotification
-          kind="error"
-          title="Error"
-          subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(null)}
-          lowContrast
-          hideCloseButton={false}
+        <ErrorNotification
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
         />
       )}
       <div className="dashboard-header">

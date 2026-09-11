@@ -1,15 +1,16 @@
-import {InlineNotification} from "@carbon/react";
 import {PageSkeleton} from "../../components/PageSkeleton";
 import React, {useCallback, useEffect, useState} from "react";
 import {usePrompts} from "../../hooks/api/use-prompts";
 import {PromptEntry} from "../../models";
 import {PromptsTable} from "./PromptsTable";
 import {unwrapData} from "../../utils/api-response";
+import {useErrorNotification} from "../../hooks/error-notifications"
+import {ErrorNotification} from "../../components/ErrorNotification"
 
 export const PromptsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<PromptEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { errorMessage, setErrorMessage } = useErrorNotification()
   const { listPrompts, removePrompt } = usePrompts();
 
   const updatePrompts = useCallback(async () => {
@@ -30,18 +31,6 @@ export const PromptsPage: React.FC = () => {
     updatePrompts();
   }, [updatePrompts]);
 
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => {
-        setErrorMessage(null);
-      }, 10_000);
-
-      return () => {
-        clearTimeout(timer);
-      };
-    }
-  }, [errorMessage]);
-
   if (isLoading) return <PageSkeleton title="Prompts" />;
 
   const handleDeletePrompt = async (promptName?: string) => {
@@ -56,13 +45,9 @@ export const PromptsPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <InlineNotification
-          kind="error"
-          title="Error"
-          subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(null)}
-          lowContrast
-          hideCloseButton={false}
+        <ErrorNotification
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
         />
       )}
       <h1 className="title">Prompts</h1>

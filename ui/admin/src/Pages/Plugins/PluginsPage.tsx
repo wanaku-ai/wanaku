@@ -1,15 +1,16 @@
-import { InlineNotification } from "@carbon/react";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import React, { useCallback, useEffect, useState } from "react";
 import type { PluginManifest } from "../../plugins/types";
 import { usePlugins } from "../../hooks/api/use-plugins";
 import { PluginsTable } from "./PluginsTable";
 import { PluginDetailModal } from "./PluginDetailModal";
+import {ErrorNotification} from "../../components/ErrorNotification"
+import {useErrorNotification} from "../../hooks/error-notifications"
 
 const PluginsPage: React.FC = () => {
   const [plugins, setPlugins] = useState<PluginManifest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { errorMessage, setErrorMessage } = useErrorNotification()
   const [selectedPlugin, setSelectedPlugin] = useState<PluginManifest | null>(null);
 
   const { listPlugins } = usePlugins();
@@ -32,13 +33,6 @@ const PluginsPage: React.FC = () => {
     fetchPlugins().finally(() => setIsLoading(false));
   }, [fetchPlugins]);
 
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => setErrorMessage(null), 10_000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMessage]);
-
   const handleView = (plugin: PluginManifest) => {
     setSelectedPlugin(plugin);
   };
@@ -52,13 +46,9 @@ const PluginsPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <InlineNotification
-          kind="error"
-          title="Error"
-          subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(null)}
-          lowContrast
-          hideCloseButton={false}
+        <ErrorNotification
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
         />
       )}
 

@@ -1,15 +1,16 @@
-import {InlineNotification} from "@carbon/react"
 import {ResourceModal} from "./ResourceModal"
 import {RefreshHandle, ResourcesTable} from "./ResourcesTable"
 import React, {useRef, useState} from "react"
 import {ResourceEntry} from "../../models"
 import {useResources} from "../../hooks/api/use-resources"
 import {getErrorMessage} from "../../utils/error"
+import {ErrorNotification} from "../../components/ErrorNotification"
+import {useErrorNotification} from "../../hooks/error-notifications"
 
 
 export const ResourcesPage: React.FC = () => {
 
-  const [errorMessage, setErrorMessage] = useState<string>()
+  const { errorMessage, setErrorMessage } = useErrorNotification()
   const [isModalOpen, setModalOpen] = useState(false)
   const [openedResource, setOpenedResource] = useState<ResourceEntry>()
   const { updateResource, removeResource } = useResources()
@@ -49,13 +50,9 @@ export const ResourcesPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <InlineNotification
-          kind="error"
-          title="Error"
-          subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(undefined)}
-          lowContrast
-          hideCloseButton={false}
+        <ErrorNotification
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
         />
       )}
       <h1 className="title">Resources</h1>

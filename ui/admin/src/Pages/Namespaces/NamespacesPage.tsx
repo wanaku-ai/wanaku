@@ -1,4 +1,3 @@
-import {InlineNotification} from "@carbon/react";
 import {PageSkeleton} from "../../components/PageSkeleton";
 import React, {useCallback, useEffect, useState} from "react";
 import {NamespaceEntry} from "../../models";
@@ -6,13 +5,15 @@ import {NamespaceTable} from "./NamespacesTable";
 import {NamespaceModal} from "./NamespaceModal";
 import {useNamespaces} from "../../hooks/api/use-namespaces";
 import {sortedNamespaces} from "./namespaces"
+import {useErrorNotification} from "../../hooks/error-notifications"
+import {ErrorNotification} from "../../components/ErrorNotification"
 
 export const NamespacesPage: React.FC = () => {
   const [namespaces, setNamespaces] = useState<NamespaceEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [openedNamespace, setOpenedNamespace] = useState<NamespaceEntry>();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { errorMessage, setErrorMessage } = useErrorNotification()
   const { listNamespaces, createNamespace, updateNamespace, removeNamespace } = useNamespaces();
 
   const refreshNamespaces = useCallback(async () => {
@@ -30,15 +31,6 @@ export const NamespacesPage: React.FC = () => {
   useEffect(() => {
     refreshNamespaces();
   }, [refreshNamespaces]);
-
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => {
-        setErrorMessage(null);
-      }, 10_000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMessage]);
 
   if (isLoading) return <PageSkeleton title="Namespaces" />;
 
@@ -92,13 +84,9 @@ export const NamespacesPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <InlineNotification
-          kind="error"
-          title="Error"
-          subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(null)}
-          lowContrast
-          hideCloseButton={false}
+        <ErrorNotification
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
         />
       )}
       <h1 className="title">Namespaces</h1>
