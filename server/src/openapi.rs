@@ -22,9 +22,10 @@ use wanaku_feature_evaluator::config::{
 use wanaku_types::revision::{ActivationStatus, RevisionMetadata, RevisionOrigin};
 
 use wanaku_infra::metrics::{
-    DecisionSnapshot, DurationSnapshot, EvaluatorSnapshot, FilterSnapshot, GaugeSnapshot,
-    LlmSnapshot, MetricsSnapshot, PipelineSnapshot, SchemaSnapshot, WasmSnapshot,
+    AuditSnapshot, DecisionSnapshot, DurationSnapshot, EvaluatorSnapshot, FilterSnapshot,
+    GaugeSnapshot, LlmSnapshot, MetricsSnapshot, PipelineSnapshot, SchemaSnapshot, WasmSnapshot,
 };
+use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHealth, AuditPage};
 use wanaku_types::interactions::Interaction;
 use wanaku_types::registry::{
     ForwardEntry, McpServerInfo, NamespaceEntry, PromptArgument, PromptEntry, PromptMessage,
@@ -218,6 +219,45 @@ const fn clear_interactions() {}
 )]
 const fn get_metrics() {}
 
+// -- Audit --------------------------------------------------------------------
+
+#[utoipa::path(get, path = "/api/v1/audit/events", tag = "Audit",
+    params(
+        ("from" = Option<String>, Query, description = "Inclusive ISO 8601 start time"),
+        ("to" = Option<String>, Query, description = "Inclusive ISO 8601 end time"),
+        ("namespace" = Option<String>, Query),
+        ("actor" = Option<String>, Query),
+        ("operation" = Option<String>, Query),
+        ("target" = Option<String>, Query),
+        ("decision" = Option<AuditDecision>, Query),
+        ("reason_code" = Option<String>, Query),
+        ("correlation_id" = Option<String>, Query),
+        ("offset" = Option<usize>, Query),
+        ("limit" = Option<usize>, Query),
+    ),
+    responses((status = 200, description = "Audit event page", body = WanakuResponse<AuditPage>))
+)]
+const fn list_audit_events() {}
+
+#[utoipa::path(get, path = "/api/v1/audit/events/{id}", tag = "Audit",
+    params(("id" = String, Path, description = "Audit event ID")),
+    responses(
+        (status = 200, description = "Audit event", body = WanakuResponse<AuditEvent>),
+        (status = 404, body = ManagementErrorResponse),
+    )
+)]
+const fn get_audit_event() {}
+
+#[utoipa::path(get, path = "/api/v1/audit/schema", tag = "Audit",
+    responses((status = 200, description = "Audit schema version", body = serde_json::Value))
+)]
+const fn get_audit_schema() {}
+
+#[utoipa::path(get, path = "/api/v1/audit/health", tag = "Audit",
+    responses((status = 200, description = "Audit store health", body = WanakuResponse<AuditHealth>))
+)]
+const fn get_audit_health() {}
+
 // -- Info ---------------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/management/info", tag = "Management",
@@ -355,6 +395,10 @@ impl utoipa::Modify for OptionalActivationBodies {
         for path in [
             "/api/v1/evaluators/revisions/{id}/activate",
             "/api/v1/action-policies/revisions/{id}/activate",
+            "/api/v1/audit/events",
+            "/api/v1/audit/events/{id}",
+            "/api/v1/audit/schema",
+            "/api/v1/audit/health",
         ] {
             if let Some(body) = openapi
                 .paths
@@ -399,6 +443,10 @@ impl utoipa::Modify for OptionalActivationBodies {
         list_interactions,
         clear_interactions,
         get_metrics,
+        list_audit_events,
+        get_audit_event,
+        get_audit_schema,
+        get_audit_health,
         get_info,
         get_statistics,
         list_evaluators,
@@ -439,6 +487,12 @@ impl utoipa::Modify for OptionalActivationBodies {
         WasmSnapshot,
         PipelineSnapshot,
         GaugeSnapshot,
+        AuditCategory,
+        AuditDecision,
+        AuditEvent,
+        AuditPage,
+        AuditHealth,
+        AuditSnapshot,
         EvaluatorDef,
         TriggerDef,
         LlmDef,
@@ -519,6 +573,9 @@ mod tests {
             "ActionPolicyRevisionResponse",
             "RevisionMetadata",
             "ManagementErrorResponse",
+            "AuditEvent",
+            "AuditPage",
+            "AuditHealth",
         ] {
             assert!(
                 schemas.is_some_and(|schemas| schemas.contains_key(schema)),

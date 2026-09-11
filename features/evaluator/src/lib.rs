@@ -23,14 +23,15 @@ use wanaku_types::feature::{Feature, HttpContext};
 use crate::config::EvaluatorsConfig;
 use crate::routes::{
     EvaluatorRoute, handle_activate_revision, handle_active_revision, handle_bind_namespace,
-    handle_get_revision, handle_list_bindings, handle_list_evaluators,
-    handle_list_llm_connections, handle_list_revisions, handle_unbind_namespace,
-    handle_update_evaluators, resolve_evaluator_route,
+    handle_get_revision, handle_list_bindings, handle_list_evaluators, handle_list_llm_connections,
+    handle_list_revisions, handle_unbind_namespace, handle_update_evaluators,
+    resolve_evaluator_route,
 };
 use crate::state::EvaluatorState;
 
 pub struct EvaluatorFeature {
     state: EvaluatorState,
+    audit: Option<wanaku_types::audit::InMemoryAuditStore>,
 }
 
 impl EvaluatorFeature {
@@ -38,12 +39,19 @@ impl EvaluatorFeature {
     pub fn new() -> Self {
         Self {
             state: EvaluatorState::new(),
+            audit: None,
         }
     }
 
     #[must_use]
     pub fn with_metrics(mut self, store: wanaku_infra::metrics::MetricsStore) -> Self {
         self.state = self.state.with_metrics(store);
+        self
+    }
+
+    #[must_use]
+    pub fn with_audit(mut self, store: wanaku_types::audit::InMemoryAuditStore) -> Self {
+        self.audit = Some(store);
         self
     }
 
@@ -113,7 +121,8 @@ impl Feature for EvaluatorFeature {
         if route == EvaluatorRoute::NotFound {
             return None;
         }
-        Some(match route {
+        let administrative_operation = administrative_operation(&route);
+        let response = match route {
             EvaluatorRoute::ListEvaluators => handle_list_evaluators(&self.state),
             EvaluatorRoute::UpdateEvaluators => {
                 handle_update_evaluators(&self.state, ctx.body.unwrap_or(""))
@@ -131,7 +140,11 @@ impl Feature for EvaluatorFeature {
             }
             EvaluatorRoute::UnbindNamespace(ns) => handle_unbind_namespace(&self.state, &ns),
             EvaluatorRoute::NotFound => return None,
-        })
+        };
+        if let Some(operation) = administrative_operation {
+            record_administrative_event(self.audit.as_ref(), ctx, operation, response.status());
+        }
+        Some(response)
     }
 
     fn load_yaml_config(&self, root: &serde_yaml::Value) {
@@ -159,6 +172,53 @@ impl Feature for EvaluatorFeature {
     fn load_env_config(&self) {}
 }
 
+fn administrative_operation(route: &EvaluatorRoute) -> Option<&'static str> {
+    match route {
+        EvaluatorRoute::UpdateEvaluators => Some("evaluator.update"),
+        EvaluatorRoute::ActivateRevision(_) => Some("evaluator.revision.activate"),
+        EvaluatorRoute::BindNamespace(_) => Some("evaluator.namespace.bind"),
+        EvaluatorRoute::UnbindNamespace(_) => Some("evaluator.namespace.unbind"),
+        _ => None,
+    }
+}
+
+fn record_administrative_event(
+    store: Option<&wanaku_types::audit::InMemoryAuditStore>,
+    ctx: &HttpContext<'_>,
+    operation: &str,
+    status: http::StatusCode,
+) {
+    use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditStore as _};
+    let Some(store) = store else {
+        return;
+    };
+    let success = status.is_success();
+    let mut event = AuditEvent::new(
+        AuditCategory::Administrative,
+        if success {
+            AuditDecision::Allow
+        } else {
+            AuditDecision::Error
+        },
+        operation,
+        if success {
+            "configuration_changed"
+        } else {
+            "configuration_change_failed"
+        },
+        if success {
+            "The governance configuration changed."
+        } else {
+            "The governance configuration change failed."
+        },
+    );
+    event.protocol = "http".to_owned();
+    event.target_type = Some("evaluator_configuration".to_owned());
+    event.target = Some(ctx.path.to_owned());
+    event.response_status = Some(status.as_u16());
+    store.record(event);
+}
+
 fn parse_llm_connections_yaml(
     conn_val: &serde_yaml::Value,
 ) -> Option<Vec<crate::config::LlmConnection>> {
@@ -171,9 +231,7 @@ fn parse_llm_connections_yaml(
     }
 }
 
-fn parse_evaluator_yaml(
-    eval_val: &serde_yaml::Value,
-) -> Option<Vec<crate::config::EvaluatorDef>> {
+fn parse_evaluator_yaml(eval_val: &serde_yaml::Value) -> Option<Vec<crate::config::EvaluatorDef>> {
     match serde_yaml::from_value::<EvaluatorsConfig>(eval_val.clone()) {
         Ok(config) => Some(config.evaluators),
         Err(e) => {

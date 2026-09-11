@@ -1,0 +1,23 @@
+[package]
+name = "wanaku-feature-audit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "wanaku_feature_audit"
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+http = { workspace = true }
+praxis-filter = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+tracing = { workspace = true }
+wanaku-types = { workspace = true }
+wanaku-infra = { workspace = true }

@@ -4,6 +4,9 @@ use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use wanaku_infra::metrics::{MetricsStore, SkipReason};
 use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_types::audit::{
+    AuditCategory, AuditDecision, AuditEvent, AuditStore, InMemoryAuditStore,
+};
 use wanaku_types::interactions::{InMemoryInteractionStore, InteractionStore};
 use wanaku_types::mcp::McpContext;
 use wanaku_types::registry::ToolRegistry;
@@ -15,7 +18,12 @@ use crate::state::EvaluatorState;
 wanaku_filters::body_filter_boilerplate!(EvaluatorFilter, "wanaku_evaluator");
 
 impl EvaluatorFilter {
-    #[expect(clippy::too_many_lines, clippy::cognitive_complexity, clippy::large_stack_frames, reason = "evaluator pipeline with multiple validation steps")]
+    #[expect(
+        clippy::too_many_lines,
+        clippy::cognitive_complexity,
+        clippy::large_stack_frames,
+        reason = "evaluator pipeline with multiple validation steps"
+    )]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
@@ -103,13 +111,7 @@ impl EvaluatorFilter {
             _ => Vec::new(),
         };
 
-        let mcp_ctx = McpContext::new(
-            &method,
-            tool_name.as_deref(),
-            &arguments,
-            &tools,
-            &history,
-        );
+        let mcp_ctx = McpContext::new(&method, tool_name.as_deref(), &arguments, &tools, &history);
 
         let Some(llm_connection) = state.get_llm_connection(&evaluator.llm.connection) else {
             tracing::error!(
@@ -139,7 +141,10 @@ impl EvaluatorFilter {
 
         let raw_llm_result = crate::llm_op::run_llm_operation(
             &evaluator.name,
-            crate::llm_op::ResolvedLlm { def: &evaluator.llm, connection: &llm_connection },
+            crate::llm_op::ResolvedLlm {
+                def: &evaluator.llm,
+                connection: &llm_connection,
+            },
             &mcp_ctx,
             metrics.as_ref(),
         )
@@ -200,12 +205,7 @@ impl EvaluatorFilter {
         };
 
         let wasm_start = std::time::Instant::now();
-        let result = compiled.evaluate(
-            registry,
-            interactions,
-            eval_ctx,
-            resolved.compiled_schema,
-        );
+        let result = compiled.evaluate(registry, interactions, eval_ctx, resolved.compiled_schema);
         if let Some(ref store) = metrics {
             store.record_wasm_execution(&evaluator.name, wasm_start.elapsed());
         }
@@ -221,8 +221,73 @@ impl EvaluatorFilter {
             store.record_pipeline_duration(&evaluator.name, pipeline_start.elapsed());
         }
 
+        record_evaluator_audit(
+            ctx,
+            body.as_ref(),
+            &result,
+            &method,
+            &namespace,
+            &evaluator.name,
+            pipeline_start.elapsed(),
+        );
+
         dispatch_action(ctx, body, result, &method, &evaluator.name)
     }
+}
+
+fn record_evaluator_audit(
+    ctx: &HttpFilterContext<'_>,
+    body: Option<&Bytes>,
+    result: &ActionResult,
+    method: &str,
+    namespace: &str,
+    evaluator_name: &str,
+    duration: std::time::Duration,
+) {
+    let Some(store) = ctx.extensions.get::<InMemoryAuditStore>() else {
+        return;
+    };
+    let (decision, reason_code, explanation) = match result {
+        ActionResult::Pass | ActionResult::FilterTools(_) | ActionResult::SetMetadata(_, _) => (
+            AuditDecision::Allow,
+            "evaluator_allowed",
+            "Evaluator allowed the request.",
+        ),
+        ActionResult::Block(reason) => (AuditDecision::Block, "evaluator_blocked", reason.as_str()),
+        ActionResult::RejectMalformed(reason) => (
+            AuditDecision::RejectMalformed,
+            "evaluator_rejected_malformed",
+            reason.as_str(),
+        ),
+        ActionResult::Warn(message) => (AuditDecision::Warn, "evaluator_warning", message.as_str()),
+    };
+    let mut event = AuditEvent::new(
+        AuditCategory::Decision,
+        decision,
+        method,
+        reason_code,
+        explanation,
+    );
+    event.namespace = Some(namespace.to_owned());
+    event.evaluator = Some(evaluator_name.to_owned());
+    event.filter = Some("wanaku_evaluator".to_owned());
+    event.target_type = match method {
+        "tools/call" => Some("tool".to_owned()),
+        "resources/read" => Some("resource".to_owned()),
+        "prompts/get" => Some("prompt".to_owned()),
+        _ => None,
+    };
+    event.policy_revision = ctx
+        .extensions
+        .get::<EvaluatorState>()
+        .and_then(|state| state.revision_store().active_revision_id())
+        .map(|revision| revision.to_string());
+    event.target = ctx
+        .get_metadata(wanaku_filters::MCP_NAME_KEY)
+        .map(std::borrow::ToOwned::to_owned);
+    event.duration_ms = u64::try_from(duration.as_millis()).ok();
+    wanaku_types::audit::add_mcp_request_context(&mut event, body.map(bytes::Bytes::as_ref));
+    store.record(event);
 }
 
 const fn action_label(result: &ActionResult) -> &'static str {
@@ -248,7 +313,11 @@ fn record_trigger(metrics: &Option<MetricsStore>, matched: bool) {
     }
 }
 
-#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "action dispatch with multiple variants")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    reason = "action dispatch with multiple variants"
+)]
 fn dispatch_action(
     ctx: &mut HttpFilterContext<'_>,
     _body: &mut Option<Bytes>,
@@ -332,7 +401,11 @@ struct ResolvedRuntime {
     compiled_schema: Option<std::sync::Arc<crate::schema::CompiledSchema>>,
 }
 
-#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "schema validation with retry logic")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    reason = "schema validation with retry logic"
+)]
 async fn validate_and_retry_if_needed(
     raw_result: &str,
     evaluator: &EvaluatorDef,
@@ -369,7 +442,10 @@ async fn validate_and_retry_if_needed(
     let retry_result = match raw_schema {
         Some(raw_schema) => {
             crate::llm_op::retry_with_schema_correction(
-                crate::llm_op::ResolvedLlm { def: &evaluator.llm, connection: &resolved.connection },
+                crate::llm_op::ResolvedLlm {
+                    def: &evaluator.llm,
+                    connection: &resolved.connection,
+                },
                 mcp,
                 raw_result,
                 raw_schema,
@@ -434,10 +510,19 @@ mod tests {
     fn action_label_all_variants() {
         assert_eq!(action_label(&ActionResult::Pass), "pass");
         assert_eq!(action_label(&ActionResult::Block("r".into())), "block");
-        assert_eq!(action_label(&ActionResult::RejectMalformed("r".into())), "reject_malformed");
+        assert_eq!(
+            action_label(&ActionResult::RejectMalformed("r".into())),
+            "reject_malformed"
+        );
         assert_eq!(action_label(&ActionResult::Warn("m".into())), "warn");
-        assert_eq!(action_label(&ActionResult::FilterTools(vec![])), "filter_tools");
-        assert_eq!(action_label(&ActionResult::SetMetadata("k".into(), "v".into())), "set_metadata");
+        assert_eq!(
+            action_label(&ActionResult::FilterTools(vec![])),
+            "filter_tools"
+        );
+        assert_eq!(
+            action_label(&ActionResult::SetMetadata("k".into(), "v".into())),
+            "set_metadata"
+        );
     }
 
     #[test]

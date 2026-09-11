@@ -46,7 +46,8 @@ fn main() {
 
     let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
     let governance = load_governance_config(wanaku_config.as_ref()).unwrap_or_else(|e| fatal(&e));
-    let features: Vec<Box<dyn Feature>> = build_features(&args, &metrics_store);
+    let features: Vec<Box<dyn Feature>> =
+        build_features(&args, &metrics_store, wanaku_config.as_ref());
 
     load_config(wanaku_config.as_ref(), &wanaku_registry, &features);
 
@@ -201,7 +202,14 @@ fn register_forward_reconnect_service(
 fn build_features(
     args: &ServerArgs,
     metrics_store: &wanaku_infra::metrics::MetricsStore,
+    wanaku_config: Option<&serde_yaml::Value>,
 ) -> Vec<Box<dyn Feature>> {
+    let mut audit = wanaku_feature_audit::AuditFeature::new().with_metrics(metrics_store.clone());
+    if let Some(backend) = wanaku_feature_audit::persistence::FileAuditPersistence::from_config() {
+        info!("audit persistence enabled");
+        audit = audit.with_persistence(backend);
+    }
+    audit = audit.configured_from(wanaku_config);
     let mut action_policy = wanaku_feature_action_policy::ActionPolicyFeature::new();
     if let Some(backend) =
         wanaku_feature_action_policy::revision_persistence::FileRevisionPersistence::from_config()
@@ -210,7 +218,8 @@ fn build_features(
         action_policy = action_policy.with_revision_persistence(backend);
     }
     let mut evaluator = wanaku_feature_evaluator::EvaluatorFeature::new()
-        .with_metrics(metrics_store.clone());
+        .with_metrics(metrics_store.clone())
+        .with_audit(audit.store());
     if let Some(backend) =
         wanaku_feature_evaluator::revision_persistence::FileRevisionPersistence::from_config()
     {
@@ -219,6 +228,7 @@ fn build_features(
     }
 
     vec![
+        Box::new(audit),
         Box::new(wanaku_feature_metrics::MetricsFeature::new(metrics_store.clone())),
         Box::new(wanaku_feature_intercept::InterceptFeature::new()),
         Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),

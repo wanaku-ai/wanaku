@@ -4,6 +4,9 @@ use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use wanaku_filters::json_rpc::{McpRequestView, RequestViewError};
 use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_types::audit::{
+    AuditCategory, AuditDecision, AuditEvent, AuditStore, InMemoryAuditStore,
+};
 use wanaku_types::governance::{
     EnforcementMode, FailureBehavior, GovernanceConfig, GovernancePosture, NoMatchBehavior,
 };
@@ -58,6 +61,13 @@ impl ActionPolicyFilter {
             return Ok(FilterAction::Continue);
         }
         let Some(state) = ctx.extensions.get::<ActionPolicyState>() else {
+            record_simple_decision(
+                ctx,
+                body.as_ref(),
+                AuditDecision::Error,
+                INVALID_POLICY_REASON_CODE,
+                INVALID_POLICY_MESSAGE,
+            );
             return Ok(apply_failure(&posture, &id));
         };
         let snapshot = state.snapshot();
@@ -80,25 +90,53 @@ fn evaluate_snapshot(
 ) -> FilterAction {
     let policy = match snapshot {
         PolicySnapshot::Valid(policy) => policy,
-        PolicySnapshot::Unconfigured => return apply_no_match(posture, id),
-        PolicySnapshot::Invalid => return apply_failure(posture, id),
+        PolicySnapshot::Unconfigured => {
+            record_simple_decision(
+                ctx,
+                body,
+                AuditDecision::Block,
+                NO_MATCH_REASON_CODE,
+                NO_MATCH_MESSAGE,
+            );
+            return apply_no_match(posture, id);
+        }
+        PolicySnapshot::Invalid => {
+            record_simple_decision(
+                ctx,
+                body,
+                AuditDecision::Error,
+                INVALID_POLICY_REASON_CODE,
+                INVALID_POLICY_MESSAGE,
+            );
+            return apply_failure(posture, id);
+        }
     };
     let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+        record_simple_decision(
+            ctx,
+            body,
+            AuditDecision::Error,
+            INVALID_POLICY_REASON_CODE,
+            INVALID_POLICY_MESSAGE,
+        );
         return apply_failure(posture, id);
     };
-    evaluate_request(RequestEvaluation {
-        method: ctx
-            .get_metadata(wanaku_filters::MCP_METHOD_KEY)
-            .unwrap_or_default(),
-        namespace: ctx
-            .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
-            .unwrap_or(DEFAULT_NAMESPACE),
-        body,
-        policy: &policy,
-        posture,
-        registry,
-        id,
-    })
+    evaluate_request_audited(
+        ctx,
+        RequestEvaluation {
+            method: ctx
+                .get_metadata(wanaku_filters::MCP_METHOD_KEY)
+                .unwrap_or_default(),
+            namespace: ctx
+                .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
+                .unwrap_or(DEFAULT_NAMESPACE),
+            body,
+            policy: &policy,
+            posture,
+            registry,
+            id,
+        },
+    )
 }
 
 fn is_governed_method(method: &str) -> bool {
@@ -116,7 +154,22 @@ struct RequestEvaluation<'a> {
     id: &'a serde_json::Value,
 }
 
+#[cfg(test)]
 fn evaluate_request(input: RequestEvaluation<'_>) -> FilterAction {
+    evaluate_request_impl(None, input)
+}
+
+fn evaluate_request_audited(
+    ctx: &HttpFilterContext<'_>,
+    input: RequestEvaluation<'_>,
+) -> FilterAction {
+    evaluate_request_impl(Some(ctx), input)
+}
+
+fn evaluate_request_impl(
+    audit_ctx: Option<&HttpFilterContext<'_>>,
+    input: RequestEvaluation<'_>,
+) -> FilterAction {
     let RequestEvaluation {
         method,
         namespace,
@@ -127,12 +180,33 @@ fn evaluate_request(input: RequestEvaluation<'_>) -> FilterAction {
         id,
     } = input;
     let Ok(view) = McpRequestView::parse(body) else {
+        if let Some(ctx) = audit_ctx {
+            record_simple_decision(
+                ctx,
+                body,
+                AuditDecision::RejectMalformed,
+                INVALID_ACTION_REASON_CODE,
+                INVALID_ACTION_MESSAGE,
+            );
+        }
         return policy_error(id, INVALID_ACTION_REASON_CODE, INVALID_ACTION_MESSAGE);
     };
     let Ok(context) = action_context(method, namespace, &view, registry) else {
+        if let Some(ctx) = audit_ctx {
+            record_simple_decision(
+                ctx,
+                body,
+                AuditDecision::RejectMalformed,
+                INVALID_ACTION_REASON_CODE,
+                INVALID_ACTION_MESSAGE,
+            );
+        }
         return policy_error(id, INVALID_ACTION_REASON_CODE, INVALID_ACTION_MESSAGE);
     };
     let decision = PolicyEngine::evaluate(PolicyState::Available(policy), &context);
+    if let Some(ctx) = audit_ctx {
+        record_policy_decision(ctx, body, namespace, method, posture, &decision);
+    }
     if posture.mode == EnforcementMode::Audit {
         tracing::info!(
             namespace,
@@ -156,6 +230,149 @@ fn evaluate_request(input: RequestEvaluation<'_>) -> FilterAction {
         PolicyDecision::PolicyUnavailable | PolicyDecision::PolicyInvalid => {
             apply_failure(posture, id)
         }
+    }
+}
+
+fn record_policy_decision(
+    ctx: &HttpFilterContext<'_>,
+    body: Option<&Bytes>,
+    namespace: &str,
+    method: &str,
+    posture: &GovernancePosture,
+    decision: &PolicyDecision,
+) {
+    let Some(store) = ctx.extensions.get::<InMemoryAuditStore>() else {
+        return;
+    };
+    let (outcome, reason_code, explanation) = match decision {
+        PolicyDecision::ExplicitDeny { reason, .. } => {
+            (AuditDecision::Block, reason.reason_code(), reason.message())
+        }
+        PolicyDecision::ExplicitAllow { .. } => (
+            AuditDecision::Allow,
+            "action_policy_allowed",
+            "Action policy allowed the request.",
+        ),
+        PolicyDecision::NoMatch => (
+            if posture.mode == EnforcementMode::Audit || posture.no_match == NoMatchBehavior::Allow
+            {
+                AuditDecision::Allow
+            } else {
+                AuditDecision::Block
+            },
+            NO_MATCH_REASON_CODE,
+            NO_MATCH_MESSAGE,
+        ),
+        PolicyDecision::PolicyUnavailable => (
+            AuditDecision::Error,
+            INVALID_POLICY_REASON_CODE,
+            INVALID_POLICY_MESSAGE,
+        ),
+        PolicyDecision::PolicyInvalid => (
+            AuditDecision::Error,
+            INVALID_POLICY_REASON_CODE,
+            INVALID_POLICY_MESSAGE,
+        ),
+    };
+    let mut event = AuditEvent::new(
+        AuditCategory::Decision,
+        outcome,
+        method,
+        reason_code,
+        explanation,
+    );
+    event.namespace = Some(namespace.to_owned());
+    event.filter = Some("wanaku_action_policy".to_owned());
+    event.target_type = target_type(method).map(str::to_owned);
+    event.policy_revision = ctx
+        .extensions
+        .get::<ActionPolicyState>()
+        .and_then(|state| state.revision_store().active_revision_id())
+        .map(|revision| revision.to_string());
+    wanaku_types::audit::add_mcp_request_context(&mut event, body.map(bytes::Bytes::as_ref));
+    event.target = ctx
+        .get_metadata(wanaku_filters::MCP_NAME_KEY)
+        .map(std::borrow::ToOwned::to_owned);
+    if let Some(details) = decision.details() {
+        event.attributes.insert(
+            "matched_rule_ids".to_owned(),
+            serde_json::json!(
+                details
+                    .matched_rules()
+                    .iter()
+                    .map(|rule| rule.rule_id())
+                    .collect::<Vec<_>>()
+            ),
+        );
+        event.attributes.insert(
+            "deny_rule_ids".to_owned(),
+            serde_json::json!(
+                details
+                    .matched_rules()
+                    .iter()
+                    .filter(|rule| rule.effect() == crate::Effect::Deny)
+                    .map(|rule| rule.rule_id())
+                    .collect::<Vec<_>>()
+            ),
+        );
+        event.attributes.insert(
+            "deny_reason_codes".to_owned(),
+            serde_json::json!(
+                details
+                    .matched_rules()
+                    .iter()
+                    .filter(|rule| rule.effect() == crate::Effect::Deny)
+                    .filter_map(|rule| rule.reason_code())
+                    .collect::<Vec<_>>()
+            ),
+        );
+    }
+    store.record(event);
+}
+
+fn record_simple_decision(
+    ctx: &HttpFilterContext<'_>,
+    body: Option<&Bytes>,
+    decision: AuditDecision,
+    reason_code: &str,
+    explanation: &str,
+) {
+    let Some(method) = ctx.get_metadata(wanaku_filters::MCP_METHOD_KEY) else {
+        return;
+    };
+    let Some(store) = ctx.extensions.get::<InMemoryAuditStore>() else {
+        return;
+    };
+    let mut event = AuditEvent::new(
+        AuditCategory::Decision,
+        decision,
+        method,
+        reason_code,
+        explanation,
+    );
+    event.namespace = ctx
+        .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
+        .map(str::to_owned);
+    event.filter = Some("wanaku_action_policy".to_owned());
+    event.target_type = target_type(method).map(str::to_owned);
+    event.policy_revision = ctx
+        .extensions
+        .get::<ActionPolicyState>()
+        .and_then(|state| state.revision_store().active_revision_id())
+        .map(|revision| revision.to_string());
+    event.target = ctx
+        .get_metadata(wanaku_filters::MCP_NAME_KEY)
+        .map(str::to_owned);
+    wanaku_types::audit::add_mcp_request_context(&mut event, body.map(bytes::Bytes::as_ref));
+    store.record(event);
+}
+
+fn target_type(method: &str) -> Option<&'static str> {
+    match method {
+        "tools/call" => Some("tool"),
+        "resources/read" => Some("resource"),
+        "prompts/get" => Some("prompt"),
+        _ => None,
     }
 }
 

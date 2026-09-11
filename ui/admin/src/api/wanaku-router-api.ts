@@ -19,6 +19,7 @@ import type {
   GetEvaluatorRevision200,
   Interaction,
   ListActionPolicyRevisions200Item,
+  ListAuditEventsParams,
   ListEvaluatorBindings200,
   ListEvaluatorRevisions200Item,
   ListEvaluators200Item,
@@ -33,6 +34,9 @@ import type {
   UpdateActionPolicyRequest,
   UpdateEvaluators200,
   UpdateEvaluatorsRequest,
+  WanakuResponseAuditEvent,
+  WanakuResponseAuditHealth,
+  WanakuResponseAuditPage,
 } from "../models";
 
 import { customFetch } from "../custom-fetch";
@@ -294,6 +298,123 @@ export const activateActionPolicyRevision = async (
       body: JSON.stringify(activateRevisionRequest),
     },
   );
+};
+
+export type listAuditEventsResponse200 = {
+  data: WanakuResponseAuditPage;
+  status: 200;
+};
+
+export type listAuditEventsResponseSuccess = listAuditEventsResponse200 & {
+  headers: Headers;
+};
+export type listAuditEventsResponse = listAuditEventsResponseSuccess;
+
+export const getListAuditEventsUrl = (params?: ListAuditEventsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/audit/events?${stringifiedParams}`
+    : `/api/v1/audit/events`;
+};
+
+export const listAuditEvents = async (
+  params?: ListAuditEventsParams,
+  options?: RequestInit,
+): Promise<listAuditEventsResponse> => {
+  return customFetch<listAuditEventsResponse>(getListAuditEventsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type getAuditEventResponse200 = {
+  data: WanakuResponseAuditEvent;
+  status: 200;
+};
+
+export type getAuditEventResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type getAuditEventResponseSuccess = getAuditEventResponse200 & {
+  headers: Headers;
+};
+export type getAuditEventResponseError = getAuditEventResponse404 & {
+  headers: Headers;
+};
+
+export type getAuditEventResponse =
+  | getAuditEventResponseSuccess
+  | getAuditEventResponseError;
+
+export const getGetAuditEventUrl = (id: string) => {
+  return `/api/v1/audit/events/${id}`;
+};
+
+export const getAuditEvent = async (
+  id: string,
+  options?: RequestInit,
+): Promise<getAuditEventResponse> => {
+  return customFetch<getAuditEventResponse>(getGetAuditEventUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type getAuditHealthResponse200 = {
+  data: WanakuResponseAuditHealth;
+  status: 200;
+};
+
+export type getAuditHealthResponseSuccess = getAuditHealthResponse200 & {
+  headers: Headers;
+};
+export type getAuditHealthResponse = getAuditHealthResponseSuccess;
+
+export const getGetAuditHealthUrl = () => {
+  return `/api/v1/audit/health`;
+};
+
+export const getAuditHealth = async (
+  options?: RequestInit,
+): Promise<getAuditHealthResponse> => {
+  return customFetch<getAuditHealthResponse>(getGetAuditHealthUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type getAuditSchemaResponse200 = {
+  data: unknown;
+  status: 200;
+};
+
+export type getAuditSchemaResponseSuccess = getAuditSchemaResponse200 & {
+  headers: Headers;
+};
+export type getAuditSchemaResponse = getAuditSchemaResponseSuccess;
+
+export const getGetAuditSchemaUrl = () => {
+  return `/api/v1/audit/schema`;
+};
+
+export const getAuditSchema = async (
+  options?: RequestInit,
+): Promise<getAuditSchemaResponse> => {
+  return customFetch<getAuditSchemaResponse>(getGetAuditSchemaUrl(), {
+    ...options,
+    method: "GET",
+  });
 };
 
 export type listEvaluatorsResponse200 = {

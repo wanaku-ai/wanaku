@@ -5139,6 +5139,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "wanaku-feature-audit"
+version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "http",
+ "praxis-proxy-filter",
+ "serde",
+ "serde_json",
+ "tracing",
+ "wanaku-infra",
+ "wanaku-types",
+ "yaml_serde",
+]
+
+[[package]]
 name = "wanaku-feature-evaluator"
 version = "0.3.0"
 dependencies = [
@@ -5278,6 +5293,7 @@ dependencies = [
  "tracing",
  "utoipa",
  "wanaku-feature-action-policy",
+ "wanaku-feature-audit",
  "wanaku-feature-evaluator",
  "wanaku-feature-intercept",
  "wanaku-feature-mcp-metadata",
