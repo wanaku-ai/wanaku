@@ -6,6 +6,8 @@ import { EvaluatorsTable } from "./EvaluatorsTable";
 import { EvaluatorModal } from "./EvaluatorModal";
 import { BindingsTable, BindingEntry } from "./BindingsTable";
 import { BindingModal } from "./BindingModal";
+import {useErrorNotification} from "../../hooks/error-notifications"
+import {ErrorNotification} from "../../components/ErrorNotification"
 
 const EvaluatorsPage: React.FC = () => {
   const [evaluators, setEvaluators] = useState<EvaluatorDef[]>([]);
@@ -13,7 +15,7 @@ const EvaluatorsPage: React.FC = () => {
   const [bindings, setBindings] = useState<BindingEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { errorMessage, setErrorMessage } = useErrorNotification()
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [isEvaluatorModalOpen, setIsEvaluatorModalOpen] = useState(false);
@@ -72,13 +74,6 @@ const EvaluatorsPage: React.FC = () => {
   useEffect(() => {
     Promise.all([fetchEvaluators(), fetchConnections(), fetchBindings()]).finally(() => setIsLoading(false));
   }, [fetchEvaluators, fetchConnections, fetchBindings]);
-
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => setErrorMessage(null), 10_000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMessage]);
 
   useEffect(() => {
     if (successMessage) {
@@ -175,13 +170,9 @@ const EvaluatorsPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <InlineNotification
-          kind="error"
-          title="Error"
-          subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(null)}
-          lowContrast
-          hideCloseButton={false}
+        <ErrorNotification
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
         />
       )}
       {successMessage && (

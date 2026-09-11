@@ -1,12 +1,11 @@
-import {
-  InlineNotification
-} from "@carbon/react"
 import {useEffect, useState} from "react"
 import {addForward, updateForward, listForwards, refreshForward, removeForward} from "../../hooks/api/use-forwards"
 import {ForwardEntry} from "../../models"
 import {ForwardDetailModal} from "./ForwardDetailModal.tsx"
 import {ForwardModal} from "./ForwardModal.tsx"
 import {ForwardsTable} from "./ForwardsTable.tsx"
+import {useErrorNotification} from "../../hooks/error-notifications"
+import {ErrorNotification} from "../../components/ErrorNotification"
 
 const ForwardsPage = () => {
 
@@ -14,7 +13,7 @@ const ForwardsPage = () => {
   const [isModalOpen, setModalOpen] = useState(false)
   const [openedForward, setOpenedForward] = useState<ForwardEntry>()
   const [detailForward, setDetailForward] = useState<ForwardEntry>()
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const { errorMessage, setErrorMessage } = useErrorNotification()
 
   function fetchForwards() {
     listForwards().then((response) => {
@@ -120,13 +119,9 @@ const ForwardsPage = () => {
         A list of forwards registered in the system.
       </p>
       {errorMessage && (
-        <InlineNotification
-          kind="error"
-          title="Error"
-          subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(null)}
-          lowContrast
-          hideCloseButton={false}
+        <ErrorNotification
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
         />
       )}
       <div id="page-content">

@@ -1,4 +1,3 @@
-import {InlineNotification} from "@carbon/react";
 import {PageSkeleton} from "../../components/PageSkeleton";
 import React, {useCallback, useEffect, useState} from "react";
 import {useTools} from "../../hooks/api/use-tools";
@@ -6,6 +5,8 @@ import {ToolEntry} from "../../models";
 import {ToolsTable} from "./ToolsTable";
 import {ToolModal} from "./ToolModal"
 import {unwrapData} from "../../utils/api-response";
+import {useErrorNotification} from "../../hooks/error-notifications"
+import {ErrorNotification} from "../../components/ErrorNotification"
 
 
 export const ToolsPage: React.FC = () => {
@@ -13,7 +14,7 @@ export const ToolsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [openedTool, setOpenedTool] = useState<ToolEntry>()
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { errorMessage, setErrorMessage } = useErrorNotification()
   const { listTools, updateTool, removeTool } = useTools();
 
   const updateTools = useCallback(async () => {
@@ -33,18 +34,6 @@ export const ToolsPage: React.FC = () => {
   useEffect(() => {
     updateTools();
   }, [updateTools]);
-
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => {
-        setErrorMessage(null);
-      }, 10_000);
-
-      return () => {
-        clearTimeout(timer);
-      };
-    }
-  }, [errorMessage]);
 
   if (isLoading) return <PageSkeleton title="Tools" />;
 
@@ -78,13 +67,9 @@ export const ToolsPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <InlineNotification
-          kind="error"
-          title="Error"
-          subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(null)}
-          lowContrast
-          hideCloseButton={false}
+        <ErrorNotification
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
         />
       )}
       <h1 className="title">Tools</h1>

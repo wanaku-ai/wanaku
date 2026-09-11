@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from "react"
+import React, {useState} from "react"
 import {LLMSetup} from "./LLMSetup.tsx"
 import {LLMTools} from "./LLMTools.tsx"
 import {LLMChatArea} from "./LLMChatArea"
-import {Column, Grid, InlineNotification} from "@carbon/react"
+import {Column, Grid} from "@carbon/react"
 import {
   isConfigStoredInLocalStorage,
   LLM_CONFIG,
@@ -11,20 +11,15 @@ import {
   persistConfig,
   STORE_IN_LOCAL_STORAGE
 } from "./config"
+import {useErrorNotification} from "../../hooks/error-notifications"
+import {ErrorNotification} from "../../components/ErrorNotification"
 
 
 export const LLMChatPage: React.FC = () => {
   
   const [isStoredInLocalStorage, setStoreInLocalStorage] = useState(isConfigStoredInLocalStorage())
   const [config, setConfig] = useState<LlmConfig>(loadConfig())
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => setErrorMessage(null), 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMessage]);
+  const { errorMessage, setErrorMessage } = useErrorNotification()
   
   
   function applyConfigChange(config: LlmConfig) {
@@ -37,13 +32,9 @@ export const LLMChatPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <InlineNotification
-          kind="error"
-          title="Error"
-          subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(null)}
-          lowContrast
-          hideCloseButton={false}
+        <ErrorNotification
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
         />
       )}
       <h1 className="title">LLM Chat for testing</h1>

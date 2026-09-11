@@ -1,6 +1,8 @@
 import React, {useEffect, useRef, useState} from "react";
-import {Accordion, AccordionItem, Button, InlineNotification, Search, Tag, Toggle,} from "@carbon/react";
+import {Accordion, AccordionItem, Button, Search, Tag, Toggle,} from "@carbon/react";
 import {Download, TrashCan} from "@carbon/icons-react";
+import {useErrorNotification} from "../../hooks/error-notifications"
+import {ErrorNotification} from "../../components/ErrorNotification"
 const enum ToolCallEventType {
   STARTED = "STARTED",
   COMPLETED = "COMPLETED",
@@ -54,7 +56,7 @@ const ToolCallsPage: React.FC = () => {
     errorCategory: "",
   });
   const [autoScroll, setAutoScroll] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { errorMessage, setErrorMessage } = useErrorNotification()
   const eventSourceRef = useRef<EventSource | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -204,25 +206,12 @@ const ToolCallsPage: React.FC = () => {
     }
   }, [filteredEvents, autoScroll]);
 
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => {
-        setErrorMessage(null);
-      }, 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMessage]);
-
   return (
     <div style={{ padding: "2rem" }}>
       {errorMessage && (
-        <InlineNotification
-          kind="error"
-          title="Connection Error"
-          subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(null)}
-          lowContrast
-          hideCloseButton={false}
+        <ErrorNotification
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
         />
       )}
 
