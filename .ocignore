@@ -1,0 +1,31 @@
+# This file was written when the OpenShift strategy used `oc start-build --from-dir`.
+# That approach was abandoned because:
+#   1. Build pods are evicted due to ephemeral-storage limits on cluster nodes.
+#   2. `--build-arg` is silently ignored by the S2I binary source strategy.
+#
+# The current `cargo build-image --target openshift` strategy builds the image
+# locally with Docker/Podman and pushes only the final runtime image to the
+# OpenShift internal registry — `oc start-build` is no longer invoked.
+#
+# This file is kept as a safety net in case `oc start-build` is re-introduced
+# in the future. Without it, the Cargo build cache (>18 GB) would be uploaded.
+
+target/
+.git/
+.github/
+.claude/
+*.md
+!README.md
+wanaku.yaml
+
+.cargo/
+ui/admin/node_modules/
+ui/admin/dist/
+tests/e2e/ui/node_modules/
+tests/e2e/ui/test-results/
+tests/e2e/ui/playwright-report/
+plugins/
+scripts/
+working-data/
+.bob/
+plans/

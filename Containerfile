@@ -49,9 +49,11 @@ COPY features/intercept/Cargo.toml features/intercept/Cargo.toml
 COPY features/mcp-metadata/Cargo.toml features/mcp-metadata/Cargo.toml
 COPY features/metrics/Cargo.toml features/metrics/Cargo.toml
 COPY features/plugins/Cargo.toml features/plugins/Cargo.toml
+COPY xtask/Cargo.toml xtask/Cargo.toml
 
 RUN mkdir -p types/src infra/src filters/src server/src \
     features/action-policy/src features/audit/src features/evaluator/src features/intercept/src features/mcp-metadata/src features/metrics/src features/plugins/src \
+    xtask/src \
     ui/admin/dist \
     && echo '//! stub' > types/src/lib.rs \
     && echo '//! stub' > infra/src/lib.rs \
@@ -64,7 +66,8 @@ RUN mkdir -p types/src infra/src filters/src server/src \
     && echo '//! stub' > features/mcp-metadata/src/lib.rs \
     && echo '//! stub' > features/metrics/src/lib.rs \
     && echo '//! stub' > features/plugins/src/lib.rs \
-    && printf '//! stub\nfn main() {}\n' > server/src/main.rs
+    && printf '//! stub\nfn main() {}\n' > server/src/main.rs \
+    && printf '//! stub\nfn main() {}\n' > xtask/src/main.rs
 
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/src/target \
@@ -83,9 +86,10 @@ COPY infra/src infra/src
 COPY filters/src filters/src
 COPY server/src server/src
 COPY features features
+COPY xtask/src xtask/src
 COPY --from=ui-builder /ui/dist /src/ui/admin/dist
 
-RUN find types/src infra/src filters/src server/src features \
+RUN find types/src infra/src filters/src server/src features xtask/src \
     -name '*.rs' -exec touch {} +
 
 RUN --mount=type=cache,target=/root/.cargo/registry \
@@ -107,18 +111,23 @@ LABEL org.opencontainers.image.source="https://github.com/wanaku-ai/wanaku" \
     org.opencontainers.image.description="Wanaku MCP proxy server" \
     org.opencontainers.image.licenses="Apache-2.0"
 
-RUN microdnf install -y ca-certificates shadow-utils \
+# OpenShift runs pods under a namespace-allocated UID (> 1000000000) that is
+# always in the root group (GID 0).  To satisfy the restricted-v2 SCC we must:
+#   1. Not hard-code a UID — OpenShift injects one at runtime.
+#   2. Grant group-write (GID 0) access to every directory the process writes.
+#   3. Not set fsGroup / runAsUser in the image — let OpenShift assign them.
+RUN microdnf install -y ca-certificates \
     && microdnf clean all \
-    && groupadd -r wanaku \
-    && useradd -r -g wanaku -d /nonexistent -s /sbin/nologin wanaku \
-    && mkdir -p /etc/wanaku /data/registry
+    && mkdir -p /etc/wanaku /data/registry \
+    && chown -R 0:0 /etc/wanaku /data/registry \
+    && chmod -R g=u  /etc/wanaku /data/registry
 
 COPY --from=builder --chown=root:root --chmod=0555 \
     /usr/local/bin/wanaku-server /usr/local/bin/wanaku-server
 
-RUN chown wanaku:wanaku /data/registry
-
-USER wanaku:wanaku
+# Non-zero UID satisfies "must not run as root" policies; GID 0 is the
+# OpenShift-compatible group.  The actual UID is overridden at runtime.
+USER 1001:0
 
 WORKDIR /etc/wanaku
 

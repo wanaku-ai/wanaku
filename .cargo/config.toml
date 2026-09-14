@@ -1,0 +1,12 @@
+[alias]
+# Build the full container image.
+# Usage: cargo build-image [--target docker|minikube|openshift] [--tag <image:tag>]
+build-image = ["run", "--quiet", "-p", "xtask", "--", "build-image"]
+
+# Build the headless container image (no embedded admin UI).
+# Usage: cargo build-image-headless [--target docker|minikube|openshift] [--tag <image:tag>]
+build-image-headless = ["run", "--quiet", "-p", "xtask", "--", "build-image", "--variant", "headless"]
+
+# Assemble a multi-arch manifest list from existing arch-specific images.
+# Usage: cargo build-image-manifest [--target docker|openshift] [--tag <image:tag>]
+build-image-manifest = ["run", "--quiet", "-p", "xtask", "--", "build-image-manifest"]

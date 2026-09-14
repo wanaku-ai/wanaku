@@ -60,6 +60,7 @@ services:
     build:
       context: ../..
       dockerfile: Containerfile
+    image: quay.io/wanaku/wanaku-server:latest
     environment:
       WANAKU_AUTH_ISSUER: http://keycloak:8080/realms/wanaku
     depends_on:
