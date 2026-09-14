@@ -35,9 +35,11 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
   useEffect(() => {
     (async () => {
       try {
-        const tools = await fetchTools()
-        setTools(tools)
-        await checkSelectedNamespace()
+        const [fetchedTools, namespaces] = await Promise.all([fetchTools(), fetchNamespaces()])
+        setTools(fetchedTools)
+        // Keep the filtering namespace in sync with the selected one, falling
+        // back to "default" if the selected namespace no longer exists.
+        setNamespace(resolveNamespace(namespaces))
       } catch (error) {
         onError?.(getErrorMessage(error))
         setTools([])
@@ -54,7 +56,7 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
     }
     return response.data
   }
-  
+
   async function fetchNamespaces(): Promise<NamespaceEntry[]> {
     const response = await listNamespaces()
     if (response.status !== 200 || !Array.isArray(response.data)) {
@@ -62,15 +64,14 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
     }
     return response.data
   }
-  
-  /* Check that selectedNamespace exists. Reset it to "default" if it doesn't */
-  async function checkSelectedNamespace() {
-    console.log("Checking selected namespace")
-    const namespaces: NamespaceEntry[] = await fetchNamespaces()
+
+  /* Resolve the selected namespace against the available ones. Falls back to
+     "default" if the selected namespace no longer exists. */
+  function resolveNamespace(namespaces: NamespaceEntry[]): NamespaceEntry {
     if (!namespaces.find(namespace => namespace.name === selectedNamespace.name)) {
-      console.log("Selected namespace not found, resetting to default")
-      setNamespace({ name: "default" })
+      return { name: "default" }
     }
+    return selectedNamespace
   }
 
   function filteredTools(): ToolEntry[] {
@@ -104,6 +105,9 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
           labelText="Select tools"
           value={namespace?.name}
           onChange={(namespace: NamespaceEntry) => {
+            // Update the local filtering namespace immediately so the tools
+            // list reflects the new selection without needing a page refresh.
+            setNamespace(namespace)
             onSelectionChange(namespace, [])
           }}
         />
