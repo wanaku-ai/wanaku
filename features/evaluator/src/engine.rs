@@ -14,6 +14,12 @@ use wanaku_types::interactions::InMemoryInteractionStore;
 use crate::action::ActionResult;
 use crate::host::{self, EvaluatorAction, HostState};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EvaluatorExecutionError {
+    Instantiation,
+    Execution,
+}
+
 impl WasiView for HostState {
     fn ctx(&mut self) -> WasiCtxView<'_> {
         WasiCtxView {
@@ -57,15 +63,21 @@ impl CompiledEvaluator {
 
     /// Execute the evaluator with the given context.
     /// Creates a fresh WASM instance per call — no state sharing.
-    #[expect(clippy::too_many_lines, reason = "WASM instantiation and execution pipeline")]
-    #[expect(clippy::needless_pass_by_value, reason = "ctx is moved into the WASM store")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "WASM instantiation and execution pipeline"
+    )]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "ctx is moved into the WASM store"
+    )]
     pub fn evaluate(
         &self,
         registry: InMemoryRegistry,
         interactions: InMemoryInteractionStore,
         ctx: host::types::EvaluationContext,
         compiled_schema: Option<Arc<CompiledSchema>>,
-    ) -> ActionResult {
+    ) -> Result<ActionResult, EvaluatorExecutionError> {
         let wasi_ctx = WasiCtxBuilder::new().build();
 
         let host_state = HostState {
@@ -89,7 +101,7 @@ impl CompiledEvaluator {
                     error = %e,
                     "failed to instantiate WASM evaluator"
                 );
-                return ActionResult::Pass;
+                return Err(EvaluatorExecutionError::Instantiation);
             }
         };
 
@@ -99,10 +111,10 @@ impl CompiledEvaluator {
                 error = %e,
                 "WASM evaluator execution failed"
             );
-            return ActionResult::Pass;
+            return Err(EvaluatorExecutionError::Execution);
         }
 
-        store.into_data().action
+        Ok(store.into_data().action)
     }
 }
 

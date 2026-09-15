@@ -1,5 +1,9 @@
 # Configuration
 
+## Audit configuration
+
+Use the `audit` section to configure audit retention, optional payload capture, payload size, and redaction rules. Payload capture is disabled by default. The default retention limit is 10,000 events. See [Governance audit trail](audit-trail.md) for the configuration fields, environment overrides, persistence behavior, and management API.
+
 Wanaku uses environment variables and two optional YAML files. It does not use a properties file. Set environment variables in the container orchestrator or systemd unit. Specify configuration files only when you need custom settings.
 
 ## Configuration Sources (Precedence Order)

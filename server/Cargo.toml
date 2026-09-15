@@ -44,6 +44,7 @@ wanaku-infra = { workspace = true, features = ["openapi"] }
 wanaku-types = { workspace = true, features = ["openapi"] }
 wanaku-filters = { workspace = true }
 wanaku-feature-action-policy = { workspace = true, features = ["openapi"] }
+wanaku-feature-audit = { workspace = true }
 wanaku-feature-evaluator = { workspace = true, features = ["openapi"] }
 wanaku-feature-intercept = { workspace = true }
 wanaku-feature-mcp-metadata = { workspace = true }

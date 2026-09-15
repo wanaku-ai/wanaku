@@ -1,0 +1,98 @@
+@use "@carbon/react/scss/spacing" as *;
+@use "@carbon/react/scss/theme" as *;
+
+.audit-page__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-05;
+  padding-right: $spacing-07;
+
+  .cds--btn { margin-top: $spacing-05; }
+}
+
+.audit-health {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-04;
+  padding: 0 $spacing-07 $spacing-06;
+  color: $text-secondary;
+
+  .cds--inline-notification { flex-basis: 100%; max-width: 48rem; }
+}
+
+.audit-page__content { padding: $spacing-06 $spacing-07; }
+
+.audit-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(10rem, 1fr));
+  gap: $spacing-05;
+  margin-bottom: $spacing-07;
+}
+
+.audit-filters__actions {
+  display: flex;
+  align-items: flex-end;
+  gap: $spacing-03;
+  grid-column: 1 / -1;
+}
+
+.audit-table__value {
+  display: block;
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-page__error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-04;
+}
+
+.audit-detail__section,
+.audit-detail__json { margin-bottom: $spacing-07; }
+
+.audit-detail__section h3,
+.audit-detail__json h3 { margin-bottom: $spacing-05; }
+
+.audit-detail__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-05;
+}
+
+.audit-detail__field {
+  min-width: 0;
+
+  dt { margin-bottom: $spacing-02; color: $text-secondary; }
+  dd { overflow-wrap: anywhere; white-space: pre-wrap; }
+}
+
+.audit-detail__json pre {
+  max-height: 20rem;
+  padding: $spacing-05;
+  overflow: auto;
+  background: $layer-02;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1056px) {
+  .audit-filters { grid-template-columns: repeat(2, minmax(10rem, 1fr)); }
+}
+
+@media (max-width: 672px) {
+  .audit-page__heading { padding-right: $spacing-05; }
+  .audit-page__heading .title,
+  .audit-page__heading .description { padding-left: $spacing-05; }
+  .audit-health,
+  .audit-page__content { padding-left: $spacing-05; padding-right: $spacing-05; }
+  .audit-filters,
+  .audit-detail__grid { grid-template-columns: 1fr; }
+  .audit-filters__actions { flex-direction: column; align-items: stretch; }
+  .audit-filters__actions .cds--btn { max-width: none; width: 100%; }
+}

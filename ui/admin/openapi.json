@@ -271,6 +271,199 @@
         }
       }
     },
+    "/api/v1/audit/events": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "operationId": "list_audit_events",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Inclusive ISO 8601 start time",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Inclusive ISO 8601 end time",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "actor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "operation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "decision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AuditDecision"
+            }
+          },
+          {
+            "name": "reason_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "correlation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit event page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_AuditPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit/events/{id}": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "operationId": "get_audit_event",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Audit event ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_AuditEvent"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit/health": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "operationId": "get_audit_health",
+        "responses": {
+          "200": {
+            "description": "Audit store health",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_AuditHealth"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit/schema": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "operationId": "get_audit_schema",
+        "responses": {
+          "200": {
+            "description": "Audit schema version",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/evaluators": {
       "get": {
         "tags": [
@@ -1299,6 +1492,266 @@
           "rejected"
         ]
       },
+      "AuditCategory": {
+        "type": "string",
+        "enum": [
+          "decision",
+          "administrative"
+        ]
+      },
+      "AuditDecision": {
+        "type": "string",
+        "enum": [
+          "allow",
+          "block",
+          "warn",
+          "reject_malformed",
+          "error"
+        ]
+      },
+      "AuditEvent": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "event_id",
+          "stream_id",
+          "sequence",
+          "timestamp",
+          "category",
+          "decision",
+          "correlation_id",
+          "protocol",
+          "operation",
+          "reason_code",
+          "explanation",
+          "redaction",
+          "attributes",
+          "coverage_complete",
+          "dropped_events"
+        ],
+        "properties": {
+          "actor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "audience": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "$ref": "#/components/schemas/AuditCategory"
+          },
+          "conversation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "correlation_id": {
+            "type": "string"
+          },
+          "coverage_complete": {
+            "type": "boolean"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/AuditDecision"
+          },
+          "dropped_events": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "duration_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "evaluator": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "filter": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "namespace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "operation": {
+            "type": "string"
+          },
+          "payload": {},
+          "policy_revision": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "redaction": {
+            "$ref": "#/components/schemas/RedactionMetadata"
+          },
+          "request_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "response_status": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "schema_version": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "stream_id": {
+            "type": "string"
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "upstream_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workload": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "AuditHealth": {
+        "type": "object",
+        "required": [
+          "healthy",
+          "dropped_events",
+          "retained_events",
+          "capacity"
+        ],
+        "properties": {
+          "capacity": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dropped_events": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "healthy": {
+            "type": "boolean"
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "retained_events": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "AuditPage": {
+        "type": "object",
+        "required": [
+          "events",
+          "offset",
+          "limit",
+          "total"
+        ],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEvent"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "AuditSnapshot": {
+        "type": "object",
+        "required": [
+          "storage_failures"
+        ],
+        "properties": {
+          "storage_failures": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
       "BindNamespaceRequest": {
         "type": "object",
         "required": [
@@ -1771,9 +2224,13 @@
           "filters",
           "evaluators",
           "pipeline",
-          "gauges"
+          "gauges",
+          "audit"
         ],
         "properties": {
+          "audit": {
+            "$ref": "#/components/schemas/AuditSnapshot"
+          },
           "evaluators": {
             "type": "object",
             "additionalProperties": {
@@ -2102,6 +2559,28 @@
           "assistant",
           "system"
         ]
+      },
+      "RedactionMetadata": {
+        "type": "object",
+        "required": [
+          "redacted_fields",
+          "payload_captured",
+          "payload_truncated"
+        ],
+        "properties": {
+          "payload_captured": {
+            "type": "boolean"
+          },
+          "payload_truncated": {
+            "type": "boolean"
+          },
+          "redacted_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
       "ResourceEntry": {
         "type": "object",
@@ -2503,6 +2982,269 @@
               },
               "revision": {
                 "$ref": "#/components/schemas/RevisionMetadata"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_AuditEvent": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "schema_version",
+              "event_id",
+              "stream_id",
+              "sequence",
+              "timestamp",
+              "category",
+              "decision",
+              "correlation_id",
+              "protocol",
+              "operation",
+              "reason_code",
+              "explanation",
+              "redaction",
+              "attributes",
+              "coverage_complete",
+              "dropped_events"
+            ],
+            "properties": {
+              "actor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "attributes": {
+                "type": "object",
+                "additionalProperties": {},
+                "propertyNames": {
+                  "type": "string"
+                }
+              },
+              "audience": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "category": {
+                "$ref": "#/components/schemas/AuditCategory"
+              },
+              "conversation_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "correlation_id": {
+                "type": "string"
+              },
+              "coverage_complete": {
+                "type": "boolean"
+              },
+              "decision": {
+                "$ref": "#/components/schemas/AuditDecision"
+              },
+              "dropped_events": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "duration_ms": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64",
+                "minimum": 0
+              },
+              "evaluator": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "explanation": {
+                "type": "string"
+              },
+              "filter": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "namespace": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "operation": {
+                "type": "string"
+              },
+              "payload": {},
+              "policy_revision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "protocol": {
+                "type": "string"
+              },
+              "reason_code": {
+                "type": "string"
+              },
+              "redaction": {
+                "$ref": "#/components/schemas/RedactionMetadata"
+              },
+              "request_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "response_status": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int32",
+                "minimum": 0
+              },
+              "schema_version": {
+                "type": "string"
+              },
+              "sequence": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "stream_id": {
+                "type": "string"
+              },
+              "target": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "target_type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "timestamp": {
+                "type": "string"
+              },
+              "upstream_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "workload": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_AuditHealth": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "healthy",
+              "dropped_events",
+              "retained_events",
+              "capacity"
+            ],
+            "properties": {
+              "capacity": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "dropped_events": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "healthy": {
+                "type": "boolean"
+              },
+              "last_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "retained_events": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_AuditPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "events",
+              "offset",
+              "limit",
+              "total"
+            ],
+            "properties": {
+              "events": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AuditEvent"
+                }
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "offset": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0
               }
             }
           },

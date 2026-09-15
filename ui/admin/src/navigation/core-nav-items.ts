@@ -12,6 +12,7 @@ export const CORE_NAV_ITEMS: NavItem[] = [
   { id: "namespaces", label: "Namespaces", route: Links.Namespaces, source: "core", order: 60 },
   { id: "forwards", label: "Forwards", route: Links.Forwards, source: "core", order: 70 },
   { id: "evaluators", label: "Evaluators", route: Links.Evaluators, source: "core", order: 80 },
+  { id: "audit", label: "Audit", route: Links.Audit, source: "core", section: "Admin", order: 88 },
   { id: "action-policies", label: "Action Policies", route: Links.ActionPolicies, source: "core", section: "Admin", order: 89 },
   { id: "plugins", label: "Installed Plugins", route: Links.Plugins, source: "core", section: "Admin", order: 90 },
 
