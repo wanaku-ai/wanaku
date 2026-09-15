@@ -119,8 +119,18 @@ evaluators:
 
         let schema = eval.llm.result_schema.as_ref().unwrap();
         assert_eq!(schema["type"], "object");
-        assert!(schema["required"].as_array().unwrap().contains(&serde_json::json!("level")));
-        assert!(schema["required"].as_array().unwrap().contains(&serde_json::json!("reason")));
+        assert!(
+            schema["required"]
+                .as_array()
+                .unwrap()
+                .contains(&serde_json::json!("level"))
+        );
+        assert!(
+            schema["required"]
+                .as_array()
+                .unwrap()
+                .contains(&serde_json::json!("reason"))
+        );
     }
 
     #[test]
@@ -172,7 +182,10 @@ evaluators:
       path: "/wasm/t.wasm"
 "#;
         let config: EvaluatorsConfig = serde_yaml::from_str(yaml).unwrap();
-        assert!(matches!(config.evaluators[0].on_error, ErrorPolicy::Continue));
+        assert!(matches!(
+            config.evaluators[0].on_error,
+            ErrorPolicy::Continue
+        ));
     }
 }
 
@@ -249,9 +262,11 @@ mod state {
     #[test]
     fn find_matching_respects_namespace() {
         let state = EvaluatorState::new();
-        state.load_evaluators(vec![
-            safety_evaluator("prod-gate", "tools/call", Some("production")),
-        ]);
+        state.load_evaluators(vec![safety_evaluator(
+            "prod-gate",
+            "tools/call",
+            Some("production"),
+        )]);
 
         assert!(state.find_matching("tools/call", "production").is_some());
         assert!(state.find_matching("tools/call", "staging").is_none());
@@ -260,18 +275,14 @@ mod state {
     #[test]
     fn find_matching_no_match_returns_none() {
         let state = EvaluatorState::new();
-        state.load_evaluators(vec![
-            safety_evaluator("gate", "tools/call", None),
-        ]);
+        state.load_evaluators(vec![safety_evaluator("gate", "tools/call", None)]);
         assert!(state.find_matching("resources/read", "default").is_none());
     }
 
     #[test]
     fn reload_replaces_evaluators() {
         let state = EvaluatorState::new();
-        state.load_evaluators(vec![
-            safety_evaluator("first", "tools/call", None),
-        ]);
+        state.load_evaluators(vec![safety_evaluator("first", "tools/call", None)]);
         assert_eq!(state.list_evaluators().len(), 1);
 
         state.load_evaluators(vec![
@@ -287,9 +298,7 @@ mod state {
     #[test]
     fn clear_evaluators() {
         let state = EvaluatorState::new();
-        state.load_evaluators(vec![
-            safety_evaluator("gate", "tools/call", None),
-        ]);
+        state.load_evaluators(vec![safety_evaluator("gate", "tools/call", None)]);
         assert_eq!(state.list_evaluators().len(), 1);
 
         state.load_evaluators(vec![]);
@@ -335,7 +344,10 @@ mod state {
     fn activation_installs_snapshot_matching_revision() {
         let path = wasm_path("safety_review_action.wasm");
         if !path.exists() {
-            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            eprintln!(
+                "SKIP: {} not found — build WASM actions first",
+                path.display()
+            );
             return;
         }
 
@@ -375,10 +387,16 @@ mod state {
         // the activation is rejected.
         let bad = safety_evaluator("gate", "tools/call", None);
         let result = state.try_activate(vec![bad], RevisionOrigin::Api, None, None);
-        assert!(result.is_err(), "activation with an uncompilable module must be rejected");
+        assert!(
+            result.is_err(),
+            "activation with an uncompilable module must be rejected"
+        );
 
         let snap = store.snapshot();
-        assert_eq!(snap.gauges.wasm_compiled, 3, "rejected config must not change wasm_compiled");
+        assert_eq!(
+            snap.gauges.wasm_compiled, 3,
+            "rejected config must not change wasm_compiled"
+        );
         assert_eq!(
             snap.gauges.evaluators_loaded, 3,
             "rejected config must not change evaluators_loaded"
@@ -389,7 +407,10 @@ mod state {
     fn cas_conflict_does_not_change_active_state_gauges() {
         let path = wasm_path("safety_review_action.wasm");
         if !path.exists() {
-            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            eprintln!(
+                "SKIP: {} not found — build WASM actions first",
+                path.display()
+            );
             return;
         }
 
@@ -417,7 +438,10 @@ mod state {
         assert!(result.is_err(), "stale expected_revision must conflict");
 
         let snap = store.snapshot();
-        assert_eq!(snap.gauges.wasm_compiled, 1, "conflict must not change wasm_compiled");
+        assert_eq!(
+            snap.gauges.wasm_compiled, 1,
+            "conflict must not change wasm_compiled"
+        );
         assert_eq!(
             snap.gauges.evaluators_loaded, 1,
             "conflict must not change evaluators_loaded"
@@ -432,7 +456,10 @@ mod state {
     fn concurrent_activations_keep_snapshot_and_revision_consistent() {
         let path = wasm_path("safety_review_action.wasm");
         if !path.exists() {
-            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            eprintln!(
+                "SKIP: {} not found — build WASM actions first",
+                path.display()
+            );
             return;
         }
 
@@ -477,7 +504,10 @@ mod state {
     fn captured_snapshot_is_immutable_across_activation() {
         let path = wasm_path("safety_review_action.wasm");
         if !path.exists() {
-            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            eprintln!(
+                "SKIP: {} not found — build WASM actions first",
+                path.display()
+            );
             return;
         }
 
@@ -593,7 +623,9 @@ mod connections {
     #[test]
     fn list_llm_connections_returns_names_only() {
         let state = EvaluatorState::new();
-        state.load_llm_connections(vec![secret_connection()]).unwrap();
+        state
+            .load_llm_connections(vec![secret_connection()])
+            .unwrap();
 
         let names = state.list_llm_connections();
         assert_eq!(names, vec!["test-connection".to_owned()]);
@@ -608,7 +640,9 @@ mod connections {
     #[test]
     fn evaluator_list_never_serializes_api_key() {
         let state = EvaluatorState::new();
-        state.load_llm_connections(vec![secret_connection()]).unwrap();
+        state
+            .load_llm_connections(vec![secret_connection()])
+            .unwrap();
         state.load_evaluators(vec![safety_evaluator("gate", "tools/call", None)]);
 
         let json = serde_json::to_string(&state.list_evaluators()).unwrap();
@@ -663,7 +697,10 @@ mod schema {
         });
         let raw = r#"{"level": "green"}"#;
         let err = validate_against_schema(&schema, raw).unwrap_err();
-        assert!(err.contains("reason"), "should mention missing field: {err}");
+        assert!(
+            err.contains("reason"),
+            "should mention missing field: {err}"
+        );
     }
 
     #[test]
@@ -833,7 +870,10 @@ mod engine {
         }};
     }
 
-    fn eval_context(method: &str, llm_result: &str) -> wanaku_feature_evaluator::wit_types::EvaluationContext {
+    fn eval_context(
+        method: &str,
+        llm_result: &str,
+    ) -> wanaku_feature_evaluator::wit_types::EvaluationContext {
         wanaku_feature_evaluator::wit_types::EvaluationContext {
             method: method.to_owned(),
             namespace: "default".to_owned(),
@@ -851,12 +891,14 @@ mod engine {
             .expect("failed to compile safety-review WASM");
 
         let ctx = eval_context("tools/call", r#"{"level": "red", "reason": "dangerous"}"#);
-        let result = compiled.evaluate(
-            InMemoryRegistry::new(),
-            InMemoryInteractionStore::new(100),
-            ctx,
-            None,
-        );
+        let result = compiled
+            .evaluate(
+                InMemoryRegistry::new(),
+                InMemoryInteractionStore::new(100),
+                ctx,
+                None,
+            )
+            .expect("WASM evaluator execution failed");
 
         assert!(
             matches!(result, ActionResult::Block(_)),
@@ -871,12 +913,14 @@ mod engine {
             .expect("failed to compile safety-review WASM");
 
         let ctx = eval_context("tools/call", r#"{"level": "yellow", "reason": "elevated"}"#);
-        let result = compiled.evaluate(
-            InMemoryRegistry::new(),
-            InMemoryInteractionStore::new(100),
-            ctx,
-            None,
-        );
+        let result = compiled
+            .evaluate(
+                InMemoryRegistry::new(),
+                InMemoryInteractionStore::new(100),
+                ctx,
+                None,
+            )
+            .expect("WASM evaluator execution failed");
 
         assert!(
             matches!(result, ActionResult::Warn(_)),
@@ -891,12 +935,14 @@ mod engine {
             .expect("failed to compile safety-review WASM");
 
         let ctx = eval_context("tools/call", r#"{"level": "green", "reason": "safe"}"#);
-        let result = compiled.evaluate(
-            InMemoryRegistry::new(),
-            InMemoryInteractionStore::new(100),
-            ctx,
-            None,
-        );
+        let result = compiled
+            .evaluate(
+                InMemoryRegistry::new(),
+                InMemoryInteractionStore::new(100),
+                ctx,
+                None,
+            )
+            .expect("WASM evaluator execution failed");
 
         assert!(
             matches!(result, ActionResult::Pass),
@@ -912,12 +958,14 @@ mod engine {
 
         let llm_output = r#"{"level": "red", "reason": "nuclear launch detected"}"#;
         let ctx = eval_context("tools/call", llm_output);
-        let result = compiled.evaluate(
-            InMemoryRegistry::new(),
-            InMemoryInteractionStore::new(100),
-            ctx,
-            None,
-        );
+        let result = compiled
+            .evaluate(
+                InMemoryRegistry::new(),
+                InMemoryInteractionStore::new(100),
+                ctx,
+                None,
+            )
+            .expect("WASM evaluator execution failed");
 
         if let ActionResult::Block(reason) = result {
             assert!(
@@ -946,12 +994,14 @@ mod engine {
         let compiled_schema = CompiledSchema::compile(&schema_val).map(Arc::new);
 
         let ctx = eval_context("tools/call", r#"{"level": "red", "reason": "test"}"#);
-        let result = compiled.evaluate(
-            InMemoryRegistry::new(),
-            InMemoryInteractionStore::new(100),
-            ctx,
-            compiled_schema,
-        );
+        let result = compiled
+            .evaluate(
+                InMemoryRegistry::new(),
+                InMemoryInteractionStore::new(100),
+                ctx,
+                compiled_schema,
+            )
+            .expect("WASM evaluator execution failed");
 
         assert!(
             matches!(result, ActionResult::Block(_)),
@@ -1030,7 +1080,9 @@ mod persistence {
             active_id: Some(1),
             next_id: 2,
         };
-        FileRevisionPersistence::new(file).save(&snapshot).expect("seed persist");
+        FileRevisionPersistence::new(file)
+            .save(&snapshot)
+            .expect("seed persist");
     }
 
     fn activate_and_persist(file: &PathBuf, eval: EvaluatorDef) -> u64 {
@@ -1048,7 +1100,10 @@ mod persistence {
     fn active_revision_and_runtime_survive_restart() {
         let path = wasm_path("safety_review_action.wasm");
         if !path.exists() {
-            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            eprintln!(
+                "SKIP: {} not found — build WASM actions first",
+                path.display()
+            );
             return;
         }
         let dir = temp_dir("wanaku-eval-persist-restart");
@@ -1094,7 +1149,10 @@ mod persistence {
     fn changed_startup_config_records_new_revision() {
         let path = wasm_path("safety_review_action.wasm");
         if !path.exists() {
-            eprintln!("SKIP: {} not found — build WASM actions first", path.display());
+            eprintln!(
+                "SKIP: {} not found — build WASM actions first",
+                path.display()
+            );
             return;
         }
         let dir = temp_dir("wanaku-eval-persist-changed");

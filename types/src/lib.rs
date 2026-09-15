@@ -1,5 +1,7 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
+pub mod audit;
+pub mod audit_redaction;
 pub mod config;
 pub mod correlation;
 pub mod feature;

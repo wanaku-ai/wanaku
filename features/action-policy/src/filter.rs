@@ -4,10 +4,14 @@ use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use wanaku_filters::json_rpc::{McpRequestView, RequestViewError};
 use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_types::audit::{
+    AuditCategory, AuditDecision, AuditEvent, AuditStore, InMemoryAuditStore,
+};
 use wanaku_types::governance::{
     EnforcementMode, FailureBehavior, GovernanceConfig, GovernancePosture, NoMatchBehavior,
 };
 use wanaku_types::registry::{DEFAULT_NAMESPACE, ToolRegistry};
+use wanaku_types::{PROMPTS_GET, RESOURCES_READ, TOOLS_CALL};
 
 use crate::{
     ActionContext, ActionPolicyState, PolicyDecision, PolicyEngine, PolicySnapshot, PolicyState,
@@ -21,6 +25,8 @@ const INVALID_POLICY_REASON_CODE: &str = "action_policy_invalid";
 const INVALID_POLICY_MESSAGE: &str = "The action policy is unavailable.";
 const NO_MATCH_REASON_CODE: &str = "governance_no_match";
 const NO_MATCH_MESSAGE: &str = "No governance policy permits this action.";
+const ACTION_POLICY_ALLOWED_REASON_CODE: &str = "action_policy_allowed";
+const ACTION_POLICY_ALLOWED_MESSAGE: &str = "Action policy allowed the request.";
 
 wanaku_filters::body_filter_boilerplate!(ActionPolicyFilter, "wanaku_action_policy");
 
@@ -58,6 +64,13 @@ impl ActionPolicyFilter {
             return Ok(FilterAction::Continue);
         }
         let Some(state) = ctx.extensions.get::<ActionPolicyState>() else {
+            record_simple_decision(
+                ctx,
+                body.as_ref(),
+                AuditDecision::Error,
+                INVALID_POLICY_REASON_CODE,
+                INVALID_POLICY_MESSAGE,
+            );
             return Ok(apply_failure(&posture, &id));
         };
         let snapshot = state.snapshot();
@@ -80,29 +93,57 @@ fn evaluate_snapshot(
 ) -> FilterAction {
     let policy = match snapshot {
         PolicySnapshot::Valid(policy) => policy,
-        PolicySnapshot::Unconfigured => return apply_no_match(posture, id),
-        PolicySnapshot::Invalid => return apply_failure(posture, id),
+        PolicySnapshot::Unconfigured => {
+            record_simple_decision(
+                ctx,
+                body,
+                no_match_audit_decision(posture),
+                NO_MATCH_REASON_CODE,
+                NO_MATCH_MESSAGE,
+            );
+            return apply_no_match(posture, id);
+        }
+        PolicySnapshot::Invalid => {
+            record_simple_decision(
+                ctx,
+                body,
+                AuditDecision::Error,
+                INVALID_POLICY_REASON_CODE,
+                INVALID_POLICY_MESSAGE,
+            );
+            return apply_failure(posture, id);
+        }
     };
     let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+        record_simple_decision(
+            ctx,
+            body,
+            AuditDecision::Error,
+            INVALID_POLICY_REASON_CODE,
+            INVALID_POLICY_MESSAGE,
+        );
         return apply_failure(posture, id);
     };
-    evaluate_request(RequestEvaluation {
-        method: ctx
-            .get_metadata(wanaku_filters::MCP_METHOD_KEY)
-            .unwrap_or_default(),
-        namespace: ctx
-            .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
-            .unwrap_or(DEFAULT_NAMESPACE),
-        body,
-        policy: &policy,
-        posture,
-        registry,
-        id,
-    })
+    evaluate_request_audited(
+        ctx,
+        RequestEvaluation {
+            method: ctx
+                .get_metadata(wanaku_filters::MCP_METHOD_KEY)
+                .unwrap_or_default(),
+            namespace: ctx
+                .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
+                .unwrap_or(DEFAULT_NAMESPACE),
+            body,
+            policy: &policy,
+            posture,
+            registry,
+            id,
+        },
+    )
 }
 
 fn is_governed_method(method: &str) -> bool {
-    matches!(method, "tools/call" | "resources/read" | "prompts/get")
+    matches!(method, TOOLS_CALL | RESOURCES_READ | PROMPTS_GET)
 }
 
 #[derive(Clone, Copy)]
@@ -116,7 +157,45 @@ struct RequestEvaluation<'a> {
     id: &'a serde_json::Value,
 }
 
+struct DecisionAuditContext<'a> {
+    store: &'a InMemoryAuditStore,
+    request_id: Option<&'a str>,
+    target: Option<&'a str>,
+    policy_revision: Option<String>,
+}
+
+impl<'a> DecisionAuditContext<'a> {
+    fn from_http(ctx: &'a HttpFilterContext<'_>) -> Option<Self> {
+        Some(Self {
+            store: ctx.extensions.get::<InMemoryAuditStore>()?,
+            request_id: ctx.request_id(),
+            target: ctx.get_metadata(wanaku_filters::MCP_NAME_KEY),
+            policy_revision: ctx
+                .extensions
+                .get::<ActionPolicyState>()
+                .and_then(|state| state.revision_store().active_revision_id())
+                .map(|revision| revision.to_string()),
+        })
+    }
+}
+
+#[cfg(test)]
 fn evaluate_request(input: RequestEvaluation<'_>) -> FilterAction {
+    evaluate_request_impl(None, input)
+}
+
+fn evaluate_request_audited(
+    ctx: &HttpFilterContext<'_>,
+    input: RequestEvaluation<'_>,
+) -> FilterAction {
+    let audit = DecisionAuditContext::from_http(ctx);
+    evaluate_request_impl(audit.as_ref(), input)
+}
+
+fn evaluate_request_impl(
+    audit_ctx: Option<&DecisionAuditContext<'_>>,
+    input: RequestEvaluation<'_>,
+) -> FilterAction {
     let RequestEvaluation {
         method,
         namespace,
@@ -127,12 +206,17 @@ fn evaluate_request(input: RequestEvaluation<'_>) -> FilterAction {
         id,
     } = input;
     let Ok(view) = McpRequestView::parse(body) else {
+        record_malformed_decision(audit_ctx, body, namespace, method);
         return policy_error(id, INVALID_ACTION_REASON_CODE, INVALID_ACTION_MESSAGE);
     };
     let Ok(context) = action_context(method, namespace, &view, registry) else {
+        record_malformed_decision(audit_ctx, body, namespace, method);
         return policy_error(id, INVALID_ACTION_REASON_CODE, INVALID_ACTION_MESSAGE);
     };
     let decision = PolicyEngine::evaluate(PolicyState::Available(policy), &context);
+    if let Some(audit) = audit_ctx {
+        record_policy_decision(audit, &input, &decision);
+    }
     if posture.mode == EnforcementMode::Audit {
         tracing::info!(
             namespace,
@@ -156,6 +240,212 @@ fn evaluate_request(input: RequestEvaluation<'_>) -> FilterAction {
         PolicyDecision::PolicyUnavailable | PolicyDecision::PolicyInvalid => {
             apply_failure(posture, id)
         }
+    }
+}
+
+fn record_malformed_decision(
+    audit: Option<&DecisionAuditContext<'_>>,
+    body: Option<&Bytes>,
+    namespace: &str,
+    method: &str,
+) {
+    if let Some(audit) = audit {
+        record_event(
+            audit,
+            body,
+            Some(namespace),
+            AuditEvent::new(
+                AuditCategory::Decision,
+                AuditDecision::RejectMalformed,
+                method,
+                INVALID_ACTION_REASON_CODE,
+                INVALID_ACTION_MESSAGE,
+            ),
+        );
+    }
+}
+
+fn record_policy_decision(
+    audit: &DecisionAuditContext<'_>,
+    input: &RequestEvaluation<'_>,
+    decision: &PolicyDecision,
+) {
+    let (outcome, reason_code, explanation) = match decision {
+        PolicyDecision::ExplicitDeny { reason, .. } => {
+            (AuditDecision::Block, reason.reason_code(), reason.message())
+        }
+        PolicyDecision::ExplicitAllow { .. } => (
+            AuditDecision::Allow,
+            ACTION_POLICY_ALLOWED_REASON_CODE,
+            ACTION_POLICY_ALLOWED_MESSAGE,
+        ),
+        PolicyDecision::NoMatch => (
+            no_match_audit_decision(input.posture),
+            NO_MATCH_REASON_CODE,
+            NO_MATCH_MESSAGE,
+        ),
+        PolicyDecision::PolicyUnavailable => (
+            AuditDecision::Error,
+            INVALID_POLICY_REASON_CODE,
+            INVALID_POLICY_MESSAGE,
+        ),
+        PolicyDecision::PolicyInvalid => (
+            AuditDecision::Error,
+            INVALID_POLICY_REASON_CODE,
+            INVALID_POLICY_MESSAGE,
+        ),
+    };
+    let mut event = AuditEvent::new(
+        AuditCategory::Decision,
+        outcome,
+        input.method,
+        reason_code,
+        explanation,
+    );
+    event.attributes.insert(
+        "policy_decision".to_owned(),
+        serde_json::json!(policy_decision_label(decision)),
+    );
+    event.attributes.insert(
+        "enforcement_action".to_owned(),
+        serde_json::json!(enforcement_action(input.posture, decision)),
+    );
+    if let Some(details) = decision.details() {
+        event.attributes.insert(
+            "matched_rule_ids".to_owned(),
+            serde_json::json!(
+                details
+                    .matched_rules()
+                    .iter()
+                    .map(|rule| rule.rule_id())
+                    .collect::<Vec<_>>()
+            ),
+        );
+        event.attributes.insert(
+            "deny_rule_ids".to_owned(),
+            serde_json::json!(
+                details
+                    .matched_rules()
+                    .iter()
+                    .filter(|rule| rule.effect() == crate::Effect::Deny)
+                    .map(|rule| rule.rule_id())
+                    .collect::<Vec<_>>()
+            ),
+        );
+        event.attributes.insert(
+            "deny_reason_codes".to_owned(),
+            serde_json::json!(
+                details
+                    .matched_rules()
+                    .iter()
+                    .filter(|rule| rule.effect() == crate::Effect::Deny)
+                    .map(|rule| {
+                        rule.reason_code()
+                            .unwrap_or(crate::DEFAULT_DENY_REASON_CODE)
+                    })
+                    .collect::<Vec<_>>()
+            ),
+        );
+    }
+    record_event(audit, input.body, Some(input.namespace), event);
+}
+
+const fn policy_decision_label(decision: &PolicyDecision) -> &'static str {
+    match decision {
+        PolicyDecision::ExplicitAllow { .. } => "explicit_allow",
+        PolicyDecision::ExplicitDeny { .. } => "explicit_deny",
+        PolicyDecision::NoMatch => "no_match",
+        PolicyDecision::PolicyUnavailable => "policy_unavailable",
+        PolicyDecision::PolicyInvalid => "policy_invalid",
+    }
+}
+
+const fn enforcement_action(
+    posture: &GovernancePosture,
+    decision: &PolicyDecision,
+) -> &'static str {
+    if matches!(
+        posture.mode,
+        EnforcementMode::Disabled | EnforcementMode::Audit
+    ) {
+        return "continue";
+    }
+    match decision {
+        PolicyDecision::ExplicitAllow { .. } => "continue",
+        PolicyDecision::ExplicitDeny { .. } => "reject",
+        PolicyDecision::NoMatch => match posture.no_match {
+            NoMatchBehavior::Allow => "continue",
+            NoMatchBehavior::Deny => "reject",
+        },
+        PolicyDecision::PolicyUnavailable | PolicyDecision::PolicyInvalid => {
+            match posture.on_failure {
+                FailureBehavior::Allow => "continue",
+                FailureBehavior::Deny => "reject",
+            }
+        }
+    }
+}
+
+fn record_simple_decision(
+    ctx: &HttpFilterContext<'_>,
+    body: Option<&Bytes>,
+    decision: AuditDecision,
+    reason_code: &str,
+    explanation: &str,
+) {
+    let Some(method) = ctx.get_metadata(wanaku_filters::MCP_METHOD_KEY) else {
+        return;
+    };
+    let Some(audit) = DecisionAuditContext::from_http(ctx) else {
+        return;
+    };
+    record_event(
+        &audit,
+        body,
+        ctx.get_metadata(wanaku_types::NAMESPACE_METADATA_KEY),
+        AuditEvent::new(
+            AuditCategory::Decision,
+            decision,
+            method,
+            reason_code,
+            explanation,
+        ),
+    );
+}
+
+fn record_event(
+    audit: &DecisionAuditContext<'_>,
+    body: Option<&Bytes>,
+    namespace: Option<&str>,
+    mut event: AuditEvent,
+) {
+    event.namespace = namespace.map(str::to_owned);
+    event.filter = Some("wanaku_action_policy".to_owned());
+    event.target_type = target_type(&event.operation).map(str::to_owned);
+    event.policy_revision.clone_from(&audit.policy_revision);
+    event.target = audit.target.map(str::to_owned);
+    wanaku_types::audit::add_mcp_request_context_with_id(
+        &mut event,
+        body.map(bytes::Bytes::as_ref),
+        audit.request_id,
+    );
+    audit.store.record(event);
+}
+
+fn no_match_audit_decision(posture: &GovernancePosture) -> AuditDecision {
+    if posture.mode == EnforcementMode::Audit || posture.no_match == NoMatchBehavior::Allow {
+        AuditDecision::Allow
+    } else {
+        AuditDecision::Block
+    }
+}
+
+fn target_type(method: &str) -> Option<&'static str> {
+    match method {
+        TOOLS_CALL => Some("tool"),
+        RESOURCES_READ => Some("resource"),
+        PROMPTS_GET => Some("prompt"),
+        _ => None,
     }
 }
 
@@ -189,9 +479,9 @@ fn action_context(
 ) -> Result<ActionContext, RequestViewError> {
     let input = serde_json::Value::Object(view.params()?.clone());
     match method {
-        "tools/call" => tool_context(namespace, view, registry, input),
-        "resources/read" => resource_context(namespace, view, registry, input),
-        "prompts/get" => prompt_context(namespace, view, input),
+        TOOLS_CALL => tool_context(namespace, view, registry, input),
+        RESOURCES_READ => resource_context(namespace, view, registry, input),
+        PROMPTS_GET => prompt_context(namespace, view, input),
         _ => Err(RequestViewError::UnexpectedMethod {
             expected: "governed MCP method",
             actual: method.to_owned(),
@@ -207,7 +497,7 @@ fn tool_context(
 ) -> Result<ActionContext, RequestViewError> {
     let request = view.tool_call()?;
     let tool = registry.get_tool_in_namespace(namespace, request.name());
-    let context = ActionContext::new(namespace, "tools/call", TargetType::Tool, input)
+    let context = ActionContext::new(namespace, TOOLS_CALL, TargetType::Tool, input)
         .with_target_name(request.name());
     Ok(match tool {
         Some(tool) => context.with_labels(to_labels(&tool.labels)),
@@ -227,7 +517,7 @@ fn resource_context(
         namespace,
         request.uri(),
     );
-    let context = ActionContext::new(namespace, "resources/read", TargetType::Resource, input)
+    let context = ActionContext::new(namespace, RESOURCES_READ, TargetType::Resource, input)
         .with_uri(request.uri());
     Ok(match resource {
         Some(resource) => context
@@ -244,7 +534,7 @@ fn prompt_context(
 ) -> Result<ActionContext, RequestViewError> {
     let request = view.prompt_get()?;
     Ok(
-        ActionContext::new(namespace, "prompts/get", TargetType::Prompt, input)
+        ActionContext::new(namespace, PROMPTS_GET, TargetType::Prompt, input)
             .with_target_name(request.name()),
     )
 }
@@ -275,16 +565,19 @@ fn policy_error(id: &serde_json::Value, reason_code: &str, message: &str) -> Fil
 mod tests {
     use super::*;
     use crate::DEFAULT_DENY_REASON_CODE;
-    use wanaku_types::TOOLS_CALL;
+    use wanaku_types::audit::AuditQuery;
     use wanaku_types::registry::{
         PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry,
     };
 
     fn compile_policy(rule: &serde_json::Value) -> crate::CompiledPolicy {
-        let policy: crate::ActionPolicy = serde_json::from_value(serde_json::json!({
-            "rules": [rule.clone()]
-        }))
-        .expect("valid test policy");
+        compile_policy_rules(std::slice::from_ref(rule))
+    }
+
+    fn compile_policy_rules(rules: &[serde_json::Value]) -> crate::CompiledPolicy {
+        let policy: crate::ActionPolicy =
+            serde_json::from_value(serde_json::json!({ "rules": rules }))
+                .expect("valid test policy");
         policy.compile().expect("compilable test policy")
     }
 
@@ -356,29 +649,29 @@ mod tests {
 
         let cases = [
             (
-                "tools/call",
+                TOOLS_CALL,
                 serde_json::json!({"name": "delete", "arguments": {}}),
                 serde_json::json!({
                     "id": "deny-tool", "effect": "deny", "reason_code": "tool_denied",
-                    "selectors": {"operation": "tools/call", "target_name": {"matcher": "exact", "value": "delete"}, "labels": {"risk": "high"}}
+                    "selectors": {"operation": TOOLS_CALL, "target_name": {"matcher": "exact", "value": "delete"}, "labels": {"risk": "high"}}
                 }),
                 "tool_denied",
             ),
             (
-                "resources/read",
+                RESOURCES_READ,
                 serde_json::json!({"uri": "file:///secrets"}),
                 serde_json::json!({
                     "id": "deny-resource", "effect": "deny", "reason_code": "resource_denied",
-                    "selectors": {"operation": "resources/read", "uri": {"matcher": "exact", "value": "file:///secrets"}}
+                    "selectors": {"operation": RESOURCES_READ, "uri": {"matcher": "exact", "value": "file:///secrets"}}
                 }),
                 "resource_denied",
             ),
             (
-                "prompts/get",
+                PROMPTS_GET,
                 serde_json::json!({"name": "admin"}),
                 serde_json::json!({
                     "id": "deny-prompt", "effect": "deny", "reason_code": "prompt_denied",
-                    "selectors": {"operation": "prompts/get", "target_name": {"matcher": "exact", "value": "admin"}}
+                    "selectors": {"operation": PROMPTS_GET, "target_name": {"matcher": "exact", "value": "admin"}}
                 }),
                 "prompt_denied",
             ),
@@ -410,13 +703,13 @@ mod tests {
         };
         let policy = compile_policy(&serde_json::json!({
             "id": "allow", "effect": "allow",
-            "selectors": {"operation": "tools/call"}
+            "selectors": {"operation": TOOLS_CALL}
         }));
-        let body = request("tools/call", &serde_json::json!({"name": "safe"}));
+        let body = request(TOOLS_CALL, &serde_json::json!({"name": "safe"}));
         let id = serde_json::json!(7);
         assert!(matches!(
             evaluate_request(RequestEvaluation {
-                method: "tools/call",
+                method: TOOLS_CALL,
                 namespace: DEFAULT_NAMESPACE,
                 body: Some(&body),
                 policy: &policy,
@@ -427,10 +720,10 @@ mod tests {
             FilterAction::Continue
         ));
 
-        let body = request("prompts/get", &serde_json::json!({"name": "safe"}));
+        let body = request(PROMPTS_GET, &serde_json::json!({"name": "safe"}));
         assert!(matches!(
             evaluate_request(RequestEvaluation {
-                method: "prompts/get",
+                method: PROMPTS_GET,
                 namespace: DEFAULT_NAMESPACE,
                 body: Some(&body),
                 policy: &policy,
@@ -440,6 +733,118 @@ mod tests {
             }),
             FilterAction::Continue
         ));
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "allow and deny fixtures verify emitted audit evidence"
+    )]
+    fn allowed_and_blocked_mcp_requests_emit_correlated_audit_events() {
+        let registry = InMemoryRegistry::new();
+        let posture = GovernancePosture::default();
+        let store = InMemoryAuditStore::new(10);
+        let id = serde_json::json!(7);
+
+        let allow_policy = compile_policy(&serde_json::json!({
+            "id": "allow-safe", "effect": "allow",
+            "selectors": {"operation": TOOLS_CALL, "target_name": {"matcher": "exact", "value": "safe"}}
+        }));
+        let allow_body = request(
+            TOOLS_CALL,
+            &serde_json::json!({
+                "name": "safe",
+                "arguments": {"x-request-id": "conversation-allow"}
+            }),
+        );
+        let allow_audit = DecisionAuditContext {
+            store: &store,
+            request_id: Some("request-allow"),
+            target: Some("safe"),
+            policy_revision: Some("revision-1".to_owned()),
+        };
+        let allow_action = evaluate_request_impl(
+            Some(&allow_audit),
+            RequestEvaluation {
+                method: TOOLS_CALL,
+                namespace: DEFAULT_NAMESPACE,
+                body: Some(&allow_body),
+                policy: &allow_policy,
+                posture: &posture,
+                registry: &registry,
+                id: &id,
+            },
+        );
+        assert!(matches!(allow_action, FilterAction::Continue));
+
+        let deny_policy = compile_policy_rules(&[
+            serde_json::json!({
+                "id": "deny-default", "effect": "deny",
+                "selectors": {"operation": TOOLS_CALL, "target_name": {"matcher": "exact", "value": "unsafe"}}
+            }),
+            serde_json::json!({
+                "id": "deny-explicit", "effect": "deny", "reason_code": "explicit_denial",
+                "selectors": {"operation": TOOLS_CALL, "target_name": {"matcher": "exact", "value": "unsafe"}}
+            }),
+        ]);
+        let deny_body = request(
+            TOOLS_CALL,
+            &serde_json::json!({
+                "name": "unsafe",
+                "arguments": {"x-request-id": "conversation-deny"}
+            }),
+        );
+        let deny_audit = DecisionAuditContext {
+            store: &store,
+            request_id: Some("request-deny"),
+            target: Some("unsafe"),
+            policy_revision: Some("revision-1".to_owned()),
+        };
+        let deny_action = evaluate_request_impl(
+            Some(&deny_audit),
+            RequestEvaluation {
+                method: TOOLS_CALL,
+                namespace: DEFAULT_NAMESPACE,
+                body: Some(&deny_body),
+                policy: &deny_policy,
+                posture: &posture,
+                registry: &registry,
+                id: &id,
+            },
+        );
+        assert_denied(deny_action, DEFAULT_DENY_REASON_CODE);
+
+        let events = store.query(&AuditQuery::default()).events;
+        assert_eq!(events.len(), 2);
+        let denied = &events[0];
+        assert_eq!(denied.decision, AuditDecision::Block);
+        assert_eq!(denied.request_id.as_deref(), Some("request-deny"));
+        assert_eq!(denied.correlation_id, "request-deny");
+        assert_eq!(denied.stream_id, "request-deny");
+        assert_eq!(denied.conversation_id.as_deref(), Some("conversation-deny"));
+        assert_eq!(
+            denied.attributes["deny_rule_ids"],
+            serde_json::json!(["deny-default", "deny-explicit"])
+        );
+        assert_eq!(
+            denied.attributes["deny_reason_codes"],
+            serde_json::json!([DEFAULT_DENY_REASON_CODE, "explicit_denial"])
+        );
+        assert_eq!(denied.attributes["policy_decision"], "explicit_deny");
+        assert_eq!(denied.attributes["enforcement_action"], "reject");
+        let allowed = &events[1];
+        assert_eq!(allowed.decision, AuditDecision::Allow);
+        assert_eq!(allowed.request_id.as_deref(), Some("request-allow"));
+        assert_eq!(allowed.correlation_id, "request-allow");
+        assert_eq!(allowed.stream_id, "request-allow");
+        assert_eq!(allowed.reason_code, ACTION_POLICY_ALLOWED_REASON_CODE);
+        assert_eq!(allowed.explanation, ACTION_POLICY_ALLOWED_MESSAGE);
+        assert_eq!(
+            allowed.conversation_id.as_deref(),
+            Some("conversation-allow")
+        );
+        assert_eq!(allowed.attributes["policy_decision"], "explicit_allow");
+        assert_eq!(allowed.attributes["enforcement_action"], "continue");
     }
 
     #[test]
@@ -482,17 +887,17 @@ mod tests {
         let resource_policy = compile_policy(&serde_json::json!({
             "id": "deny-resource-name", "effect": "deny",
             "selectors": {
-                "operation": "resources/read",
+                "operation": RESOURCES_READ,
                 "target_name": {"matcher": "exact", "value": "registered-name"}
             }
         }));
         let resource_body = request(
-            "resources/read",
+            RESOURCES_READ,
             &serde_json::json!({"uri": "file:///requested-resource"}),
         );
         assert_denied(
             evaluate_request(RequestEvaluation {
-                method: "resources/read",
+                method: RESOURCES_READ,
                 namespace: DEFAULT_NAMESPACE,
                 body: Some(&resource_body),
                 policy: &resource_policy,
@@ -506,17 +911,17 @@ mod tests {
         let tool_uri_policy = compile_policy(&serde_json::json!({
             "id": "deny-tool-uri", "effect": "deny",
             "selectors": {
-                "operation": "tools/call",
+                "operation": TOOLS_CALL,
                 "uri": {"matcher": "exact", "value": "file:///tool-location"}
             }
         }));
         let tool_body = request(
-            "tools/call",
+            TOOLS_CALL,
             &serde_json::json!({"name": "tool-with-uri", "arguments": {}}),
         );
         assert!(matches!(
             evaluate_request(RequestEvaluation {
-                method: "tools/call",
+                method: TOOLS_CALL,
                 namespace: DEFAULT_NAMESPACE,
                 body: Some(&tool_body),
                 policy: &tool_uri_policy,
@@ -533,12 +938,12 @@ mod tests {
         let registry = InMemoryRegistry::new();
         let posture = GovernancePosture::default();
         let policy = compile_policy(&serde_json::json!({
-            "id": "deny", "effect": "deny", "selectors": {"operation": "tools/call"}
+            "id": "deny", "effect": "deny", "selectors": {"operation": TOOLS_CALL}
         }));
         let malformed = Bytes::from("not JSON");
         let id = serde_json::json!(7);
         let action = evaluate_request(RequestEvaluation {
-            method: "tools/call",
+            method: TOOLS_CALL,
             namespace: DEFAULT_NAMESPACE,
             body: Some(&malformed),
             policy: &policy,
@@ -584,11 +989,19 @@ mod tests {
             FilterAction::Continue
         ));
         assert!(matches!(apply_failure(&audit, &id), FilterAction::Continue));
+
+        assert_eq!(
+            no_match_audit_decision(&GovernancePosture::default()),
+            AuditDecision::Block
+        );
+        assert_eq!(no_match_audit_decision(&permissive), AuditDecision::Allow);
+        assert_eq!(no_match_audit_decision(&audit), AuditDecision::Allow);
     }
 
     #[test]
     fn audit_mode_does_not_enforce_policy_denial() {
         let registry = InMemoryRegistry::new();
+        let store = InMemoryAuditStore::new(1);
         let policy = compile_policy(&serde_json::json!({
             "id": "deny", "effect": "deny", "selectors": {"operation": TOOLS_CALL}
         }));
@@ -598,19 +1011,33 @@ mod tests {
         };
         let body = request(TOOLS_CALL, &serde_json::json!({"name": "unsafe"}));
         let id = serde_json::json!(7);
+        let audit = DecisionAuditContext {
+            store: &store,
+            request_id: Some("audit-mode-request"),
+            target: Some("unsafe"),
+            policy_revision: None,
+        };
 
         assert!(matches!(
-            evaluate_request(RequestEvaluation {
-                method: TOOLS_CALL,
-                namespace: DEFAULT_NAMESPACE,
-                body: Some(&body),
-                policy: &policy,
-                posture: &posture,
-                registry: &registry,
-                id: &id,
-            }),
+            evaluate_request_impl(
+                Some(&audit),
+                RequestEvaluation {
+                    method: TOOLS_CALL,
+                    namespace: DEFAULT_NAMESPACE,
+                    body: Some(&body),
+                    policy: &policy,
+                    posture: &posture,
+                    registry: &registry,
+                    id: &id,
+                }
+            ),
             FilterAction::Continue
         ));
+        let events = store.query(&AuditQuery::default()).events;
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].decision, AuditDecision::Block);
+        assert_eq!(events[0].attributes["policy_decision"], "explicit_deny");
+        assert_eq!(events[0].attributes["enforcement_action"], "continue");
     }
 
     #[test]
