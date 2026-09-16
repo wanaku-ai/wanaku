@@ -1,4 +1,4 @@
-import { InlineNotification } from "@carbon/react";
+import {InlineNotification, Modal} from "@carbon/react";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { EvaluatorDef, useEvaluators } from "../../hooks/api/use-evaluators";
@@ -8,6 +8,8 @@ import { BindingsTable, BindingEntry } from "./BindingsTable";
 import { BindingModal } from "./BindingModal";
 import {useErrorNotification} from "../../hooks/error-notifications"
 import {ErrorNotification} from "../../components/ErrorNotification"
+import {NamespaceEntry} from "../../models"
+import {DeleteConfirmationModal} from "../../components/DeleteConfirmationModal"
 
 const EvaluatorsPage: React.FC = () => {
   const [evaluators, setEvaluators] = useState<EvaluatorDef[]>([]);
@@ -21,6 +23,10 @@ const EvaluatorsPage: React.FC = () => {
   const [isEvaluatorModalOpen, setIsEvaluatorModalOpen] = useState(false);
   const [openedEvaluator, setOpenedEvaluator] = useState<EvaluatorDef>();
   const [isBindingModalOpen, setIsBindingModalOpen] = useState(false);
+  
+  const [evaluatorDeletion, setEvaluatorDeletion] = useState<EvaluatorDef>()
+  const [bindingUpdate, setBindingUpdate] = useState<BindingEntry>()
+  const [bindingDeletion, setBindingDeletion] = useState<BindingEntry>()
 
   const evaluatorsRef = useRef(evaluators);
   evaluatorsRef.current = evaluators;
@@ -110,7 +116,6 @@ const EvaluatorsPage: React.FC = () => {
   };
 
   const handleEvaluatorDelete = async (evaluator: EvaluatorDef) => {
-    if (!window.confirm(`Delete evaluator "${evaluator.name}"?`)) return;
     if (isMutating) return;
     setIsMutating(true);
 
@@ -126,29 +131,54 @@ const EvaluatorsPage: React.FC = () => {
       setErrorMessage(error instanceof Error ? error.message : "Failed to delete evaluator");
     } finally {
       setIsMutating(false);
+      setEvaluatorDeletion(undefined)
     }
   };
 
-  const handleBindingSubmit = async (namespace: string, conversationId: string) => {
-    if (isMutating) return;
-    setIsMutating(true);
-
+  async function handleBindingSubmit(namespace: NamespaceEntry, conversationId: string) {
+    const binding = { namespace: namespace.name, conversationId }
+    if (bindings.find(item => item.namespace === namespace.name)) {
+      setIsBindingModalOpen(false)
+      requestBindingUpdateConfirmation(binding)
+    } else {
+      await submitBinding(binding)
+    }
+  }
+  
+  async function submitBinding(binding: BindingEntry) {
+    if (isMutating) {
+      return
+    }
+    setIsMutating(true)
+    
     try {
-      const result = await bindNamespace(namespace, conversationId);
+      const { namespace, conversationId } = binding
+      const result = await bindNamespace(namespace, conversationId)
       if (result.status === 200) {
-        setSuccessMessage(`Namespace "${namespace}" bound`);
-        await fetchBindings();
+        setSuccessMessage(`Namespace "${binding.namespace}" bound`)
+        await fetchBindings()
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to bind namespace");
+      setErrorMessage(error instanceof Error ? error.message : "Failed to bind namespace")
     } finally {
-      setIsBindingModalOpen(false);
-      setIsMutating(false);
+      setIsBindingModalOpen(false)
+      setIsMutating(false)
     }
-  };
+  }
+  
+  function requestEvaluatorDeleteConfirmation(evaluator: EvaluatorDef) {
+    setEvaluatorDeletion(evaluator)
+  }
+  
+  function requestBindingUpdateConfirmation(binding: BindingEntry) {
+    setBindingUpdate(binding)
+  }
+  
+  function requestBindingDeleteConfirmation(binding: BindingEntry) {
+    setBindingDeletion(binding)
+  }
 
   const handleBindingDelete = async (binding: BindingEntry) => {
-    if (!window.confirm(`Unbind namespace "${binding.namespace}"?`)) return;
     if (isMutating) return;
     setIsMutating(true);
 
@@ -162,6 +192,7 @@ const EvaluatorsPage: React.FC = () => {
       setErrorMessage(error instanceof Error ? error.message : "Failed to unbind namespace");
     } finally {
       setIsMutating(false);
+      setBindingDeletion(undefined)
     }
   };
 
@@ -199,7 +230,7 @@ const EvaluatorsPage: React.FC = () => {
             setOpenedEvaluator(evaluator);
             setIsEvaluatorModalOpen(true);
           }}
-          onDelete={handleEvaluatorDelete}
+          onDelete={requestEvaluatorDeleteConfirmation}
           disabled={isMutating}
         />
 
@@ -213,7 +244,7 @@ const EvaluatorsPage: React.FC = () => {
         <BindingsTable
           bindings={bindings}
           onAdd={() => setIsBindingModalOpen(true)}
-          onDelete={handleBindingDelete}
+          onDelete={requestBindingDeleteConfirmation}
           disabled={isMutating}
         />
       </div>
@@ -230,11 +261,45 @@ const EvaluatorsPage: React.FC = () => {
           onSubmit={handleEvaluatorSubmit}
         />
       )}
+      
+      {evaluatorDeletion && (
+        <DeleteConfirmationModal
+          heading="Delete evaluator"
+          text={`Are you sure you want to delete evaluator "${evaluatorDeletion.name}"?`}
+          onConfirm={() => handleEvaluatorDelete(evaluatorDeletion)}
+          onCancel={() => setEvaluatorDeletion(undefined)}
+        />
+      )}
 
       {isBindingModalOpen && (
         <BindingModal
           onRequestClose={() => setIsBindingModalOpen(false)}
           onSubmit={handleBindingSubmit}
+        />
+      )}
+      
+      {bindingUpdate && (
+        <Modal
+          open={true}
+          modalHeading="Update existing binding"
+          primaryButtonText={"OK"}
+          secondaryButtonText="Cancel"
+          onRequestSubmit={() => {
+            setBindingUpdate(undefined)
+            submitBinding(bindingUpdate)
+          }}
+          onRequestClose={() => setBindingUpdate(undefined)}
+        >
+          <div>{`Namespace ${bindingUpdate.namespace} is already bound to a conversation id. Do you want to update this binding with the new data?`}</div>
+        </Modal>
+      )}
+      
+      {bindingDeletion && (
+        <DeleteConfirmationModal
+          heading="Delete binding"
+          text={`Are you sure you want to delete binding of namespace "${bindingDeletion.namespace}" to conversation ID "${bindingDeletion.conversationId}"?`}
+          onConfirm={() => handleBindingDelete(bindingDeletion)}
+          onCancel={() => setBindingDeletion(undefined)}
         />
       )}
     </div>

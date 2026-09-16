@@ -14,6 +14,8 @@ let namespacesCache: {
   data: any;
 } | null = null;
 
+export const DEFAULT_NAMESPACE: NamespaceEntry = { name: "default" }
+
 export const useNamespaces = () => {
   const listNamespaces = useCallback(
     (options?: RequestInit): Promise<listNamespacesResponse> => {

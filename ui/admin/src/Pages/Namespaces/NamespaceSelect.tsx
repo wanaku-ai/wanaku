@@ -1,8 +1,8 @@
 import {Select, SelectItem} from "@carbon/react"
 import React, {useEffect, useState} from "react"
 import {NamespaceEntry} from "../../models"
-import {useNamespaces} from "../../hooks/api/use-namespaces"
-import {sortedNamespaces} from "./namespaces.ts";
+import {DEFAULT_NAMESPACE, useNamespaces} from "../../hooks/api/use-namespaces"
+import {sortedNamespaces} from "./namespaces.ts"
 
 
 interface NamespaceSelectProps {
@@ -10,10 +10,11 @@ interface NamespaceSelectProps {
   labelText?: string
   helperText?: string
   value?: string
+  required?: boolean
   onChange: (namespace: NamespaceEntry) => void
 }
 
-export const NamespaceSelect : React.FC<NamespaceSelectProps> = ({ id, labelText, helperText, value, onChange }) => {
+export const NamespaceSelect : React.FC<NamespaceSelectProps> = ({ id, labelText, helperText, value, required, onChange }) => {
 
   const [namespaces, setNamespaces] = useState<NamespaceEntry[]>([])
   const [selectedNamespace, setSelectedNamespace] = useState<NamespaceEntry>()
@@ -42,10 +43,6 @@ export const NamespaceSelect : React.FC<NamespaceSelectProps> = ({ id, labelText
     return namespaces.find(namespace => namespace.name === id)
   }
 
-  function defaultNamespace(): NamespaceEntry | undefined {
-    return findDefaultNamespaceAmong(namespaces)
-  }
-
   function findDefaultNamespaceAmong(namespaces: readonly NamespaceEntry[]): NamespaceEntry | undefined {
     return namespaces.find(namespace => namespace.name === "default")
   }
@@ -55,7 +52,8 @@ export const NamespaceSelect : React.FC<NamespaceSelectProps> = ({ id, labelText
       id={id || "namespace"}
       labelText={labelText || ""}
       helperText={helperText || ""}
-      value={selectedNamespace?.name ?? defaultNamespace()?.name}
+      value={selectedNamespace?.name}
+      defaultValue={DEFAULT_NAMESPACE.name}
       onChange={(event) => {
         const namespace = findNamespace(event.target.value)
         if (namespace) {
@@ -63,6 +61,7 @@ export const NamespaceSelect : React.FC<NamespaceSelectProps> = ({ id, labelText
           onChange(namespace)
         }
       }}
+      required={required}
     >
       <SelectItem disabled hidden text="Choose a namespace" value="" />
       {namespaces.map((namespace: NamespaceEntry) => (
