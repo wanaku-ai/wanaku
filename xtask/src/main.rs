@@ -452,6 +452,20 @@ fn assemble_manifest(tag: &str, tool: &str) -> anyhow::Result<()> {
         .stderr(Stdio::null())
         .status();
 
+    for image in [&aarch64_tag, &x86_64_tag] {
+        println!("Pulling {image}...");
+        let status = Command::new(tool)
+            .args(["pull", image])
+            .status()
+            .with_context(|| format!("failed to spawn `{tool} pull {image}`"))?;
+        if !status.success() {
+            bail!(
+                "`{tool} pull {image}` failed with exit code {}",
+                status.code().unwrap_or(-1)
+            );
+        }
+    }
+
     let status = Command::new(tool)
         .args(["manifest", "create", tag, &aarch64_tag, &x86_64_tag])
         .status()
