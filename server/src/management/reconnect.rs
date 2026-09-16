@@ -115,6 +115,7 @@ mod tests {
             labels: HashMap::new(),
             available,
             status_message: None,
+            credential_bindings: HashMap::new(),
         }
     }
 

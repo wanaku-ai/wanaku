@@ -5268,6 +5268,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.20",
+ "time",
  "tokio",
  "tracing",
  "utoipa",
@@ -5312,6 +5313,7 @@ name = "wanaku-types"
 version = "0.3.0"
 dependencies = [
  "async-trait",
+ "futures",
  "http",
  "praxis-proxy-filter",
  "rand 0.10.2",
@@ -5322,6 +5324,7 @@ dependencies = [
  "tracing",
  "utoipa",
  "yaml_serde",
+ "zeroize",
 ]
 
 [[package]]

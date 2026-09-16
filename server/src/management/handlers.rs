@@ -1187,6 +1187,7 @@ mod tests {
             labels: HashMap::new(),
             available: false,
             status_message: None,
+            credential_bindings: HashMap::new(),
         });
 
         let names: Vec<String> = data_field(&handle_namespace_list(&registry))
@@ -1250,6 +1251,7 @@ mod tests {
             labels: HashMap::new(),
             available: true,
             status_message: None,
+            credential_bindings: HashMap::new(),
         });
 
         let list_resp = handle_forward_list(&registry);
@@ -1286,6 +1288,7 @@ mod tests {
             labels: HashMap::new(),
             available: true,
             status_message: None,
+            credential_bindings: HashMap::new(),
         });
         assert_eq!(handle_forward_delete(&registry, "del-fwd").status(), 200);
         assert_eq!(handle_forward_get(&registry, "del-fwd").status(), 404);
@@ -1337,6 +1340,7 @@ mod tests {
             labels: HashMap::new(),
             available: true,
             status_message: None,
+            credential_bindings: HashMap::new(),
         });
 
         let data = data_field(&handle_statistics(&registry));

@@ -22,6 +22,7 @@ rmcp = { version = "3.1.0", default-features = false, features = ["client", "tra
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+time = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 utoipa = { version = "5.5", optional = true }

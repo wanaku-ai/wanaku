@@ -7,6 +7,8 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::credentials::CredentialPurpose;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct ToolEntry {
@@ -131,10 +133,31 @@ pub struct ForwardEntry {
     pub available: bool,
     #[serde(default, skip_serializing_if = "Option::is_none", rename = "statusMessage", alias = "status_message")]
     pub status_message: Option<String>,
+    /// Credential bindings referenced by purpose (discovery / invocation).
+    ///
+    /// Only the opaque, non-secret binding identifier is stored here. The
+    /// binding itself is a separate top-level resource owned by this forward.
+    #[serde(default, skip_serializing_if = "HashMap::is_empty", rename = "credentialBindings", alias = "credential_bindings")]
+    pub credential_bindings: HashMap<CredentialPurpose, String>,
 }
 
 const fn default_available() -> bool {
     true
+}
+
+impl ForwardEntry {
+    /// The stable, immutable forward identity used for routing and credential
+    /// provenance. The forward name is immutable and serves as the `forwardId`.
+    #[must_use]
+    pub fn forward_id(&self) -> &str {
+        &self.name
+    }
+
+    /// The binding identifier configured for the given credential purpose.
+    #[must_use]
+    pub fn binding_for(&self, purpose: crate::credentials::CredentialPurpose) -> Option<&str> {
+        self.credential_bindings.get(&purpose).map(String::as_str)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

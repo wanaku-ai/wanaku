@@ -5,7 +5,9 @@ use crate::audit::RedactionMetadata;
 const REDACTED: &str = "[REDACTED]";
 const DEFAULT_SENSITIVE_FIELDS: &[&str] = &[
     "authorization",
+    "proxy-authorization",
     "cookie",
+    "set-cookie",
     "api_key",
     "apikey",
     "client_secret",
