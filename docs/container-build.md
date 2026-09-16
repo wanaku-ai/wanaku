@@ -108,9 +108,12 @@ The `main-build.yml` CI workflow runs on a matrix of `ubuntu-latest` (x86_64) an
 its arch-specific image. A separate `createManifests` job then calls
 `cargo build-image-manifest` to assemble the final manifest list.
 
-The tag pattern in CI is `<registry>/<group>/wanaku-server:<branch>`, so the
-arch-specific tags become `<branch>-x86_64` and `<branch>-aarch64`, and the manifest
-list is assembled at `<branch>`.
+Builds from the `main` branch use the tag `latest`. Their arch-specific tags are
+`latest-x86_64` and `latest-aarch64`. The manifest list uses `latest`.
+
+Builds from other branches use the branch name as the tag. Their arch-specific tags
+use the branch name with `-x86_64` or `-aarch64`. The manifest list uses the branch
+name.
 
 ## `--target` flag
 
