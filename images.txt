@@ -1,2 +1,0 @@
-wanaku-server:latest
-wanaku-server-headless:latest
