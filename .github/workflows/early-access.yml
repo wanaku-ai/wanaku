@@ -68,9 +68,9 @@ jobs:
       - name: Validate version
         shell: bash
         run: |
-          versions=$(cargo metadata --locked --no-deps --format-version 1 | jq -r '[.packages[].version] | unique | .[]')
-          if [ "$versions" != "$VERSION" ]; then
-            echo "Requested version $VERSION does not match workspace version(s): $versions" >&2
+          server_version=$(cargo metadata --locked --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "wanaku-server") | .version')
+          if [ "$server_version" != "$VERSION" ]; then
+            echo "Requested version $VERSION does not match wanaku-server version: $server_version" >&2
             exit 1
           fi
           if [[ ! "$VERSION" =~ ^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$ ]]; then
