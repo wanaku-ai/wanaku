@@ -3,6 +3,7 @@
 pub mod audit;
 pub mod audit_redaction;
 pub mod config;
+pub mod credentials;
 pub mod correlation;
 pub mod feature;
 pub mod governance;

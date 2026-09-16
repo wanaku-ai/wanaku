@@ -60,8 +60,11 @@ impl ToolCallFilter {
             .and_then(|v| v.to_str().ok())
             .unwrap_or("-");
 
-        for (name, value) in &ctx.request.headers {
-            tracing::trace!(header = %name, value = ?value, "tools/call request header");
+        // Never trace header values: forwarded requests can carry credentials
+        // (e.g. Authorization) and broker-managed credential headers. Only the
+        // header names are safe to log. See issue #1874 (redaction boundary).
+        for name in ctx.request.headers.keys() {
+            tracing::trace!(header = %name, "tools/call request header present");
         }
 
         tracing::info!(

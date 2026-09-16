@@ -41,6 +41,7 @@ thiserror = "2.0"
 time = { version = "0.3.55", features = ["parsing"] }
 tokio = { version = "1", features = ["macros", "rt"] }
 tracing = "0.1.44"
+zeroize = "1.8"
 
 praxis-core = { version = "0.5.1", package = "praxis-proxy-core" }
 praxis-filter = { version = "0.5.1", package = "praxis-proxy-filter" }

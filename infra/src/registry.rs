@@ -616,6 +616,7 @@ mod tests {
             labels: HashMap::new(),
             available: false,
             status_message: None,
+            credential_bindings: HashMap::new(),
         }
     }
 

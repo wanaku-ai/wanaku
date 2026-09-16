@@ -26,3 +26,7 @@ thiserror = { workspace = true }
 time = { workspace = true }
 tracing = { workspace = true }
 utoipa = { version = "5.5", optional = true }
+zeroize = { workspace = true }
+
+[dev-dependencies]
+futures = "0.3"
