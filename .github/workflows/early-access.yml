@@ -164,14 +164,14 @@ jobs:
         if: matrix.container && env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           image="${CONTAINER_REGISTRY}/${CONTAINER_GROUP}/wanaku-server"
-          cargo build-image --tag "$image:${VERSION}"
+          cargo build-image --tag "$image:${VERSION}-early-access"
           cargo build-image --tag "$image:early-access"
 
       - name: Build and push headless container image
         if: matrix.container && env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           image="${CONTAINER_REGISTRY}/${CONTAINER_GROUP}/wanaku-server-headless"
-          cargo build-image-headless --tag "$image:${VERSION}"
+          cargo build-image-headless --tag "$image:${VERSION}-early-access"
           cargo build-image-headless --tag "$image:early-access"
 
   create-manifests:
@@ -204,14 +204,14 @@ jobs:
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           image="${CONTAINER_REGISTRY}/${CONTAINER_GROUP}/wanaku-server"
-          cargo build-image-manifest --tag "$image:${VERSION}"
+          cargo build-image-manifest --tag "$image:${VERSION}-early-access"
           cargo build-image-manifest --tag "$image:early-access"
 
       - name: Create and push multi-arch manifests (headless)
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           image="${CONTAINER_REGISTRY}/${CONTAINER_GROUP}/wanaku-server-headless"
-          cargo build-image-manifest --variant headless --tag "$image:${VERSION}"
+          cargo build-image-manifest --variant headless --tag "$image:${VERSION}-early-access"
           cargo build-image-manifest --variant headless --tag "$image:early-access"
 
   publish:
