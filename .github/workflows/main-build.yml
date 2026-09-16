@@ -20,6 +20,7 @@ env:
   CARGO_TERM_COLOR: always
   CONTAINER_REGISTRY: ${{ vars.CONTAINER_REGISTRY || 'quay.io' }}
   CONTAINER_GROUP: ${{ vars.CONTAINER_GROUP || 'wanaku' }}
+  IMAGE_TAG: ${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
 
 jobs:
   build:
@@ -65,13 +66,13 @@ jobs:
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           cargo build-image \
-            --tag ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server:${{ github.ref_name }}
+            --tag ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server:${{ env.IMAGE_TAG }}
 
       - name: Build and push headless container image
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           cargo build-image-headless \
-            --tag ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server-headless:${{ github.ref_name }}
+            --tag ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server-headless:${{ env.IMAGE_TAG }}
 
   createManifests:
     needs: build
@@ -100,10 +101,10 @@ jobs:
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           cargo build-image-manifest \
-            --tag ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server:${{ github.ref_name }}
+            --tag ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server:${{ env.IMAGE_TAG }}
 
       - name: Create and push multi-arch manifest (headless)
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           cargo build-image-manifest --variant headless \
-            --tag ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server-headless:${{ github.ref_name }}
+            --tag ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server-headless:${{ env.IMAGE_TAG }}
