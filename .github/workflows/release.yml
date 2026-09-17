@@ -2,11 +2,9 @@ name: release
 
 # Stable, tagged releases handled by JReleaser.
 #
-# The rolling "early-access" prerelease keeps being handled by
-# early-access.yml. This workflow builds the same 5-platform archives
-# (full + headless) and hands them over to JReleaser, which generates the
-# changelog, signs the artifacts, produces checksums_sha256.txt and creates
-# the tagged GitHub release.
+# This workflow builds 5-platform archives (full + headless) and hands them
+# to JReleaser. The early-access workflow uses the same release mechanism
+# for its rolling prerelease.
 on:
   workflow_dispatch:
     inputs:
@@ -175,11 +173,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      discussions: write
       issues: write
     env:
       JRELEASER_PROJECT_VERSION: ${{ needs.setup.outputs.version }}
       JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+      JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       # This is the GPG passphrase; the MAVEN_ prefix is retained for historical reasons.
       JRELEASER_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
     steps:
@@ -192,10 +192,6 @@ jobs:
           path: dist
           pattern: wanaku-server-*
           merge-multiple: true
-
-      - name: Import GPG key
-        if: env.GPG_PRIVATE_KEY != ''
-        run: printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
 
       - name: Run JReleaser
         uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0

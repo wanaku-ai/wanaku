@@ -3,14 +3,10 @@
 # Adapted from the classic Wanaku Barn configuration
 # (https://github.com/wanaku-ai/wanaku-barn/blob/main/jreleaser.yml).
 #
-# This configuration is used for stable, tagged releases. It runs in
-# release-only mode: the release archives are produced by the CI build matrix
-# (see .github/workflows/release.yml) and JReleaser consumes those pre-built
-# artifacts to generate the changelog, sign the assets, produce the
-# checksums file and create the GitHub release.
-#
-# The rolling "early-access" prerelease keeps being handled by
-# .github/workflows/early-access.yml.
+# This configuration is used for tagged and rolling early-access releases.
+# It runs in release-only mode: the CI build matrix produces release archives
+# and JReleaser consumes them to generate the changelog, sign the assets,
+# produce the checksums file, and create the GitHub release.
 project:
   name: wanaku
   description: Wanaku MCP Router
@@ -37,10 +33,6 @@ project:
 signing:
   active: ALWAYS
   armored: true
-  # COMMAND mode reuses the local gpg installation (the private key is imported
-  # in the workflow from the existing GPG_PRIVATE_KEY secret), so no separate
-  # public-key secret is required. Only JRELEASER_GPG_PASSPHRASE is needed.
-  mode: COMMAND
 
 # Preserve the checksum contract expected by get-wanaku.sh:
 # a single "checksums_sha256.txt" file in the sha256sum-compatible format.
@@ -55,6 +47,7 @@ release:
     owner: wanaku-ai
     name: wanaku
     overwrite: false
+    discussionCategoryName: Announcements
     issues:
       enabled: true
     update:
