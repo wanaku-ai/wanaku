@@ -425,10 +425,10 @@ fn native_arch() -> anyhow::Result<String> {
     }
     let raw = String::from_utf8_lossy(&out.stdout).trim().to_owned();
     match raw.as_str() {
-        "x86_64" | "aarch64" | "arm64" => Ok(raw),
+        "x86_64" | "aarch64" | "arm64" | "ppc64le" => Ok(raw),
         other => bail!(
             "unrecognised architecture `{other}` from `uname -m`. \
-             Supported values: x86_64, aarch64, arm64"
+             Supported values: x86_64, aarch64, arm64, ppc64le"
         ),
     }
 }
