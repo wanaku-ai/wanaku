@@ -70,7 +70,7 @@ export WANAKU_PERSIST_BACKEND=file
 export WANAKU_PERSIST_PATH=/data/registry
 ```
 
-On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shutdown (SIGTERM, SIGINT), it writes back.
+On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. Each registry change sends a full snapshot to one background writer. The writer keeps only the newest pending snapshot. On an orderly Pingora shutdown, Wanaku waits for pending persistence for up to 10 seconds.
 
 **Format:**
 
@@ -84,7 +84,7 @@ On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On shut
 }
 ```
 
-**Limitation:** Wanaku writes the snapshot during an orderly shutdown. If the process stops because of SIGKILL, an out-of-memory error, or a panic, changes since the last snapshot are lost. File persistence supports one writer. Use a shared external persistence implementation before you run multiple replicas.
+**Limitation:** File persistence has one in-process writer. It does not coordinate separate Wanaku processes. Do not run multiple replicas against the same persistence directory. If the process stops because of SIGKILL, an out-of-memory error, or a panic, changes since the latest completed snapshot are lost. Use a shared external persistence implementation before you run multiple replicas.
 
 To disable persistence:
 
