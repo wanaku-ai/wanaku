@@ -215,18 +215,24 @@ jobs:
           cargo build-image-manifest --variant headless --tag "$image:early-access"
 
   publish:
-    name: Publish rolling early-access release
+    name: Release rolling early-access build with JReleaser
     needs: [build, create-manifests]
     runs-on: ubuntu-latest
     permissions:
       contents: write
       discussions: write
+      issues: write
     env:
-      GH_TOKEN: ${{ github.token }}
-      VERSION: ${{ inputs.currentDevelopmentVersion }}
-      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      JRELEASER_PROJECT_VERSION: ${{ inputs.currentDevelopmentVersion }}
+      # Development versions do not include the -SNAPSHOT suffix. Treat this
+      # workflow's version as a snapshot so JReleaser maintains early-access.
+      JRELEASER_PROJECT_SNAPSHOT_PATTERN: '.*'
+      JRELEASER_PROJECT_SNAPSHOT_LABEL: early-access
+      JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+      JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
       # This is the GPG passphrase; the MAVEN_ prefix is retained for historical reasons.
-      GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      JRELEASER_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -238,26 +244,18 @@ jobs:
           pattern: wanaku-server-*
           merge-multiple: true
 
-      - name: Generate checksums
-        working-directory: dist
-        run: sha256sum *.tar.gz *.zip > checksums_sha256.txt
+      - name: Run JReleaser
+        uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0
+        with:
+          version: 1.26.0
+          arguments: full-release
 
-      - name: Sign release files
-        if: env.GPG_PRIVATE_KEY != ''
-        run: |
-          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
-          for file in dist/*.tar.gz dist/*.zip dist/checksums_sha256.txt; do
-            gpg --batch --yes --armor --detach-sign \
-              --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
-              "$file"
-          done
-
-      - name: Publish prerelease
-        run: |
-          gh release delete early-access --cleanup-tag --yes || true
-          gh release create early-access dist/* \
-            --prerelease \
-            --target "$GITHUB_SHA" \
-            --discussion-category Announcements \
-            --title "Wanaku ${VERSION} early access" \
-            --notes "Early-access build of Wanaku ${VERSION} from commit ${GITHUB_SHA}. This build is intended for testing and is not a stable release."
+      - name: Upload JReleaser output
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: jreleaser-early-access-logs
+          path: |
+            out/jreleaser/trace.log
+            out/jreleaser/output.properties
+          if-no-files-found: warn
