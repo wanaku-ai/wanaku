@@ -1,0 +1,115 @@
+# JReleaser configuration for Wanaku (Rust).
+#
+# Adapted from the classic Wanaku Barn configuration
+# (https://github.com/wanaku-ai/wanaku-barn/blob/main/jreleaser.yml).
+#
+# This configuration is used for stable, tagged releases. It runs in
+# release-only mode: the release archives are produced by the CI build matrix
+# (see .github/workflows/release.yml) and JReleaser consumes those pre-built
+# artifacts to generate the changelog, sign the assets, produce the
+# checksums file and create the GitHub release.
+#
+# The rolling "early-access" prerelease keeps being handled by
+# .github/workflows/early-access.yml.
+project:
+  name: wanaku
+  description: Wanaku MCP Router
+  longDescription: |
+    Wanaku MCP Router is the first open-source MCP Router that transforms how agentic applications integrate with
+    enterprise systems. Think of Wanaku as the friendly, efficient receptionist for your digital office. Just as a
+    receptionist greets visitors, verifies their credentials, and directs them to the right department, Wanaku manages
+    incoming AI agents ensuring they have the proper access, and routing them to the right enterprise resources. This
+    lets your agentic applications focus on what they do best.
+  authors:
+    - The Wanaku Development Team
+  license: Apache-2.0
+  links:
+    homepage: https://wanaku.ai
+    bugTracker: https://github.com/wanaku-ai/wanaku/issues
+  inceptionYear: 2025
+  tags:
+    - 'ai'
+    - 'mcp'
+    - 'agentic'
+    - 'agents'
+    - 'rust'
+
+signing:
+  active: ALWAYS
+  armored: true
+  # COMMAND mode reuses the local gpg installation (the private key is imported
+  # in the workflow from the existing GPG_PRIVATE_KEY secret), so no separate
+  # public-key secret is required. Only JRELEASER_GPG_PASSPHRASE is needed.
+  mode: COMMAND
+
+# Preserve the checksum contract expected by get-wanaku.sh:
+# a single "checksums_sha256.txt" file in the sha256sum-compatible format.
+checksum:
+  name: checksums_sha256.txt
+  individual: false
+  algorithms:
+    - SHA-256
+
+release:
+  github:
+    owner: wanaku-ai
+    name: wanaku
+    overwrite: false
+    issues:
+      enabled: true
+    update:
+      enabled: true
+    skipTag: false
+    changelog:
+      formatted: ALWAYS
+      contentTemplate: jreleaser/changelog.tpl
+
+packagers:
+  # Disabled until the platform-token mapping is validated end-to-end with a
+  # dry run. Enable in a follow-up to publish to wanaku-ai/homebrew-wanaku.
+  brew:
+    active: NEVER
+    repository:
+      owner: wanaku-ai
+      name: homebrew-wanaku
+      branch: HEAD
+    formulaName: wanaku
+
+distributions:
+  # Full Wanaku Server binary (default features, includes the admin UI).
+  #
+  # File names are kept exactly as produced by CI (macos/aarch64) so that
+  # get-wanaku.sh and jreleaser/changelog.tpl keep working. The canonical
+  # JReleaser platform token is supplied via explicit "platform:" overrides.
+  wanaku-server:
+    type: BINARY
+    executable:
+      name: wanaku-server
+    artifacts:
+      - path: dist/wanaku-server-{{projectVersion}}-linux-x86_64.tar.gz
+        platform: linux-x86_64
+      - path: dist/wanaku-server-{{projectVersion}}-linux-aarch64.tar.gz
+        platform: linux-aarch_64
+      - path: dist/wanaku-server-{{projectVersion}}-macos-x86_64.tar.gz
+        platform: osx-x86_64
+      - path: dist/wanaku-server-{{projectVersion}}-macos-aarch64.tar.gz
+        platform: osx-aarch_64
+      - path: dist/wanaku-server-{{projectVersion}}-windows-x86_64.zip
+        platform: windows-x86_64
+
+  # Headless Wanaku Server binary (built with --no-default-features).
+  wanaku-server-headless:
+    type: BINARY
+    executable:
+      name: wanaku-server
+    artifacts:
+      - path: dist/wanaku-server-headless-{{projectVersion}}-linux-x86_64.tar.gz
+        platform: linux-x86_64
+      - path: dist/wanaku-server-headless-{{projectVersion}}-linux-aarch64.tar.gz
+        platform: linux-aarch_64
+      - path: dist/wanaku-server-headless-{{projectVersion}}-macos-x86_64.tar.gz
+        platform: osx-x86_64
+      - path: dist/wanaku-server-headless-{{projectVersion}}-macos-aarch64.tar.gz
+        platform: osx-aarch_64
+      - path: dist/wanaku-server-headless-{{projectVersion}}-windows-x86_64.zip
+        platform: windows-x86_64
