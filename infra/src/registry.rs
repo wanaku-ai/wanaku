@@ -1,9 +1,10 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Condvar, Mutex};
+use std::time::{Duration, Instant};
 
 use dashmap::DashMap;
-use wanaku_types::persistence::{PersistenceBackend, RegistrySnapshot};
+use wanaku_types::persistence::{PersistenceBackend, PersistenceError, RegistrySnapshot};
 use wanaku_types::registry::{
     DEFAULT_NAMESPACE, ForwardEntry, ForwardRegistry, NamespaceEntry, NamespaceRegistry,
     PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry, ToolRegistry,
@@ -17,7 +18,7 @@ pub struct InMemoryRegistry {
     prompts: Arc<DashMap<String, PromptEntry>>,
     forwards: Arc<DashMap<String, ForwardEntry>>,
     namespaces: Arc<DashMap<String, NamespaceEntry>>,
-    persistence: Option<Arc<dyn PersistenceBackend>>,
+    persistence: Option<PersistenceCoordinator>,
     inject_request_id: Arc<AtomicBool>,
 }
 
@@ -51,7 +52,7 @@ impl InMemoryRegistry {
 
     pub fn with_persistence(backend: Arc<dyn PersistenceBackend>) -> Self {
         Self {
-            persistence: Some(backend),
+            persistence: Some(PersistenceCoordinator::start(backend)),
             ..Self::new()
         }
     }
@@ -60,13 +61,16 @@ impl InMemoryRegistry {
     ///
     /// Inserts directly into the DashMaps to avoid triggering
     /// `persist()` on every entry (the data already came from disk).
-    #[expect(clippy::too_many_lines, reason = "sequential loading of all registry types")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "sequential loading of all registry types"
+    )]
     pub fn load_persisted(&self) {
-        let Some(backend) = &self.persistence else {
+        let Some(persistence) = &self.persistence else {
             return;
         };
 
-        let snapshot = match backend.load() {
+        let snapshot = match persistence.backend.load() {
             Ok(s) => s,
             Err(e) => {
                 tracing::warn!(error = %e, "failed to load persisted registry");
@@ -114,20 +118,36 @@ impl InMemoryRegistry {
     }
 
     fn persist(&self) {
-        if let Some(backend) = &self.persistence {
+        if let Some(persistence) = &self.persistence {
             let snapshot = self.snapshot();
-            let backend = Arc::clone(backend);
-            let save = move || {
-                if let Err(e) = backend.save(&snapshot) {
-                    tracing::warn!(error = %e, "failed to persist registry");
-                }
-            };
-            if tokio::runtime::Handle::try_current().is_ok() {
-                tokio::task::spawn_blocking(save);
-            } else {
-                save();
+            if let Err(error) = persistence.enqueue(snapshot) {
+                tracing::warn!(error = %error, "failed to queue registry persistence");
             }
         }
+    }
+
+    /// Wait for registry snapshots submitted before this call to persist.
+    ///
+    /// The wait is bounded by `timeout`. This method is intended for orderly
+    /// shutdown and tests; regular registry mutations remain non-blocking.
+    pub fn flush_persistence(&self, timeout: Duration) -> Result<(), PersistenceError> {
+        self.persistence
+            .as_ref()
+            .map_or(Ok(()), |persistence| persistence.flush(timeout))
+    }
+
+    /// Return a small, non-sensitive view of registry persistence progress.
+    #[must_use]
+    pub fn persistence_status(&self) -> RegistryPersistenceStatus {
+        self.persistence.as_ref().map_or_else(
+            || RegistryPersistenceStatus {
+                enabled: false,
+                pending: false,
+                last_successful_generation: None,
+                last_error: None,
+            },
+            PersistenceCoordinator::status,
+        )
     }
 
     fn insert_forward(&self, mut forward: ForwardEntry) {
@@ -159,6 +179,220 @@ impl InMemoryRegistry {
     }
 }
 
+/// Non-sensitive registry persistence state for health and shutdown handling.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegistryPersistenceStatus {
+    pub enabled: bool,
+    pub pending: bool,
+    pub last_successful_generation: Option<u64>,
+    pub last_error: Option<String>,
+}
+
+struct PersistenceCoordinator {
+    backend: Arc<dyn PersistenceBackend>,
+    shared: Arc<PersistenceShared>,
+    join: Arc<Mutex<Option<std::thread::JoinHandle<()>>>>,
+}
+
+struct PersistenceShared {
+    state: Mutex<PersistenceState>,
+    ready: Condvar,
+    completed: Condvar,
+}
+
+struct PersistenceState {
+    pending: Option<PendingSnapshot>,
+    next_generation: u64,
+    completed_generation: u64,
+    last_successful_generation: Option<u64>,
+    last_error: Option<PersistenceFailure>,
+    producers: usize,
+}
+
+struct PendingSnapshot {
+    generation: u64,
+    snapshot: RegistrySnapshot,
+}
+
+struct PersistenceFailure {
+    generation: u64,
+    message: String,
+}
+
+const REGISTRY_PERSISTENCE_ERROR: &str = "registry persistence unavailable";
+
+impl PersistenceCoordinator {
+    fn start(backend: Arc<dyn PersistenceBackend>) -> Self {
+        let shared = Arc::new(PersistenceShared {
+            state: Mutex::new(PersistenceState {
+                pending: None,
+                next_generation: 0,
+                completed_generation: 0,
+                last_successful_generation: None,
+                last_error: None,
+                producers: 1,
+            }),
+            ready: Condvar::new(),
+            completed: Condvar::new(),
+        });
+        let worker_shared = Arc::clone(&shared);
+        let worker_backend = Arc::clone(&backend);
+        let join = match std::thread::Builder::new()
+            .name("wanaku-registry-persistence".to_owned())
+            .spawn(move || persistence_loop(&worker_shared, &worker_backend))
+        {
+            Ok(join) => Some(join),
+            Err(error) => {
+                let mut state = lock_state(&shared);
+                state.last_error = Some(PersistenceFailure {
+                    generation: 0,
+                    message: error.to_string(),
+                });
+                None
+            }
+        };
+        Self {
+            backend,
+            shared,
+            join: Arc::new(Mutex::new(join)),
+        }
+    }
+
+    fn enqueue(&self, snapshot: RegistrySnapshot) -> Result<(), PersistenceError> {
+        let worker_available = match self.join.lock() {
+            Ok(join) => join.is_some(),
+            Err(error) => error.into_inner().is_some(),
+        };
+        if !worker_available {
+            return Err(PersistenceError::Coordination(
+                "registry persistence worker is unavailable".to_owned(),
+            ));
+        }
+        let mut state = lock_state(&self.shared);
+        state.next_generation = state.next_generation.saturating_add(1);
+        let generation = state.next_generation;
+        state.pending = Some(PendingSnapshot {
+            generation,
+            snapshot,
+        });
+        self.shared.ready.notify_one();
+        Ok(())
+    }
+
+    fn flush(&self, timeout: Duration) -> Result<(), PersistenceError> {
+        let deadline = Instant::now() + timeout;
+        let mut state = lock_state(&self.shared);
+        let target_generation = state.next_generation;
+        while state.completed_generation < target_generation {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                return Err(PersistenceError::Coordination(
+                    "timed out waiting for registry persistence".to_owned(),
+                ));
+            }
+            let wait = self.shared.completed.wait_timeout(state, remaining);
+            state = match wait {
+                Ok((state, _)) => state,
+                Err(error) => error.into_inner().0,
+            };
+        }
+        if let Some(error) = &state.last_error
+            && error.generation >= target_generation
+        {
+            return Err(PersistenceError::Coordination(error.message.clone()));
+        }
+        Ok(())
+    }
+
+    fn status(&self) -> RegistryPersistenceStatus {
+        let state = lock_state(&self.shared);
+        RegistryPersistenceStatus {
+            enabled: true,
+            pending: state.pending.is_some() || state.completed_generation < state.next_generation,
+            last_successful_generation: state.last_successful_generation,
+            last_error: state
+                .last_error
+                .as_ref()
+                .map(|_| REGISTRY_PERSISTENCE_ERROR.to_owned()),
+        }
+    }
+
+    fn add_producer(&self) {
+        let mut state = lock_state(&self.shared);
+        state.producers = state.producers.saturating_add(1);
+    }
+}
+
+impl Clone for PersistenceCoordinator {
+    fn clone(&self) -> Self {
+        self.add_producer();
+        Self {
+            backend: Arc::clone(&self.backend),
+            shared: Arc::clone(&self.shared),
+            join: Arc::clone(&self.join),
+        }
+    }
+}
+
+impl Drop for PersistenceCoordinator {
+    fn drop(&mut self) {
+        let last_producer = {
+            let mut state = lock_state(&self.shared);
+            state.producers = state.producers.saturating_sub(1);
+            state.producers == 0
+        };
+        self.shared.ready.notify_one();
+        if !last_producer {
+            return;
+        }
+        let join = match self.join.lock() {
+            Ok(mut join) => join.take(),
+            Err(error) => error.into_inner().take(),
+        };
+        drop(join);
+    }
+}
+
+fn persistence_loop(shared: &PersistenceShared, backend: &Arc<dyn PersistenceBackend>) {
+    while let Some(pending) = next_pending_snapshot(shared) {
+        let result = backend.save(&pending.snapshot);
+        let mut state = lock_state(shared);
+        state.completed_generation = state.completed_generation.max(pending.generation);
+        match result {
+            Ok(()) => {
+                state.last_successful_generation = Some(pending.generation);
+                state.last_error = None;
+            }
+            Err(error) => {
+                tracing::warn!(error = %error, "failed to persist registry");
+                state.last_error = Some(PersistenceFailure {
+                    generation: pending.generation,
+                    message: error.to_string(),
+                });
+            }
+        }
+        shared.completed.notify_all();
+    }
+}
+
+fn next_pending_snapshot(shared: &PersistenceShared) -> Option<PendingSnapshot> {
+    let mut state = lock_state(shared);
+    while state.pending.is_none() && state.producers > 0 {
+        state = match shared.ready.wait(state) {
+            Ok(state) => state,
+            Err(error) => error.into_inner(),
+        };
+    }
+    state.pending.take()
+}
+
+fn lock_state(shared: &PersistenceShared) -> std::sync::MutexGuard<'_, PersistenceState> {
+    match shared.state.lock() {
+        Ok(state) => state,
+        Err(error) => error.into_inner(),
+    }
+}
+
 impl Default for InMemoryRegistry {
     fn default() -> Self {
         Self::new()
@@ -171,7 +405,10 @@ fn effective_namespace(ns: &Option<String>) -> &str {
 
 impl ToolRegistry for InMemoryRegistry {
     fn list_tools(&self) -> Vec<ToolEntry> {
-        self.tools.iter().map(|entry| entry.value().clone()).collect()
+        self.tools
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 
     fn list_tools_in_namespace(&self, namespace: &str) -> Vec<ToolEntry> {
@@ -250,7 +487,10 @@ impl ToolRegistry for InMemoryRegistry {
 
 impl ResourceRegistry for InMemoryRegistry {
     fn list_resources(&self) -> Vec<ResourceEntry> {
-        self.resources.iter().map(|entry| entry.value().clone()).collect()
+        self.resources
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 
     fn list_resources_in_namespace(&self, namespace: &str) -> Vec<ResourceEntry> {
@@ -322,7 +562,10 @@ impl ResourceRegistry for InMemoryRegistry {
 
 impl PromptRegistry for InMemoryRegistry {
     fn list_prompts(&self) -> Vec<PromptEntry> {
-        self.prompts.iter().map(|entry| entry.value().clone()).collect()
+        self.prompts
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 
     fn list_prompts_in_namespace(&self, namespace: &str) -> Vec<PromptEntry> {
@@ -394,7 +637,10 @@ impl PromptRegistry for InMemoryRegistry {
 
 impl NamespaceRegistry for InMemoryRegistry {
     fn list_namespaces(&self) -> Vec<NamespaceEntry> {
-        self.namespaces.iter().map(|entry| entry.value().clone()).collect()
+        self.namespaces
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 
     fn get_namespace(&self, name: &str) -> Option<NamespaceEntry> {
@@ -417,7 +663,10 @@ impl NamespaceRegistry for InMemoryRegistry {
 
 impl ForwardRegistry for InMemoryRegistry {
     fn list_forwards(&self) -> Vec<ForwardEntry> {
-        self.forwards.iter().map(|entry| entry.value().clone()).collect()
+        self.forwards
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
     }
 
     fn get_forward(&self, name: &str) -> Option<ForwardEntry> {
@@ -487,7 +736,10 @@ mod tests {
         registry.register_tool(sample_tool());
         let tool = registry.get_tool("test-tool");
         assert!(tool.is_some());
-        assert_eq!(tool.as_ref().map(|t| t.uri.as_str()), Some("camel:http://example.com"));
+        assert_eq!(
+            tool.as_ref().map(|t| t.uri.as_str()),
+            Some("camel:http://example.com")
+        );
     }
 
     #[test]
@@ -519,7 +771,10 @@ mod tests {
         registry.register_resource(sample_resource());
         let res = registry.get_resource("test-resource");
         assert!(res.is_some());
-        assert_eq!(res.as_ref().map(|r| r.location.as_str()), Some("/tmp/test.txt"));
+        assert_eq!(
+            res.as_ref().map(|r| r.location.as_str()),
+            Some("/tmp/test.txt")
+        );
     }
 
     #[test]
@@ -575,8 +830,14 @@ mod tests {
         };
         registry.register_tool(tool);
         let stored = registry.get_tool("test").expect("tool should exist");
-        let props = stored.input_schema["properties"].as_object().expect("has properties");
-        assert_eq!(props.len(), 1, "x-request-id should not be injected when flag is disabled");
+        let props = stored.input_schema["properties"]
+            .as_object()
+            .expect("has properties");
+        assert_eq!(
+            props.len(),
+            1,
+            "x-request-id should not be injected when flag is disabled"
+        );
     }
 
     #[test]
@@ -602,8 +863,14 @@ mod tests {
         };
         registry.register_tool(tool);
         let stored = registry.get_tool("test").expect("tool should exist");
-        let props = stored.input_schema["properties"].as_object().expect("has properties");
-        assert_eq!(props.len(), 2, "x-request-id should be injected when flag is enabled");
+        let props = stored.input_schema["properties"]
+            .as_object()
+            .expect("has properties");
+        assert_eq!(
+            props.len(),
+            2,
+            "x-request-id should be injected when flag is enabled"
+        );
         assert!(props.contains_key("x-request-id"));
     }
 
@@ -626,10 +893,16 @@ mod tests {
         registry.register_forward(sample_forward("example-mcp", Some("test-ns")));
 
         let namespace = registry.get_namespace("test-ns");
-        assert!(namespace.is_some(), "namespace referenced by forward should be registered");
+        assert!(
+            namespace.is_some(),
+            "namespace referenced by forward should be registered"
+        );
         assert_eq!(namespace.expect("namespace should exist").name, "test-ns");
         assert!(
-            registry.list_namespaces().iter().any(|ns| ns.name == "test-ns"),
+            registry
+                .list_namespaces()
+                .iter()
+                .any(|ns| ns.name == "test-ns"),
             "namespace referenced by forward should appear in list_namespaces"
         );
     }
@@ -639,7 +912,9 @@ mod tests {
         let registry = InMemoryRegistry::new();
         registry.register_forward(sample_forward("example-mcp", None));
 
-        let forward = registry.get_forward("example-mcp").expect("forward should exist");
+        let forward = registry
+            .get_forward("example-mcp")
+            .expect("forward should exist");
         assert_eq!(forward.namespace.as_deref(), Some(DEFAULT_NAMESPACE));
         assert!(registry.get_namespace(DEFAULT_NAMESPACE).is_some());
     }
@@ -650,9 +925,16 @@ mod tests {
         registry.register_forward(sample_forward("forward-a", Some("shared-ns")));
         registry.register_forward(sample_forward("forward-b", Some("shared-ns")));
 
-        let matching: Vec<_> =
-            registry.list_namespaces().into_iter().filter(|ns| ns.name == "shared-ns").collect();
-        assert_eq!(matching.len(), 1, "multiple forwards should create a single namespace entry");
+        let matching: Vec<_> = registry
+            .list_namespaces()
+            .into_iter()
+            .filter(|ns| ns.name == "shared-ns")
+            .collect();
+        assert_eq!(
+            matching.len(),
+            1,
+            "multiple forwards should create a single namespace entry"
+        );
     }
 
     #[test]
@@ -669,8 +951,13 @@ mod tests {
 
         registry.register_forward(sample_forward("example-mcp", Some("test-ns")));
 
-        let namespace = registry.get_namespace("test-ns").expect("namespace should exist");
-        assert_eq!(namespace.labels, labels, "existing namespace metadata must be preserved");
+        let namespace = registry
+            .get_namespace("test-ns")
+            .expect("namespace should exist");
+        assert_eq!(
+            namespace.labels, labels,
+            "existing namespace metadata must be preserved"
+        );
         assert_eq!(namespace.auth_required, Some(true));
         assert_eq!(namespace.audience.as_deref(), Some("finance-audience"));
     }
@@ -723,6 +1010,144 @@ mod tests {
         assert!(
             registry.get_namespace("persisted-ns").is_some(),
             "a persisted forward namespace should be registered when the snapshot omits it"
+        );
+    }
+
+    struct BlockingBackend {
+        calls: std::sync::atomic::AtomicUsize,
+        active: std::sync::atomic::AtomicUsize,
+        max_active: std::sync::atomic::AtomicUsize,
+        snapshots: Mutex<Vec<RegistrySnapshot>>,
+        first_entered: std::sync::mpsc::Sender<()>,
+        release_first: Mutex<std::sync::mpsc::Receiver<()>>,
+    }
+
+    impl PersistenceBackend for BlockingBackend {
+        fn load(&self) -> Result<RegistrySnapshot, PersistenceError> {
+            Ok(RegistrySnapshot::default())
+        }
+
+        fn save(&self, snapshot: &RegistrySnapshot) -> Result<(), PersistenceError> {
+            let active = self.active.fetch_add(1, Ordering::SeqCst) + 1;
+            self.max_active.fetch_max(active, Ordering::SeqCst);
+            let call = self.calls.fetch_add(1, Ordering::SeqCst);
+            if call == 0 {
+                self.first_entered
+                    .send(())
+                    .map_err(|error| PersistenceError::Coordination(error.to_string()))?;
+                self.release_first
+                    .lock()
+                    .map_err(|error| PersistenceError::Coordination(error.to_string()))?
+                    .recv()
+                    .map_err(|error| PersistenceError::Coordination(error.to_string()))?;
+            }
+            self.snapshots
+                .lock()
+                .map_err(|error| PersistenceError::Coordination(error.to_string()))?
+                .push(RegistrySnapshot {
+                    tools: snapshot.tools.clone(),
+                    resources: snapshot.resources.clone(),
+                    prompts: snapshot.prompts.clone(),
+                    forwards: snapshot.forwards.clone(),
+                    namespaces: snapshot.namespaces.clone(),
+                });
+            self.active.fetch_sub(1, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn persistence_coalesces_pending_snapshots_and_flushes_latest_generation() {
+        let (first_entered_tx, first_entered_rx) = std::sync::mpsc::channel();
+        let (release_first_tx, release_first_rx) = std::sync::mpsc::channel();
+        let backend = Arc::new(BlockingBackend {
+            calls: std::sync::atomic::AtomicUsize::new(0),
+            active: std::sync::atomic::AtomicUsize::new(0),
+            max_active: std::sync::atomic::AtomicUsize::new(0),
+            snapshots: Mutex::new(Vec::new()),
+            first_entered: first_entered_tx,
+            release_first: Mutex::new(release_first_rx),
+        });
+        let registry = InMemoryRegistry::with_persistence(backend.clone());
+
+        registry.register_tool(sample_tool());
+        assert!(
+            first_entered_rx
+                .recv_timeout(Duration::from_secs(2))
+                .is_ok()
+        );
+        assert!(registry.persistence_status().pending);
+
+        let mut second = sample_tool();
+        second.name = "second-tool".to_owned();
+        registry.register_tool(second);
+        let mut third = sample_tool();
+        third.name = "third-tool".to_owned();
+        registry.register_tool(third);
+
+        assert!(release_first_tx.send(()).is_ok());
+        assert!(registry.flush_persistence(Duration::from_secs(2)).is_ok());
+
+        let snapshots = backend.snapshots.lock().expect("snapshot lock");
+        assert_eq!(backend.max_active.load(Ordering::SeqCst), 1);
+        assert_eq!(
+            snapshots.len(),
+            2,
+            "worker should coalesce pending snapshots"
+        );
+        let final_names: Vec<_> = snapshots
+            .last()
+            .into_iter()
+            .flat_map(|snapshot| snapshot.tools.iter().map(|tool| tool.name.as_str()))
+            .collect();
+        assert_eq!(final_names.len(), 3);
+        assert!(final_names.contains(&"third-tool"));
+        assert_eq!(
+            registry.persistence_status().last_successful_generation,
+            Some(3)
+        );
+    }
+
+    struct FailingBackend;
+
+    impl PersistenceBackend for FailingBackend {
+        fn load(&self) -> Result<RegistrySnapshot, PersistenceError> {
+            Ok(RegistrySnapshot::default())
+        }
+
+        fn save(&self, _snapshot: &RegistrySnapshot) -> Result<(), PersistenceError> {
+            Err(PersistenceError::Coordination("write failed".to_owned()))
+        }
+    }
+
+    #[test]
+    fn persistence_failure_is_reported_by_flush_and_status() {
+        let registry = InMemoryRegistry::with_persistence(Arc::new(FailingBackend));
+        registry.register_tool(sample_tool());
+
+        assert!(registry.flush_persistence(Duration::from_secs(2)).is_err());
+        let status = registry.persistence_status();
+        assert!(status.enabled);
+        assert!(!status.pending);
+        assert_eq!(
+            status.last_error.as_deref(),
+            Some(REGISTRY_PERSISTENCE_ERROR)
+        );
+    }
+
+    #[test]
+    fn disabled_persistence_has_no_pending_work() {
+        let registry = InMemoryRegistry::new();
+
+        assert!(registry.flush_persistence(Duration::from_secs(1)).is_ok());
+        assert_eq!(
+            registry.persistence_status(),
+            RegistryPersistenceStatus {
+                enabled: false,
+                pending: false,
+                last_successful_generation: None,
+                last_error: None,
+            }
         );
     }
 }

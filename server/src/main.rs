@@ -6,12 +6,12 @@
 static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
 use clap::Parser;
+use praxis_core::PingoraServerRuntime;
 use praxis_core::config::{Config, ProtocolKind};
 use praxis_core::health::build_health_registry;
-use praxis_core::PingoraServerRuntime;
 use praxis_filter::FilterRegistry;
-use praxis_protocol::{ListenerPipelines, Protocol as _};
 use praxis_protocol::http::PingoraHttp;
+use praxis_protocol::{ListenerPipelines, Protocol as _};
 use tracing::info;
 
 use wanaku_infra::persistence::FilePersistence;
@@ -23,11 +23,10 @@ use wanaku_types::registry::{ForwardEntry, ForwardRegistry};
 #[expect(clippy::too_many_lines, reason = "server bootstrap")]
 fn main() {
     let args = ServerArgs::parse();
-    let config = wanaku_server::load_config(args.pipeline_config.as_deref())
-        .unwrap_or_else(|e| fatal(&e));
+    let config =
+        wanaku_server::load_config(args.pipeline_config.as_deref()).unwrap_or_else(|e| fatal(&e));
 
-    let _tracing_guard = praxis_core::logging::init_tracing(&config)
-        .unwrap_or_else(|e| fatal(&e));
+    let _tracing_guard = praxis_core::logging::init_tracing(&config).unwrap_or_else(|e| fatal(&e));
 
     let metrics_store = wanaku_infra::metrics::MetricsStore::new();
 
@@ -64,7 +63,12 @@ fn main() {
         features,
     };
 
-    let pipelines = build_pipelines(&config, &wanaku_registry, &mut filter_registry, &service_deps);
+    let pipelines = build_pipelines(
+        &config,
+        &wanaku_registry,
+        &mut filter_registry,
+        &service_deps,
+    );
 
     info!("initializing server");
     let mut server = PingoraServerRuntime::new(&config);
@@ -75,7 +79,12 @@ fn main() {
     server.run()
 }
 
-fn build_pipelines(config: &Config, wanaku_registry: &InMemoryRegistry, filter_registry: &mut FilterRegistry, service_deps: &ServiceDeps) -> ListenerPipelines {
+fn build_pipelines(
+    config: &Config,
+    wanaku_registry: &InMemoryRegistry,
+    filter_registry: &mut FilterRegistry,
+    service_deps: &ServiceDeps,
+) -> ListenerPipelines {
     info!("building wanaku pipelines");
     let pipeline_deps = wanaku_server::pipelines::PipelineDeps::new(
         filter_registry,
@@ -114,9 +123,7 @@ fn load_config(
     }
 }
 
-fn load_governance_config(
-    root: Option<&serde_yaml::Value>,
-) -> Result<GovernanceConfig, String> {
+fn load_governance_config(root: Option<&serde_yaml::Value>) -> Result<GovernanceConfig, String> {
     let config = root
         .and_then(|value| value.get("governance"))
         .map(|value| serde_yaml::from_value::<GovernanceConfig>(value.clone()))
@@ -160,21 +167,34 @@ fn setup_management_service(
     }
 
     let mgmt_registry = deps.mgmt_registry.clone();
+    let persistence_registry = deps.mgmt_registry.clone();
 
     let mgmt_addr = &wanaku_types::config::ENV.mgmt_listen;
-    let mgmt = wanaku_server::management::WanakuManagementService::new(
-        deps.mgmt_registry,
-        deps.features,
-    );
-    let mut mgmt_service = pingora_core::services::listening::Service::new(
-        "wanaku-management".to_owned(),
-        mgmt,
-    );
+    let mgmt =
+        wanaku_server::management::WanakuManagementService::new(deps.mgmt_registry, deps.features);
+    let mut mgmt_service =
+        pingora_core::services::listening::Service::new("wanaku-management".to_owned(), mgmt);
     mgmt_service.add_tcp(mgmt_addr);
     server.server_mut().add_service(mgmt_service);
     info!(address = %mgmt_addr, "management API enabled");
 
     register_forward_reconnect_service(mgmt_registry, server);
+    register_registry_persistence_service(persistence_registry, server);
+}
+
+fn register_registry_persistence_service(
+    registry: InMemoryRegistry,
+    server: &mut PingoraServerRuntime,
+) {
+    if !registry.persistence_status().enabled {
+        return;
+    }
+    let service = wanaku_server::management::registry_persistence_service(registry);
+    let background_service = pingora_core::services::background::GenBackgroundService::new(
+        "wanaku-registry-persistence".to_owned(),
+        service,
+    );
+    server.server_mut().add_service(background_service);
 }
 
 /// Registers the periodic background service that re-probes forwards currently
@@ -232,12 +252,16 @@ fn build_features(
 
     vec![
         Box::new(audit),
-        Box::new(wanaku_feature_metrics::MetricsFeature::new(metrics_store.clone())),
+        Box::new(wanaku_feature_metrics::MetricsFeature::new(
+            metrics_store.clone(),
+        )),
         Box::new(wanaku_feature_intercept::InterceptFeature::new()),
         Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
         Box::new(action_policy),
         Box::new(evaluator),
-        Box::new(wanaku_feature_plugins::PluginsFeature::new(args.plugins_path.as_deref())),
+        Box::new(wanaku_feature_plugins::PluginsFeature::new(
+            args.plugins_path.as_deref(),
+        )),
     ]
 }
 
@@ -275,7 +299,11 @@ fn load_wanaku_yaml(path: &str) -> Option<serde_yaml::Value> {
     }
 }
 
-#[expect(clippy::cognitive_complexity, clippy::too_many_lines, reason = "config loading requires sequential steps")]
+#[expect(
+    clippy::cognitive_complexity,
+    clippy::too_many_lines,
+    reason = "config loading requires sequential steps"
+)]
 fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
     let mut forwards = Vec::new();
     if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
@@ -315,7 +343,11 @@ fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
     }
 }
 
-#[expect(clippy::print_stderr, clippy::exit, reason = "fatal error before runtime is available")]
+#[expect(
+    clippy::print_stderr,
+    clippy::exit,
+    reason = "fatal error before runtime is available"
+)]
 fn fatal(err: &dyn std::fmt::Display) -> ! {
     eprintln!("fatal: {err}");
     std::process::exit(1)
@@ -324,9 +356,7 @@ fn fatal(err: &dyn std::fmt::Display) -> ! {
 #[cfg(test)]
 mod tests {
     use super::load_governance_config;
-    use wanaku_types::governance::{
-        AuditLevel, EnforcementMode, FailureBehavior, NoMatchBehavior,
-    };
+    use wanaku_types::governance::{AuditLevel, EnforcementMode, FailureBehavior, NoMatchBehavior};
 
     #[test]
     fn absent_governance_config_uses_fail_safe_defaults() {

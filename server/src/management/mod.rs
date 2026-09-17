@@ -1,4 +1,5 @@
 mod handlers;
+mod persistence;
 mod reconnect;
 mod response;
 mod routes;
@@ -6,10 +7,11 @@ mod routes;
 mod ui;
 
 pub use handlers::discover_and_update_forward;
-pub use handlers::discover_tools_from_forward;
-pub use reconnect::{ForwardReconnectService, reconnect_service};
-pub use handlers::discover_resources_from_forward;
 pub use handlers::discover_prompts_from_forward;
+pub use handlers::discover_resources_from_forward;
+pub use handlers::discover_tools_from_forward;
+pub use persistence::{RegistryPersistenceService, registry_persistence_service};
+pub use reconnect::{ForwardReconnectService, reconnect_service};
 
 use async_trait::async_trait;
 use http::{Response, StatusCode};
@@ -21,28 +23,21 @@ use wanaku_types::feature::{Feature, HttpContext};
 
 use self::handlers::{
     handle_forward_create, handle_forward_delete, handle_forward_get, handle_forward_list,
-    handle_forward_refresh,
-    handle_namespace_create, handle_namespace_delete, handle_namespace_get, handle_namespace_list,
-    handle_namespace_update,
-    handle_prompt_delete, handle_prompt_get, handle_prompt_list,
-    handle_resource_delete, handle_resource_get, handle_resource_list,
-    handle_resource_update,
-    handle_info,
-    handle_statistics,
-    handle_tool_delete, handle_tool_get, handle_tool_list, handle_tool_update,
+    handle_forward_refresh, handle_info, handle_namespace_create, handle_namespace_delete,
+    handle_namespace_get, handle_namespace_list, handle_namespace_update, handle_prompt_delete,
+    handle_prompt_get, handle_prompt_list, handle_resource_delete, handle_resource_get,
+    handle_resource_list, handle_resource_update, handle_statistics, handle_tool_delete,
+    handle_tool_get, handle_tool_list, handle_tool_update,
 };
-use crate::http_response::{json_err, json_ok};
-use self::response::{raw_json_response, read_body};
 #[cfg(feature = "ui")]
 use self::response::redirect_response;
+use self::response::{raw_json_response, read_body};
 use self::routes::{
-    ForwardRoute, ManagementRoute, NamespaceRoute,
-    PromptRoute, ResourceRoute, ToolRoute,
-    resolve_forward_route,
-    resolve_management_route, resolve_namespace_route,
-    resolve_prompt_route, resolve_resource_route,
-    resolve_tool_route,
+    ForwardRoute, ManagementRoute, NamespaceRoute, PromptRoute, ResourceRoute, ToolRoute,
+    resolve_forward_route, resolve_management_route, resolve_namespace_route, resolve_prompt_route,
+    resolve_resource_route, resolve_tool_route,
 };
+use crate::http_response::{json_err, json_ok};
 
 pub struct WanakuManagementService {
     registry: InMemoryRegistry,
@@ -52,10 +47,7 @@ pub struct WanakuManagementService {
 }
 
 impl WanakuManagementService {
-    pub fn new(
-        registry: InMemoryRegistry,
-        features: Vec<Box<dyn Feature>>,
-    ) -> Self {
+    pub fn new(registry: InMemoryRegistry, features: Vec<Box<dyn Feature>>) -> Self {
         #[cfg(feature = "ui")]
         let ui_path = wanaku_types::config::ENV.ui_path.clone();
         #[cfg(feature = "ui")]
@@ -108,7 +100,11 @@ impl ServeHttp for WanakuManagementService {
     }
 }
 
-#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "route dispatch requires sequential matching")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    reason = "route dispatch requires sequential matching"
+)]
 pub(crate) async fn dispatch(
     ctx: &HttpContext<'_>,
     registry: &InMemoryRegistry,
@@ -134,10 +130,12 @@ pub(crate) async fn dispatch(
     match resolve_tool_route(ctx.method, ctx.path) {
         ToolRoute::List => return handle_tool_list(registry),
         ToolRoute::GetByName(name) => return handle_tool_get(registry, &name),
-        ToolRoute::Update(name) => return match ctx.body {
-            Some(b) => handle_tool_update(registry, &name, b),
-            None => json_err(StatusCode::BAD_REQUEST, "request body required"),
-        },
+        ToolRoute::Update(name) => {
+            return match ctx.body {
+                Some(b) => handle_tool_update(registry, &name, b),
+                None => json_err(StatusCode::BAD_REQUEST, "request body required"),
+            };
+        }
         ToolRoute::Delete(name) => return handle_tool_delete(registry, &name),
         ToolRoute::NotFound => {}
     }
@@ -145,10 +143,12 @@ pub(crate) async fn dispatch(
     match resolve_resource_route(ctx.method, ctx.path) {
         ResourceRoute::List => return handle_resource_list(registry),
         ResourceRoute::GetByName(name) => return handle_resource_get(registry, &name),
-        ResourceRoute::Update(name) => return match ctx.body {
-            Some(b) => handle_resource_update(registry, &name, b),
-            None => json_err(StatusCode::BAD_REQUEST, "request body required"),
-        },
+        ResourceRoute::Update(name) => {
+            return match ctx.body {
+                Some(b) => handle_resource_update(registry, &name, b),
+                None => json_err(StatusCode::BAD_REQUEST, "request body required"),
+            };
+        }
         ResourceRoute::Delete(name) => return handle_resource_delete(registry, &name),
         ResourceRoute::NotFound => {}
     }
@@ -163,14 +163,18 @@ pub(crate) async fn dispatch(
     match resolve_namespace_route(ctx.method, ctx.path) {
         NamespaceRoute::List => return handle_namespace_list(registry),
         NamespaceRoute::GetByName(name) => return handle_namespace_get(registry, &name),
-        NamespaceRoute::Create => return match ctx.body {
-            Some(b) => handle_namespace_create(registry, b),
-            None => json_err(StatusCode::BAD_REQUEST, "request body required"),
-        },
-        NamespaceRoute::Update(id) => return match ctx.body {
-            Some(b) => handle_namespace_update(registry, &id, b),
-            None => json_err(StatusCode::BAD_REQUEST, "request body required"),
-        },
+        NamespaceRoute::Create => {
+            return match ctx.body {
+                Some(b) => handle_namespace_create(registry, b),
+                None => json_err(StatusCode::BAD_REQUEST, "request body required"),
+            };
+        }
+        NamespaceRoute::Update(id) => {
+            return match ctx.body {
+                Some(b) => handle_namespace_update(registry, &id, b),
+                None => json_err(StatusCode::BAD_REQUEST, "request body required"),
+            };
+        }
         NamespaceRoute::Delete(name) => return handle_namespace_delete(registry, &name),
         NamespaceRoute::NotFound => {}
     }
@@ -178,10 +182,12 @@ pub(crate) async fn dispatch(
     match resolve_forward_route(ctx.method, ctx.path) {
         ForwardRoute::List => return handle_forward_list(registry),
         ForwardRoute::GetByName(name) => return handle_forward_get(registry, &name),
-        ForwardRoute::Create => return match ctx.body {
-            Some(b) => handle_forward_create(registry, b).await,
-            None => json_err(StatusCode::BAD_REQUEST, "request body required"),
-        },
+        ForwardRoute::Create => {
+            return match ctx.body {
+                Some(b) => handle_forward_create(registry, b).await,
+                None => json_err(StatusCode::BAD_REQUEST, "request body required"),
+            };
+        }
         ForwardRoute::Delete(name) => return handle_forward_delete(registry, &name),
         ForwardRoute::Refresh(name) => return handle_forward_refresh(registry, &name).await,
         ForwardRoute::NotFound => {}
@@ -193,7 +199,10 @@ pub(crate) async fn dispatch(
         }
     }
 
-    json_err(StatusCode::NOT_FOUND, StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default())
+    json_err(
+        StatusCode::NOT_FOUND,
+        StatusCode::NOT_FOUND.canonical_reason().unwrap_or_default(),
+    )
 }
 
 #[cfg(test)]

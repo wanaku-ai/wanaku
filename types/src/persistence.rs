@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::registry::{
-    ForwardEntry, NamespaceEntry, PromptEntry, ResourceEntry, ToolEntry,
-};
+use crate::registry::{ForwardEntry, NamespaceEntry, PromptEntry, ResourceEntry, ToolEntry};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RegistrySnapshot {
@@ -25,6 +23,9 @@ pub enum PersistenceError {
 
     #[error("serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
+
+    #[error("persistence coordination error: {0}")]
+    Coordination(String),
 }
 
 pub trait PersistenceBackend: Send + Sync {
