@@ -54,3 +54,6 @@ tests/e2e/ui/playwright-report/
 plugins
 wanaku.local.yaml
 scripts
+
+### JReleaser ###
+out/

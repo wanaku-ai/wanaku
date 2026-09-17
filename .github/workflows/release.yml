@@ -1,0 +1,214 @@
+name: release
+
+# Stable, tagged releases handled by JReleaser.
+#
+# The rolling "early-access" prerelease keeps being handled by
+# early-access.yml. This workflow builds the same 5-platform archives
+# (full + headless) and hands them over to JReleaser, which generates the
+# changelog, signs the artifacts, produces checksums_sha256.txt and creates
+# the tagged GitHub release.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release (for example, 0.3.0)
+        required: true
+        type: string
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  setup:
+    name: Resolve release version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: Resolve version
+        id: resolve
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Resolved release version: ${version}"
+
+  build:
+    name: Build (${{ matrix.platform }})
+    needs: setup
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+          - os: macos-15-intel
+            platform: macos-x86_64
+          - os: macos-15
+            platform: macos-aarch64
+          - os: windows-2025
+            platform: windows-x86_64
+    env:
+      VERSION: ${{ needs.setup.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+        with:
+          toolchain: '1.96'
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: yarn
+          cache-dependency-path: ui/admin/yarn.lock
+
+      - name: Validate version
+        shell: bash
+        run: |
+          server_version=$(cargo metadata --locked --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "wanaku-server") | .version')
+          if [ "$server_version" != "$VERSION" ]; then
+            echo "Requested version $VERSION does not match wanaku-server version: $server_version" >&2
+            exit 1
+          fi
+
+      - name: Build admin UI
+        run: |
+          corepack enable
+          yarn --cwd ui/admin install --frozen-lockfile
+          yarn --cwd ui/admin build
+
+      - name: Test
+        run: cargo test --workspace --locked --verbose
+
+      - name: Build release binary
+        run: cargo build --release --locked -p wanaku-server
+
+      - name: Package release binary (Unix)
+        if: runner.os != 'Windows'
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          archive="wanaku-server-${VERSION}-${PLATFORM}"
+          mkdir -p "dist/$archive"
+          install -m 0755 target/release/wanaku-server "dist/$archive/wanaku-server"
+          cp LICENSE README.md wanaku.yaml "dist/$archive/"
+          tar -C dist -czf "dist/$archive.tar.gz" "$archive"
+          rm -rf "dist/$archive"
+
+      - name: Package release binary (Windows)
+        if: runner.os == 'Windows'
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        shell: pwsh
+        run: |
+          $archive = "wanaku-server-$env:VERSION-$env:PLATFORM"
+          New-Item -ItemType Directory -Path "dist/$archive" -Force
+          Copy-Item target/release/wanaku-server.exe "dist/$archive/wanaku-server.exe"
+          Copy-Item LICENSE, README.md, wanaku.yaml "dist/$archive/"
+          Compress-Archive -Path "dist/$archive" -DestinationPath "dist/$archive.zip"
+          Remove-Item -Recurse -Force "dist/$archive"
+
+      - name: Build headless release binary
+        run: cargo build --release --locked -p wanaku-server --no-default-features
+
+      - name: Package headless release binary (Unix)
+        if: runner.os != 'Windows'
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          archive="wanaku-server-headless-${VERSION}-${PLATFORM}"
+          mkdir -p "dist/$archive"
+          install -m 0755 target/release/wanaku-server "dist/$archive/wanaku-server"
+          cp LICENSE README.md wanaku.yaml "dist/$archive/"
+          tar -C dist -czf "dist/$archive.tar.gz" "$archive"
+          rm -rf "dist/$archive"
+
+      - name: Package headless release binary (Windows)
+        if: runner.os == 'Windows'
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        shell: pwsh
+        run: |
+          $archive = "wanaku-server-headless-$env:VERSION-$env:PLATFORM"
+          New-Item -ItemType Directory -Path "dist/$archive" -Force
+          Copy-Item target/release/wanaku-server.exe "dist/$archive/wanaku-server.exe"
+          Copy-Item LICENSE, README.md, wanaku.yaml "dist/$archive/"
+          Compress-Archive -Path "dist/$archive" -DestinationPath "dist/$archive.zip"
+          Remove-Item -Recurse -Force "dist/$archive"
+
+      - name: Upload release archive
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: wanaku-server-${{ matrix.platform }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+          if-no-files-found: error
+
+  release:
+    name: Release with JReleaser
+    needs: [setup, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    env:
+      JRELEASER_PROJECT_VERSION: ${{ needs.setup.outputs.version }}
+      JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      # This is the GPG passphrase; the MAVEN_ prefix is retained for historical reasons.
+      JRELEASER_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download release archives
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          path: dist
+          pattern: wanaku-server-*
+          merge-multiple: true
+
+      - name: Import GPG key
+        if: env.GPG_PRIVATE_KEY != ''
+        run: printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+
+      - name: Run JReleaser
+        uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0
+        with:
+          version: 1.26.0
+          arguments: full-release
+
+      - name: Upload JReleaser output
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: jreleaser-logs
+          path: |
+            out/jreleaser/trace.log
+            out/jreleaser/output.properties
+          if-no-files-found: warn
