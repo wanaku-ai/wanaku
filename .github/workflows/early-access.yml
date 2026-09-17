@@ -220,6 +220,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      discussions: write
     env:
       GH_TOKEN: ${{ github.token }}
       VERSION: ${{ inputs.currentDevelopmentVersion }}
@@ -257,5 +258,6 @@ jobs:
           gh release create early-access dist/* \
             --prerelease \
             --target "$GITHUB_SHA" \
+            --discussion-category Announcements \
             --title "Wanaku ${VERSION} early access" \
             --notes "Early-access build of Wanaku ${VERSION} from commit ${GITHUB_SHA}. This build is intended for testing and is not a stable release."
