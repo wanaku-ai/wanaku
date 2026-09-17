@@ -58,3 +58,4 @@ filter_chains:
 
 insecure_options:
   skip_pipeline_validation: true
+  allow_private_endpoints: true
