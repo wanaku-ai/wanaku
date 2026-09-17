@@ -26,7 +26,7 @@ fn main() {
     let config = wanaku_server::load_config(args.pipeline_config.as_deref())
         .unwrap_or_else(|e| fatal(&e));
 
-    praxis_core::logging::init_tracing(&config)
+    let _tracing_guard = praxis_core::logging::init_tracing(&config)
         .unwrap_or_else(|e| fatal(&e));
 
     let metrics_store = wanaku_infra::metrics::MetricsStore::new();
@@ -150,9 +150,12 @@ fn setup_management_service(
         praxis_protocol::http::pingora::health::add_admin_endpoints_to_pingora_server(
             server.server_mut(),
             admin_addr,
-            Some(deps.health_registry),
-            Some(deps.kv_stores),
-            config.admin.verbose,
+            praxis_protocol::http::pingora::health::AdminEndpointOptions {
+                health_registry: Some(deps.health_registry),
+                kv_registry: Some(deps.kv_stores),
+                verbose: config.admin.verbose,
+                ..Default::default()
+            },
         );
     }
 

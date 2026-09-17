@@ -29,7 +29,7 @@ workspace = true
 async-trait = { workspace = true }
 clap = { workspace = true }
 http = { workspace = true }
-pingora-core = { version = "0.8.2", package = "quixotic-plecostomus-core" }
+pingora-core = { version = "0.9.0", package = "quixotic-plecostomus-core" }
 rust-embed = { version = "8", optional = true }
 utoipa = "5.5"
 praxis-ai-filters = { workspace = true }

@@ -102,7 +102,12 @@ pub fn resolve_pipelines(
             entries.extend_from_slice(chain_filters);
         }
 
-        let mut pipeline = FilterPipeline::build_with_chains(&mut entries, deps.filter_registry, &chains)?;
+        let mut pipeline = FilterPipeline::build_with_chains(
+            &mut entries,
+            deps.filter_registry,
+            &chains,
+            &config.insecure_options,
+        )?;
 
         pipeline.apply_body_limits(
             config.body_limits.max_request_bytes,
