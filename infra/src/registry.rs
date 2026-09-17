@@ -19,6 +19,7 @@ pub struct InMemoryRegistry {
     forwards: Arc<DashMap<String, ForwardEntry>>,
     namespaces: Arc<DashMap<String, NamespaceEntry>>,
     persistence: Option<PersistenceCoordinator>,
+    persistence_lock: Arc<Mutex<()>>,
     inject_request_id: Arc<AtomicBool>,
 }
 
@@ -42,6 +43,7 @@ impl InMemoryRegistry {
             forwards: Arc::new(DashMap::new()),
             namespaces: Arc::new(namespaces),
             persistence: None,
+            persistence_lock: Arc::new(Mutex::new(())),
             inject_request_id: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -119,6 +121,10 @@ impl InMemoryRegistry {
 
     fn persist(&self) {
         if let Some(persistence) = &self.persistence {
+            let _persistence_lock = match self.persistence_lock.lock() {
+                Ok(lock) => lock,
+                Err(error) => error.into_inner(),
+            };
             let snapshot = self.snapshot();
             if let Err(error) = persistence.enqueue(snapshot) {
                 tracing::warn!(error = %error, "failed to queue registry persistence");
