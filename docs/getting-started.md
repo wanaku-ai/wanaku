@@ -227,6 +227,25 @@ You can configure Wanaku with environment variables. This table lists the most c
 
 Read [Configuration](./configuration.md) for the complete list.
 
+### Endpoints
+
+| Endpoint       | Address                                 | Description                                                         |
+|----------------|-----------------------------------------|---------------------------------------------------------------------|
+| MCP            | `http://localhost:8081/{namespace}/mcp` | MCP protocol endpoint (or `/{namespace}/mcp` for namespaced access) |
+| Management API | `http://localhost:8080/api/v1/...`      | CRUD for tools, resources, prompts, forwards, namespaces            |
+| Admin UI       | `http://localhost:8080/admin/`          | Web dashboard                                                       |
+
+## Authentication
+
+Authentication is handled externally by [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy). Two instances sit in front of the MCP and management ports, sharing an SSO cookie:
+
+- **MCP proxy** (`:4180` → `:8081`) — protects MCP endpoints, any authenticated user
+- **Management proxy** (`:4181` → `:8080`) — protects the admin UI and REST API, admin role required
+
+Wanaku also serves [RFC 9728](https://datatracker.ietf.org/doc/rfc9728/) OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. Set `WANAKU_AUTH_ISSUER` to your Keycloak realm URL to populate the `authorization_servers` field.
+
+See [`deploy/auth/README.md`](deploy/auth/README.md) for setup instructions (Docker Compose and local development).
+
 ## Where to Go Next
 
 - **[Architecture](./architecture.md)** — See how the filter pipeline, registry, and routing work together.
