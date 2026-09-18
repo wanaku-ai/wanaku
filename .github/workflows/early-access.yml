@@ -223,6 +223,7 @@ jobs:
       discussions: write
       issues: write
     env:
+      GH_TOKEN: ${{ github.token }}
       JRELEASER_PROJECT_VERSION: ${{ inputs.currentDevelopmentVersion }}
       # Development versions do not include the -SNAPSHOT suffix. Treat this
       # workflow's version as a snapshot so JReleaser maintains early-access.
@@ -243,6 +244,14 @@ jobs:
           path: dist
           pattern: wanaku-server-*
           merge-multiple: true
+
+      # GitHub only creates a release discussion when it creates the release.
+      # JReleaser otherwise updates this fixed rolling-release tag in place.
+      - name: Remove the previous early-access release
+        run: |
+          if gh release view early-access >/dev/null 2>&1; then
+            gh release delete early-access --cleanup-tag --yes
+          fi
 
       - name: Run JReleaser
         uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0
