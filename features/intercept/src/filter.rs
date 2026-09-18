@@ -22,7 +22,10 @@ pub struct InterceptFilter {
 }
 
 impl InterceptFilter {
-    #[expect(clippy::cast_possible_truncation, reason = "u64 config value fits in usize")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "u64 config value fits in usize"
+    )]
     pub fn from_config(config: &serde_yaml::Value) -> Result<Box<dyn HttpFilter>, FilterError> {
         let max_body_bytes = config
             .get("max_body_bytes")
@@ -34,9 +37,8 @@ impl InterceptFilter {
 }
 
 fn parse_body(bytes: &[u8]) -> serde_json::Value {
-    serde_json::from_slice(bytes).unwrap_or_else(|_| {
-        serde_json::Value::String(String::from_utf8_lossy(bytes).into_owned())
-    })
+    serde_json::from_slice(bytes)
+        .unwrap_or_else(|_| serde_json::Value::String(String::from_utf8_lossy(bytes).into_owned()))
 }
 
 const ID_PREFIX: &str = "wk-";
@@ -65,7 +67,10 @@ fn inject_system_prompt(body_bytes: &[u8], conversation_id: &str) -> (Option<Byt
         return (None, conversation_id.to_owned());
     };
 
-    let Some(messages) = parsed.get_mut("messages").and_then(serde_json::Value::as_array_mut) else {
+    let Some(messages) = parsed
+        .get_mut("messages")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
         return (None, conversation_id.to_owned());
     };
 
@@ -173,8 +178,14 @@ impl HttpFilter for InterceptFilter {
         Ok(FilterAction::Continue)
     }
 
-    #[expect(clippy::too_many_lines, reason = "interaction recording with multiple field extractions")]
-    #[expect(clippy::cast_possible_truncation, reason = "duration and epoch millis within u64 range")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "interaction recording with multiple field extractions"
+    )]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "duration and epoch millis within u64 range"
+    )]
     fn on_response_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
@@ -192,7 +203,10 @@ impl HttpFilter for InterceptFilter {
         let status_code = state.status.load(Ordering::Relaxed);
         let duration_ms = state.start.elapsed().as_millis() as u64;
 
-        let response_bytes = body.as_ref().map(std::convert::AsRef::as_ref).unwrap_or_default();
+        let response_bytes = body
+            .as_ref()
+            .map(std::convert::AsRef::as_ref)
+            .unwrap_or_default();
 
         let request_body = parse_body(&state.body);
         let response_body = parse_body(response_bytes);

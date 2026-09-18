@@ -10,7 +10,10 @@ wanaku_filters::body_filter_boilerplate!(WellKnownFilter, "wanaku_well_known");
 const WELL_KNOWN_PREFIX: &str = "/.well-known/oauth-protected-resource/";
 
 impl WellKnownFilter {
-    #[expect(clippy::too_many_lines, reason = "route dispatch with multiple well-known endpoints")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "route dispatch with multiple well-known endpoints"
+    )]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
@@ -36,31 +39,32 @@ impl WellKnownFilter {
         let base = format!("http://{host}");
 
         match path {
-            "/.well-known/openid-configuration"
-            | "/.well-known/oauth-authorization-server" => {
-                Ok(FilterAction::Reject(self.serve_discovery(&base, &issuer_config)))
-            }
-            "/authorize" => {
-                Ok(FilterAction::Reject(redirect_to(
-                    &format!("{}/protocol/openid-connect/auth", issuer_config.issuer),
-                    ctx.request.uri.query(),
-                )))
-            }
+            "/.well-known/openid-configuration" | "/.well-known/oauth-authorization-server" => Ok(
+                FilterAction::Reject(self.serve_discovery(&base, &issuer_config)),
+            ),
+            "/authorize" => Ok(FilterAction::Reject(redirect_to(
+                &format!("{}/protocol/openid-connect/auth", issuer_config.issuer),
+                ctx.request.uri.query(),
+            ))),
             "/token" => {
                 let result = proxy_token_endpoint(&issuer_config.issuer, body).await;
                 Ok(FilterAction::Reject(result))
             }
-            "/register" => {
-                Ok(FilterAction::Reject(redirect_to(
-                    &format!("{}/clients-registrations/openid-connect", issuer_config.issuer),
-                    ctx.request.uri.query(),
-                )))
-            }
+            "/register" => Ok(FilterAction::Reject(redirect_to(
+                &format!(
+                    "{}/clients-registrations/openid-connect",
+                    issuer_config.issuer
+                ),
+                ctx.request.uri.query(),
+            ))),
             _ => Ok(FilterAction::Continue),
         }
     }
 
-    #[expect(clippy::unused_self, reason = "method on impl for consistency with other handlers")]
+    #[expect(
+        clippy::unused_self,
+        reason = "method on impl for consistency with other handlers"
+    )]
     fn serve_discovery(&self, base: &str, config: &IssuerConfig) -> Rejection {
         let doc = serde_json::json!({
             "issuer": config.issuer,
@@ -80,8 +84,14 @@ impl WellKnownFilter {
         json_response(StatusCode::OK, &doc)
     }
 
-    #[expect(clippy::unused_self, reason = "method on impl for consistency with other handlers")]
-    #[expect(clippy::too_many_lines, reason = "RFC 9728 protected resource metadata assembly")]
+    #[expect(
+        clippy::unused_self,
+        reason = "method on impl for consistency with other handlers"
+    )]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "RFC 9728 protected resource metadata assembly"
+    )]
     fn handle_protected_resource_metadata(
         &self,
         ctx: &HttpFilterContext<'_>,
@@ -107,8 +117,7 @@ impl WellKnownFilter {
         };
 
         let issuer_config = ctx.extensions.get::<IssuerConfig>();
-        let has_issuer = issuer_config
-            .is_some_and(|c| !c.issuer.is_empty());
+        let has_issuer = issuer_config.is_some_and(|c| !c.issuer.is_empty());
 
         let host_str = format!("http://{host}");
         let auth_servers: Vec<&str> = if has_issuer {
@@ -124,18 +133,22 @@ impl WellKnownFilter {
         });
 
         tracing::debug!(namespace = %namespace, "served protected resource metadata");
-        Ok(FilterAction::Reject(json_response(StatusCode::OK, &metadata)))
+        Ok(FilterAction::Reject(json_response(
+            StatusCode::OK,
+            &metadata,
+        )))
     }
 }
 
-#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "HTTP proxy with error handling")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    reason = "HTTP proxy with error handling"
+)]
 async fn proxy_token_endpoint(issuer: &str, body: &Option<Bytes>) -> Rejection {
     let url = format!("{issuer}/protocol/openid-connect/token");
 
-    let req_body = body
-        .as_ref()
-        .map(|b| b.to_vec())
-        .unwrap_or_default();
+    let req_body = body.as_ref().map(|b| b.to_vec()).unwrap_or_default();
 
     let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
@@ -144,7 +157,10 @@ async fn proxy_token_endpoint(issuer: &str, body: &Option<Bytes>) -> Rejection {
         Ok(c) => c,
         Err(e) => {
             tracing::warn!(error = %e, "failed to create HTTP client for token proxy");
-            return json_response(StatusCode::SERVICE_UNAVAILABLE, &serde_json::json!({"error": "token_proxy_error"}));
+            return json_response(
+                StatusCode::SERVICE_UNAVAILABLE,
+                &serde_json::json!({"error": "token_proxy_error"}),
+            );
         }
     };
 
@@ -158,21 +174,25 @@ async fn proxy_token_endpoint(issuer: &str, body: &Option<Bytes>) -> Rejection {
         Ok(resp) => {
             let status = resp.status().as_u16();
             match resp.bytes().await {
-                Ok(resp_body) => {
-                    Rejection::status(status)
-                        .with_header("content-type", "application/json")
-                        .with_header("access-control-allow-origin", ENV.cors_origin.as_str())
-                        .with_body(resp_body)
-                }
+                Ok(resp_body) => Rejection::status(status)
+                    .with_header("content-type", "application/json")
+                    .with_header("access-control-allow-origin", ENV.cors_origin.as_str())
+                    .with_body(resp_body),
                 Err(e) => {
                     tracing::warn!(error = %e, "failed to read token response");
-                    json_response(StatusCode::SERVICE_UNAVAILABLE, &serde_json::json!({"error": "token_proxy_read_error"}))
+                    json_response(
+                        StatusCode::SERVICE_UNAVAILABLE,
+                        &serde_json::json!({"error": "token_proxy_read_error"}),
+                    )
                 }
             }
         }
         Err(e) => {
             tracing::warn!(error = %e, url = %url, "token proxy request failed");
-            json_response(StatusCode::SERVICE_UNAVAILABLE, &serde_json::json!({"error": "token_proxy_unreachable"}))
+            json_response(
+                StatusCode::SERVICE_UNAVAILABLE,
+                &serde_json::json!({"error": "token_proxy_unreachable"}),
+            )
         }
     }
 }

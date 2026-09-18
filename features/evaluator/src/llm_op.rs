@@ -23,7 +23,11 @@ pub async fn run_llm_operation(
     mcp: &McpContext<'_>,
     metrics: Option<&MetricsStore>,
 ) -> Option<String> {
-    let client = LlmClient::new(&llm.connection.url, &llm.connection.model, &llm.connection.api_key)?;
+    let client = LlmClient::new(
+        &llm.connection.url,
+        &llm.connection.model,
+        &llm.connection.api_key,
+    )?;
 
     let user_prompt = build_context_prompt(mcp);
 
@@ -40,7 +44,10 @@ pub async fn run_llm_operation(
     result
 }
 
-#[expect(clippy::too_many_lines, reason = "prompt assembly with multiple optional sections")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "prompt assembly with multiple optional sections"
+)]
 fn build_context_prompt(mcp: &McpContext<'_>) -> String {
     let mut prompt = String::with_capacity(4096);
 
@@ -53,25 +60,22 @@ fn build_context_prompt(mcp: &McpContext<'_>) -> String {
         };
         for interaction in capped {
             if let Some(messages) = interaction.request_body.get("messages")
-                && let Some(arr) = messages.as_array() {
-                    for msg in arr {
-                        let role = msg
-                            .get("role")
-                            .and_then(serde_json::Value::as_str)
-                            .unwrap_or("unknown");
-                        let content = msg
-                            .get("content")
-                            .and_then(serde_json::Value::as_str)
-                            .unwrap_or("");
-                        if !content.is_empty() {
-                            let _ = writeln!(
-                                prompt,
-                                "[{role}]: {}",
-                                llm::sanitize(content, 1000)
-                            );
-                        }
+                && let Some(arr) = messages.as_array()
+            {
+                for msg in arr {
+                    let role = msg
+                        .get("role")
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("unknown");
+                    let content = msg
+                        .get("content")
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("");
+                    if !content.is_empty() {
+                        let _ = writeln!(prompt, "[{role}]: {}", llm::sanitize(content, 1000));
                     }
                 }
+            }
             prompt.push('\n');
         }
     }
@@ -118,7 +122,11 @@ pub async fn retry_with_schema_correction(
     schema: &serde_json::Value,
     validation_error: &str,
 ) -> Option<String> {
-    let client = LlmClient::new(&llm.connection.url, &llm.connection.model, &llm.connection.api_key)?;
+    let client = LlmClient::new(
+        &llm.connection.url,
+        &llm.connection.model,
+        &llm.connection.api_key,
+    )?;
 
     let base_prompt = build_context_prompt(mcp);
     let correction = format!(
@@ -179,11 +187,7 @@ mod tests {
             .await;
     }
 
-    async fn mount_expected_chat_response(
-        server: &MockServer,
-        user_prompt: &str,
-        content: &str,
-    ) {
+    async fn mount_expected_chat_response(server: &MockServer, user_prompt: &str, content: &str) {
         Mock::given(method(Method::POST))
             .and(path("/chat/completions"))
             .and(header("authorization", "Bearer test-key"))

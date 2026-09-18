@@ -32,6 +32,12 @@ impl<'a> McpContext<'a> {
         tools: &'a [ToolEntry],
         history: &'a [Interaction],
     ) -> Self {
-        Self { method, tool_name, arguments, tools, history }
+        Self {
+            method,
+            tool_name,
+            arguments,
+            tools,
+            history,
+        }
     }
 }

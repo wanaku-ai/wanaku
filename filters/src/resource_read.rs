@@ -6,7 +6,10 @@ use wanaku_types::registry::ResourceRegistry;
 
 crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
 
-#[expect(clippy::too_many_lines, reason = "URI template matching with segment iteration")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "URI template matching with segment iteration"
+)]
 fn matches_uri_template(template: &str, uri: &str) -> bool {
     let mut parts = Vec::new();
     let mut rest = template;
@@ -71,11 +74,17 @@ struct ParsedBody {
 
 fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBody {
     let uri = crate::json_rpc::JsonRpcParams::parse(body).uri;
-    ParsedBody { id: json_rpc_id, uri }
+    ParsedBody {
+        id: json_rpc_id,
+        uri,
+    }
 }
 
 impl ResourceReadFilter {
-    #[expect(clippy::too_many_lines, reason = "MCP protocol handler with JSON-RPC response construction")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "MCP protocol handler with JSON-RPC response construction"
+    )]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
@@ -89,11 +98,16 @@ impl ResourceReadFilter {
             return Ok(FilterAction::Continue);
         }
 
-        let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
+        let json_rpc_id =
+            crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
         let parsed = parse_body(body, json_rpc_id);
 
         let Some(resource_uri) = parsed.uri.as_deref() else {
-            return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INVALID_PARAMS, "missing uri in resources/read"));
+            return Ok(crate::response::json_rpc_error(
+                &parsed.id,
+                crate::response::JSONRPC_INVALID_PARAMS,
+                "missing uri in resources/read",
+            ));
         };
 
         let namespace = ctx
@@ -104,7 +118,11 @@ impl ResourceReadFilter {
 
         let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
             tracing::error!("InMemoryRegistry not found in request extensions");
-            return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
+            return Ok(crate::response::json_rpc_error(
+                &parsed.id,
+                crate::response::JSONRPC_INTERNAL_ERROR,
+                "internal error: registry unavailable",
+            ));
         };
 
         let Some(resource) = find_resource_in_namespace(registry, namespace, resource_uri) else {
@@ -117,14 +135,19 @@ impl ResourceReadFilter {
         };
 
         if resource.is_mcp_forward() {
-            return self.handle_forwarded_read(&resource, resource_uri, &parsed).await;
+            return self
+                .handle_forwarded_read(&resource, resource_uri, &parsed)
+                .await;
         }
 
         warn!(uri = %resource_uri, resource_type = %resource.type_, "unsupported resource type — only MCP-forwarded resources are supported");
         Ok(crate::response::json_rpc_error(
             &parsed.id,
             crate::response::JSONRPC_INTERNAL_ERROR,
-            &format!("unsupported resource type '{}': only MCP-forwarded resources are supported", resource.type_),
+            &format!(
+                "unsupported resource type '{}': only MCP-forwarded resources are supported",
+                resource.type_
+            ),
         ))
     }
 
@@ -154,7 +177,9 @@ impl ResourceReadFilter {
                 });
 
                 let response_body = Bytes::from(response.to_string());
-                Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+                Ok(FilterAction::Reject(crate::response::json_response(
+                    response_body,
+                )))
             }
             Err(e) => {
                 warn!(uri = %resource_uri, error = %e, "MCP forward resource read failed");
@@ -200,37 +225,61 @@ mod tests {
 
     #[test]
     fn template_matches_single_param() {
-        assert!(matches_uri_template("logs://{server_id}/syslog", "logs://web-01/syslog"));
+        assert!(matches_uri_template(
+            "logs://{server_id}/syslog",
+            "logs://web-01/syslog"
+        ));
     }
 
     #[test]
     fn template_matches_multiple_params() {
-        assert!(matches_uri_template("logs://{server}/{log_type}", "logs://web-01/syslog"));
+        assert!(matches_uri_template(
+            "logs://{server}/{log_type}",
+            "logs://web-01/syslog"
+        ));
     }
 
     #[test]
     fn template_no_match_wrong_prefix() {
-        assert!(!matches_uri_template("logs://{server_id}/syslog", "files://web-01/syslog"));
+        assert!(!matches_uri_template(
+            "logs://{server_id}/syslog",
+            "files://web-01/syslog"
+        ));
     }
 
     #[test]
     fn template_no_match_wrong_suffix() {
-        assert!(!matches_uri_template("logs://{server_id}/syslog", "logs://web-01/access"));
+        assert!(!matches_uri_template(
+            "logs://{server_id}/syslog",
+            "logs://web-01/access"
+        ));
     }
 
     #[test]
     fn template_matches_param_at_end() {
-        assert!(matches_uri_template("file://{path}", "file:///data/report.csv"));
+        assert!(matches_uri_template(
+            "file://{path}",
+            "file:///data/report.csv"
+        ));
     }
 
     #[test]
     fn template_exact_match_no_params() {
-        assert!(matches_uri_template("file:///fixed.txt", "file:///fixed.txt"));
-        assert!(!matches_uri_template("file:///fixed.txt", "file:///other.txt"));
+        assert!(matches_uri_template(
+            "file:///fixed.txt",
+            "file:///fixed.txt"
+        ));
+        assert!(!matches_uri_template(
+            "file:///fixed.txt",
+            "file:///other.txt"
+        ));
     }
 
     #[test]
     fn template_malformed_unclosed_brace() {
-        assert!(!matches_uri_template("logs://{server/syslog", "logs://web-01/syslog"));
+        assert!(!matches_uri_template(
+            "logs://{server/syslog",
+            "logs://web-01/syslog"
+        ));
     }
 }

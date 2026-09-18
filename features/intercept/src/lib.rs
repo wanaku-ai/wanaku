@@ -12,8 +12,7 @@ use wanaku_types::feature::{Feature, HttpContext};
 use wanaku_types::interactions::InMemoryInteractionStore;
 
 use crate::routes::{
-    InteractionRoute, handle_interaction_clear, handle_interaction_list,
-    resolve_interaction_route,
+    InteractionRoute, handle_interaction_clear, handle_interaction_list, resolve_interaction_route,
 };
 
 const DEFAULT_CAPACITY: usize = 1000;

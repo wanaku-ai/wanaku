@@ -141,7 +141,10 @@ pub(crate) fn handle_update_evaluators(state: &EvaluatorState, body: &str) -> Re
     };
 
     let count = evaluators.len();
-    info!(count = count, "evaluators update requested via management API");
+    info!(
+        count = count,
+        "evaluators update requested via management API"
+    );
 
     match state.try_activate(evaluators, RevisionOrigin::Api, None, expected_revision) {
         Ok(revision) => revision_ok_response(&revision),
@@ -224,9 +227,7 @@ fn parse_activate_request(body: &str) -> ParseResult<Option<u64>> {
     }
 }
 
-fn revision_ok_response(
-    revision: &crate::revision::Revision,
-) -> Response<Vec<u8>> {
+fn revision_ok_response(revision: &crate::revision::Revision) -> Response<Vec<u8>> {
     json_ok(&serde_json::json!({
         "revision": revision.metadata,
         "evaluators": revision.evaluators,
@@ -311,10 +312,22 @@ mod tests {
 
     #[test]
     fn list_and_update_evaluators() {
-        assert_eq!(resolve("GET", "/api/v1/evaluators"), EvaluatorRoute::ListEvaluators);
-        assert_eq!(resolve("GET", "/api/v1/evaluators/"), EvaluatorRoute::ListEvaluators);
-        assert_eq!(resolve("PUT", "/api/v1/evaluators"), EvaluatorRoute::UpdateEvaluators);
-        assert_eq!(resolve("DELETE", "/api/v1/evaluators"), EvaluatorRoute::NotFound);
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators"),
+            EvaluatorRoute::ListEvaluators
+        );
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/"),
+            EvaluatorRoute::ListEvaluators
+        );
+        assert_eq!(
+            resolve("PUT", "/api/v1/evaluators"),
+            EvaluatorRoute::UpdateEvaluators
+        );
+        assert_eq!(
+            resolve("DELETE", "/api/v1/evaluators"),
+            EvaluatorRoute::NotFound
+        );
     }
 
     #[test]

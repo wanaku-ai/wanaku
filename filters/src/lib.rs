@@ -4,7 +4,9 @@ pub use wanaku_types::mcp_methods::{
     INITIALIZE, NOTIFICATIONS_INITIALIZED, PING, PROMPTS_GET, PROMPTS_LIST, RESOURCES_LIST,
     RESOURCES_READ, RESOURCES_TEMPLATES_LIST, TOOLS_CALL, TOOLS_LIST,
 };
-pub use wanaku_types::metadata::{MCP_ID_KEY, MCP_METHOD_KEY, MCP_NAME_KEY, NAMESPACE_METADATA_KEY};
+pub use wanaku_types::metadata::{
+    MCP_ID_KEY, MCP_METHOD_KEY, MCP_NAME_KEY, NAMESPACE_METADATA_KEY,
+};
 
 #[macro_export]
 macro_rules! body_filter_boilerplate {

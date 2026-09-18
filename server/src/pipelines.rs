@@ -77,7 +77,10 @@ impl PipelineExtension for RegistryExtension {
 /// # Errors
 ///
 /// Returns an error if pipeline construction fails.
-#[expect(clippy::too_many_lines, reason = "pipeline construction requires all dependencies")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "pipeline construction requires all dependencies"
+)]
 pub fn resolve_pipelines(
     config: &Config,
     deps: &PipelineDeps<'_>,

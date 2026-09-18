@@ -22,7 +22,10 @@ pub(super) fn raw_json_response(body: Vec<u8>) -> Response<Vec<u8>> {
         .status(StatusCode::OK)
         .header("Content-Type", "application/json")
         .header("Content-Length", body.len())
-        .header("Access-Control-Allow-Origin", wanaku_types::config::ENV.cors_origin.as_str())
+        .header(
+            "Access-Control-Allow-Origin",
+            wanaku_types::config::ENV.cors_origin.as_str(),
+        )
         .body(body)
         .expect("valid json response")
 }
@@ -33,17 +36,27 @@ pub(super) async fn read_body(session: &mut ServerSession) -> Result<String, Res
         match session.read_request_body().await {
             Ok(Some(chunk)) => {
                 if buf.len() + chunk.len() > MAX_BODY_BYTES {
-                    warn!(limit = MAX_BODY_BYTES, "management request body exceeded size limit");
-                    return Err(json_err(StatusCode::PAYLOAD_TOO_LARGE, "request body too large"));
+                    warn!(
+                        limit = MAX_BODY_BYTES,
+                        "management request body exceeded size limit"
+                    );
+                    return Err(json_err(
+                        StatusCode::PAYLOAD_TOO_LARGE,
+                        "request body too large",
+                    ));
                 }
                 buf.extend_from_slice(&chunk);
             }
             Ok(None) => break,
             Err(e) => {
                 warn!(error = %e, "management request body read failed");
-                return Err(json_err(StatusCode::INTERNAL_SERVER_ERROR, "request body read failed"));
+                return Err(json_err(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "request body read failed",
+                ));
             }
         }
     }
-    String::from_utf8(buf).map_err(|_| json_err(StatusCode::BAD_REQUEST, "request body is not valid UTF-8"))
+    String::from_utf8(buf)
+        .map_err(|_| json_err(StatusCode::BAD_REQUEST, "request body is not valid UTF-8"))
 }

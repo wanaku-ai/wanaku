@@ -153,20 +153,29 @@ fn build_docker(variant: &Variant, tag: &str) -> anyhow::Result<()> {
     let arch = native_arch()?;
     let arch_tag = format!("{tag}-{arch}");
 
-    println!("Building image with {tool} (variant={}, arch={arch}, tag={arch_tag})", variant.as_str());
+    println!(
+        "Building image with {tool} (variant={}, arch={arch}, tag={arch_tag})",
+        variant.as_str()
+    );
 
     let status = Command::new(&tool)
         .args([
             "build",
-            "-f", "Containerfile",
-            "--build-arg", &format!("VARIANT={}", variant.as_str()),
-            "-t", &arch_tag,
+            "-f",
+            "Containerfile",
+            "--build-arg",
+            &format!("VARIANT={}", variant.as_str()),
+            "-t",
+            &arch_tag,
             ".",
         ])
         .status()
         .with_context(|| format!("failed to spawn `{tool} build`"))?;
     if !status.success() {
-        bail!("{tool} build failed with exit code {}", status.code().unwrap_or(-1));
+        bail!(
+            "{tool} build failed with exit code {}",
+            status.code().unwrap_or(-1)
+        );
     }
 
     println!("\nPushing {arch_tag}...");
@@ -175,7 +184,10 @@ fn build_docker(variant: &Variant, tag: &str) -> anyhow::Result<()> {
         .status()
         .with_context(|| format!("failed to spawn `{tool} push`"))?;
     if !status.success() {
-        bail!("{tool} push failed with exit code {}", status.code().unwrap_or(-1));
+        bail!(
+            "{tool} push failed with exit code {}",
+            status.code().unwrap_or(-1)
+        );
     }
 
     print_manifest_next_steps(tag, &arch);
@@ -189,7 +201,10 @@ fn build_docker(variant: &Variant, tag: &str) -> anyhow::Result<()> {
 // Loads the image directly into Minikube's cluster daemon with the plain tag.
 // No arch suffix is applied; no push occurs.
 
-#[expect(clippy::too_many_lines, reason = "sequential cluster checks are inherently linear")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "sequential cluster checks are inherently linear"
+)]
 fn build_minikube(variant: &Variant, tag: &str) -> anyhow::Result<()> {
     require_tool("minikube", "https://minikube.sigs.k8s.io/docs/start/")?;
 
@@ -230,9 +245,12 @@ fn build_minikube(variant: &Variant, tag: &str) -> anyhow::Result<()> {
     let status = Command::new(&tool)
         .args([
             "build",
-            "-f", "Containerfile",
-            "--build-arg", &format!("VARIANT={}", variant.as_str()),
-            "-t", tag,
+            "-f",
+            "Containerfile",
+            "--build-arg",
+            &format!("VARIANT={}", variant.as_str()),
+            "-t",
+            tag,
             ".",
         ])
         .envs(&docker_env)
@@ -240,7 +258,10 @@ fn build_minikube(variant: &Variant, tag: &str) -> anyhow::Result<()> {
         .with_context(|| format!("failed to spawn {tool}"))?;
 
     if !status.success() {
-        bail!("{tool} build (minikube) failed with exit code {}", status.code().unwrap_or(-1));
+        bail!(
+            "{tool} build (minikube) failed with exit code {}",
+            status.code().unwrap_or(-1)
+        );
     }
     Ok(())
 }
@@ -284,9 +305,15 @@ fn parse_env_lines(output: &str) -> HashMap<String, String> {
 // happens on the developer machine where cargo caches already exist), then push
 // only the final ~100 MB runtime image to the OpenShift internal registry.
 
-#[expect(clippy::too_many_lines, reason = "sequential cluster setup steps are inherently linear")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "sequential cluster setup steps are inherently linear"
+)]
 fn build_openshift(variant: &Variant, tag: &str) -> anyhow::Result<()> {
-    require_tool("oc", "https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html")?;
+    require_tool(
+        "oc",
+        "https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html",
+    )?;
 
     // OpenShift target always uses podman.
     let tool = require_podman()?;
@@ -311,8 +338,10 @@ fn build_openshift(variant: &Variant, tag: &str) -> anyhow::Result<()> {
         .args([
             "login",
             "--tls-verify=false",
-            "-u", &oc_user,
-            "-p", &token,
+            "-u",
+            &oc_user,
+            "-p",
+            &token,
             &registry_host,
         ])
         .status()
@@ -324,20 +353,30 @@ fn build_openshift(variant: &Variant, tag: &str) -> anyhow::Result<()> {
         );
     }
 
-    println!("\nBuilding image locally with {tool} (variant={}, arch={arch})...", variant.as_str());
+    println!(
+        "\nBuilding image locally with {tool} (variant={}, arch={arch})...",
+        variant.as_str()
+    );
     let status = Command::new(&tool)
         .args([
             "build",
-            "-f", "Containerfile",
-            "--build-arg", &format!("VARIANT={}", variant.as_str()),
-            "-t", &arch_image_ref,
-            "-t", &arch_tag,
+            "-f",
+            "Containerfile",
+            "--build-arg",
+            &format!("VARIANT={}", variant.as_str()),
+            "-t",
+            &arch_image_ref,
+            "-t",
+            &arch_tag,
             ".",
         ])
         .status()
         .with_context(|| format!("failed to spawn `{tool} build`"))?;
     if !status.success() {
-        bail!("{tool} build failed with exit code {}", status.code().unwrap_or(-1));
+        bail!(
+            "{tool} build failed with exit code {}",
+            status.code().unwrap_or(-1)
+        );
     }
 
     println!("\nPushing {arch_image_ref}...");
@@ -346,7 +385,10 @@ fn build_openshift(variant: &Variant, tag: &str) -> anyhow::Result<()> {
         .status()
         .with_context(|| format!("failed to spawn `{tool} push`"))?;
     if !status.success() {
-        bail!("{tool} push failed with exit code {}", status.code().unwrap_or(-1));
+        bail!(
+            "{tool} push failed with exit code {}",
+            status.code().unwrap_or(-1)
+        );
     }
 
     println!("\nImage pushed successfully.");
@@ -367,7 +409,10 @@ fn manifest_docker(tag: &str) -> anyhow::Result<()> {
 
 /// Assemble a multi-arch manifest for the OpenShift internal registry.
 fn manifest_openshift(variant: &Variant, tag: &str) -> anyhow::Result<()> {
-    require_tool("oc", "https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html")?;
+    require_tool(
+        "oc",
+        "https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html",
+    )?;
     let tool = require_podman()?;
 
     let (oc_user, registry_host, namespace, token) = oc_login_info()?;
@@ -390,8 +435,10 @@ fn manifest_openshift(variant: &Variant, tag: &str) -> anyhow::Result<()> {
         .args([
             "login",
             "--tls-verify=false",
-            "-u", &oc_user,
-            "-p", &token,
+            "-u",
+            &oc_user,
+            "-p",
+            &token,
             &registry_host,
         ])
         .status()
@@ -471,7 +518,10 @@ fn assemble_manifest(tag: &str, tool: &str) -> anyhow::Result<()> {
         .status()
         .with_context(|| format!("failed to spawn `{tool} manifest create`"))?;
     if !status.success() {
-        bail!("`{tool} manifest create` failed with exit code {}", status.code().unwrap_or(-1));
+        bail!(
+            "`{tool} manifest create` failed with exit code {}",
+            status.code().unwrap_or(-1)
+        );
     }
 
     let status = Command::new(tool)
@@ -479,7 +529,10 @@ fn assemble_manifest(tag: &str, tool: &str) -> anyhow::Result<()> {
         .status()
         .with_context(|| format!("failed to spawn `{tool} manifest push`"))?;
     if !status.success() {
-        bail!("`{tool} manifest push` failed with exit code {}", status.code().unwrap_or(-1));
+        bail!(
+            "`{tool} manifest push` failed with exit code {}",
+            status.code().unwrap_or(-1)
+        );
     }
 
     println!("\nManifest pushed successfully.");
@@ -489,7 +542,11 @@ fn assemble_manifest(tag: &str, tool: &str) -> anyhow::Result<()> {
 
 /// Print the next step after a native-arch build: run `cargo build-image-manifest`.
 fn print_manifest_next_steps(tag: &str, current_arch: &str) {
-    let other_arch = if current_arch == "x86_64" { "aarch64" } else { "x86_64" };
+    let other_arch = if current_arch == "x86_64" {
+        "aarch64"
+    } else {
+        "x86_64"
+    };
     println!("\nArch-specific image pushed: {tag}-{current_arch}");
     println!("\nNext steps:");
     println!("  1. Run on an {other_arch} machine:");
@@ -503,7 +560,10 @@ fn print_manifest_next_steps(tag: &str, current_arch: &str) {
 // ---------------------------------------------------------------------------
 
 /// Resolve OpenShift login info: (oc_user, registry_host, namespace, token).
-#[expect(clippy::too_many_lines, reason = "sequential oc CLI calls are inherently linear")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "sequential oc CLI calls are inherently linear"
+)]
 fn oc_login_info() -> anyhow::Result<(String, String, String, String)> {
     // Verify login.
     let whoami = Command::new("oc")
@@ -517,7 +577,13 @@ fn oc_login_info() -> anyhow::Result<(String, String, String, String)> {
 
     // Resolve the internal registry hostname via the default-route.
     let reg_out = Command::new("oc")
-        .args(["get", "route/default-route", "-n", "openshift-image-registry", "-o=jsonpath={.spec.host}"])
+        .args([
+            "get",
+            "route/default-route",
+            "-n",
+            "openshift-image-registry",
+            "-o=jsonpath={.spec.host}",
+        ])
         .output()
         .context("failed to run `oc get route/default-route -n openshift-image-registry`")?;
     if !reg_out.status.success() {

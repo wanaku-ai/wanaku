@@ -6,16 +6,15 @@ pub use wanaku_types::metadata::NAMESPACE_METADATA_KEY;
 crate::body_filter_boilerplate!(NamespaceFilter, "wanaku_namespace");
 
 fn extract_namespace(path: &str) -> Option<&str> {
-    let trimmed = path
-        .strip_prefix('/')
-        .unwrap_or(path)
-        .trim_end_matches('/');
+    let trimmed = path.strip_prefix('/').unwrap_or(path).trim_end_matches('/');
 
     // /{namespace}/mcp — the only valid format
     if let Some(ns) = trimmed.strip_suffix("/mcp")
-        && !ns.is_empty() && !ns.contains('/') {
-            return Some(ns);
-        }
+        && !ns.is_empty()
+        && !ns.contains('/')
+    {
+        return Some(ns);
+    }
 
     None
 }
@@ -37,7 +36,9 @@ impl NamespaceFilter {
             None => {
                 if ctx.get_metadata(crate::MCP_METHOD_KEY).is_some() {
                     tracing::warn!(path = %path, "rejected MCP request on invalid path");
-                    let id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
+                    let id = crate::response::json_rpc_id_from_metadata(
+                        ctx.get_metadata(crate::MCP_ID_KEY),
+                    );
                     Ok(crate::response::json_rpc_error(
                         &id,
                         crate::response::JSONRPC_INVALID_REQUEST,

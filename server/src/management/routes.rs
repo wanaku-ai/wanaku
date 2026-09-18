@@ -12,9 +12,7 @@ pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
         return ToolRoute::NotFound;
     };
 
-    let name = suffix
-        .strip_prefix('/')
-        .filter(|s| !s.is_empty());
+    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
 
     match (method, name) {
         ("GET", None) => ToolRoute::List,
@@ -39,9 +37,7 @@ pub(super) fn resolve_resource_route(method: &str, path: &str) -> ResourceRoute 
         return ResourceRoute::NotFound;
     };
 
-    let name = suffix
-        .strip_prefix('/')
-        .filter(|s| !s.is_empty());
+    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
 
     match (method, name) {
         ("GET", None) => ResourceRoute::List,
@@ -65,9 +61,7 @@ pub(super) fn resolve_prompt_route(method: &str, path: &str) -> PromptRoute {
         return PromptRoute::NotFound;
     };
 
-    let name = suffix
-        .strip_prefix('/')
-        .filter(|s| !s.is_empty());
+    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
 
     match (method, name) {
         ("GET", None) => PromptRoute::List,
@@ -111,9 +105,7 @@ pub(super) fn resolve_forward_route(method: &str, path: &str) -> ForwardRoute {
         return ForwardRoute::NotFound;
     };
 
-    let name = suffix
-        .strip_prefix('/')
-        .filter(|s| !s.is_empty());
+    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
 
     match (method, name) {
         ("GET", None) => ForwardRoute::List,
@@ -150,9 +142,7 @@ pub(super) fn resolve_namespace_route(method: &str, path: &str) -> NamespaceRout
         return NamespaceRoute::NotFound;
     };
 
-    let name = suffix
-        .strip_prefix('/')
-        .filter(|s| !s.is_empty());
+    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
 
     match (method, name) {
         ("GET", None) => NamespaceRoute::List,
@@ -199,17 +189,26 @@ mod tests {
 
     #[test]
     fn route_unknown_path() {
-        assert_eq!(resolve_tool_route("GET", "/api/v1/other"), ToolRoute::NotFound);
+        assert_eq!(
+            resolve_tool_route("GET", "/api/v1/other"),
+            ToolRoute::NotFound
+        );
     }
 
     #[test]
     fn route_delete_without_name() {
-        assert_eq!(resolve_tool_route("DELETE", "/api/v1/tools"), ToolRoute::NotFound);
+        assert_eq!(
+            resolve_tool_route("DELETE", "/api/v1/tools"),
+            ToolRoute::NotFound
+        );
     }
 
     #[test]
     fn resource_route_list() {
-        assert_eq!(resolve_resource_route("GET", "/api/v1/resources"), ResourceRoute::List);
+        assert_eq!(
+            resolve_resource_route("GET", "/api/v1/resources"),
+            ResourceRoute::List
+        );
     }
 
     #[test]

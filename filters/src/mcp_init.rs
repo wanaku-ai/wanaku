@@ -14,7 +14,8 @@ impl McpInitFilter {
             return Ok(FilterAction::Continue);
         };
 
-        let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
+        let json_rpc_id =
+            crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
 
         match method {
             crate::INITIALIZE => self.handle_initialize(&json_rpc_id),
@@ -24,8 +25,14 @@ impl McpInitFilter {
         }
     }
 
-    #[expect(clippy::unused_self, reason = "consistent signature across filter handler methods")]
-    fn handle_initialize(&self, json_rpc_id: &serde_json::Value) -> Result<FilterAction, FilterError> {
+    #[expect(
+        clippy::unused_self,
+        reason = "consistent signature across filter handler methods"
+    )]
+    fn handle_initialize(
+        &self,
+        json_rpc_id: &serde_json::Value,
+    ) -> Result<FilterAction, FilterError> {
         trace!("handling MCP initialize");
 
         let response = serde_json::json!({
@@ -49,7 +56,9 @@ impl McpInitFilter {
         });
 
         let response_body = Bytes::from(response.to_string());
-        Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+        Ok(FilterAction::Reject(crate::response::json_response(
+            response_body,
+        )))
     }
 
     /// Builds the `serverInfo` object advertised to MCP clients during initialization.
@@ -79,7 +88,9 @@ impl McpInitFilter {
         });
 
         let response_body = Bytes::from(response.to_string());
-        Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+        Ok(FilterAction::Reject(crate::response::json_response(
+            response_body,
+        )))
     }
 }
 

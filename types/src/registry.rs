@@ -1,6 +1,9 @@
 #![cfg_attr(
     feature = "openapi",
-    allow(clippy::large_stack_frames, reason = "utoipa::ToSchema derive generates large stack frames")
+    allow(
+        clippy::large_stack_frames,
+        reason = "utoipa::ToSchema derive generates large stack frames"
+    )
 )]
 
 use std::collections::HashMap;
@@ -26,9 +29,19 @@ pub struct ToolEntry {
     pub id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "configurationURI", alias = "configuration_uri")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "configurationURI",
+        alias = "configuration_uri"
+    )]
     pub configuration_uri: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "secretsURI", alias = "secrets_uri")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "secretsURI",
+        alias = "secrets_uri"
+    )]
     pub secrets_uri: Option<String>,
 }
 
@@ -50,9 +63,19 @@ pub struct ResourceEntry {
     pub id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "configurationURI", alias = "configuration_uri")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "configurationURI",
+        alias = "configuration_uri"
+    )]
     pub configuration_uri: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "secretsURI", alias = "secrets_uri")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "secretsURI",
+        alias = "secrets_uri"
+    )]
     pub secrets_uri: Option<String>,
 }
 
@@ -96,7 +119,12 @@ pub struct PromptEntry {
     pub id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "configurationURI", alias = "configuration_uri")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "configurationURI",
+        alias = "configuration_uri"
+    )]
     pub configuration_uri: Option<String>,
 }
 
@@ -108,7 +136,12 @@ pub struct McpServerInfo {
     pub version: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "websiteUrl", alias = "website_url")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "websiteUrl",
+        alias = "website_url"
+    )]
     pub website_url: Option<String>,
     #[serde(default)]
     pub capabilities: Vec<String>,
@@ -125,19 +158,34 @@ pub struct ForwardEntry {
     pub address: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "serverInfo", alias = "server_info")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "serverInfo",
+        alias = "server_info"
+    )]
     pub server_info: Option<McpServerInfo>,
     #[serde(default)]
     pub labels: HashMap<String, String>,
     #[serde(default = "default_available")]
     pub available: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "statusMessage", alias = "status_message")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "statusMessage",
+        alias = "status_message"
+    )]
     pub status_message: Option<String>,
     /// Credential bindings referenced by purpose (discovery / invocation).
     ///
     /// Only the opaque, non-secret binding identifier is stored here. The
     /// binding itself is a separate top-level resource owned by this forward.
-    #[serde(default, skip_serializing_if = "HashMap::is_empty", rename = "credentialBindings", alias = "credential_bindings")]
+    #[serde(
+        default,
+        skip_serializing_if = "HashMap::is_empty",
+        rename = "credentialBindings",
+        alias = "credential_bindings"
+    )]
     pub credential_bindings: HashMap<CredentialPurpose, String>,
 }
 
@@ -167,7 +215,12 @@ pub struct NamespaceEntry {
     pub name: String,
     #[serde(default)]
     pub labels: HashMap<String, String>,
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "authRequired", alias = "auth_required")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "authRequired",
+        alias = "auth_required"
+    )]
     pub auth_required: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audience: Option<String>,
@@ -189,7 +242,10 @@ pub fn validate_namespace_name(name: &str) -> Result<(), String> {
         ));
     }
 
-    if !name.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-') {
+    if !name
+        .bytes()
+        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+    {
         return Err(
             "namespace name must contain only lowercase alphanumeric characters and hyphens"
                 .to_owned(),
@@ -240,11 +296,15 @@ impl ResourceEntry {
     }
 
     pub fn is_template(&self) -> bool {
-        self.labels.get(IS_TEMPLATE_LABEL).is_some_and(|v| v == "true")
+        self.labels
+            .get(IS_TEMPLATE_LABEL)
+            .is_some_and(|v| v == "true")
     }
 
     pub fn forward_address(&self) -> Option<&str> {
-        self.labels.get(FORWARD_ADDRESS_LABEL).map(std::string::String::as_str)
+        self.labels
+            .get(FORWARD_ADDRESS_LABEL)
+            .map(std::string::String::as_str)
     }
 }
 
@@ -272,10 +332,7 @@ pub fn inject_request_id_arg(schema: &mut serde_json::Value) {
         }
     } else {
         if let Some(obj) = schema.as_object_mut() {
-            obj.insert(
-                "required".to_owned(),
-                serde_json::json!([arg]),
-            );
+            obj.insert("required".to_owned(), serde_json::json!([arg]));
         }
     }
 }
@@ -409,21 +466,24 @@ mod tests {
     #[test]
     fn tool_inject_header_args_explicit_false() {
         let mut tool = sample_tool();
-        tool.labels.insert(INJECT_HEADER_ARGS_LABEL.to_owned(), "false".to_owned());
+        tool.labels
+            .insert(INJECT_HEADER_ARGS_LABEL.to_owned(), "false".to_owned());
         assert!(!tool.inject_header_args());
     }
 
     #[test]
     fn tool_inject_header_args_explicit_true() {
         let mut tool = sample_tool();
-        tool.labels.insert(INJECT_HEADER_ARGS_LABEL.to_owned(), "true".to_owned());
+        tool.labels
+            .insert(INJECT_HEADER_ARGS_LABEL.to_owned(), "true".to_owned());
         assert!(tool.inject_header_args());
     }
 
     #[test]
     fn tool_forward_headers_empty_value() {
         let mut tool = sample_tool();
-        tool.labels.insert(FORWARD_HEADERS_LABEL.to_owned(), String::new());
+        tool.labels
+            .insert(FORWARD_HEADERS_LABEL.to_owned(), String::new());
         assert!(tool.forward_headers().is_empty());
     }
 
@@ -500,8 +560,14 @@ mod tests {
 
         assert_eq!(parsed.server_name, "apache-camel");
         assert_eq!(parsed.version, "4.22.0");
-        assert_eq!(parsed.description.as_deref(), Some("Apache Camel MCP server"));
-        assert_eq!(parsed.website_url.as_deref(), Some("https://camel.apache.org"));
+        assert_eq!(
+            parsed.description.as_deref(),
+            Some("Apache Camel MCP server")
+        );
+        assert_eq!(
+            parsed.website_url.as_deref(),
+            Some("https://camel.apache.org")
+        );
         assert_eq!(parsed.capabilities.len(), 2);
         assert_eq!(parsed.extensions.len(), 1);
         assert_eq!(parsed.instructions.as_deref(), Some("A Camel MCP server"));
@@ -521,9 +587,18 @@ mod tests {
 
         let json = serde_json::to_string(&info).expect("serialize");
         assert!(json.contains("\"serverName\""), "expected camelCase key");
-        assert!(!json.contains("\"server_name\""), "unexpected snake_case key");
-        assert!(json.contains("\"websiteUrl\""), "expected camelCase websiteUrl");
-        assert!(!json.contains("\"website_url\""), "unexpected snake_case website_url");
+        assert!(
+            !json.contains("\"server_name\""),
+            "unexpected snake_case key"
+        );
+        assert!(
+            json.contains("\"websiteUrl\""),
+            "expected camelCase websiteUrl"
+        );
+        assert!(
+            !json.contains("\"website_url\""),
+            "unexpected snake_case website_url"
+        );
     }
 
     #[test]
@@ -597,7 +672,8 @@ mod tests {
     #[test]
     fn namespace_backward_compat_path_alias() {
         let json = r#"{"path": "finance"}"#;
-        let ns: NamespaceEntry = serde_json::from_str(json).expect("should deserialize with path alias");
+        let ns: NamespaceEntry =
+            serde_json::from_str(json).expect("should deserialize with path alias");
         assert_eq!(ns.name, "finance");
     }
 

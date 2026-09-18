@@ -1,6 +1,9 @@
 #![cfg_attr(
     feature = "openapi",
-    allow(clippy::large_stack_frames, reason = "utoipa::ToSchema derive generates large stack frames")
+    allow(
+        clippy::large_stack_frames,
+        reason = "utoipa::ToSchema derive generates large stack frames"
+    )
 )]
 
 use std::collections::VecDeque;
@@ -74,13 +77,11 @@ impl InteractionStore for InMemoryInteractionStore {
 
     fn get_by_conversation_id(&self, conversation_id: &str) -> Vec<Interaction> {
         match self.interactions.read() {
-            Ok(store) => {
-                store
-                    .iter()
-                    .filter(|i| i.conversation_id.as_deref() == Some(conversation_id))
-                    .cloned()
-                    .collect()
-            }
+            Ok(store) => store
+                .iter()
+                .filter(|i| i.conversation_id.as_deref() == Some(conversation_id))
+                .cloned()
+                .collect(),
             Err(e) => {
                 tracing::warn!("interaction store read lock poisoned: {e}");
                 Vec::new()

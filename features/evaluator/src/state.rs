@@ -259,7 +259,10 @@ impl EvaluatorState {
         }
 
         let count = connections.len();
-        let map = connections.into_iter().map(|c| (c.name.clone(), c)).collect();
+        let map = connections
+            .into_iter()
+            .map(|c| (c.name.clone(), c))
+            .collect();
         if let Ok(mut guard) = self.connections.write() {
             *guard = map;
         }
@@ -378,14 +381,8 @@ impl EvaluatorState {
         self.try_activate(defs, RevisionOrigin::Api, None, expected_revision)
     }
 
-    fn reject_config(
-        &self,
-        params: &RecordRevisionParams,
-    ) -> Result<Revision, RevisionError> {
-        let failure_reason = params
-            .failure_reason
-            .clone()
-            .unwrap_or_default();
+    fn reject_config(&self, params: &RecordRevisionParams) -> Result<Revision, RevisionError> {
+        let failure_reason = params.failure_reason.clone().unwrap_or_default();
         tracing::warn!(
             errors = %failure_reason,
             "evaluator configuration rejected: validation/compilation failed"
@@ -552,10 +549,7 @@ fn compile_wasm_map_with_errors(
     (compiled, errors)
 }
 
-fn compile_single_wasm(
-    name: &str,
-    path: &Path,
-) -> Result<Arc<CompiledEvaluator>, String> {
+fn compile_single_wasm(name: &str, path: &Path) -> Result<Arc<CompiledEvaluator>, String> {
     match CompiledEvaluator::from_file(name, path) {
         Ok(module) => {
             tracing::info!(evaluator = %name, path = %path.display(), "compiled WASM action module");
@@ -563,7 +557,10 @@ fn compile_single_wasm(
         }
         Err(e) => {
             tracing::error!(evaluator = %name, path = %path.display(), error = %e, "failed to compile WASM action module");
-            Err(format!("evaluator '{name}': WASM compilation failed for {}: {e}", path.display()))
+            Err(format!(
+                "evaluator '{name}': WASM compilation failed for {}: {e}",
+                path.display()
+            ))
         }
     }
 }
@@ -714,7 +711,10 @@ mod tests {
 
     #[test]
     fn collect_errors_concatenates() {
-        let out = collect_errors(vec!["w1".to_owned()], vec!["s1".to_owned(), "s2".to_owned()]);
+        let out = collect_errors(
+            vec!["w1".to_owned()],
+            vec!["s1".to_owned(), "s2".to_owned()],
+        );
         assert_eq!(out, vec!["w1", "s1", "s2"]);
     }
 
@@ -728,7 +728,10 @@ mod tests {
 
     #[test]
     fn matches_active_is_false_without_active_revision() {
-        assert!(!EvaluatorState::matches_active(None, &[test_evaluator("a")]));
+        assert!(!EvaluatorState::matches_active(
+            None,
+            &[test_evaluator("a")]
+        ));
     }
 
     // ---- load_llm_connections ----
@@ -736,9 +739,11 @@ mod tests {
     #[test]
     fn load_connections_accepts_unique() {
         let state = EvaluatorState::new();
-        assert!(state
-            .load_llm_connections(vec![connection("a"), connection("b")])
-            .is_ok());
+        assert!(
+            state
+                .load_llm_connections(vec![connection("a"), connection("b")])
+                .is_ok()
+        );
         assert_eq!(state.list_llm_connections(), vec!["a", "b"]);
     }
 
@@ -752,7 +757,9 @@ mod tests {
     fn load_connections_rejects_duplicates_atomically() {
         let state = EvaluatorState::new();
         // Seed a valid connection first.
-        state.load_llm_connections(vec![connection("existing")]).unwrap();
+        state
+            .load_llm_connections(vec![connection("existing")])
+            .unwrap();
         // A batch with duplicates must be rejected wholesale and leave the
         // previously loaded set untouched.
         let err = state.load_llm_connections(vec![connection("dup"), connection("dup")]);
@@ -764,7 +771,10 @@ mod tests {
     fn get_llm_connection_returns_loaded_and_none_for_missing() {
         let state = EvaluatorState::new();
         state.load_llm_connections(vec![connection("a")]).unwrap();
-        assert_eq!(state.get_llm_connection("a").map(|c| c.name), Some("a".to_owned()));
+        assert_eq!(
+            state.get_llm_connection("a").map(|c| c.name),
+            Some("a".to_owned())
+        );
         assert!(state.get_llm_connection("missing").is_none());
     }
 
@@ -772,7 +782,11 @@ mod tests {
     fn list_llm_connections_is_sorted() {
         let state = EvaluatorState::new();
         state
-            .load_llm_connections(vec![connection("zeta"), connection("alpha"), connection("mid")])
+            .load_llm_connections(vec![
+                connection("zeta"),
+                connection("alpha"),
+                connection("mid"),
+            ])
             .unwrap();
         assert_eq!(state.list_llm_connections(), vec!["alpha", "mid", "zeta"]);
     }
@@ -809,14 +823,24 @@ mod tests {
     fn validate_llm_connections_rejects_unknown_reference() {
         let state = EvaluatorState::new();
         // No connections loaded, so any reference is dangling.
-        assert!(state.validate_llm_connections(&[test_evaluator("a")]).is_err());
+        assert!(
+            state
+                .validate_llm_connections(&[test_evaluator("a")])
+                .is_err()
+        );
     }
 
     #[test]
     fn validate_llm_connections_accepts_known_reference() {
         let state = EvaluatorState::new();
-        state.load_llm_connections(vec![connection("test-connection")]).unwrap();
-        assert!(state.validate_llm_connections(&[test_evaluator("a")]).is_ok());
+        state
+            .load_llm_connections(vec![connection("test-connection")])
+            .unwrap();
+        assert!(
+            state
+                .validate_llm_connections(&[test_evaluator("a")])
+                .is_ok()
+        );
     }
 
     // ---- find_matching via test-only seeding ----

@@ -43,12 +43,12 @@ impl LlmClient {
         })
     }
 
-    #[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "sequential HTTP request/response handling")]
-    pub async fn chat(
-        &self,
-        system_prompt: &str,
-        user_prompt: &str,
-    ) -> Option<String> {
+    #[expect(
+        clippy::too_many_lines,
+        clippy::cognitive_complexity,
+        reason = "sequential HTTP request/response handling"
+    )]
+    pub async fn chat(&self, system_prompt: &str, user_prompt: &str) -> Option<String> {
         let body = serde_json::json!({
             "model": self.model,
             "messages": [
@@ -116,10 +116,12 @@ pub fn strip_markdown_fences(s: &str) -> &str {
 /// Sanitize untrusted text for inclusion in LLM prompts.
 #[must_use]
 pub fn sanitize(s: &str, max_len: usize) -> String {
-    let truncated = if s.len() > max_len { &s[..s.floor_char_boundary(max_len)] } else { s };
-    truncated
-        .replace('#', "")
-        .replace(['\n', '\r'], " ")
+    let truncated = if s.len() > max_len {
+        &s[..s.floor_char_boundary(max_len)]
+    } else {
+        s
+    };
+    truncated.replace('#', "").replace(['\n', '\r'], " ")
 }
 
 /// Generic hot-swappable state wrapper. Stores a value behind Arc<RwLock>

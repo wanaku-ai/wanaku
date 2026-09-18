@@ -47,9 +47,9 @@ impl Feature for MetricsFeature {
             return None;
         }
         let snapshot = self.store.snapshot();
-        Some(wanaku_types::http_response::json_ok(
-            &serde_json::json!(snapshot),
-        ))
+        Some(wanaku_types::http_response::json_ok(&serde_json::json!(
+            snapshot
+        )))
     }
 
     fn load_yaml_config(&self, _root: &serde_yaml::Value) {}

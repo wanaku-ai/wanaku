@@ -16,12 +16,21 @@ struct ParsedBody {
 }
 
 fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBody {
-    let arguments = crate::json_rpc::JsonRpcParams::parse(body).arguments.into_iter().collect();
-    ParsedBody { id: json_rpc_id, arguments }
+    let arguments = crate::json_rpc::JsonRpcParams::parse(body)
+        .arguments
+        .into_iter()
+        .collect();
+    ParsedBody {
+        id: json_rpc_id,
+        arguments,
+    }
 }
 
 impl ToolCallFilter {
-    #[expect(clippy::too_many_lines, reason = "MCP protocol handler with JSON-RPC response construction")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "MCP protocol handler with JSON-RPC response construction"
+    )]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
@@ -35,13 +44,18 @@ impl ToolCallFilter {
             return Ok(FilterAction::Continue);
         }
 
-        let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
+        let json_rpc_id =
+            crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
         let mut parsed = parse_body(body, json_rpc_id);
 
         let tool_name = match ctx.get_metadata(crate::MCP_NAME_KEY) {
             Some(n) => n.to_owned(),
             None => {
-                return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INVALID_PARAMS, "missing tool name in tools/call"));
+                return Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    crate::response::JSONRPC_INVALID_PARAMS,
+                    "missing tool name in tools/call",
+                ));
             }
         };
 
@@ -49,14 +63,21 @@ impl ToolCallFilter {
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
             .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
 
-        let conversation_id = parsed.arguments
+        let conversation_id = parsed
+            .arguments
             .remove(wanaku_types::correlation::REQUEST_ID_ARG)
-            .map_or_else(|| "-".to_owned(), |v| match v {
-                serde_json::Value::String(s) => s,
-                other => other.to_string(),
-            });
+            .map_or_else(
+                || "-".to_owned(),
+                |v| match v {
+                    serde_json::Value::String(s) => s,
+                    other => other.to_string(),
+                },
+            );
 
-        let request_id = ctx.request.headers.get("x-request-id")
+        let request_id = ctx
+            .request
+            .headers
+            .get("x-request-id")
             .and_then(|v| v.to_str().ok())
             .unwrap_or("-");
 
@@ -83,7 +104,11 @@ impl ToolCallFilter {
 
         let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
             tracing::error!("InMemoryRegistry not found in request extensions");
-            return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
+            return Ok(crate::response::json_rpc_error(
+                &parsed.id,
+                crate::response::JSONRPC_INTERNAL_ERROR,
+                "internal error: registry unavailable",
+            ));
         };
 
         let tool = match registry.get_tool_in_namespace(namespace, &tool_name) {
@@ -116,7 +141,13 @@ impl ToolCallFilter {
                 );
             }
             return self
-                .handle_forwarded_call(&tool, &tool_name, &parsed, forward_headers, &conversation_id)
+                .handle_forwarded_call(
+                    &tool,
+                    &tool_name,
+                    &parsed,
+                    forward_headers,
+                    &conversation_id,
+                )
                 .await;
         }
 
@@ -124,11 +155,17 @@ impl ToolCallFilter {
         Ok(crate::response::json_rpc_error(
             &parsed.id,
             crate::response::JSONRPC_INTERNAL_ERROR,
-            &format!("unsupported tool type '{}': only MCP-forwarded tools are supported", tool.type_),
+            &format!(
+                "unsupported tool type '{}': only MCP-forwarded tools are supported",
+                tool.type_
+            ),
         ))
     }
 
-    #[expect(clippy::too_many_lines, reason = "MCP forwarding handler with error paths")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "MCP forwarding handler with error paths"
+    )]
     async fn handle_forwarded_call(
         &self,
         tool: &ToolEntry,
@@ -158,7 +195,8 @@ impl ToolCallFilter {
             .await
         {
             Ok(call_result) => {
-                let mcp_content: Vec<serde_json::Value> = call_result.content
+                let mcp_content: Vec<serde_json::Value> = call_result
+                    .content
                     .iter()
                     .map(|text| serde_json::json!({"type": "text", "text": text}))
                     .collect();
@@ -170,7 +208,9 @@ impl ToolCallFilter {
                 });
 
                 let response_body = Bytes::from(response.to_string());
-                Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+                Ok(FilterAction::Reject(crate::response::json_response(
+                    response_body,
+                )))
             }
             Err(e) => {
                 warn!(tool = %tool_name, error = %e, "MCP forward call failed");
@@ -285,7 +325,10 @@ mod tests {
         let parsed = parse_body(&body, serde_json::Value::from(1));
         assert_eq!(parsed.id, serde_json::Value::from(1));
         assert_eq!(parsed.arguments.len(), 1);
-        assert_eq!(parsed.arguments.get("message"), Some(&serde_json::Value::String("hello".to_owned())));
+        assert_eq!(
+            parsed.arguments.get("message"),
+            Some(&serde_json::Value::String("hello".to_owned()))
+        );
     }
 
     #[test]
@@ -306,9 +349,8 @@ mod tests {
 
     #[test]
     fn forwarded_response_includes_is_error_false() {
-        let mcp_content: Vec<serde_json::Value> = vec![
-            serde_json::json!({"type": "text", "text": "hello"}),
-        ];
+        let mcp_content: Vec<serde_json::Value> =
+            vec![serde_json::json!({"type": "text", "text": "hello"})];
         let response = serde_json::json!({
             "jsonrpc": "2.0",
             "id": 1,
@@ -320,9 +362,8 @@ mod tests {
 
     #[test]
     fn forwarded_response_includes_is_error_true() {
-        let mcp_content: Vec<serde_json::Value> = vec![
-            serde_json::json!({"type": "text", "text": "something went wrong"}),
-        ];
+        let mcp_content: Vec<serde_json::Value> =
+            vec![serde_json::json!({"type": "text", "text": "something went wrong"})];
         let response = serde_json::json!({
             "jsonrpc": "2.0",
             "id": 1,
@@ -439,7 +480,12 @@ mod tests {
         let result = extract_allowed_headers(&headers, &global, &[]);
 
         assert_eq!(result.len(), 1);
-        assert_eq!(result.get(&HeaderName::from_static("authorization")).unwrap(), "Bearer tok");
+        assert_eq!(
+            result
+                .get(&HeaderName::from_static("authorization"))
+                .unwrap(),
+            "Bearer tok"
+        );
     }
 
     #[test]
@@ -452,7 +498,10 @@ mod tests {
         let result = extract_allowed_headers(&headers, &[], &per_tool);
 
         assert_eq!(result.len(), 1);
-        assert_eq!(result.get(&HeaderName::from_static("dpop")).unwrap(), "proof-jwt");
+        assert_eq!(
+            result.get(&HeaderName::from_static("dpop")).unwrap(),
+            "proof-jwt"
+        );
     }
 
     #[test]

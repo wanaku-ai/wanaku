@@ -8,8 +8,15 @@ use crate::http_response::json_err;
 #[prefix = ""]
 struct AdminUi;
 
-#[expect(clippy::expect_used, clippy::too_many_lines, reason = "valid static response")]
-pub(super) fn serve_ui(ui_override: &Option<std::path::PathBuf>, request_path: &str) -> Response<Vec<u8>> {
+#[expect(
+    clippy::expect_used,
+    clippy::too_many_lines,
+    reason = "valid static response"
+)]
+pub(super) fn serve_ui(
+    ui_override: &Option<std::path::PathBuf>,
+    request_path: &str,
+) -> Response<Vec<u8>> {
     let relative = request_path
         .strip_prefix("/admin")
         .unwrap_or("")
@@ -36,19 +43,24 @@ pub(super) fn serve_ui(ui_override: &Option<std::path::PathBuf>, request_path: &
     }
 
     if !relative.contains('.')
-        && let Some(index) = AdminUi::get("index.html") {
-            return Response::builder()
-                .status(StatusCode::OK)
-                .header("Content-Type", "text/html; charset=utf-8")
-                .header("Content-Length", index.data.len())
-                .body(index.data.into_owned())
-                .expect("valid static response");
-        }
+        && let Some(index) = AdminUi::get("index.html")
+    {
+        return Response::builder()
+            .status(StatusCode::OK)
+            .header("Content-Type", "text/html; charset=utf-8")
+            .header("Content-Length", index.data.len())
+            .body(index.data.into_owned())
+            .expect("valid static response");
+    }
 
     json_err(StatusCode::NOT_FOUND, "file not found")
 }
 
-#[expect(clippy::expect_used, clippy::too_many_lines, reason = "valid static response")]
+#[expect(
+    clippy::expect_used,
+    clippy::too_many_lines,
+    reason = "valid static response"
+)]
 fn serve_from_filesystem(ui_root: &std::path::Path, relative: &str) -> Response<Vec<u8>> {
     let file_path = if relative.is_empty() {
         ui_root.join("index.html")
@@ -58,14 +70,15 @@ fn serve_from_filesystem(ui_root: &std::path::Path, relative: &str) -> Response<
 
     let Ok(canonical) = file_path.canonicalize() else {
         if !relative.contains('.')
-            && let Ok(index) = std::fs::read(ui_root.join("index.html")) {
-                return Response::builder()
-                    .status(StatusCode::OK)
-                    .header("Content-Type", "text/html; charset=utf-8")
-                    .header("Content-Length", index.len())
-                    .body(index)
-                    .expect("valid static response");
-            }
+            && let Ok(index) = std::fs::read(ui_root.join("index.html"))
+        {
+            return Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", "text/html; charset=utf-8")
+                .header("Content-Length", index.len())
+                .body(index)
+                .expect("valid static response");
+        }
         return json_err(StatusCode::NOT_FOUND, "file not found");
     };
 
@@ -74,7 +87,10 @@ fn serve_from_filesystem(ui_root: &std::path::Path, relative: &str) -> Response<
     };
 
     if !canonical.starts_with(&canonical_root) {
-        return json_err(StatusCode::FORBIDDEN, StatusCode::FORBIDDEN.canonical_reason().unwrap_or_default());
+        return json_err(
+            StatusCode::FORBIDDEN,
+            StatusCode::FORBIDDEN.canonical_reason().unwrap_or_default(),
+        );
     }
 
     let Ok(body) = std::fs::read(&canonical) else {

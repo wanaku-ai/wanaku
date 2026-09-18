@@ -15,7 +15,10 @@ fn is_valid_segment(s: &str) -> bool {
     !s.is_empty() && s != "." && s != ".." && !s.contains('/') && !s.contains('\\')
 }
 
-#[expect(clippy::too_many_lines, reason = "route resolution with multiple path prefix checks")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "route resolution with multiple path prefix checks"
+)]
 pub(crate) fn resolve_plugin_route(method: &str, path: &str) -> PluginRoute {
     if let Some(suffix) = path.strip_prefix("/api/v1/plugins") {
         return match (method, suffix) {
@@ -69,7 +72,10 @@ pub(crate) fn handle_file(
     handlers::handle_serve_file(plugins_path, plugin_id, file_path)
 }
 
-#[expect(clippy::too_many_arguments, reason = "proxy handler requires full HTTP context")]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "proxy handler requires full HTTP context"
+)]
 pub(crate) async fn handle_proxy(
     client: &reqwest::Client,
     target_url: &str,
@@ -150,11 +156,7 @@ mod tests {
     fn proxy_service_root() {
         assert_eq!(
             resolve_plugin_route("GET", "/api/plugins/my-plugin/chat"),
-            PluginRoute::ProxyService(
-                "my-plugin".to_owned(),
-                "chat".to_owned(),
-                String::new()
-            )
+            PluginRoute::ProxyService("my-plugin".to_owned(), "chat".to_owned(), String::new())
         );
     }
 

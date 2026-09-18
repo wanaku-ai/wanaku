@@ -19,7 +19,11 @@ pub fn empty_accepted() -> Rejection {
         .with_header("access-control-allow-origin", ENV.cors_origin.as_str())
 }
 
-pub fn json_rpc_error(id: &serde_json::Value, code: i32, message: &str) -> praxis_filter::FilterAction {
+pub fn json_rpc_error(
+    id: &serde_json::Value,
+    code: i32,
+    message: &str,
+) -> praxis_filter::FilterAction {
     let response = serde_json::json!({
         "jsonrpc": "2.0",
         "id": id,
@@ -54,7 +58,9 @@ mod tests {
 
     #[test]
     fn extract_id_from_valid_body() {
-        let body = Some(Bytes::from(r#"{"jsonrpc":"2.0","id":42,"method":"tools/list"}"#));
+        let body = Some(Bytes::from(
+            r#"{"jsonrpc":"2.0","id":42,"method":"tools/list"}"#,
+        ));
         assert_eq!(extract_json_rpc_id(&body), serde_json::Value::from(42));
     }
 
@@ -91,21 +97,30 @@ mod tests {
     fn metadata_round_trip_numeric_id() {
         let id = serde_json::Value::from(42);
         let serialized = id.to_string();
-        assert_eq!(json_rpc_id_from_metadata(Some(&serialized)), serde_json::Value::from(42));
+        assert_eq!(
+            json_rpc_id_from_metadata(Some(&serialized)),
+            serde_json::Value::from(42)
+        );
     }
 
     #[test]
     fn metadata_round_trip_string_id() {
         let id = serde_json::Value::from("req-1");
         let serialized = id.to_string();
-        assert_eq!(json_rpc_id_from_metadata(Some(&serialized)), serde_json::Value::from("req-1"));
+        assert_eq!(
+            json_rpc_id_from_metadata(Some(&serialized)),
+            serde_json::Value::from("req-1")
+        );
     }
 
     #[test]
     fn metadata_round_trip_null_id() {
         let id = serde_json::Value::Null;
         let serialized = id.to_string();
-        assert_eq!(json_rpc_id_from_metadata(Some(&serialized)), serde_json::Value::Null);
+        assert_eq!(
+            json_rpc_id_from_metadata(Some(&serialized)),
+            serde_json::Value::Null
+        );
     }
 
     #[test]
@@ -115,7 +130,10 @@ mod tests {
 
     #[test]
     fn metadata_malformed_returns_null() {
-        assert_eq!(json_rpc_id_from_metadata(Some("not valid json {")), serde_json::Value::Null);
+        assert_eq!(
+            json_rpc_id_from_metadata(Some("not valid json {")),
+            serde_json::Value::Null
+        );
     }
 
     #[test]
@@ -176,8 +194,16 @@ mod tests {
     fn json_response_has_cors_and_content_type() {
         let r = json_response(Bytes::from("{}"));
         assert_eq!(r.status, 200);
-        assert!(r.headers.iter().any(|(k, v)| k == "content-type" && v == "application/json"));
-        assert!(r.headers.iter().any(|(k, v)| k == "access-control-allow-origin" && v == ENV.cors_origin.as_str()));
+        assert!(
+            r.headers
+                .iter()
+                .any(|(k, v)| k == "content-type" && v == "application/json")
+        );
+        assert!(
+            r.headers
+                .iter()
+                .any(|(k, v)| k == "access-control-allow-origin" && v == ENV.cors_origin.as_str())
+        );
     }
 
     #[test]

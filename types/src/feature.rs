@@ -30,7 +30,13 @@ impl<'a> HttpContext<'a> {
         body: Option<&'a str>,
         headers: &'a http::HeaderMap,
     ) -> Self {
-        Self { method, path, query, body, headers }
+        Self {
+            method,
+            path,
+            query,
+            body,
+            headers,
+        }
     }
 }
 

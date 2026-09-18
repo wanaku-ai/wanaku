@@ -9,8 +9,7 @@ use rmcp::{
         ReadResourceRequestParams,
     },
     transport::{
-        StreamableHttpClientTransport,
-        streamable_http_client::StreamableHttpClientTransportConfig,
+        StreamableHttpClientTransport, streamable_http_client::StreamableHttpClientTransportConfig,
     },
 };
 use serde_json::Value;
@@ -80,16 +79,18 @@ fn build_transport_with_headers(
     StreamableHttpClientTransport::from_config(config)
 }
 
-#[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "MCP paginated client call")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::large_stack_frames,
+    reason = "MCP paginated client call"
+)]
 pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
 
     let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
         .await
-        .map_err(|_| McpClientError::Timeout {
-            url: url.clone(),
-        })?
+        .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
             url: url.clone(),
             message: e.to_string(),
@@ -102,18 +103,13 @@ pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
 
     for _ in 0..100 {
         let params = PaginatedRequestParams::default().with_cursor(cursor);
-        let page = tokio::time::timeout(
-            TIMEOUT,
-            Box::pin(client.list_tools(Some(params))),
-        )
-        .await
-        .map_err(|_| McpClientError::Timeout {
-            url: url.clone(),
-        })?
-        .map_err(|e| McpClientError::ListTools {
-            url: url.clone(),
-            message: e.to_string(),
-        })?;
+        let page = tokio::time::timeout(TIMEOUT, Box::pin(client.list_tools(Some(params))))
+            .await
+            .map_err(|_| McpClientError::Timeout { url: url.clone() })?
+            .map_err(|e| McpClientError::ListTools {
+                url: url.clone(),
+                message: e.to_string(),
+            })?;
 
         all_tools.extend(page.tools);
 
@@ -132,10 +128,12 @@ pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
 
     all_tools
         .into_iter()
-        .map(|t| serde_json::to_value(t).map_err(|e| McpClientError::ListTools {
-            url: url.clone(),
-            message: e.to_string(),
-        }))
+        .map(|t| {
+            serde_json::to_value(t).map_err(|e| McpClientError::ListTools {
+                url: url.clone(),
+                message: e.to_string(),
+            })
+        })
         .collect()
 }
 
@@ -145,7 +143,11 @@ pub struct CallToolResponse {
     pub is_error: bool,
 }
 
-#[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "MCP client call with argument mapping")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::large_stack_frames,
+    reason = "MCP client call with argument mapping"
+)]
 pub async fn call_tool(
     url: &str,
     tool_name: &str,
@@ -157,9 +159,7 @@ pub async fn call_tool(
 
     let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
         .await
-        .map_err(|_| McpClientError::Timeout {
-            url: url.clone(),
-        })?
+        .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
             url: url.clone(),
             message: e.to_string(),
@@ -172,9 +172,7 @@ pub async fn call_tool(
 
     let result = tokio::time::timeout(TIMEOUT, Box::pin(client.call_tool(params)))
         .await
-        .map_err(|_| McpClientError::Timeout {
-            url: url.clone(),
-        })?
+        .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::CallTool {
             url: url.clone(),
             tool_name: tool_name.to_owned(),
@@ -196,7 +194,11 @@ pub async fn call_tool(
     })
 }
 
-#[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "MCP paginated client call")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::large_stack_frames,
+    reason = "MCP paginated client call"
+)]
 pub async fn list_resources(url: &str) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
@@ -216,16 +218,13 @@ pub async fn list_resources(url: &str) -> Result<Vec<Value>, McpClientError> {
 
     for _ in 0..100 {
         let params = PaginatedRequestParams::default().with_cursor(cursor);
-        let page = tokio::time::timeout(
-            TIMEOUT,
-            Box::pin(client.list_resources(Some(params))),
-        )
-        .await
-        .map_err(|_| McpClientError::Timeout { url: url.clone() })?
-        .map_err(|e| McpClientError::ListResources {
-            url: url.clone(),
-            message: e.to_string(),
-        })?;
+        let page = tokio::time::timeout(TIMEOUT, Box::pin(client.list_resources(Some(params))))
+            .await
+            .map_err(|_| McpClientError::Timeout { url: url.clone() })?
+            .map_err(|e| McpClientError::ListResources {
+                url: url.clone(),
+                message: e.to_string(),
+            })?;
 
         all_resources.extend(page.resources);
 
@@ -244,18 +243,17 @@ pub async fn list_resources(url: &str) -> Result<Vec<Value>, McpClientError> {
 
     all_resources
         .into_iter()
-        .map(|r| serde_json::to_value(r).map_err(|e| McpClientError::ListResources {
-            url: url.clone(),
-            message: e.to_string(),
-        }))
+        .map(|r| {
+            serde_json::to_value(r).map_err(|e| McpClientError::ListResources {
+                url: url.clone(),
+                message: e.to_string(),
+            })
+        })
         .collect()
 }
 
 #[expect(clippy::large_stack_frames, reason = "MCP client call")]
-pub async fn read_resource(
-    url: &str,
-    resource_uri: &str,
-) -> Result<Vec<Value>, McpClientError> {
+pub async fn read_resource(url: &str, resource_uri: &str) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
 
@@ -281,15 +279,21 @@ pub async fn read_resource(
     result
         .contents
         .into_iter()
-        .map(|c| serde_json::to_value(c).map_err(|e| McpClientError::ReadResource {
-            url: url.clone(),
-            resource_uri: resource_uri.to_owned(),
-            message: e.to_string(),
-        }))
+        .map(|c| {
+            serde_json::to_value(c).map_err(|e| McpClientError::ReadResource {
+                url: url.clone(),
+                resource_uri: resource_uri.to_owned(),
+                message: e.to_string(),
+            })
+        })
         .collect()
 }
 
-#[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "MCP paginated client call")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::large_stack_frames,
+    reason = "MCP paginated client call"
+)]
 pub async fn list_resource_templates(url: &str) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
@@ -337,14 +341,20 @@ pub async fn list_resource_templates(url: &str) -> Result<Vec<Value>, McpClientE
 
     all_templates
         .into_iter()
-        .map(|t| serde_json::to_value(t).map_err(|e| McpClientError::ListResourceTemplates {
-            url: url.clone(),
-            message: e.to_string(),
-        }))
+        .map(|t| {
+            serde_json::to_value(t).map_err(|e| McpClientError::ListResourceTemplates {
+                url: url.clone(),
+                message: e.to_string(),
+            })
+        })
         .collect()
 }
 
-#[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "MCP paginated client call")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::large_stack_frames,
+    reason = "MCP paginated client call"
+)]
 pub async fn list_prompts(url: &str) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
@@ -364,16 +374,13 @@ pub async fn list_prompts(url: &str) -> Result<Vec<Value>, McpClientError> {
 
     for _ in 0..100 {
         let params = PaginatedRequestParams::default().with_cursor(cursor);
-        let page = tokio::time::timeout(
-            TIMEOUT,
-            Box::pin(client.list_prompts(Some(params))),
-        )
-        .await
-        .map_err(|_| McpClientError::Timeout { url: url.clone() })?
-        .map_err(|e| McpClientError::ListPrompts {
-            url: url.clone(),
-            message: e.to_string(),
-        })?;
+        let page = tokio::time::timeout(TIMEOUT, Box::pin(client.list_prompts(Some(params))))
+            .await
+            .map_err(|_| McpClientError::Timeout { url: url.clone() })?
+            .map_err(|e| McpClientError::ListPrompts {
+                url: url.clone(),
+                message: e.to_string(),
+            })?;
 
         all_prompts.extend(page.prompts);
 
@@ -392,10 +399,12 @@ pub async fn list_prompts(url: &str) -> Result<Vec<Value>, McpClientError> {
 
     all_prompts
         .into_iter()
-        .map(|p| serde_json::to_value(p).map_err(|e| McpClientError::ListPrompts {
-            url: url.clone(),
-            message: e.to_string(),
-        }))
+        .map(|p| {
+            serde_json::to_value(p).map_err(|e| McpClientError::ListPrompts {
+                url: url.clone(),
+                message: e.to_string(),
+            })
+        })
         .collect()
 }
 
@@ -446,7 +455,11 @@ pub struct ForwardDiscovery {
     pub prompts: Vec<Value>,
 }
 
-#[expect(clippy::too_many_lines, clippy::large_stack_frames, reason = "MCP forward discovery aggregating multiple calls")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::large_stack_frames,
+    reason = "MCP forward discovery aggregating multiple calls"
+)]
 pub async fn discover_forward(url: &str) -> Result<ForwardDiscovery, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
@@ -522,7 +535,11 @@ pub async fn discover_forward(url: &str) -> Result<ForwardDiscovery, McpClientEr
     })
 }
 
-#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "MCP paginated discovery with error handling")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    reason = "MCP paginated discovery with error handling"
+)]
 async fn discover_tools_on_session(
     client: &rmcp::service::Peer<rmcp::RoleClient>,
     url: &str,
@@ -532,19 +549,18 @@ async fn discover_tools_on_session(
 
     for _ in 0..100 {
         let params = PaginatedRequestParams::default().with_cursor(cursor);
-        let page = match tokio::time::timeout(TIMEOUT, Box::pin(client.list_tools(Some(params))))
-            .await
-        {
-            Ok(Ok(page)) => page,
-            Ok(Err(e)) => {
-                tracing::warn!(url = %url, error = %e, "tools/list failed during discovery");
-                break;
-            }
-            Err(_) => {
-                tracing::warn!(url = %url, "tools/list timed out during discovery");
-                break;
-            }
-        };
+        let page =
+            match tokio::time::timeout(TIMEOUT, Box::pin(client.list_tools(Some(params)))).await {
+                Ok(Ok(page)) => page,
+                Ok(Err(e)) => {
+                    tracing::warn!(url = %url, error = %e, "tools/list failed during discovery");
+                    break;
+                }
+                Err(_) => {
+                    tracing::warn!(url = %url, "tools/list timed out during discovery");
+                    break;
+                }
+            };
 
         all_tools.extend(page.tools);
         if all_tools.len() >= MAX_TOOLS {
@@ -566,7 +582,11 @@ async fn discover_tools_on_session(
         .collect()
 }
 
-#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "MCP paginated discovery with error handling")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    reason = "MCP paginated discovery with error handling"
+)]
 async fn discover_resources_on_session(
     client: &rmcp::service::Peer<rmcp::RoleClient>,
     url: &str,
@@ -576,20 +596,22 @@ async fn discover_resources_on_session(
 
     for _ in 0..100 {
         let params = PaginatedRequestParams::default().with_cursor(cursor);
-        let page =
-            match tokio::time::timeout(TIMEOUT, Box::pin(client.list_resources(Some(params))))
-                .await
-            {
-                Ok(Ok(page)) => page,
-                Ok(Err(e)) => {
-                    tracing::warn!(url = %url, error = %e, "resources/list failed during discovery");
-                    break;
-                }
-                Err(_) => {
-                    tracing::warn!(url = %url, "resources/list timed out during discovery");
-                    break;
-                }
-            };
+        let page = match tokio::time::timeout(
+            TIMEOUT,
+            Box::pin(client.list_resources(Some(params))),
+        )
+        .await
+        {
+            Ok(Ok(page)) => page,
+            Ok(Err(e)) => {
+                tracing::warn!(url = %url, error = %e, "resources/list failed during discovery");
+                break;
+            }
+            Err(_) => {
+                tracing::warn!(url = %url, "resources/list timed out during discovery");
+                break;
+            }
+        };
 
         all_resources.extend(page.resources);
         if all_resources.len() >= MAX_RESOURCES {
@@ -611,7 +633,11 @@ async fn discover_resources_on_session(
         .collect()
 }
 
-#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "MCP paginated discovery with error handling")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    reason = "MCP paginated discovery with error handling"
+)]
 async fn discover_resource_templates_on_session(
     client: &rmcp::service::Peer<rmcp::RoleClient>,
     url: &str,
@@ -658,7 +684,11 @@ async fn discover_resource_templates_on_session(
         .collect()
 }
 
-#[expect(clippy::too_many_lines, clippy::cognitive_complexity, reason = "MCP paginated discovery with error handling")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    reason = "MCP paginated discovery with error handling"
+)]
 async fn discover_prompts_on_session(
     client: &rmcp::service::Peer<rmcp::RoleClient>,
     url: &str,
@@ -668,19 +698,19 @@ async fn discover_prompts_on_session(
 
     for _ in 0..100 {
         let params = PaginatedRequestParams::default().with_cursor(cursor);
-        let page =
-            match tokio::time::timeout(TIMEOUT, Box::pin(client.list_prompts(Some(params)))).await
-            {
-                Ok(Ok(page)) => page,
-                Ok(Err(e)) => {
-                    tracing::warn!(url = %url, error = %e, "prompts/list failed during discovery");
-                    break;
-                }
-                Err(_) => {
-                    tracing::warn!(url = %url, "prompts/list timed out during discovery");
-                    break;
-                }
-            };
+        let page = match tokio::time::timeout(TIMEOUT, Box::pin(client.list_prompts(Some(params))))
+            .await
+        {
+            Ok(Ok(page)) => page,
+            Ok(Err(e)) => {
+                tracing::warn!(url = %url, error = %e, "prompts/list failed during discovery");
+                break;
+            }
+            Err(_) => {
+                tracing::warn!(url = %url, "prompts/list timed out during discovery");
+                break;
+            }
+        };
 
         all_prompts.extend(page.prompts);
         if all_prompts.len() >= MAX_PROMPTS {

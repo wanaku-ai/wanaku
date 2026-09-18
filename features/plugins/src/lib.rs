@@ -45,7 +45,12 @@ impl PluginsFeature {
     }
 }
 
-#[expect(clippy::too_many_lines, clippy::cognitive_complexity, clippy::large_stack_frames, reason = "plugin discovery with validation")]
+#[expect(
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    clippy::large_stack_frames,
+    reason = "plugin discovery with validation"
+)]
 fn discover_plugins(plugins_dir: &PathBuf) -> Vec<PluginManifest> {
     if !plugins_dir.is_dir() {
         tracing::warn!(path = %plugins_dir.display(), "plugins directory does not exist");
@@ -116,22 +121,21 @@ impl Feature for PluginsFeature {
         vec![]
     }
 
-    #[expect(clippy::too_many_lines, reason = "route dispatch with plugin proxy logic")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "route dispatch with plugin proxy logic"
+    )]
     async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
         let route = resolve_plugin_route(ctx.method, ctx.path);
         if route == PluginRoute::NotFound {
             return None;
         }
         Some(match route {
-            PluginRoute::ListPlugins => {
-                routes::handle_list(&self.manifests)
-            }
-            PluginRoute::ServeFile(plugin_id, file_path) => {
-                match &self.plugins_path {
-                    Some(p) => routes::handle_file(p, &plugin_id, &file_path),
-                    None => json_err(StatusCode::NOT_FOUND, "plugins directory not configured"),
-                }
-            }
+            PluginRoute::ListPlugins => routes::handle_list(&self.manifests),
+            PluginRoute::ServeFile(plugin_id, file_path) => match &self.plugins_path {
+                Some(p) => routes::handle_file(p, &plugin_id, &file_path),
+                None => json_err(StatusCode::NOT_FOUND, "plugins directory not configured"),
+            },
             PluginRoute::ProxyService(plugin_id, service_id, proxy_path) => {
                 let target = self
                     .service_map
@@ -161,7 +165,10 @@ impl Feature for PluginsFeature {
         })
     }
 
-    #[expect(clippy::too_many_lines, reason = "YAML config parsing with nested plugin/service structure")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "YAML config parsing with nested plugin/service structure"
+    )]
     fn load_yaml_config(&self, root: &serde_yaml::Value) {
         let Some(plugins_val) = root.get("plugins") else {
             return;

@@ -14,11 +14,18 @@ struct ParsedBody {
 
 fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBody {
     let params = crate::json_rpc::JsonRpcParams::parse(body);
-    ParsedBody { id: json_rpc_id, name: params.name, arguments: params.arguments }
+    ParsedBody {
+        id: json_rpc_id,
+        name: params.name,
+        arguments: params.arguments,
+    }
 }
 
 impl PromptGetFilter {
-    #[expect(clippy::too_many_lines, reason = "MCP protocol handler with JSON-RPC response construction")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "MCP protocol handler with JSON-RPC response construction"
+    )]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
@@ -36,18 +43,27 @@ impl PromptGetFilter {
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
             .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
 
-        let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
+        let json_rpc_id =
+            crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
         let parsed = parse_body(body, json_rpc_id);
 
         let Some(prompt_name) = parsed.name.as_deref() else {
-            return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INVALID_PARAMS, "missing name in prompts/get"));
+            return Ok(crate::response::json_rpc_error(
+                &parsed.id,
+                crate::response::JSONRPC_INVALID_PARAMS,
+                "missing name in prompts/get",
+            ));
         };
 
         trace!(prompt = %prompt_name, namespace = %namespace, "handling MCP prompts/get request");
 
         let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
             tracing::error!("InMemoryRegistry not found in request extensions");
-            return Ok(crate::response::json_rpc_error(&parsed.id, crate::response::JSONRPC_INTERNAL_ERROR, "internal error: registry unavailable"));
+            return Ok(crate::response::json_rpc_error(
+                &parsed.id,
+                crate::response::JSONRPC_INTERNAL_ERROR,
+                "internal error: registry unavailable",
+            ));
         };
 
         let Some(prompt) = registry.get_prompt_in_namespace(namespace, prompt_name) else {
@@ -60,9 +76,10 @@ impl PromptGetFilter {
         };
 
         if prompt.messages.is_empty()
-            && let Some(ref uri) = prompt.configuration_uri {
-                return self.handle_forwarded_get(uri, prompt_name, &parsed).await;
-            }
+            && let Some(ref uri) = prompt.configuration_uri
+        {
+            return self.handle_forwarded_get(uri, prompt_name, &parsed).await;
+        }
 
         let messages: Vec<serde_json::Value> = prompt
             .messages
@@ -102,7 +119,9 @@ impl PromptGetFilter {
         });
 
         let response_body = Bytes::from(response.to_string());
-        Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+        Ok(FilterAction::Reject(crate::response::json_response(
+            response_body,
+        )))
     }
 
     async fn handle_forwarded_get(
@@ -128,7 +147,9 @@ impl PromptGetFilter {
                 });
 
                 let response_body = Bytes::from(response.to_string());
-                Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+                Ok(FilterAction::Reject(crate::response::json_response(
+                    response_body,
+                )))
             }
             Err(e) => {
                 warn!(prompt = %prompt_name, error = %e, "MCP forward prompt get failed");
@@ -163,9 +184,7 @@ mod tests {
 
     #[test]
     fn parse_body_name_only_no_arguments() {
-        let body = Some(Bytes::from(
-            r#"{"id":2,"params":{"name":"greet"}}"#,
-        ));
+        let body = Some(Bytes::from(r#"{"id":2,"params":{"name":"greet"}}"#));
         let parsed = parse_body(&body, serde_json::Value::from(2));
         assert_eq!(parsed.id, serde_json::Value::from(2));
         assert_eq!(parsed.name.as_deref(), Some("greet"));

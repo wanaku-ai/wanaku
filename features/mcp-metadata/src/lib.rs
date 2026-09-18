@@ -67,8 +67,9 @@ impl Feature for McpMetadataFeature {
 
     fn load_env_config(&self) {
         if let Ok(issuer) = std::env::var(WANAKU_AUTH_ISSUER)
-            && !issuer.is_empty() {
-                tracing::info!(issuer = %issuer, "MCP metadata configured with auth issuer");
-            }
+            && !issuer.is_empty()
+        {
+            tracing::info!(issuer = %issuer, "MCP metadata configured with auth issuer");
+        }
     }
 }

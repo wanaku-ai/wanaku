@@ -1,4 +1,4 @@
-use wasmtime::component::{bindgen, HasSelf};
+use wasmtime::component::{HasSelf, bindgen};
 
 bindgen!({
     path: "wit/evaluator.wit",
@@ -226,7 +226,9 @@ mod tests {
     fn response_filter_tools_sets_filter() {
         let mut state = host_state();
         state.filter_tools(vec!["a".to_owned(), "b".to_owned()]);
-        assert!(matches!(state.action, ActionResult::FilterTools(names) if names == vec!["a", "b"]));
+        assert!(
+            matches!(state.action, ActionResult::FilterTools(names) if names == vec!["a", "b"])
+        );
     }
 
     #[test]

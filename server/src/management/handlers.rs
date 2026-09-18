@@ -1,13 +1,12 @@
 use http::{Response, StatusCode};
 use tracing::{info, warn};
 
+use crate::http_response::{json_err, json_ok};
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::registry::{
-    ForwardEntry, ForwardRegistry, NamespaceEntry, NamespaceRegistry,
-    PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry,
-    ToolEntry, ToolRegistry, MCP_FORWARD_TYPE,
+    ForwardEntry, ForwardRegistry, MCP_FORWARD_TYPE, NamespaceEntry, NamespaceRegistry,
+    PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry, ToolRegistry,
 };
-use crate::http_response::{json_ok, json_err};
 
 pub(super) fn handle_tool_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
     let tools = registry.list_tools();
@@ -21,7 +20,11 @@ pub(super) fn handle_tool_get(registry: &InMemoryRegistry, name: &str) -> Respon
     }
 }
 
-pub(super) fn handle_tool_update(registry: &InMemoryRegistry, path_name: &str, body: &str) -> Response<Vec<u8>> {
+pub(super) fn handle_tool_update(
+    registry: &InMemoryRegistry,
+    path_name: &str,
+    body: &str,
+) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, name = %path_name, "tool update request body");
     let mut tool: ToolEntry = match serde_json::from_str(body) {
         Ok(t) => t,
@@ -44,7 +47,10 @@ pub(super) fn handle_tool_update(registry: &InMemoryRegistry, path_name: &str, b
     info!(tool = %name, "updated tool via management API");
     match registry.get_tool(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("tool not found after update: {name}")),
+        None => json_err(
+            StatusCode::NOT_FOUND,
+            &format!("tool not found after update: {name}"),
+        ),
     }
 }
 
@@ -65,25 +71,38 @@ pub(super) fn handle_resource_list(registry: &InMemoryRegistry) -> Response<Vec<
 pub(super) fn handle_resource_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_resource(name) {
         Some(resource) => json_ok(&serde_json::json!(resource)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("resource not found: {name}")),
+        None => json_err(
+            StatusCode::NOT_FOUND,
+            &format!("resource not found: {name}"),
+        ),
     }
 }
 
 #[expect(clippy::cognitive_complexity, reason = "sequential validation steps")]
-pub(super) fn handle_resource_update(registry: &InMemoryRegistry, path_name: &str, body: &str) -> Response<Vec<u8>> {
+pub(super) fn handle_resource_update(
+    registry: &InMemoryRegistry,
+    path_name: &str,
+    body: &str,
+) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, name = %path_name, "resource update request body");
     let mut resource: ResourceEntry = match serde_json::from_str(body) {
         Ok(r) => r,
         Err(e) => {
             warn!(error = %e, "invalid resource JSON");
-            return json_err(StatusCode::BAD_REQUEST, &format!("invalid resource JSON: {e}"));
+            return json_err(
+                StatusCode::BAD_REQUEST,
+                &format!("invalid resource JSON: {e}"),
+            );
         }
     };
 
     if let Some(existing) = registry.get_resource(path_name) {
         for (k, v) in &existing.labels {
             if k.starts_with("wanaku.") {
-                resource.labels.entry(k.clone()).or_insert_with(|| v.clone());
+                resource
+                    .labels
+                    .entry(k.clone())
+                    .or_insert_with(|| v.clone());
             }
         }
     }
@@ -101,7 +120,10 @@ pub(super) fn handle_resource_update(registry: &InMemoryRegistry, path_name: &st
     info!(resource = %name, "updated resource via management API");
     match registry.get_resource(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("resource not found after update: {name}")),
+        None => json_err(
+            StatusCode::NOT_FOUND,
+            &format!("resource not found after update: {name}"),
+        ),
     }
 }
 
@@ -110,7 +132,10 @@ pub(super) fn handle_resource_delete(registry: &InMemoryRegistry, name: &str) ->
         info!(resource = %name, "removed resource via management API");
         json_ok(&serde_json::json!({"removed": name}))
     } else {
-        json_err(StatusCode::NOT_FOUND, &format!("resource not found: {name}"))
+        json_err(
+            StatusCode::NOT_FOUND,
+            &format!("resource not found: {name}"),
+        )
     }
 }
 
@@ -143,16 +168,25 @@ pub(super) fn handle_namespace_list(registry: &InMemoryRegistry) -> Response<Vec
 pub(super) fn handle_namespace_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_namespace(name) {
         Some(ns) => json_ok(&serde_json::json!(ns)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("namespace not found: {name}")),
+        None => json_err(
+            StatusCode::NOT_FOUND,
+            &format!("namespace not found: {name}"),
+        ),
     }
 }
 
-pub(super) fn handle_namespace_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
+pub(super) fn handle_namespace_create(
+    registry: &InMemoryRegistry,
+    body: &str,
+) -> Response<Vec<u8>> {
     let namespace: NamespaceEntry = match serde_json::from_str(body) {
         Ok(n) => n,
         Err(e) => {
             warn!(error = %e, "invalid namespace JSON");
-            return json_err(StatusCode::BAD_REQUEST, &format!("invalid namespace JSON: {e}"));
+            return json_err(
+                StatusCode::BAD_REQUEST,
+                &format!("invalid namespace JSON: {e}"),
+            );
         }
     };
 
@@ -166,16 +200,26 @@ pub(super) fn handle_namespace_create(registry: &InMemoryRegistry, body: &str) -
     info!(namespace = %name, "registered namespace via management API");
     match registry.get_namespace(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("namespace not found after registration: {name}")),
+        None => json_err(
+            StatusCode::NOT_FOUND,
+            &format!("namespace not found after registration: {name}"),
+        ),
     }
 }
 
-pub(super) fn handle_namespace_update(registry: &InMemoryRegistry, path_name: &str, body: &str) -> Response<Vec<u8>> {
+pub(super) fn handle_namespace_update(
+    registry: &InMemoryRegistry,
+    path_name: &str,
+    body: &str,
+) -> Response<Vec<u8>> {
     let mut namespace: NamespaceEntry = match serde_json::from_str(body) {
         Ok(n) => n,
         Err(e) => {
             warn!(error = %e, "invalid namespace JSON");
-            return json_err(StatusCode::BAD_REQUEST, &format!("invalid namespace JSON: {e}"));
+            return json_err(
+                StatusCode::BAD_REQUEST,
+                &format!("invalid namespace JSON: {e}"),
+            );
         }
     };
 
@@ -189,16 +233,25 @@ pub(super) fn handle_namespace_update(registry: &InMemoryRegistry, path_name: &s
     info!(namespace = %path_name, "updated namespace via management API");
     match registry.get_namespace(path_name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("namespace not found after update: {path_name}")),
+        None => json_err(
+            StatusCode::NOT_FOUND,
+            &format!("namespace not found after update: {path_name}"),
+        ),
     }
 }
 
-pub(super) fn handle_namespace_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+pub(super) fn handle_namespace_delete(
+    registry: &InMemoryRegistry,
+    name: &str,
+) -> Response<Vec<u8>> {
     if registry.remove_namespace(name) {
         info!(namespace = %name, "removed namespace via management API");
         json_ok(&serde_json::json!({"removed": name}))
     } else {
-        json_err(StatusCode::NOT_FOUND, &format!("namespace not found: {name}"))
+        json_err(
+            StatusCode::NOT_FOUND,
+            &format!("namespace not found: {name}"),
+        )
     }
 }
 
@@ -214,14 +267,24 @@ pub(super) fn handle_forward_get(registry: &InMemoryRegistry, name: &str) -> Res
     }
 }
 
-#[expect(clippy::cognitive_complexity, clippy::too_many_lines, reason = "sequential discovery and registration")]
-pub(super) async fn handle_forward_create(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
+#[expect(
+    clippy::cognitive_complexity,
+    clippy::too_many_lines,
+    reason = "sequential discovery and registration"
+)]
+pub(super) async fn handle_forward_create(
+    registry: &InMemoryRegistry,
+    body: &str,
+) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, "forward create request body");
     let mut forward: ForwardEntry = match serde_json::from_str(body) {
         Ok(f) => f,
         Err(e) => {
             warn!(error = %e, "invalid forward JSON");
-            return json_err(StatusCode::BAD_REQUEST, &format!("invalid forward JSON: {e}"));
+            return json_err(
+                StatusCode::BAD_REQUEST,
+                &format!("invalid forward JSON: {e}"),
+            );
         }
     };
 
@@ -248,7 +311,12 @@ pub(super) async fn handle_forward_create(registry: &InMemoryRegistry, body: &st
     registry.register_forward(forward.clone());
 
     let tools_count = register_discovered_tools(registry, &forward, &discovery.tools);
-    let resources_count = register_discovered_resources(registry, &forward, &discovery.resources, &discovery.resource_templates);
+    let resources_count = register_discovered_resources(
+        registry,
+        &forward,
+        &discovery.resources,
+        &discovery.resource_templates,
+    );
     let prompts_count = register_discovered_prompts(registry, &forward, &discovery.prompts);
 
     json_ok(&serde_json::json!({
@@ -276,7 +344,10 @@ pub(super) fn handle_forward_delete(registry: &InMemoryRegistry, name: &str) -> 
     json_ok(&serde_json::json!({"removed": name}))
 }
 
-pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+pub(super) async fn handle_forward_refresh(
+    registry: &InMemoryRegistry,
+    name: &str,
+) -> Response<Vec<u8>> {
     let Some(mut forward) = registry.get_forward(name) else {
         return json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}"));
     };
@@ -292,7 +363,9 @@ pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &s
             forward.available = false;
             forward.status_message = Some(e.to_string());
             registry.register_forward(forward.clone());
-            return json_ok(&serde_json::json!({"refreshed": name, "tools_discovered": 0, "resources_discovered": 0, "prompts_discovered": 0}));
+            return json_ok(
+                &serde_json::json!({"refreshed": name, "tools_discovered": 0, "resources_discovered": 0, "prompts_discovered": 0}),
+            );
         }
     };
 
@@ -302,11 +375,18 @@ pub(super) async fn handle_forward_refresh(registry: &InMemoryRegistry, name: &s
     registry.register_forward(forward.clone());
 
     let tools_count = register_discovered_tools(registry, &forward, &discovery.tools);
-    let resources_count = register_discovered_resources(registry, &forward, &discovery.resources, &discovery.resource_templates);
+    let resources_count = register_discovered_resources(
+        registry,
+        &forward,
+        &discovery.resources,
+        &discovery.resource_templates,
+    );
     let prompts_count = register_discovered_prompts(registry, &forward, &discovery.prompts);
 
     info!(forward = %name, tools_discovered = tools_count, resources_discovered = resources_count, prompts_discovered = prompts_count, "refreshed forward");
-    json_ok(&serde_json::json!({"refreshed": name, "tools_discovered": tools_count, "resources_discovered": resources_count, "prompts_discovered": prompts_count}))
+    json_ok(
+        &serde_json::json!({"refreshed": name, "tools_discovered": tools_count, "resources_discovered": resources_count, "prompts_discovered": prompts_count}),
+    )
 }
 
 pub async fn discover_and_update_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) {
@@ -329,7 +409,12 @@ pub async fn discover_and_update_forward(registry: &InMemoryRegistry, forward: &
     registry.register_forward(updated.clone());
 
     let tools_count = register_discovered_tools(registry, &updated, &discovery.tools);
-    let resources_count = register_discovered_resources(registry, &updated, &discovery.resources, &discovery.resource_templates);
+    let resources_count = register_discovered_resources(
+        registry,
+        &updated,
+        &discovery.resources,
+        &discovery.resource_templates,
+    );
     let prompts_count = register_discovered_prompts(registry, &updated, &discovery.prompts);
 
     info!(
@@ -341,7 +426,10 @@ pub async fn discover_and_update_forward(registry: &InMemoryRegistry, forward: &
     );
 }
 
-pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
+pub async fn discover_tools_from_forward(
+    registry: &InMemoryRegistry,
+    forward: &ForwardEntry,
+) -> usize {
     let tools = match wanaku_infra::mcp_client::list_tools(&forward.address).await {
         Ok(t) => t,
         Err(e) => {
@@ -354,12 +442,23 @@ pub async fn discover_tools_from_forward(registry: &InMemoryRegistry, forward: &
 }
 
 #[expect(clippy::too_many_lines, reason = "sequential tool registration")]
-fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry, tools: &[serde_json::Value]) -> usize {
-    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
+fn register_discovered_tools(
+    registry: &InMemoryRegistry,
+    forward: &ForwardEntry,
+    tools: &[serde_json::Value],
+) -> usize {
+    let namespace = forward
+        .namespace
+        .as_deref()
+        .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
     let mut batch = Vec::with_capacity(tools.len());
 
     for tool_json in tools {
-        let name = match tool_json.get("name").and_then(|n| n.as_str()).map(str::trim) {
+        let name = match tool_json
+            .get("name")
+            .and_then(|n| n.as_str())
+            .map(str::trim)
+        {
             Some(n) if !n.is_empty() => n,
             _ => {
                 warn!(forward = %forward.name, "skipping forwarded tool with missing or empty name");
@@ -395,7 +494,10 @@ fn register_discovered_tools(registry: &InMemoryRegistry, forward: &ForwardEntry
     count
 }
 
-pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
+pub async fn discover_resources_from_forward(
+    registry: &InMemoryRegistry,
+    forward: &ForwardEntry,
+) -> usize {
     let resources = match wanaku_infra::mcp_client::list_resources(&forward.address).await {
         Ok(r) => r,
         Err(e) => {
@@ -404,7 +506,8 @@ pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forwar
         }
     };
 
-    let templates = match wanaku_infra::mcp_client::list_resource_templates(&forward.address).await {
+    let templates = match wanaku_infra::mcp_client::list_resource_templates(&forward.address).await
+    {
         Ok(t) => t,
         Err(e) => {
             tracing::debug!(forward = %forward.name, error = %e, "no resource templates from forward (may not be supported)");
@@ -415,14 +518,21 @@ pub async fn discover_resources_from_forward(registry: &InMemoryRegistry, forwar
     register_discovered_resources(registry, forward, &resources, &templates)
 }
 
-#[expect(clippy::cognitive_complexity, clippy::too_many_lines, reason = "sequential resource and template registration")]
+#[expect(
+    clippy::cognitive_complexity,
+    clippy::too_many_lines,
+    reason = "sequential resource and template registration"
+)]
 fn register_discovered_resources(
     registry: &InMemoryRegistry,
     forward: &ForwardEntry,
     resources: &[serde_json::Value],
     templates: &[serde_json::Value],
 ) -> usize {
-    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
+    let namespace = forward
+        .namespace
+        .as_deref()
+        .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
     let mut batch = Vec::with_capacity(resources.len() + templates.len());
 
     for res_json in resources {
@@ -471,14 +581,22 @@ fn register_discovered_resources(
     }
 
     for tmpl_json in templates {
-        let name = match tmpl_json.get("name").and_then(|n| n.as_str()).map(str::trim) {
+        let name = match tmpl_json
+            .get("name")
+            .and_then(|n| n.as_str())
+            .map(str::trim)
+        {
             Some(n) if !n.is_empty() => n,
             _ => {
                 warn!(forward = %forward.name, "skipping forwarded template with missing or empty name");
                 continue;
             }
         };
-        let uri_template = match tmpl_json.get("uriTemplate").and_then(|u| u.as_str()).map(str::trim) {
+        let uri_template = match tmpl_json
+            .get("uriTemplate")
+            .and_then(|u| u.as_str())
+            .map(str::trim)
+        {
             Some(u) if !u.is_empty() => u,
             _ => {
                 warn!(forward = %forward.name, template = %name, "skipping forwarded template with missing or empty uriTemplate");
@@ -546,7 +664,10 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
     registry.remove_tools_batch(&forwarded);
 }
 
-pub async fn discover_prompts_from_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) -> usize {
+pub async fn discover_prompts_from_forward(
+    registry: &InMemoryRegistry,
+    forward: &ForwardEntry,
+) -> usize {
     let prompts = match wanaku_infra::mcp_client::list_prompts(&forward.address).await {
         Ok(p) => p,
         Err(e) => {
@@ -564,11 +685,18 @@ fn register_discovered_prompts(
     forward: &ForwardEntry,
     prompts: &[serde_json::Value],
 ) -> usize {
-    let namespace = forward.namespace.as_deref().unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
+    let namespace = forward
+        .namespace
+        .as_deref()
+        .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
     let mut batch = Vec::with_capacity(prompts.len());
 
     for prompt_json in prompts {
-        let name = match prompt_json.get("name").and_then(|n| n.as_str()).map(str::trim) {
+        let name = match prompt_json
+            .get("name")
+            .and_then(|n| n.as_str())
+            .map(str::trim)
+        {
             Some(n) if !n.is_empty() => n,
             _ => {
                 warn!(forward = %forward.name, "skipping forwarded prompt with missing or empty name");
@@ -637,10 +765,13 @@ fn remove_forwarded_prompts(registry: &InMemoryRegistry, address: &str) {
 #[cfg(test)]
 mod forward_helpers_tests {
     use super::*;
-    use wanaku_infra::registry::InMemoryRegistry;
-    use wanaku_types::registry::{PromptEntry, PromptRegistry, ToolEntry, ToolRegistry, ResourceRegistry, FORWARD_ADDRESS_LABEL};
-    use wanaku_types::registry::{PromptMessage, PromptRole};
     use std::collections::HashMap;
+    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_types::registry::{
+        FORWARD_ADDRESS_LABEL, PromptEntry, PromptRegistry, ResourceRegistry, ToolEntry,
+        ToolRegistry,
+    };
+    use wanaku_types::registry::{PromptMessage, PromptRole};
 
     #[test]
     fn remove_forwarded_resources_clears_matching_resources() {
@@ -774,7 +905,10 @@ mod forward_helpers_tests {
     }
 }
 
-#[expect(clippy::cast_possible_wrap, reason = "registry counts won't exceed i64::MAX")]
+#[expect(
+    clippy::cast_possible_wrap,
+    reason = "registry counts won't exceed i64::MAX"
+)]
 pub(super) fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
     let tools_count = registry.tool_count() as i64;
     let resources_count = registry.resource_count() as i64;
@@ -804,22 +938,17 @@ mod tests {
     use http::Response;
     use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::registry::{
-        ForwardEntry, ForwardRegistry,
-        PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry,
-        ToolEntry, ToolRegistry,
+        ForwardEntry, ForwardRegistry, PromptEntry, PromptRegistry, ResourceEntry,
+        ResourceRegistry, ToolEntry, ToolRegistry,
     };
 
     use super::{
-        handle_forward_delete, handle_forward_get, handle_forward_list,
-        handle_info,
+        handle_forward_delete, handle_forward_get, handle_forward_list, handle_info,
         handle_namespace_create, handle_namespace_delete, handle_namespace_get,
-        handle_namespace_list, handle_namespace_update,
-        handle_prompt_delete, handle_prompt_get, handle_prompt_list,
-        handle_resource_delete, handle_resource_get, handle_resource_list,
-        handle_resource_update,
-        handle_statistics,
-        handle_tool_delete, handle_tool_get, handle_tool_list,
-        handle_tool_update,
+        handle_namespace_list, handle_namespace_update, handle_prompt_delete, handle_prompt_get,
+        handle_prompt_list, handle_resource_delete, handle_resource_get, handle_resource_list,
+        handle_resource_update, handle_statistics, handle_tool_delete, handle_tool_get,
+        handle_tool_list, handle_tool_update,
     };
 
     fn parse_body(resp: &Response<Vec<u8>>) -> serde_json::Value {
@@ -919,8 +1048,7 @@ mod tests {
         tool.description = "old".to_owned();
         registry.register_tool(tool);
 
-        let update_body =
-            r#"{"name":"upd","description":"new","uri":"u2","type":"y","input_schema":{"type":"object"}}"#;
+        let update_body = r#"{"name":"upd","description":"new","uri":"u2","type":"y","input_schema":{"type":"object"}}"#;
         let resp = handle_tool_update(&registry, "upd", update_body);
         assert_eq!(resp.status(), 200);
 
@@ -937,8 +1065,7 @@ mod tests {
         let registry = InMemoryRegistry::new();
         registry.register_tool(test_tool("old-name"));
 
-        let update_body =
-            r#"{"name":"new-name","description":"d","uri":"u","type":"x","input_schema":{"type":"object"}}"#;
+        let update_body = r#"{"name":"new-name","description":"d","uri":"u","type":"x","input_schema":{"type":"object"}}"#;
         let resp = handle_tool_update(&registry, "old-name", update_body);
         assert_eq!(resp.status(), 200);
 
@@ -949,10 +1076,7 @@ mod tests {
     #[test]
     fn tool_update_invalid_json_returns_400() {
         let registry = InMemoryRegistry::new();
-        assert_eq!(
-            handle_tool_update(&registry, "t", "???").status(),
-            400
-        );
+        assert_eq!(handle_tool_update(&registry, "t", "???").status(), 400);
     }
 
     // ---- Resource handlers ----
@@ -1006,13 +1130,17 @@ mod tests {
         registry.register_resource(res);
 
         let resp = handle_resource_update(
-            &registry, "res",
+            &registry,
+            "res",
             r#"{"name":"res","description":"new","location":"/b","type":"file"}"#,
         );
         assert_eq!(resp.status(), 200);
 
         let data = data_field(&handle_resource_get(&registry, "res"));
-        assert_eq!(data.get("description").and_then(|v| v.as_str()), Some("new"));
+        assert_eq!(
+            data.get("description").and_then(|v| v.as_str()),
+            Some("new")
+        );
         assert_eq!(data.get("location").and_then(|v| v.as_str()), Some("/b"));
     }
 
@@ -1022,7 +1150,8 @@ mod tests {
         registry.register_resource(test_resource("old-res"));
 
         let resp = handle_resource_update(
-            &registry, "old-res",
+            &registry,
+            "old-res",
             r#"{"name":"new-res","description":"d","location":"/x","type":"file"}"#,
         );
         assert_eq!(resp.status(), 200);
@@ -1043,20 +1172,29 @@ mod tests {
         res.description = "old".to_owned();
         res.location = "file:///data".to_owned();
         res.type_ = "mcp-forward".to_owned();
-        res.labels.insert("wanaku.forward_address".to_owned(), "http://remote:8080".to_owned());
+        res.labels.insert(
+            "wanaku.forward_address".to_owned(),
+            "http://remote:8080".to_owned(),
+        );
         registry.register_resource(res);
 
         let resp = handle_resource_update(
-            &registry, "fwd-res",
+            &registry,
+            "fwd-res",
             r#"{"name":"fwd-res","description":"new","location":"file:///data","type":"mcp-forward"}"#,
         );
         assert_eq!(resp.status(), 200);
 
         let data = data_field(&handle_resource_get(&registry, "fwd-res"));
-        assert_eq!(data.get("description").and_then(|v| v.as_str()), Some("new"));
+        assert_eq!(
+            data.get("description").and_then(|v| v.as_str()),
+            Some("new")
+        );
         let labels = data.get("labels").and_then(|v| v.as_object());
         assert_eq!(
-            labels.and_then(|l| l.get("wanaku.forward_address")).and_then(|v| v.as_str()),
+            labels
+                .and_then(|l| l.get("wanaku.forward_address"))
+                .and_then(|v| v.as_str()),
             Some("http://remote:8080"),
         );
     }
@@ -1132,10 +1270,22 @@ mod tests {
     #[test]
     fn namespace_create_validates_name() {
         let registry = InMemoryRegistry::new();
-        assert_eq!(handle_namespace_create(&registry, r#"{"name":"Bad Name"}"#).status(), 400);
-        assert_eq!(handle_namespace_create(&registry, r#"{"name":"-leading"}"#).status(), 400);
-        assert_eq!(handle_namespace_create(&registry, r#"{"name":"trailing-"}"#).status(), 400);
-        assert_eq!(handle_namespace_create(&registry, r#"{"name":""}"#).status(), 400);
+        assert_eq!(
+            handle_namespace_create(&registry, r#"{"name":"Bad Name"}"#).status(),
+            400
+        );
+        assert_eq!(
+            handle_namespace_create(&registry, r#"{"name":"-leading"}"#).status(),
+            400
+        );
+        assert_eq!(
+            handle_namespace_create(&registry, r#"{"name":"trailing-"}"#).status(),
+            400
+        );
+        assert_eq!(
+            handle_namespace_create(&registry, r#"{"name":""}"#).status(),
+            400
+        );
     }
 
     #[test]
@@ -1232,10 +1382,7 @@ mod tests {
     #[test]
     fn namespace_update_invalid_json_returns_400() {
         let registry = InMemoryRegistry::new();
-        assert_eq!(
-            handle_namespace_update(&registry, "x", "???").status(),
-            400
-        );
+        assert_eq!(handle_namespace_update(&registry, "x", "???").status(), 400);
     }
 
     // ---- Forward handlers (sync-only, skipping async create/refresh) ----
@@ -1256,10 +1403,7 @@ mod tests {
 
         let list_resp = handle_forward_list(&registry);
         assert_eq!(list_resp.status(), 200);
-        assert_eq!(
-            data_field(&list_resp).as_array().map(|a| a.len()),
-            Some(1)
-        );
+        assert_eq!(data_field(&list_resp).as_array().map(|a| a.len()), Some(1));
 
         let get_resp = handle_forward_get(&registry, "upstream");
         assert_eq!(get_resp.status(), 200);
@@ -1310,18 +1454,9 @@ mod tests {
 
         let data = data_field(&resp);
         assert_eq!(data.get("toolsCount").and_then(|v| v.as_i64()), Some(0));
-        assert_eq!(
-            data.get("resourcesCount").and_then(|v| v.as_i64()),
-            Some(0)
-        );
-        assert_eq!(
-            data.get("promptsCount").and_then(|v| v.as_i64()),
-            Some(0)
-        );
-        assert_eq!(
-            data.get("forwardsCount").and_then(|v| v.as_i64()),
-            Some(0)
-        );
+        assert_eq!(data.get("resourcesCount").and_then(|v| v.as_i64()), Some(0));
+        assert_eq!(data.get("promptsCount").and_then(|v| v.as_i64()), Some(0));
+        assert_eq!(data.get("forwardsCount").and_then(|v| v.as_i64()), Some(0));
     }
 
     #[test]
@@ -1345,18 +1480,9 @@ mod tests {
 
         let data = data_field(&handle_statistics(&registry));
         assert_eq!(data.get("toolsCount").and_then(|v| v.as_i64()), Some(2));
-        assert_eq!(
-            data.get("resourcesCount").and_then(|v| v.as_i64()),
-            Some(1)
-        );
-        assert_eq!(
-            data.get("promptsCount").and_then(|v| v.as_i64()),
-            Some(1)
-        );
-        assert_eq!(
-            data.get("forwardsCount").and_then(|v| v.as_i64()),
-            Some(1)
-        );
+        assert_eq!(data.get("resourcesCount").and_then(|v| v.as_i64()), Some(1));
+        assert_eq!(data.get("promptsCount").and_then(|v| v.as_i64()), Some(1));
+        assert_eq!(data.get("forwardsCount").and_then(|v| v.as_i64()), Some(1));
     }
 
     // ---- Serialization format (camelCase) ----
@@ -1365,7 +1491,8 @@ mod tests {
     fn tool_serializes_camel_case_keys() {
         let registry = InMemoryRegistry::new();
         let mut tool = test_tool("cc");
-        tool.input_schema = serde_json::json!({"type":"object","properties":{"msg":{"type":"string"}}});
+        tool.input_schema =
+            serde_json::json!({"type":"object","properties":{"msg":{"type":"string"}}});
         registry.register_tool(tool);
 
         let data = data_field(&handle_tool_get(&registry, "cc"));
@@ -1442,4 +1569,3 @@ mod tests {
         assert!(data.get("version").and_then(|v| v.as_str()).is_some());
     }
 }
-

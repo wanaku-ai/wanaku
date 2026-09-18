@@ -51,8 +51,14 @@ pub(crate) fn handle_serve_file(
         .expect("valid static response")
 }
 
-#[expect(clippy::too_many_arguments, reason = "proxy handler requires full HTTP context")]
-#[expect(clippy::too_many_lines, reason = "HTTP proxy with request/response handling")]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "proxy handler requires full HTTP context"
+)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "HTTP proxy with request/response handling"
+)]
 pub(crate) async fn handle_proxy_service(
     client: &reqwest::Client,
     target_url: &str,
@@ -68,7 +74,10 @@ pub(crate) async fn handle_proxy_service(
     };
 
     let Ok(req_method) = method.parse::<reqwest::Method>() else {
-        return json_err(StatusCode::BAD_REQUEST, &format!("unsupported method: {method}"));
+        return json_err(
+            StatusCode::BAD_REQUEST,
+            &format!("unsupported method: {method}"),
+        );
     };
 
     let mut request = client.request(req_method, &url);

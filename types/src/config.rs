@@ -88,8 +88,7 @@ pub static ENV: LazyLock<WanakuEnv> = LazyLock::new(WanakuEnv::from_env);
 impl WanakuEnv {
     #[expect(clippy::too_many_lines, reason = "sequential env var parsing")]
     fn from_env() -> Self {
-        let backend = std::env::var(WANAKU_PERSIST_BACKEND)
-            .unwrap_or_else(|_| "file".to_owned());
+        let backend = std::env::var(WANAKU_PERSIST_BACKEND).unwrap_or_else(|_| "file".to_owned());
         let persist = (backend != "none").then(|| {
             let dir = std::env::var(WANAKU_PERSIST_PATH).unwrap_or_else(|_| {
                 let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_owned());
@@ -113,8 +112,7 @@ impl WanakuEnv {
             inference_tls_sni: parsed.tls_sni,
             persist,
             ui_path: std::env::var(WANAKU_UI_PATH).ok().map(PathBuf::from),
-            cors_origin: std::env::var(WANAKU_CORS_ORIGIN)
-                .unwrap_or_else(|_| "*".to_owned()),
+            cors_origin: std::env::var(WANAKU_CORS_ORIGIN).unwrap_or_else(|_| "*".to_owned()),
             forward_headers: std::env::var(WANAKU_FORWARD_HEADERS)
                 .unwrap_or_default()
                 .split(',')
@@ -122,7 +120,9 @@ impl WanakuEnv {
                 .filter(|s| !s.is_empty())
                 .collect(),
             forward_healthcheck_interval: parse_healthcheck_interval(
-                std::env::var(WANAKU_FORWARD_HEALTHCHECK_INTERVAL).ok().as_deref(),
+                std::env::var(WANAKU_FORWARD_HEALTHCHECK_INTERVAL)
+                    .ok()
+                    .as_deref(),
             ),
         }
     }
@@ -137,7 +137,9 @@ fn parse_healthcheck_interval(raw: Option<&str>) -> Option<std::time::Duration> 
     let secs = match raw.map(str::trim) {
         None => DEFAULT_FORWARD_HEALTHCHECK_INTERVAL_SECS,
         Some("") => return None,
-        Some(value) => value.parse::<u64>().unwrap_or(DEFAULT_FORWARD_HEALTHCHECK_INTERVAL_SECS),
+        Some(value) => value
+            .parse::<u64>()
+            .unwrap_or(DEFAULT_FORWARD_HEALTHCHECK_INTERVAL_SECS),
     };
     (secs > 0).then(|| std::time::Duration::from_secs(secs))
 }
@@ -153,21 +155,23 @@ struct ParsedUpstream {
 /// request forwarded to the upstream — it does not affect the authority
 /// (host and port) used for the proxy's load-balancer endpoint.
 fn parse_upstream(raw: &str) -> ParsedUpstream {
-    let (host_and_rest, default_port, is_tls) =
-        if let Some(rest) = raw.strip_prefix("https://") {
-            (rest, "443", true)
-        } else if let Some(rest) = raw.strip_prefix("http://") {
-            (rest, "80", false)
-        } else {
-            return ParsedUpstream {
-                host_port: raw.to_owned(),
-                path_prefix: String::new(),
-                tls_sni: None,
-            };
+    let (host_and_rest, default_port, is_tls) = if let Some(rest) = raw.strip_prefix("https://") {
+        (rest, "443", true)
+    } else if let Some(rest) = raw.strip_prefix("http://") {
+        (rest, "80", false)
+    } else {
+        return ParsedUpstream {
+            host_port: raw.to_owned(),
+            path_prefix: String::new(),
+            tls_sni: None,
         };
+    };
 
     let (authority, path) = match host_and_rest.find('/') {
-        Some(i) => (&host_and_rest[..i], host_and_rest[i..].trim_end_matches('/')),
+        Some(i) => (
+            &host_and_rest[..i],
+            host_and_rest[i..].trim_end_matches('/'),
+        ),
         None => (host_and_rest, ""),
     };
 
@@ -180,7 +184,11 @@ fn parse_upstream(raw: &str) -> ParsedUpstream {
     ParsedUpstream {
         host_port,
         path_prefix: path.to_owned(),
-        tls_sni: if is_tls { Some(hostname.to_owned()) } else { None },
+        tls_sni: if is_tls {
+            Some(hostname.to_owned())
+        } else {
+            None
+        },
     }
 }
 
@@ -205,12 +213,18 @@ mod tests {
 
     #[test]
     fn healthcheck_interval_defaults_when_absent() {
-        assert_eq!(parse_healthcheck_interval(None), Some(Duration::from_secs(30)));
+        assert_eq!(
+            parse_healthcheck_interval(None),
+            Some(Duration::from_secs(30))
+        );
     }
 
     #[test]
     fn healthcheck_interval_parses_custom_value() {
-        assert_eq!(parse_healthcheck_interval(Some("60")), Some(Duration::from_secs(60)));
+        assert_eq!(
+            parse_healthcheck_interval(Some("60")),
+            Some(Duration::from_secs(60))
+        );
     }
 
     #[test]
@@ -226,7 +240,10 @@ mod tests {
 
     #[test]
     fn healthcheck_interval_invalid_falls_back_to_default() {
-        assert_eq!(parse_healthcheck_interval(Some("abc")), Some(Duration::from_secs(30)));
+        assert_eq!(
+            parse_healthcheck_interval(Some("abc")),
+            Some(Duration::from_secs(30))
+        );
     }
 
     #[test]

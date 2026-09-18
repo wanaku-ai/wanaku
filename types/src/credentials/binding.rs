@@ -61,11 +61,17 @@ impl NormalizedOrigin {
     /// Parse and normalize an upstream address into an exact origin.
     pub fn from_address(address: &str) -> Result<Self, OriginError> {
         let uri = http::Uri::from_str(address).map_err(|_| OriginError::InvalidAddress)?;
-        let scheme = uri.scheme_str().ok_or(OriginError::MissingScheme)?.to_ascii_lowercase();
+        let scheme = uri
+            .scheme_str()
+            .ok_or(OriginError::MissingScheme)?
+            .to_ascii_lowercase();
         if scheme != "http" && scheme != "https" {
             return Err(OriginError::MissingScheme);
         }
-        let host = uri.host().ok_or(OriginError::MissingHost)?.to_ascii_lowercase();
+        let host = uri
+            .host()
+            .ok_or(OriginError::MissingHost)?
+            .to_ascii_lowercase();
         if host.is_empty() {
             return Err(OriginError::MissingHost);
         }
@@ -128,7 +134,11 @@ impl BindingRestrictions {
 pub struct CacheRules {
     /// An explicit bounded maximum TTL, in seconds. When absent and the
     /// resolver supplies no expiry metadata, results are not cached.
-    #[serde(default, skip_serializing_if = "Option::is_none", rename = "maxTtlSeconds")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "maxTtlSeconds"
+    )]
     pub max_ttl_seconds: Option<u64>,
 }
 
@@ -300,7 +310,8 @@ mod tests {
         let mut b = binding();
         b.mechanism = InjectionMechanism::Basic;
         assert_eq!(b.validate(), Err(BindingError::SecretArityMismatch));
-        b.secret_refs.push(SecretRef::parse("env:PASSWORD").unwrap());
+        b.secret_refs
+            .push(SecretRef::parse("env:PASSWORD").unwrap());
         assert!(b.validate().is_ok());
     }
 
@@ -308,7 +319,12 @@ mod tests {
     fn authorize_rejects_wrong_forward() {
         let b = binding();
         let err = b
-            .authorize_use("fwd-b", "https://api.example.com", CredentialPurpose::Invocation, &UseScope::default())
+            .authorize_use(
+                "fwd-b",
+                "https://api.example.com",
+                CredentialPurpose::Invocation,
+                &UseScope::default(),
+            )
             .unwrap_err();
         assert_eq!(err, BindingError::ForwardMismatch);
     }
@@ -317,7 +333,12 @@ mod tests {
     fn authorize_rejects_wrong_origin() {
         let b = binding();
         let err = b
-            .authorize_use("fwd-a", "https://evil.example.com", CredentialPurpose::Invocation, &UseScope::default())
+            .authorize_use(
+                "fwd-a",
+                "https://evil.example.com",
+                CredentialPurpose::Invocation,
+                &UseScope::default(),
+            )
             .unwrap_err();
         assert_eq!(err, BindingError::OriginMismatch);
     }
@@ -326,7 +347,12 @@ mod tests {
     fn authorize_rejects_wrong_purpose() {
         let b = binding();
         let err = b
-            .authorize_use("fwd-a", "https://api.example.com", CredentialPurpose::Discovery, &UseScope::default())
+            .authorize_use(
+                "fwd-a",
+                "https://api.example.com",
+                CredentialPurpose::Discovery,
+                &UseScope::default(),
+            )
             .unwrap_err();
         assert_eq!(err, BindingError::PurposeNotAllowed);
     }
@@ -335,15 +361,32 @@ mod tests {
     fn authorize_enforces_namespace_restriction() {
         let mut b = binding();
         b.restrictions.namespaces = vec!["prod".to_owned()];
-        let scope = UseScope { namespace: Some("dev"), ..UseScope::default() };
+        let scope = UseScope {
+            namespace: Some("dev"),
+            ..UseScope::default()
+        };
         let err = b
-            .authorize_use("fwd-a", "https://api.example.com", CredentialPurpose::Invocation, &scope)
+            .authorize_use(
+                "fwd-a",
+                "https://api.example.com",
+                CredentialPurpose::Invocation,
+                &scope,
+            )
             .unwrap_err();
         assert_eq!(err, BindingError::RestrictionViolation);
 
-        let ok_scope = UseScope { namespace: Some("prod"), ..UseScope::default() };
-        assert!(b
-            .authorize_use("fwd-a", "https://api.example.com", CredentialPurpose::Invocation, &ok_scope)
-            .is_ok());
+        let ok_scope = UseScope {
+            namespace: Some("prod"),
+            ..UseScope::default()
+        };
+        assert!(
+            b.authorize_use(
+                "fwd-a",
+                "https://api.example.com",
+                CredentialPurpose::Invocation,
+                &ok_scope
+            )
+            .is_ok()
+        );
     }
 }

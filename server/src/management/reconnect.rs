@@ -68,7 +68,10 @@ impl ForwardReconnectService {
 #[async_trait]
 impl BackgroundService for ForwardReconnectService {
     async fn start(&self, mut shutdown: ShutdownWatch) {
-        info!(interval_secs = self.interval.as_secs(), "forward reconnect loop started");
+        info!(
+            interval_secs = self.interval.as_secs(),
+            "forward reconnect loop started"
+        );
         let mut ticker = tokio::time::interval(self.interval);
         // Skip the immediate tick that `interval` fires at t=0; startup already
         // probes yaml forwards, and this avoids a redundant sweep at boot.
@@ -125,7 +128,11 @@ mod tests {
         registry.register_forward(forward("healthy", true));
 
         let svc = ForwardReconnectService::new(registry, Duration::from_secs(30));
-        assert_eq!(svc.run_once().await, 0, "available forwards must not be probed");
+        assert_eq!(
+            svc.run_once().await,
+            0,
+            "available forwards must not be probed"
+        );
     }
 
     #[tokio::test]
@@ -136,13 +143,20 @@ mod tests {
         registry.register_forward(forward("down-2", false));
 
         let svc = ForwardReconnectService::new(registry.clone(), Duration::from_secs(30));
-        assert_eq!(svc.run_once().await, 2, "only unavailable forwards should be probed");
+        assert_eq!(
+            svc.run_once().await,
+            2,
+            "only unavailable forwards should be probed"
+        );
 
         // Discovery against the unroutable address fails, so they stay
         // unavailable and gain a status message.
         let down = registry.get_forward("down-1").expect("forward exists");
         assert!(!down.available);
-        assert!(down.status_message.is_some(), "failed probe records a status message");
+        assert!(
+            down.status_message.is_some(),
+            "failed probe records a status message"
+        );
 
         // The healthy forward is untouched.
         let healthy = registry.get_forward("healthy").expect("forward exists");

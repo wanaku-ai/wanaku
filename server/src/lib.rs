@@ -23,7 +23,9 @@ fn find_named_entry_mut<'a>(
 }
 
 fn find_inference_cluster(yaml: &mut Value) -> Option<&mut Value> {
-    let chains = yaml.get_mut("filter_chains").and_then(Value::as_sequence_mut)?;
+    let chains = yaml
+        .get_mut("filter_chains")
+        .and_then(Value::as_sequence_mut)?;
     let chain = find_named_entry_mut(chains, "name", "inference_proxy")?;
     let filters = chain.get_mut("filters").and_then(Value::as_sequence_mut)?;
     let lb = find_named_entry_mut(filters, "filter", "load_balancer")?;
@@ -33,7 +35,9 @@ fn find_inference_cluster(yaml: &mut Value) -> Option<&mut Value> {
 
 fn apply_inference_config(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) {
     let Some(cluster) = find_inference_cluster(yaml) else {
-        tracing::warn!("could not locate inference cluster in pipeline config — env overrides skipped");
+        tracing::warn!(
+            "could not locate inference cluster in pipeline config — env overrides skipped"
+        );
         return;
     };
 
@@ -60,23 +64,31 @@ fn apply_inference_host_header(yaml: &mut Value, env: &wanaku_types::config::Wan
     }
 }
 
-fn try_apply_inference_host_header(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) -> Result<(), &'static str> {
+fn try_apply_inference_host_header(
+    yaml: &mut Value,
+    env: &wanaku_types::config::WanakuEnv,
+) -> Result<(), &'static str> {
     let chains = yaml
         .get_mut("filter_chains")
         .and_then(Value::as_sequence_mut)
         .ok_or("no filter_chains in pipeline config")?;
-    let chain = find_named_entry_mut(chains, "name", "inference_proxy").ok_or("inference_proxy chain not found")?;
+    let chain = find_named_entry_mut(chains, "name", "inference_proxy")
+        .ok_or("inference_proxy chain not found")?;
     let filters = chain
         .get_mut("filters")
         .and_then(Value::as_sequence_mut)
         .ok_or("chain has no filters")?;
-    let headers = find_named_entry_mut(filters, "filter", "headers").ok_or("no headers filter on chain")?;
+    let headers =
+        find_named_entry_mut(filters, "filter", "headers").ok_or("no headers filter on chain")?;
     let request_set = headers
         .get_mut("request_set")
         .and_then(Value::as_sequence_mut)
         .ok_or("headers filter has no request_set")?;
-    let host_entry = find_named_entry_mut(request_set, "name", "Host").ok_or("no Host entry in request_set")?;
-    let value = host_entry.get_mut("value").ok_or("Host entry has no value field")?;
+    let host_entry =
+        find_named_entry_mut(request_set, "name", "Host").ok_or("no Host entry in request_set")?;
+    let value = host_entry
+        .get_mut("value")
+        .ok_or("Host entry has no value field")?;
     *value = Value::String(inference_host_header_value(env));
     Ok(())
 }
@@ -106,19 +118,25 @@ fn apply_inference_path_prefix(yaml: &mut Value, env: &wanaku_types::config::Wan
 /// `https://host/api`) must be prepended to every request forwarded
 /// upstream — the load-balancer only routes by host:port, so this path
 /// would otherwise be silently dropped.
-fn try_apply_inference_path_prefix(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) -> Result<(), &'static str> {
+fn try_apply_inference_path_prefix(
+    yaml: &mut Value,
+    env: &wanaku_types::config::WanakuEnv,
+) -> Result<(), &'static str> {
     let chains = yaml
         .get_mut("filter_chains")
         .and_then(Value::as_sequence_mut)
         .ok_or("no filter_chains in pipeline config")?;
-    let chain = find_named_entry_mut(chains, "name", "inference_proxy").ok_or("inference_proxy chain not found")?;
+    let chain = find_named_entry_mut(chains, "name", "inference_proxy")
+        .ok_or("inference_proxy chain not found")?;
     let filters = chain
         .get_mut("filters")
         .and_then(Value::as_sequence_mut)
         .ok_or("chain has no filters")?;
-    let path_rewrite =
-        find_named_entry_mut(filters, "filter", "path_rewrite").ok_or("no path_rewrite filter on chain")?;
-    let add_prefix = path_rewrite.get_mut("add_prefix").ok_or("path_rewrite filter has no add_prefix")?;
+    let path_rewrite = find_named_entry_mut(filters, "filter", "path_rewrite")
+        .ok_or("no path_rewrite filter on chain")?;
+    let add_prefix = path_rewrite
+        .get_mut("add_prefix")
+        .ok_or("path_rewrite filter has no add_prefix")?;
     *add_prefix = Value::String(env.inference_path_prefix.clone());
     Ok(())
 }
@@ -131,7 +149,11 @@ fn apply_cors_config(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) {
 
 fn apply_cors_to_chain(yaml: &mut Value, chain_name: &str, origin: &str) {
     if let Err(reason) = try_apply_cors_to_chain(yaml, chain_name, origin) {
-        tracing::warn!(chain = chain_name, reason, "WANAKU_CORS_ORIGIN override skipped");
+        tracing::warn!(
+            chain = chain_name,
+            reason,
+            "WANAKU_CORS_ORIGIN override skipped"
+        );
     }
 }
 
@@ -154,7 +176,9 @@ fn try_apply_cors_to_chain(
         .get_mut("allow_origins")
         .and_then(Value::as_sequence_mut)
         .ok_or("cors filter has no allow_origins")?;
-    let first = origins.first_mut().ok_or("cors filter's allow_origins is empty")?;
+    let first = origins
+        .first_mut()
+        .ok_or("cors filter's allow_origins is empty")?;
     *first = Value::String(origin.to_owned());
     Ok(())
 }
@@ -200,7 +224,10 @@ pub fn build_full_registry() -> praxis_filter::FilterRegistry {
     registry
 }
 
-#[expect(clippy::too_many_lines, reason = "filter registration is sequential and repetitive")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "filter registration is sequential and repetitive"
+)]
 fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
     praxis_filter::register_filters!(
         @register registry,
@@ -248,7 +275,10 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
 mod tests {
     use wanaku_types::config::WanakuEnv;
 
-    use super::{Value, inference_host_header_value, try_apply_inference_host_header, try_apply_inference_path_prefix};
+    use super::{
+        Value, inference_host_header_value, try_apply_inference_host_header,
+        try_apply_inference_path_prefix,
+    };
 
     fn env_with(upstream: &str, tls_sni: Option<&str>) -> WanakuEnv {
         env_with_path(upstream, tls_sni, "")
@@ -290,9 +320,7 @@ mod tests {
     fn action_policy_runs_before_evaluator() {
         let yaml: Value =
             serde_yaml::from_str(super::DEFAULT_CONFIG).expect("default.yaml must parse");
-        let chains = yaml["filter_chains"]
-            .as_sequence()
-            .expect("filter chains");
+        let chains = yaml["filter_chains"].as_sequence().expect("filter chains");
         let router = chains
             .iter()
             .find(|chain| chain["name"].as_str() == Some("mcp_router"))
@@ -323,12 +351,17 @@ mod tests {
     /// reorder) and falling back to the unpatched placeholder value.
     #[test]
     fn try_apply_inference_host_header_matches_embedded_default_config() {
-        let mut yaml: Value = serde_yaml::from_str(super::DEFAULT_CONFIG).expect("default.yaml must parse");
+        let mut yaml: Value =
+            serde_yaml::from_str(super::DEFAULT_CONFIG).expect("default.yaml must parse");
         let env = env_with("upstream.internal:9999", None);
-        try_apply_inference_host_header(&mut yaml, &env).expect("headers filter must be found in default.yaml");
+        try_apply_inference_host_header(&mut yaml, &env)
+            .expect("headers filter must be found in default.yaml");
 
         let patched = serde_yaml::to_string(&yaml).expect("patched yaml must serialize");
-        assert!(patched.contains("upstream.internal:9999"), "Host value was not patched:\n{patched}");
+        assert!(
+            patched.contains("upstream.internal:9999"),
+            "Host value was not patched:\n{patched}"
+        );
     }
 
     /// Guards against the `path_rewrite`/`add_prefix` lookup silently
@@ -336,11 +369,16 @@ mod tests {
     /// configured upstream path (e.g. `/api`) silently dropped.
     #[test]
     fn try_apply_inference_path_prefix_matches_embedded_default_config() {
-        let mut yaml: Value = serde_yaml::from_str(super::DEFAULT_CONFIG).expect("default.yaml must parse");
+        let mut yaml: Value =
+            serde_yaml::from_str(super::DEFAULT_CONFIG).expect("default.yaml must parse");
         let env = env_with_path("openrouter.ai:443", Some("openrouter.ai"), "/api");
-        try_apply_inference_path_prefix(&mut yaml, &env).expect("path_rewrite filter must be found in default.yaml");
+        try_apply_inference_path_prefix(&mut yaml, &env)
+            .expect("path_rewrite filter must be found in default.yaml");
 
         let patched = serde_yaml::to_string(&yaml).expect("patched yaml must serialize");
-        assert!(patched.contains("add_prefix: /api"), "path prefix was not patched:\n{patched}");
+        assert!(
+            patched.contains("add_prefix: /api"),
+            "path prefix was not patched:\n{patched}"
+        );
     }
 }

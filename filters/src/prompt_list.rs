@@ -7,7 +7,10 @@ use wanaku_types::registry::PromptRegistry;
 crate::body_filter_boilerplate!(PromptListFilter, "wanaku_prompt_list");
 
 impl PromptListFilter {
-    #[expect(clippy::too_many_lines, reason = "MCP protocol handler with JSON-RPC response construction")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "MCP protocol handler with JSON-RPC response construction"
+    )]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
@@ -27,7 +30,8 @@ impl PromptListFilter {
 
         trace!(namespace = %namespace, "handling MCP prompts/list request");
 
-        let json_rpc_id = crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
+        let json_rpc_id =
+            crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
 
         let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
             tracing::error!("InMemoryRegistry not found in request extensions");
@@ -71,6 +75,8 @@ impl PromptListFilter {
         });
 
         let response_body = Bytes::from(response.to_string());
-        Ok(FilterAction::Reject(crate::response::json_response(response_body)))
+        Ok(FilterAction::Reject(crate::response::json_response(
+            response_body,
+        )))
     }
 }
