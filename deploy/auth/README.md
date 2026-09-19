@@ -34,7 +34,7 @@ The `wanaku-mcp-router` client in Keycloak must be **confidential** (not public)
 
 5. Access:
    - Admin UI: http://localhost:4181/admin/
-   - MCP endpoint: http://localhost:4180/mcp
+   - MCP endpoint: http://localhost:4180/default/mcp
    - Public MCP (no auth): http://localhost:4180/public/mcp
 
 ## Architecture
@@ -73,7 +73,7 @@ TOKEN=$(curl -s -X POST http://localhost:8543/realms/wanaku/protocol/openid-conn
 wanaku tools list --host http://localhost:4181 --token $TOKEN
 
 # Use with MCP
-curl -H "Authorization: Bearer $TOKEN" http://localhost:4180/mcp \
+curl -H "Authorization: Bearer $TOKEN" http://localhost:4180/default/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 ```
@@ -117,7 +117,7 @@ oauth2-proxy \
   --skip-auth-route="^/token$" \
   --skip-auth-route="^/register$" \
   --skip-auth-route="OPTIONS=^/.*" \
-  --api-route="^/mcp.*" \
+  --api-route="^/[^/]+/mcp/?$" \
   --upstream-timeout=3600s
 ```
 
@@ -146,4 +146,4 @@ oauth2-proxy \
 
 ## MCP Inspector
 
-Point the MCP Inspector at `http://localhost:4180/mcp`. The Inspector's OAuth flow uses the `mcp-client` Keycloak client, which is accepted via the `--oidc-extra-audience` flag.
+Point the MCP Inspector at `http://localhost:4180/default/mcp`. The Inspector's OAuth flow uses the `mcp-client` Keycloak client, which is accepted via the `--oidc-extra-audience` flag.
