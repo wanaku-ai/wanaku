@@ -176,6 +176,7 @@ jobs:
       discussions: write
       issues: write
     env:
+      GH_TOKEN: ${{ github.token }}
       JRELEASER_PROJECT_VERSION: ${{ needs.setup.outputs.version }}
       JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
@@ -198,6 +199,21 @@ jobs:
         with:
           version: 1.26.0
           arguments: full-release
+
+      - name: Announce release in GitHub Discussions
+        env:
+          RELEASE_TAG: v${{ needs.setup.outputs.version }}
+          RELEASE_VERSION: ${{ needs.setup.outputs.version }}
+        run: |
+          release_url=$(gh release view "$RELEASE_TAG" --json url --jq '.url')
+          sed \
+            -e "s|{{projectVersion}}|${RELEASE_VERSION}|g" \
+            -e "s|{{releaseNotesUrl}}|${release_url}|g" \
+            jreleaser/discussions.tpl > "$RUNNER_TEMP/discussion.md"
+          gh discussion create \
+            --category Announcements \
+            --title "Wanaku ${RELEASE_VERSION} is available" \
+            --body-file "$RUNNER_TEMP/discussion.md"
 
       - name: Upload JReleaser output
         if: always()

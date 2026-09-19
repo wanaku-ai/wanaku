@@ -245,19 +245,26 @@ jobs:
           pattern: wanaku-server-*
           merge-multiple: true
 
-      # GitHub only creates a release discussion when it creates the release.
-      # JReleaser otherwise updates this fixed rolling-release tag in place.
-      - name: Remove the previous early-access release
-        run: |
-          if gh release view early-access >/dev/null 2>&1; then
-            gh release delete early-access --cleanup-tag --yes
-          fi
-
       - name: Run JReleaser
         uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0
         with:
           version: 1.26.0
           arguments: full-release
+
+      - name: Announce release in GitHub Discussions
+        env:
+          RELEASE_TAG: early-access
+          RELEASE_VERSION: ${{ inputs.currentDevelopmentVersion }}
+        run: |
+          release_url=$(gh release view "$RELEASE_TAG" --json url --jq '.url')
+          sed \
+            -e "s|{{projectVersion}}|${RELEASE_VERSION}|g" \
+            -e "s|{{releaseNotesUrl}}|${release_url}|g" \
+            jreleaser/discussions.tpl > "$RUNNER_TEMP/discussion.md"
+          gh discussion create \
+            --category Announcements \
+            --title "Wanaku ${RELEASE_VERSION} is available" \
+            --body-file "$RUNNER_TEMP/discussion.md"
 
       - name: Upload JReleaser output
         if: always()

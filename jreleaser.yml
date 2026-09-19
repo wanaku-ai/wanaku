@@ -57,15 +57,6 @@ release:
       formatted: ALWAYS
       contentTemplate: jreleaser/changelog.tpl
 
-announce:
-  discussions:
-    active: ALWAYS
-    connectTimeout: 20
-    organization: wanaku-ai
-    team: maintainers
-    title: '{{projectNameCapitalized}} {{projectVersion}} is available'
-    messageTemplate: jreleaser/discussions.tpl
-
 packagers:
   # Disabled until the platform-token mapping is validated end-to-end with a
   # dry run. Enable in a follow-up to publish to wanaku-ai/homebrew-wanaku.
