@@ -42,6 +42,12 @@ For implementation work, read the guide that matches the area you plan to change
    ```bash
    cargo clippy --all-targets --all-features -- -D warnings
    ```
+   
+5. Build WASM evaluators 
+
+   ```bash
+   cargo build -p wanaku-feature-evaluator
+   ```
 
 Add meaningful tests for new behavior. Update the relevant documentation when you add or change a feature.
 
