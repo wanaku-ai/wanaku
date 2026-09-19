@@ -244,7 +244,7 @@ Authentication is handled externally by [oauth2-proxy](https://github.com/oauth2
 
 Wanaku also serves [RFC 9728](https://datatracker.ietf.org/doc/rfc9728/) OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. Set `WANAKU_AUTH_ISSUER` to your Keycloak realm URL to populate the `authorization_servers` field.
 
-See [`deploy/auth/README.md`](deploy/auth/README.md) for setup instructions (Docker Compose and local development).
+See [`deploy/auth/README.md`](../deploy/auth/README.md) for setup instructions (Docker Compose and local development).
 
 ## Where to Go Next
 
