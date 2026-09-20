@@ -5,16 +5,17 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
-import type { LlmDef } from "./llmDef";
+import type { EvaluationEngine } from "./evaluationEngine";
 import type { ErrorPolicy } from "./errorPolicy";
 import type { ProcessorRef } from "./processorRef";
 import type { TriggerDef } from "./triggerDef";
 
 /**
- * A single evaluator definition: trigger + LLM operation + processor.
+ * A single evaluator definition: trigger + evaluation engine + processor.
  */
 export type ListEvaluators200Item = {
-  llm: LlmDef;
+  /** The engine that produces the processor input. */
+  engine: EvaluationEngine;
   name: string;
   on_error?: ErrorPolicy;
   processor: ProcessorRef;

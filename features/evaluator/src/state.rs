@@ -194,7 +194,7 @@ impl EvaluatorState {
 
         if let Err(e) = validate_evaluator_names(&defs)
             .and_then(|()| validate_triggers(&defs))
-            .and_then(|()| self.validate_llm_connections(&defs))
+            .and_then(|()| self.validate_engines(&defs))
         {
             tracing::error!(
                 revision_id = revision_id,
@@ -327,7 +327,7 @@ impl EvaluatorState {
     ) -> Result<Revision, RevisionError> {
         validate_evaluator_names(&defs)?;
         validate_triggers(&defs)?;
-        self.validate_llm_connections(&defs)?;
+        self.validate_engines(&defs)?;
 
         let (compiled_modules, wasm_errors) = compile_wasm_map_with_errors(&defs);
         let (compiled_schemas, schema_errors) = try_compile_schemas(&defs);
@@ -491,19 +491,22 @@ impl EvaluatorState {
             .unwrap_or_default()
     }
 
-    /// Validate that every evaluator's `llm.connection` names a connection
-    /// loaded from config. Connections are immutable after startup, so once
-    /// an evaluator is active this can never later become dangling.
-    fn validate_llm_connections(&self, defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
+    /// Validate the selected engine for every evaluator.
+    fn validate_engines(&self, defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
         let guard = self.connections.read().map_err(|_| {
             RevisionError::ValidationFailed("LLM connection registry lock poisoned".to_owned())
         })?;
         for def in defs {
-            if !guard.contains_key(&def.llm.connection) {
-                return Err(RevisionError::ValidationFailed(format!(
-                    "evaluator '{}': unknown llm connection '{}'",
-                    def.name, def.llm.connection
-                )));
+            match &def.engine {
+                crate::config::EvaluationEngine::Llm(llm)
+                    if !guard.contains_key(&llm.connection) =>
+                {
+                    return Err(RevisionError::ValidationFailed(format!(
+                        "evaluator '{}': unknown llm connection '{}'",
+                        def.name, llm.connection
+                    )));
+                }
+                _ => {}
             }
         }
         Ok(())
@@ -581,7 +584,9 @@ fn try_compile_schemas(
     let mut errors = Vec::new();
 
     for def in defs {
-        if let Some(ref schema_val) = def.llm.result_schema {
+        if let crate::config::EvaluationEngine::Llm(llm) = &def.engine
+            && let Some(schema_val) = &llm.result_schema
+        {
             match CompiledSchema::compile(schema_val) {
                 Some(compiled) => {
                     tracing::info!(evaluator = %def.name, "compiled result schema");
@@ -650,12 +655,12 @@ mod tests {
                 method: TOOLS_CALL.to_owned(),
                 namespace: None,
             },
-            llm: LlmDef {
+            engine: crate::config::EvaluationEngine::Llm(LlmDef {
                 operation: LlmOperation::Classify,
                 prompt: "test".to_owned(),
                 connection: "test-connection".to_owned(),
                 result_schema: None,
-            },
+            }),
             processor: ProcessorRef {
                 path: PathBuf::from("/test.wasm"),
             },
@@ -823,11 +828,7 @@ mod tests {
     fn validate_llm_connections_rejects_unknown_reference() {
         let state = EvaluatorState::new();
         // No connections loaded, so any reference is dangling.
-        assert!(
-            state
-                .validate_llm_connections(&[test_evaluator("a")])
-                .is_err()
-        );
+        assert!(state.validate_engines(&[test_evaluator("a")]).is_err());
     }
 
     #[test]
@@ -836,11 +837,7 @@ mod tests {
         state
             .load_llm_connections(vec![connection("test-connection")])
             .unwrap();
-        assert!(
-            state
-                .validate_llm_connections(&[test_evaluator("a")])
-                .is_ok()
-        );
+        assert!(state.validate_engines(&[test_evaluator("a")]).is_ok());
     }
 
     // ---- find_matching via test-only seeding ----

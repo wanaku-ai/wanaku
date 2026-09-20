@@ -40,7 +40,8 @@ evaluators:
     trigger:                          # When to run
       method: "tools/call"            # MCP method (tools/call, tools/list, etc.)
       namespace: "production"         # Optional: only this namespace
-    llm:                              # LLM operation
+    engine:                           # Evaluation engine
+      type: llm
       operation: classify             # classify | filter | augment
       prompt: "You are a safety classifier..."
       connection: "local-llama"       # References an entry in llm_connections
@@ -87,6 +88,32 @@ management API, including out of evaluator revision history. See
 
 Your system prompt tells the LLM what to do with that context.
 
+### Evaluation Engines
+
+Set `engine.type` for each evaluator. The engine produces the string that the
+WASM processor receives in `ctx.llmResult`. The field name remains unchanged
+for guest ABI compatibility.
+
+| Type | Behavior |
+|---|---|
+| `llm` | Calls the named LLM connection. It supports the fields in [LLM Fields](#llm-fields). |
+| `passthrough` | Does not make a network call. It provides JSON with `method`, `tool_name`, `arguments`, `tools`, and `history`. |
+
+Use this configuration for a processor that needs the normalized request context:
+
+```yaml
+evaluators:
+  - name: "context-processor"
+    trigger:
+      method: "tools/call"
+    engine:
+      type: passthrough
+    processor:
+      path: "/wasm/context-processor.wasm"
+```
+
+Each evaluator must set `engine`. The previous top-level `llm:` field is not supported.
+
 ### Processor
 
 A single WASM action script that processes the LLM output. The script receives the raw LLM result in `ctx.llmResult` and decides what to do:
@@ -119,7 +146,8 @@ evaluators:
   - name: "safety-gate"
     trigger:
       method: "tools/call"
-    llm:
+    engine:
+      type: llm
       operation: classify
       prompt: |
         You are a strict safety classifier. Classify this tool call as:
@@ -161,7 +189,8 @@ evaluators:
     trigger:
       method: "tools/list"
       namespace: "curated"
-    llm:
+    engine:
+      type: llm
       operation: filter
       prompt: |
         You are a tool curator. Given the conversation history and available tools,
@@ -887,10 +916,9 @@ You do not need these internal details to use the engine. Use them to diagnose e
    - Reads metadata to get method, namespace, tool name, arguments
    - Finds matching evaluators (trigger.method matches, optional namespace/binding checks)
    - For each match:
-     - Builds context prompt (conversation history + request details)
-     - Calls LLM with your system prompt + context
-     - Extracts the raw LLM output
-     - If `result_schema` is configured, validates the output; on mismatch, retries once with a correction prompt that includes the specific validation error
+     - Selects the configured evaluation engine
+     - Produces a normalized result for the processor
+     - The LLM engine builds a context prompt, calls the LLM, and validates `result_schema` when configured
      - Loads pre-compiled WASM processor module
      - Instantiates WASM with fresh host state (registry, interactions, result accumulator)
      - Calls `evaluate(ctx)` export
@@ -1021,7 +1049,8 @@ Enable trace logs: `RUST_LOG=wanaku_feature_evaluator=trace`
 **Fix:**
 1. Add `result_schema` to the LLM configuration. The host validates the LLM output. If the output does not match, the host retries once with a correction prompt:
    ```yaml
-   llm:
+   engine:
+     type: llm
      result_schema:
        type: object
        properties:

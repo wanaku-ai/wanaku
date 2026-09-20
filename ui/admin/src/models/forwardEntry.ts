@@ -5,6 +5,7 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
+import type { ForwardEntryCredentialBindings } from "./forwardEntryCredentialBindings";
 import type { ForwardEntryLabels } from "./forwardEntryLabels";
 import type { ForwardEntryNamespace } from "./forwardEntryNamespace";
 import type { ForwardEntryServerInfo } from "./forwardEntryServerInfo";
@@ -13,6 +14,11 @@ import type { ForwardEntryStatusMessage } from "./forwardEntryStatusMessage";
 export interface ForwardEntry {
   address: string;
   available?: boolean;
+  /** Credential bindings referenced by purpose (discovery / invocation).
+
+Only the opaque, non-secret binding identifier is stored here. The
+binding itself is a separate top-level resource owned by this forward. */
+  credentialBindings?: ForwardEntryCredentialBindings;
   labels?: ForwardEntryLabels;
   name: string;
   namespace?: ForwardEntryNamespace;

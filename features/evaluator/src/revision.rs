@@ -364,7 +364,7 @@ fn compute_checksum(defs: &[EvaluatorDef]) -> Result<String, RevisionError> {
 mod tests {
     use super::*;
     use crate::config::{
-        ErrorPolicy, EvaluatorDef, LlmDef, LlmOperation, ProcessorRef, TriggerDef,
+        ErrorPolicy, EvaluationEngine, EvaluatorDef, LlmDef, LlmOperation, ProcessorRef, TriggerDef,
     };
     use std::path::PathBuf;
 
@@ -386,12 +386,12 @@ mod tests {
                 method: wanaku_types::TOOLS_CALL.to_owned(),
                 namespace: None,
             },
-            llm: LlmDef {
+            engine: EvaluationEngine::Llm(LlmDef {
                 operation: LlmOperation::Classify,
                 prompt: "test".to_owned(),
                 connection: "test-connection".to_owned(),
                 result_schema: None,
-            },
+            }),
             processor: ProcessorRef {
                 path: PathBuf::from("/test.wasm"),
             },

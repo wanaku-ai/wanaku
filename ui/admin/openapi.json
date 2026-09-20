@@ -1836,6 +1836,41 @@
           "deny"
         ]
       },
+      "EngineSnapshot": {
+        "type": "object",
+        "required": [
+          "llm_success",
+          "llm_failure",
+          "passthrough_success",
+          "passthrough_failure",
+          "duration"
+        ],
+        "properties": {
+          "duration": {
+            "$ref": "#/components/schemas/DurationSnapshot"
+          },
+          "llm_failure": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "llm_success": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "passthrough_failure": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "passthrough_success": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
       "ErrorPolicy": {
         "type": "string",
         "description": "What to do when a WASM action fails.",
@@ -1844,18 +1879,62 @@
           "block"
         ]
       },
+      "EvaluationEngine": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LlmDef",
+                "description": "LLM-assisted classification, filtering, or augmentation."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "llm"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "LLM-assisted classification, filtering, or augmentation."
+          },
+          {
+            "type": "object",
+            "description": "Pass the normalized MCP context directly to the processor.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "passthrough"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "An evaluation implementation selected by an evaluator definition."
+      },
       "EvaluatorDef": {
         "type": "object",
-        "description": "A single evaluator definition: trigger + LLM operation + processor.",
+        "description": "A single evaluator definition: trigger + evaluation engine + processor.",
         "required": [
           "name",
           "trigger",
-          "llm",
+          "engine",
           "processor"
         ],
         "properties": {
-          "llm": {
-            "$ref": "#/components/schemas/LlmDef"
+          "engine": {
+            "$ref": "#/components/schemas/EvaluationEngine",
+            "description": "The engine that produces the processor input."
           },
           "name": {
             "type": "string"
@@ -1869,7 +1948,8 @@
           "trigger": {
             "$ref": "#/components/schemas/TriggerDef"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "EvaluatorRevisionResponse": {
         "type": "object",
@@ -1893,6 +1973,7 @@
         "type": "object",
         "required": [
           "decisions",
+          "engine",
           "llm",
           "schema",
           "wasm",
@@ -1901,6 +1982,9 @@
         "properties": {
           "decisions": {
             "$ref": "#/components/schemas/DecisionSnapshot"
+          },
+          "engine": {
+            "$ref": "#/components/schemas/EngineSnapshot"
           },
           "llm": {
             "$ref": "#/components/schemas/LlmSnapshot"
@@ -1963,6 +2047,21 @@
           },
           "available": {
             "type": "boolean"
+          },
+          "credentialBindings": {
+            "type": "object",
+            "description": "Credential bindings referenced by purpose (discovery / invocation).\n\nOnly the opaque, non-secret binding identifier is stored here. The\nbinding itself is a separate top-level resource owned by this forward.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string",
+              "description": "The purpose a credential is used for. Discovery and invocation are kept\ndistinct in policy checks, resolution context, audit events, and cache keys.",
+              "enum": [
+                "discovery",
+                "invocation"
+              ]
+            }
           },
           "labels": {
             "type": "object",
@@ -3360,16 +3459,17 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "A single evaluator definition: trigger + LLM operation + processor.",
+              "description": "A single evaluator definition: trigger + evaluation engine + processor.",
               "required": [
                 "name",
                 "trigger",
-                "llm",
+                "engine",
                 "processor"
               ],
               "properties": {
-                "llm": {
-                  "$ref": "#/components/schemas/LlmDef"
+                "engine": {
+                  "$ref": "#/components/schemas/EvaluationEngine",
+                  "description": "The engine that produces the processor input."
                 },
                 "name": {
                   "type": "string"
@@ -3383,7 +3483,8 @@
                 "trigger": {
                   "$ref": "#/components/schemas/TriggerDef"
                 }
-              }
+              },
+              "additionalProperties": false
             }
           },
           "error": {
