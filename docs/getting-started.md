@@ -133,6 +133,16 @@ Once the basic proxy is running, you can connect more MCP servers, isolate tools
 
 Register more forwards as described in step 5. Each forward connects to one upstream MCP server. Wanaku automatically discovers the tools, resources, and prompts on that server.
 
+The examples so far use a local `echo-mcp`-style server. Forwards work the same way with remote MCP servers. For example, You.com publishes a hosted MCP endpoint for web search. The `free` profile requires no API key, so a forward picks up its search tools with one command:
+
+```bash
+wanaku forwards add --service="https://api.you.com/mcp?profile=free" --name youcom --no-auth
+```
+
+After discovery, `wanaku tools list --no-auth` shows the upstream tools (e.g., `you-search`) and agents calling `/{namespace}/mcp` can use them like any other registered tool.
+
+For the authenticated endpoint (`https://api.you.com/mcp`), upstream tools need a bearer token. Wanaku does not inject credentials itself; use the header-forwarding allowlist described in [Configuration](./configuration.md#header-forwarding) (`WANAKU_FORWARD_HEADERS=Authorization`) so the caller's own `Authorization` header reaches the upstream server.
+
 ### Explore Namespaces
 
 Namespaces isolate tools and resources. Each namespace has a **name**. Wanaku uses this name as the namespace segment in the URL path.
