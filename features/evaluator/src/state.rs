@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex, MutexGuard, RwLock};
 
 use wanaku_infra::metrics::MetricsStore;
 
-use crate::config::{EvaluatorDef, LlmConnection};
+use crate::config::{EvaluatorDef, LlmConnection, SystemOneConnection};
 use crate::engine::CompiledEvaluator;
 use crate::revision::{
     RecordRevisionParams, Revision, RevisionError, RevisionOrigin, RevisionStore,
@@ -65,6 +65,7 @@ pub struct EvaluatorState {
     active: Arc<RwLock<Arc<ActiveSnapshot>>>,
     bindings: Arc<RwLock<HashMap<String, String>>>,
     connections: Arc<RwLock<HashMap<String, LlmConnection>>>,
+    system_one_connections: Arc<RwLock<HashMap<String, SystemOneConnection>>>,
     metrics: Option<MetricsStore>,
     revisions: RevisionStore,
     /// Serializes revision commit and snapshot installation so that revision
@@ -80,6 +81,7 @@ impl EvaluatorState {
             active: Arc::new(RwLock::new(Arc::new(ActiveSnapshot::default()))),
             bindings: Arc::new(RwLock::new(HashMap::new())),
             connections: Arc::new(RwLock::new(HashMap::new())),
+            system_one_connections: Arc::new(RwLock::new(HashMap::new())),
             metrics: None,
             revisions: RevisionStore::new(),
             activation: Arc::new(Mutex::new(())),
@@ -272,6 +274,42 @@ impl EvaluatorState {
 
     pub fn get_llm_connection(&self, name: &str) -> Option<LlmConnection> {
         self.connections
+            .read()
+            .ok()
+            .and_then(|guard| guard.get(name).cloned())
+    }
+
+    /// Load named TypeSafe System One connections from startup configuration.
+    pub fn load_system_one_connections(
+        &self,
+        connections: Vec<SystemOneConnection>,
+    ) -> Result<(), String> {
+        let mut seen = std::collections::HashSet::new();
+        for connection in &connections {
+            if connection.name.is_empty() {
+                return Err("TypeSafe System One connection name must not be empty".to_owned());
+            }
+            if !seen.insert(&connection.name) {
+                return Err(format!(
+                    "duplicate TypeSafe System One connection name: '{}'",
+                    connection.name
+                ));
+            }
+        }
+        let count = connections.len();
+        let map = connections
+            .into_iter()
+            .map(|connection| (connection.name.clone(), connection))
+            .collect();
+        if let Ok(mut guard) = self.system_one_connections.write() {
+            *guard = map;
+        }
+        tracing::info!(count, "TypeSafe System One connections loaded from config");
+        Ok(())
+    }
+
+    pub fn get_system_one_connection(&self, name: &str) -> Option<SystemOneConnection> {
+        self.system_one_connections
             .read()
             .ok()
             .and_then(|guard| guard.get(name).cloned())
@@ -493,17 +531,30 @@ impl EvaluatorState {
 
     /// Validate the selected engine for every evaluator.
     fn validate_engines(&self, defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
-        let guard = self.connections.read().map_err(|_| {
+        let llm_connections = self.connections.read().map_err(|_| {
             RevisionError::ValidationFailed("LLM connection registry lock poisoned".to_owned())
+        })?;
+        let system_one_connections = self.system_one_connections.read().map_err(|_| {
+            RevisionError::ValidationFailed(
+                "TypeSafe System One connection registry lock poisoned".to_owned(),
+            )
         })?;
         for def in defs {
             match &def.engine {
                 crate::config::EvaluationEngine::Llm(llm)
-                    if !guard.contains_key(&llm.connection) =>
+                    if !llm_connections.contains_key(&llm.connection) =>
                 {
                     return Err(RevisionError::ValidationFailed(format!(
                         "evaluator '{}': unknown llm connection '{}'",
                         def.name, llm.connection
+                    )));
+                }
+                crate::config::EvaluationEngine::TypesafeSystemOne(system_one)
+                    if !system_one_connections.contains_key(&system_one.connection) =>
+                {
+                    return Err(RevisionError::ValidationFailed(format!(
+                        "evaluator '{}': unknown TypeSafe System One connection '{}'",
+                        def.name, system_one.connection
                     )));
                 }
                 _ => {}
@@ -677,6 +728,15 @@ mod tests {
         }
     }
 
+    fn system_one_connection(name: &str) -> SystemOneConnection {
+        SystemOneConnection {
+            name: name.to_owned(),
+            model: "jev-latest".to_owned(),
+            url: "https://api.typesafe.ai".to_owned(),
+            api_key: "secret".to_owned(),
+        }
+    }
+
     // ---- validate_evaluator_names ----
 
     #[test]
@@ -781,6 +841,17 @@ mod tests {
             Some("a".to_owned())
         );
         assert!(state.get_llm_connection("missing").is_none());
+    }
+
+    #[test]
+    fn load_system_one_connections_rejects_duplicate_names() {
+        let state = EvaluatorState::new();
+        let result = state.load_system_one_connections(vec![
+            system_one_connection("typesafe"),
+            system_one_connection("typesafe"),
+        ]);
+        assert!(result.is_err());
+        assert!(state.get_system_one_connection("typesafe").is_none());
     }
 
     #[test]

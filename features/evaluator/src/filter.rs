@@ -137,6 +137,11 @@ impl EvaluatorFilter {
             .unwrap_or_default();
 
         let engine = evaluator.engine.clone();
+        tracing::debug!(
+            evaluator = %evaluator.name,
+            engine = engine.kind(),
+            "selected evaluator engine"
+        );
 
         let tools = if crate::evaluation::requires_tools(&engine) {
             registry.list_tools()

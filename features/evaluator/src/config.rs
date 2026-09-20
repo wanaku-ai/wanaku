@@ -2,6 +2,11 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
+pub use crate::engines::llm::{LlmConnection, LlmDef, LlmOperation};
+pub use crate::engines::system_one::{
+    NoulCriteria, NoulDef, SystemOneConnection, SystemOneDef, SystemOneState,
+};
+
 /// Top-level evaluator configuration containing multiple evaluator definitions.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
@@ -31,24 +36,23 @@ pub struct EvaluatorDef {
 pub enum EvaluationEngine {
     /// LLM-assisted classification, filtering, or augmentation.
     Llm(LlmDef),
+    /// TypeSafe System One typed evaluation.
+    #[serde(rename = "typesafe-system-one")]
+    TypesafeSystemOne(SystemOneDef),
     /// Pass the normalized MCP context directly to the processor.
     Passthrough,
 }
 
-/// A named LLM connection: model, endpoint, and credential.
-///
-/// Connections are config-only. They are loaded from `llm_connections` in
-/// `wanaku.yaml` at startup and are never part of the management API's
-/// request or response shapes for evaluators — evaluators reference a
-/// connection by name instead of embedding one, so credentials never
-/// transit the management API.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LlmConnection {
-    pub name: String,
-    pub model: String,
-    pub url: String,
-    #[serde(default)]
-    pub api_key: String,
+impl EvaluationEngine {
+    /// Stable engine identifier for logs and metrics.
+    #[must_use]
+    pub const fn kind(&self) -> &'static str {
+        match self {
+            Self::Llm(_) => "llm",
+            Self::TypesafeSystemOne(_) => "typesafe-system-one",
+            Self::Passthrough => "passthrough",
+        }
+    }
 }
 
 /// What triggers this evaluator.
@@ -58,35 +62,6 @@ pub struct TriggerDef {
     pub method: String,
     #[serde(default)]
     pub namespace: Option<String>,
-}
-
-/// LLM operation configuration.
-///
-/// Carries only what an evaluator *does* with the LLM (operation, prompt,
-/// result schema) plus a reference to a named [`LlmConnection`] configured
-/// in `wanaku.yaml`. Connection details (model/url/api_key) are deliberately
-/// not fields here: `deny_unknown_fields` turns any legacy inline
-/// `model`/`url`/`api_key` in a client payload into a clear 400 instead of
-/// silently dropping it.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[serde(deny_unknown_fields)]
-pub struct LlmDef {
-    pub operation: LlmOperation,
-    pub prompt: String,
-    pub connection: String,
-    #[serde(default)]
-    pub result_schema: Option<serde_json::Value>,
-}
-
-/// The type of cognitive operation the LLM performs.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[serde(rename_all = "lowercase")]
-pub enum LlmOperation {
-    Classify,
-    Filter,
-    Augment,
 }
 
 /// Reference to a WASM processor module.
@@ -194,6 +169,28 @@ mod tests {
         let engine: EvaluationEngine =
             serde_json::from_str(r#"{"type":"passthrough"}"#).expect("valid passthrough engine");
         assert!(matches!(engine, EvaluationEngine::Passthrough));
+        assert_eq!(engine.kind(), "passthrough");
+    }
+
+    #[test]
+    fn typesafe_system_one_engine_deserializes() {
+        let engine: EvaluationEngine = serde_json::from_value(serde_json::json!({
+            "type": "typesafe-system-one",
+            "connection": "typesafe",
+            "state": "arguments",
+            "noul": {
+                "id": "is_safe",
+                "instructions": "Are these arguments safe?",
+                "criteria": { "true": "Safe", "false": "Unsafe" }
+            }
+        }))
+        .expect("valid System One engine");
+        assert_eq!(engine.kind(), "typesafe-system-one");
+        assert!(matches!(engine, EvaluationEngine::TypesafeSystemOne(_)));
+        if let EvaluationEngine::TypesafeSystemOne(definition) = engine {
+            assert_eq!(definition.noul.id, "is_safe");
+            assert!(matches!(definition.state, SystemOneState::Arguments));
+        }
     }
 
     #[test]

@@ -1843,6 +1843,8 @@
           "llm_failure",
           "passthrough_success",
           "passthrough_failure",
+          "typesafe_system_one_success",
+          "typesafe_system_one_failure",
           "duration"
         ],
         "properties": {
@@ -1865,6 +1867,16 @@
             "minimum": 0
           },
           "passthrough_success": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "typesafe_system_one_failure": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "typesafe_system_one_success": {
             "type": "integer",
             "format": "int64",
             "minimum": 0
@@ -1903,6 +1915,29 @@
               }
             ],
             "description": "LLM-assisted classification, filtering, or augmentation."
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SystemOneDef",
+                "description": "TypeSafe System One typed evaluation."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "typesafe-system-one"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "TypeSafe System One typed evaluation."
           },
           {
             "type": "object",
@@ -2402,6 +2437,44 @@
             "type": "string"
           }
         }
+      },
+      "NoulCriteria": {
+        "type": "object",
+        "description": "Optional descriptions for true and false Noul outcomes.",
+        "required": [
+          "true",
+          "false"
+        ],
+        "properties": {
+          "false": {},
+          "true": {}
+        },
+        "additionalProperties": false
+      },
+      "NoulDef": {
+        "type": "object",
+        "description": "A TypeSafe Noul primitive.",
+        "required": [
+          "id",
+          "instructions"
+        ],
+        "properties": {
+          "criteria": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NoulCriteria"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "instructions": {}
+        },
+        "additionalProperties": false
       },
       "PipelineSnapshot": {
         "type": "object",
@@ -2932,6 +3005,34 @@
           }
         },
         "additionalProperties": false
+      },
+      "SystemOneDef": {
+        "type": "object",
+        "description": "TypeSafe System One configuration. This first engine version supports a\nNoul primitive, which returns the probability that a condition is true.",
+        "required": [
+          "connection",
+          "noul"
+        ],
+        "properties": {
+          "connection": {
+            "type": "string"
+          },
+          "noul": {
+            "$ref": "#/components/schemas/NoulDef"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SystemOneState"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SystemOneState": {
+        "type": "string",
+        "description": "Selects which part of an MCP request becomes the TypeSafe state.",
+        "enum": [
+          "arguments",
+          "context"
+        ]
       },
       "TargetType": {
         "type": "string",

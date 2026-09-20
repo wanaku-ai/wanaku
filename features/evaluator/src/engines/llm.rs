@@ -1,10 +1,41 @@
 use std::fmt::Write as _;
 
+use serde::{Deserialize, Serialize};
 use wanaku_infra::llm::{self, LlmClient};
 use wanaku_infra::metrics::MetricsStore;
 use wanaku_types::mcp::McpContext;
 
-use crate::config::{LlmConnection, LlmDef};
+/// A named LLM connection. Connections are loaded only from `wanaku.yaml`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LlmConnection {
+    pub name: String,
+    pub model: String,
+    pub url: String,
+    #[serde(default)]
+    pub api_key: String,
+}
+
+/// LLM engine configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
+pub struct LlmDef {
+    pub operation: LlmOperation,
+    pub prompt: String,
+    pub connection: String,
+    #[serde(default)]
+    pub result_schema: Option<serde_json::Value>,
+}
+
+/// The cognitive operation that the LLM performs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "lowercase")]
+pub enum LlmOperation {
+    Classify,
+    Filter,
+    Augment,
+}
 
 /// An evaluator's LLM operation definition paired with its resolved
 /// connection — everything needed to actually call the LLM. Grouping these

@@ -6,3 +6,4 @@ pub mod mcp_client;
 pub mod metrics;
 pub mod persistence;
 pub mod registry;
+pub mod typesafe;

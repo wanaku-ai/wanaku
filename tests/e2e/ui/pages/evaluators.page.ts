@@ -32,6 +32,18 @@ export class EvaluatorsPage extends BasePage {
       );
   }
 
+  async selectEngine(engine: string) {
+    await this.modal().locator(Carbon.textInput('evaluator-engine')).selectOption(engine);
+  }
+
+  systemOneConnectionInput() {
+    return this.modal().locator(Carbon.textInput('system-one-connection'));
+  }
+
+  evaluatorRow(name: string) {
+    return this.page.locator(Carbon.tableRow).filter({ hasText: name });
+  }
+
   async modalHasText(text: string): Promise<boolean> {
     const content = await this.modal().innerText();
     return content.includes(text);

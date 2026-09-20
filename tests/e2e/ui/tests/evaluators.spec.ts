@@ -28,4 +28,31 @@ test.describe('Evaluators', () => {
     const options = await evaluators.connectionOptionValues();
     expect(options).toContain('local-llama');
   });
+
+  test('TypeSafe System One engine displays Noul configuration', async () => {
+    await evaluators.goto();
+    await evaluators.clickAddEvaluator();
+    await evaluators.selectEngine('typesafe-system-one');
+
+    await expect(evaluators.systemOneConnectionInput()).toBeVisible();
+    expect(await evaluators.modalHasText('Noul Primitive ID')).toBeTruthy();
+    expect(await evaluators.modalHasText('State Mapping')).toBeTruthy();
+  });
+
+  test('TypeSafe System One criteria must be supplied as a pair', async () => {
+    await evaluators.goto();
+    await evaluators.clickAddEvaluator();
+    await evaluators.selectEngine('typesafe-system-one');
+
+    const modal = evaluators.modal();
+    await modal.locator('#evaluator-name').fill('typesafe-criteria-test');
+    await evaluators.systemOneConnectionInput().fill('typesafe');
+    await modal.locator('#system-one-noul-instructions').fill('Is this request safe?');
+    await modal.locator('#processor-path').fill('actions/dist/safety_review_action.wasm');
+    await modal.locator('#system-one-noul-true').fill('The request is safe.');
+
+    await expect(modal.locator('.cds--modal-footer .cds--btn--primary')).toBeDisabled();
+    await expect(modal).toContainText('Set both true and false criteria, or leave both empty');
+  });
+
 });

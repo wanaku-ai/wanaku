@@ -4,7 +4,7 @@ const routerUrl = process.env.WANAKU_ROUTER_URL ?? 'http://localhost:8080';
 
 export default defineConfig({
   webServer: {
-    command: 'cargo run --manifest-path ../../../Cargo.toml',
+    command: 'cd ../../.. && cargo run -- --wanaku-config wanaku.yaml',
     url: routerUrl,
     reuseExistingServer: true,
     timeout: 120_000,

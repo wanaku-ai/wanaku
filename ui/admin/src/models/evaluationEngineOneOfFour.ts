@@ -5,11 +5,11 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
-import type { EvaluationEngineOneOfFourType } from "./evaluationEngineOneOfFourType";
+import type { SystemOneDef } from "./systemOneDef";
+import type { EvaluationEngineOneOfFourAllOf } from "./evaluationEngineOneOfFourAllOf";
 
 /**
- * Pass the normalized MCP context directly to the processor.
+ * TypeSafe System One typed evaluation.
  */
-export type EvaluationEngineOneOfFour = {
-  type: EvaluationEngineOneOfFourType;
-};
+export type EvaluationEngineOneOfFour = SystemOneDef &
+  EvaluationEngineOneOfFourAllOf;

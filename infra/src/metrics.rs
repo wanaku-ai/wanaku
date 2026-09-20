@@ -113,6 +113,8 @@ struct EvaluatorCounters {
     engine_llm_failure: AtomicCounter,
     engine_passthrough_success: AtomicCounter,
     engine_passthrough_failure: AtomicCounter,
+    engine_typesafe_system_one_success: AtomicCounter,
+    engine_typesafe_system_one_failure: AtomicCounter,
     engine_duration: DurationAccumulator,
 
     schema_validations_pass: AtomicCounter,
@@ -230,6 +232,12 @@ impl MetricsStore {
             ("llm", false) => counters.engine_llm_failure.increment(),
             ("passthrough", true) => counters.engine_passthrough_success.increment(),
             ("passthrough", false) => counters.engine_passthrough_failure.increment(),
+            ("typesafe-system-one", true) => {
+                counters.engine_typesafe_system_one_success.increment()
+            }
+            ("typesafe-system-one", false) => {
+                counters.engine_typesafe_system_one_failure.increment()
+            }
             _ => {}
         }
         counters.engine_duration.record(duration);
@@ -352,6 +360,8 @@ impl MetricsStore {
                             llm_failure: c.engine_llm_failure.get(),
                             passthrough_success: c.engine_passthrough_success.get(),
                             passthrough_failure: c.engine_passthrough_failure.get(),
+                            typesafe_system_one_success: c.engine_typesafe_system_one_success.get(),
+                            typesafe_system_one_failure: c.engine_typesafe_system_one_failure.get(),
                             duration: c.engine_duration.snapshot(),
                         },
                         schema: SchemaSnapshot {
@@ -463,6 +473,8 @@ pub struct EngineSnapshot {
     pub llm_failure: u64,
     pub passthrough_success: u64,
     pub passthrough_failure: u64,
+    pub typesafe_system_one_success: u64,
+    pub typesafe_system_one_failure: u64,
     pub duration: DurationSnapshot,
 }
 

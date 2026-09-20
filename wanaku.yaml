@@ -28,6 +28,13 @@ llm_connections:
     url: "https://openrouter.ai/api"
     api_key: ""
 
+# TypeSafe System One connections are also config-only. Set an API key here.
+typesafe_system_one_connections:
+  - name: "typesafe"
+    model: "jev-latest"
+    url: "https://api.typesafe.ai"
+    api_key: ""
+
 evaluators:
   - name: "safety-gate"
     trigger:

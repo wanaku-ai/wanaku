@@ -7,10 +7,12 @@
  */
 import type { EvaluationEngineOneOf } from "./evaluationEngineOneOf";
 import type { EvaluationEngineOneOfFour } from "./evaluationEngineOneOfFour";
+import type { EvaluationEngineOneOfSeven } from "./evaluationEngineOneOfSeven";
 
 /**
  * An evaluation implementation selected by an evaluator definition.
  */
 export type EvaluationEngine =
   | EvaluationEngineOneOf
-  | EvaluationEngineOneOfFour;
+  | EvaluationEngineOneOfFour
+  | EvaluationEngineOneOfSeven;
