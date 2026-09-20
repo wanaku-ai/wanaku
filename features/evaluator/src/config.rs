@@ -10,16 +10,29 @@ pub struct EvaluatorsConfig {
     pub evaluators: Vec<EvaluatorDef>,
 }
 
-/// A single evaluator definition: trigger + LLM operation + processor.
+/// A single evaluator definition: trigger + evaluation engine + processor.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
 pub struct EvaluatorDef {
     pub name: String,
     pub trigger: TriggerDef,
-    pub llm: LlmDef,
+    /// The engine that produces the processor input.
+    pub engine: EvaluationEngine,
     pub processor: ProcessorRef,
     #[serde(default = "default_on_error")]
     pub on_error: ErrorPolicy,
+}
+
+/// An evaluation implementation selected by an evaluator definition.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(tag = "type", rename_all = "lowercase", deny_unknown_fields)]
+pub enum EvaluationEngine {
+    /// LLM-assisted classification, filtering, or augmentation.
+    Llm(LlmDef),
+    /// Pass the normalized MCP context directly to the processor.
+    Passthrough,
 }
 
 /// A named LLM connection: model, endpoint, and credential.
@@ -157,12 +170,30 @@ mod tests {
         let json = serde_json::json!({
             "name": "eval-1",
             "trigger": {"method": TOOLS_CALL},
-            "llm": {"operation": "classify", "prompt": "p", "connection": "c"},
+            "engine": {"type": "llm", "operation": "classify", "prompt": "p", "connection": "c"},
             "processor": {"path": "/proc.wasm"}
         });
         let def: EvaluatorDef = serde_json::from_value(json).expect("valid config");
         assert!(matches!(def.on_error, ErrorPolicy::Continue));
         assert!(def.trigger.namespace.is_none());
+    }
+
+    #[test]
+    fn legacy_llm_configuration_is_rejected() {
+        let json = serde_json::json!({
+            "name": "eval-1", "trigger": {"method": TOOLS_CALL},
+            "llm": {"operation": "classify", "prompt": "p", "connection": "c"},
+            "processor": {"path": "/proc.wasm"}
+        });
+        let result: Result<EvaluatorDef, _> = serde_json::from_value(json);
+        assert!(result.is_err(), "legacy llm configuration must be rejected");
+    }
+
+    #[test]
+    fn passthrough_engine_deserializes() {
+        let engine: EvaluationEngine =
+            serde_json::from_str(r#"{"type":"passthrough"}"#).expect("valid passthrough engine");
+        assert!(matches!(engine, EvaluationEngine::Passthrough));
     }
 
     #[test]

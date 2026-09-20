@@ -109,6 +109,12 @@ struct EvaluatorCounters {
     llm_empty_results: AtomicCounter,
     llm_duration: DurationAccumulator,
 
+    engine_llm_success: AtomicCounter,
+    engine_llm_failure: AtomicCounter,
+    engine_passthrough_success: AtomicCounter,
+    engine_passthrough_failure: AtomicCounter,
+    engine_duration: DurationAccumulator,
+
     schema_validations_pass: AtomicCounter,
     schema_validations_fail: AtomicCounter,
     schema_retries_success: AtomicCounter,
@@ -209,6 +215,24 @@ impl MetricsStore {
     pub fn record_llm_empty_result(&self, evaluator: &str) {
         let counters = self.0.evaluators.entry(evaluator.to_owned()).or_default();
         counters.llm_empty_results.increment();
+    }
+
+    pub fn record_evaluation_engine(
+        &self,
+        evaluator: &str,
+        engine: &str,
+        success: bool,
+        duration: Duration,
+    ) {
+        let counters = self.0.evaluators.entry(evaluator.to_owned()).or_default();
+        match (engine, success) {
+            ("llm", true) => counters.engine_llm_success.increment(),
+            ("llm", false) => counters.engine_llm_failure.increment(),
+            ("passthrough", true) => counters.engine_passthrough_success.increment(),
+            ("passthrough", false) => counters.engine_passthrough_failure.increment(),
+            _ => {}
+        }
+        counters.engine_duration.record(duration);
     }
 
     pub fn record_schema_validation(&self, evaluator: &str, passed: bool) {
@@ -323,6 +347,13 @@ impl MetricsStore {
                             empty_results: c.llm_empty_results.get(),
                             duration: c.llm_duration.snapshot(),
                         },
+                        engine: EngineSnapshot {
+                            llm_success: c.engine_llm_success.get(),
+                            llm_failure: c.engine_llm_failure.get(),
+                            passthrough_success: c.engine_passthrough_success.get(),
+                            passthrough_failure: c.engine_passthrough_failure.get(),
+                            duration: c.engine_duration.snapshot(),
+                        },
                         schema: SchemaSnapshot {
                             validations_pass: c.schema_validations_pass.get(),
                             validations_fail: c.schema_validations_fail.get(),
@@ -418,10 +449,21 @@ pub struct DurationSnapshot {
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct EvaluatorSnapshot {
     pub decisions: DecisionSnapshot,
+    pub engine: EngineSnapshot,
     pub llm: LlmSnapshot,
     pub schema: SchemaSnapshot,
     pub wasm: WasmSnapshot,
     pub pipeline_duration: DurationSnapshot,
+}
+
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub struct EngineSnapshot {
+    pub llm_success: u64,
+    pub llm_failure: u64,
+    pub passthrough_success: u64,
+    pub passthrough_failure: u64,
+    pub duration: DurationSnapshot,
 }
 
 #[derive(Serialize)]

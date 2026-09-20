@@ -22,8 +22,9 @@ use wanaku_feature_evaluator::config::{
 use wanaku_types::revision::{ActivationStatus, RevisionMetadata, RevisionOrigin};
 
 use wanaku_infra::metrics::{
-    AuditSnapshot, DecisionSnapshot, DurationSnapshot, EvaluatorSnapshot, FilterSnapshot,
-    GaugeSnapshot, LlmSnapshot, MetricsSnapshot, PipelineSnapshot, SchemaSnapshot, WasmSnapshot,
+    AuditSnapshot, DecisionSnapshot, DurationSnapshot, EngineSnapshot, EvaluatorSnapshot,
+    FilterSnapshot, GaugeSnapshot, LlmSnapshot, MetricsSnapshot, PipelineSnapshot, SchemaSnapshot,
+    WasmSnapshot,
 };
 use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHealth, AuditPage};
 use wanaku_types::interactions::Interaction;
@@ -483,6 +484,7 @@ impl utoipa::Modify for OptionalActivationBodies {
         EvaluatorSnapshot,
         DecisionSnapshot,
         LlmSnapshot,
+        EngineSnapshot,
         SchemaSnapshot,
         WasmSnapshot,
         PipelineSnapshot,

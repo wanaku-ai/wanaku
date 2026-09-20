@@ -13,7 +13,7 @@ use wanaku_types::registry::ToolRegistry;
 use wanaku_types::{PROMPTS_GET, RESOURCES_READ, TOOLS_CALL};
 
 use crate::action::ActionResult;
-use crate::config::{ErrorPolicy, EvaluatorDef, LlmConnection, LlmOperation};
+use crate::config::{ErrorPolicy, EvaluatorDef};
 use crate::state::EvaluatorState;
 
 wanaku_filters::body_filter_boilerplate!(EvaluatorFilter, "wanaku_evaluator");
@@ -136,87 +136,45 @@ impl EvaluatorFilter {
             .map(|id| interactions.get_by_conversation_id(id))
             .unwrap_or_default();
 
-        let tools = match evaluator.llm.operation {
-            LlmOperation::Filter => registry.list_tools(),
-            _ => Vec::new(),
+        let engine = evaluator.engine.clone();
+
+        let tools = if crate::evaluation::requires_tools(&engine) {
+            registry.list_tools()
+        } else {
+            Vec::new()
         };
 
         let mcp_ctx = McpContext::new(&method, tool_name.as_deref(), &arguments, &tools, &history);
 
-        let Some(llm_connection) = state.get_llm_connection(&evaluator.llm.connection) else {
-            tracing::error!(
-                evaluator = %evaluator.name,
-                connection = %evaluator.llm.connection,
-                "llm connection not found at request time (should be unreachable: validated at activation)"
-            );
-            if let Some(ref store) = metrics {
-                store.record_llm_call(&evaluator.name, false, std::time::Duration::ZERO);
-            }
-            record_failure(
-                ctx,
-                body.as_ref(),
-                &AuditContext::new(&method, &namespace, &evaluator, pipeline_start.elapsed()),
-                FailureKind::MissingLlmConnection,
-            );
-            return error_action(
-                ctx,
-                body,
-                &evaluator.on_error,
-                "evaluator llm connection not available",
-            );
-        };
-
-        tracing::info!(
-            "Invoking evaluator {} using llm {} on behalf of tracking ID {}",
-            evaluator.name,
-            evaluator.llm.connection,
-            conversation_id.as_deref().unwrap_or("-")
-        );
-
-        let raw_llm_result = crate::llm_op::run_llm_operation(
-            &evaluator.name,
-            crate::llm_op::ResolvedLlm {
-                def: &evaluator.llm,
-                connection: &llm_connection,
-            },
-            &mcp_ctx,
-            metrics.as_ref(),
-        )
-        .await;
-
-        let Some(raw_llm_result) = raw_llm_result.filter(|result| !result.is_empty()) else {
-            record_failure(
-                ctx,
-                body.as_ref(),
-                &AuditContext::new(&method, &namespace, &evaluator, pipeline_start.elapsed()),
-                FailureKind::LlmOperationFailed,
-            );
-            return error_action(
-                ctx,
-                body,
-                &evaluator.on_error,
-                "evaluator llm operation failed",
-            );
-        };
-
-        let resolved = ResolvedRuntime {
-            connection: llm_connection,
-            compiled_schema: config.get_compiled_schema(&evaluator.name),
-        };
-
-        let llm_result = validate_and_retry_if_needed(
-            &raw_llm_result,
+        let compiled_schema = config.get_compiled_schema(&evaluator.name);
+        let evaluation_result = crate::evaluation::execute(
             &evaluator,
-            &resolved,
+            &engine,
+            &state,
             &mcp_ctx,
+            compiled_schema.as_deref(),
             metrics.as_ref(),
         )
         .await;
+
+        let llm_result = match evaluation_result {
+            Ok(result) => result,
+            Err(error) => {
+                tracing::error!(evaluator = %evaluator.name, engine = ?engine, error = %error, "evaluation engine failed");
+                record_failure(
+                    ctx,
+                    body.as_ref(),
+                    &AuditContext::new(&method, &namespace, &evaluator, pipeline_start.elapsed()),
+                    FailureKind::EvaluationEngineFailed,
+                );
+                return error_action(ctx, body, &evaluator.on_error, &error);
+            }
+        };
 
         tracing::info!(
             evaluator = %evaluator.name,
             llm_result = %llm_result,
-            "LLM operation result"
+            "evaluation engine result"
         );
 
         let Some(compiled) = config.get_compiled(&evaluator.processor.path) else {
@@ -252,7 +210,7 @@ impl EvaluatorFilter {
         };
 
         let wasm_start = std::time::Instant::now();
-        let result = compiled.evaluate(registry, interactions, eval_ctx, resolved.compiled_schema);
+        let result = compiled.evaluate(registry, interactions, eval_ctx, compiled_schema);
         if let Some(ref store) = metrics {
             store.record_wasm_execution(&evaluator.name, wasm_start.elapsed());
         }
@@ -475,8 +433,7 @@ fn add_audit_context(
 enum FailureKind {
     MissingRegistry,
     MissingInteractions,
-    MissingLlmConnection,
-    LlmOperationFailed,
+    EvaluationEngineFailed,
     MissingProcessor,
     ProcessorExecutionFailed,
 }
@@ -492,14 +449,7 @@ impl FailureKind {
                 "evaluator_interactions_unavailable",
                 "Evaluator interaction store was not available.",
             ),
-            Self::MissingLlmConnection => (
-                "evaluator_llm_connection_unavailable",
-                "Evaluator LLM connection was not available.",
-            ),
-            Self::LlmOperationFailed => (
-                "evaluator_llm_operation_failed",
-                "Evaluator LLM operation failed.",
-            ),
+            Self::EvaluationEngineFailed => ("evaluator_engine_failed", "Evaluator engine failed."),
             Self::MissingProcessor => (
                 "evaluator_processor_unavailable",
                 "Evaluator processor was not available.",
@@ -666,92 +616,6 @@ fn dispatch_action(
         ActionResult::SetMetadata(key, value) => {
             ctx.set_metadata(&key, &value);
             Ok(FilterAction::Continue)
-        }
-    }
-}
-
-/// Per-request state resolved from [`EvaluatorState`]: the evaluator's LLM
-/// connection and its compiled result schema (if any). Grouped together to
-/// keep `validate_and_retry_if_needed` under the workspace's argument-count
-/// lint. By the time this is constructed, the connection has already been
-/// resolved successfully — see the early return in `handle_body`.
-struct ResolvedRuntime {
-    connection: LlmConnection,
-    compiled_schema: Option<std::sync::Arc<crate::schema::CompiledSchema>>,
-}
-
-#[expect(
-    clippy::too_many_lines,
-    clippy::cognitive_complexity,
-    reason = "schema validation with retry logic"
-)]
-async fn validate_and_retry_if_needed(
-    raw_result: &str,
-    evaluator: &EvaluatorDef,
-    resolved: &ResolvedRuntime,
-    mcp: &McpContext<'_>,
-    metrics: Option<&MetricsStore>,
-) -> String {
-    let Some(schema) = resolved.compiled_schema.as_ref() else {
-        return raw_result.to_owned();
-    };
-
-    let validation_error = match schema.validate(raw_result) {
-        Ok(()) => {
-            if let Some(store) = metrics {
-                store.record_schema_validation(&evaluator.name, true);
-            }
-            return raw_result.to_owned();
-        }
-        Err(e) => {
-            if let Some(store) = metrics {
-                store.record_schema_validation(&evaluator.name, false);
-            }
-            e
-        }
-    };
-
-    tracing::warn!(
-        evaluator = %evaluator.name,
-        error = %validation_error,
-        "LLM result failed schema validation, retrying with correction"
-    );
-
-    let raw_schema = evaluator.llm.result_schema.as_ref();
-    let retry_result = match raw_schema {
-        Some(raw_schema) => {
-            crate::llm_op::retry_with_schema_correction(
-                crate::llm_op::ResolvedLlm {
-                    def: &evaluator.llm,
-                    connection: &resolved.connection,
-                },
-                mcp,
-                raw_result,
-                raw_schema,
-                &validation_error,
-            )
-            .await
-        }
-        None => None,
-    };
-
-    match retry_result {
-        Some(ref retried) if schema.validate(retried).is_ok() => {
-            tracing::info!(evaluator = %evaluator.name, "retry produced valid result");
-            if let Some(store) = metrics {
-                store.record_schema_retry(&evaluator.name, true);
-            }
-            retried.clone()
-        }
-        _ => {
-            tracing::warn!(
-                evaluator = %evaluator.name,
-                "retry also failed schema validation, passing raw result to guest"
-            );
-            if let Some(store) = metrics {
-                store.record_schema_retry(&evaluator.name, false);
-            }
-            raw_result.to_owned()
         }
     }
 }

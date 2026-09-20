@@ -14,6 +14,7 @@ import {
 import { Add, Edit, TrashCan } from "@carbon/icons-react";
 import React from "react";
 import { EvaluatorDef } from "../../hooks/api/use-evaluators";
+import type { LlmDef } from "../../models";
 import { TableEmptyState } from "../EmptyTableState";
 
 interface EvaluatorsTableProps {
@@ -40,16 +41,22 @@ export const EvaluatorsTable: React.FC<EvaluatorsTableProps> = ({
     { key: "on_error", header: "Error Policy" },
   ];
 
+  const getLlmConfiguration = (evaluator: EvaluatorDef): LlmDef | undefined =>
+    evaluator.engine?.type === "llm" ? evaluator.engine : undefined;
+
   function evaluatorsToRows() {
-    return evaluators.map((ev) => ({
-      id: ev.name,
-      name: ev.name,
-      method: ev.trigger.method,
-      namespace: ev.trigger.namespace || "—",
-      operation: ev.llm.operation,
-      connection: ev.llm.connection,
-      on_error: ev.on_error,
-    }));
+    return evaluators.map((ev) => {
+      const llmConfiguration = getLlmConfiguration(ev);
+      return {
+        id: ev.name,
+        name: ev.name,
+        method: ev.trigger.method,
+        namespace: ev.trigger.namespace || "—",
+        operation: llmConfiguration?.operation || (ev.engine?.type === "passthrough" ? "Passthrough" : "—"),
+        connection: llmConfiguration?.connection || "—",
+        on_error: ev.on_error || "continue",
+      };
+    });
   }
 
   return (

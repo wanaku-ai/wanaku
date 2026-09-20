@@ -32,7 +32,8 @@ evaluators:
   - name: "safety-gate"
     trigger:
       method: "tools/call"
-    llm:
+    engine:
+      type: llm
       operation: classify
       prompt: |
         You are a strict safety classifier. Classify this tool call as:

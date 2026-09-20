@@ -12,8 +12,8 @@ use std::path::PathBuf;
 
 use wanaku_feature_evaluator::action::ActionResult;
 use wanaku_feature_evaluator::config::{
-    ErrorPolicy, EvaluatorDef, EvaluatorsConfig, LlmConnection, LlmDef, LlmOperation, ProcessorRef,
-    TriggerDef,
+    ErrorPolicy, EvaluationEngine, EvaluatorDef, EvaluatorsConfig, LlmConnection, LlmDef,
+    LlmOperation, ProcessorRef, TriggerDef,
 };
 use wanaku_feature_evaluator::revision::RevisionOrigin;
 use wanaku_feature_evaluator::schema::validate_against_schema;
@@ -28,12 +28,12 @@ fn safety_evaluator(name: &str, method: &str, namespace: Option<&str>) -> Evalua
             method: method.to_owned(),
             namespace: namespace.map(str::to_owned),
         },
-        llm: LlmDef {
+        engine: EvaluationEngine::Llm(LlmDef {
             operation: LlmOperation::Classify,
             prompt: "test prompt".to_owned(),
             connection: "test-connection".to_owned(),
             result_schema: None,
-        },
+        }),
         processor: ProcessorRef {
             path: PathBuf::from("/nonexistent/test.wasm"),
         },
@@ -43,7 +43,10 @@ fn safety_evaluator(name: &str, method: &str, namespace: Option<&str>) -> Evalua
 
 fn safety_evaluator_with_schema(name: &str) -> EvaluatorDef {
     let mut eval = safety_evaluator(name, "tools/call", None);
-    eval.llm.result_schema = Some(serde_json::json!({
+    let EvaluationEngine::Llm(llm) = &mut eval.engine else {
+        unreachable!("test evaluator uses the LLM engine");
+    };
+    llm.result_schema = Some(serde_json::json!({
         "type": "object",
         "properties": {
             "level": { "type": "string", "enum": ["green", "yellow", "red"] },
@@ -74,7 +77,8 @@ evaluators:
   - name: "test"
     trigger:
       method: "tools/call"
-    llm:
+    engine:
+      type: llm
       operation: classify
       prompt: "classify this"
       connection: "local-llama"
@@ -83,7 +87,10 @@ evaluators:
 "#;
         let config: EvaluatorsConfig = serde_yaml::from_str(yaml).unwrap();
         assert_eq!(config.evaluators.len(), 1);
-        assert!(config.evaluators[0].llm.result_schema.is_none());
+        assert!(matches!(
+            config.evaluators[0].engine,
+            EvaluationEngine::Llm(_)
+        ));
     }
 
     #[test]
@@ -94,7 +101,8 @@ evaluators:
     trigger:
       method: "tools/call"
       namespace: "production"
-    llm:
+    engine:
+      type: llm
       operation: classify
       prompt: "classify this"
       connection: "local-llama"
@@ -117,7 +125,10 @@ evaluators:
         assert_eq!(eval.name, "safety");
         assert_eq!(eval.trigger.namespace.as_deref(), Some("production"));
 
-        let schema = eval.llm.result_schema.as_ref().unwrap();
+        let EvaluationEngine::Llm(llm) = &eval.engine else {
+            unreachable!("LLM engine expected");
+        };
+        let schema = llm.result_schema.as_ref().unwrap();
         assert_eq!(schema["type"], "object");
         assert!(
             schema["required"]
@@ -140,8 +151,10 @@ evaluators:
         let deserialized: EvaluatorDef = serde_json::from_str(&json).unwrap();
 
         assert_eq!(deserialized.name, "round-trip");
-        assert!(deserialized.llm.result_schema.is_some());
-        let schema = deserialized.llm.result_schema.unwrap();
+        let EvaluationEngine::Llm(llm) = deserialized.engine else {
+            unreachable!("LLM engine expected");
+        };
+        let schema = llm.result_schema.unwrap();
         assert_eq!(schema["properties"]["level"]["type"], "string");
     }
 
@@ -174,7 +187,8 @@ evaluators:
   - name: "minimal"
     trigger:
       method: "tools/call"
-    llm:
+    engine:
+      type: llm
       operation: classify
       prompt: "test"
       connection: "local-llama"
@@ -1253,7 +1267,10 @@ mod persistence {
         let file = dir.join("evaluator-revisions.json");
 
         let mut eval = safety_evaluator("gate", "tools/call", None);
-        eval.llm.connection = "gone-connection".to_owned();
+        let EvaluationEngine::Llm(llm) = &mut eval.engine else {
+            unreachable!("LLM engine expected");
+        };
+        llm.connection = "gone-connection".to_owned();
         seed_active(&file, vec![eval.clone()]);
 
         let backend = Arc::new(FileRevisionPersistence::new(&file));

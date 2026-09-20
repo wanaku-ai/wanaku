@@ -5,6 +5,7 @@ pub mod action;
 pub mod api;
 pub mod config;
 pub mod engine;
+pub mod evaluation;
 pub mod filter;
 mod host;
 pub use host::types as wit_types;

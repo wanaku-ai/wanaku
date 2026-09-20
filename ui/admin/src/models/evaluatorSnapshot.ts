@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.3.0
  */
 import type { DecisionSnapshot } from "./decisionSnapshot";
+import type { EngineSnapshot } from "./engineSnapshot";
 import type { LlmSnapshot } from "./llmSnapshot";
 import type { DurationSnapshot } from "./durationSnapshot";
 import type { SchemaSnapshot } from "./schemaSnapshot";
@@ -13,6 +14,7 @@ import type { WasmSnapshot } from "./wasmSnapshot";
 
 export interface EvaluatorSnapshot {
   decisions: DecisionSnapshot;
+  engine: EngineSnapshot;
   llm: LlmSnapshot;
   pipeline_duration: DurationSnapshot;
   schema: SchemaSnapshot;

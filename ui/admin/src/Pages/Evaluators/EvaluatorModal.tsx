@@ -8,6 +8,12 @@ import {
 } from "@carbon/react";
 import React, { useState } from "react";
 import { EvaluatorDef } from "../../hooks/api/use-evaluators";
+import type { EvaluationEngine, LlmDef, LlmOperation } from "../../models";
+
+type EngineType = "llm" | "passthrough";
+
+const getLlmConfiguration = (evaluator?: EvaluatorDef): LlmDef | undefined =>
+  evaluator?.engine?.type === "llm" ? evaluator.engine : undefined;
 
 interface EvaluatorModalProps {
   evaluator?: EvaluatorDef;
@@ -24,12 +30,18 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
   onRequestClose,
   onSubmit,
 }) => {
+  const llmConfiguration = getLlmConfiguration(evaluator);
   const [name, setName] = useState(evaluator?.name || "");
   const [triggerMethod, setTriggerMethod] = useState(evaluator?.trigger.method || "tools/call");
   const [triggerNamespace, setTriggerNamespace] = useState(evaluator?.trigger.namespace || "");
-  const [llmOperation, setLlmOperation] = useState(evaluator?.llm.operation || "classify");
-  const [llmPrompt, setLlmPrompt] = useState(evaluator?.llm.prompt || "");
-  const [llmConnection, setLlmConnection] = useState(evaluator?.llm.connection || "");
+  const [engineType, setEngineType] = useState<EngineType>(
+    evaluator?.engine?.type === "passthrough" ? "passthrough" : "llm",
+  );
+  const [llmOperation, setLlmOperation] = useState<LlmOperation>(
+    llmConfiguration?.operation || "classify",
+  );
+  const [llmPrompt, setLlmPrompt] = useState(llmConfiguration?.prompt || "");
+  const [llmConnection, setLlmConnection] = useState(llmConfiguration?.connection || "");
   const [processorPath, setProcessorPath] = useState(evaluator?.processor.path || "");
   const [onError, setOnError] = useState(evaluator?.on_error || "continue");
 
@@ -37,17 +49,24 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
   const isDuplicate = !evaluator && existingNames.includes(trimmedName);
 
   const handleSubmit = () => {
+    const engine: EvaluationEngine =
+      engineType === "llm"
+        ? {
+            type: "llm",
+            operation: llmOperation,
+            prompt: llmPrompt,
+            connection: llmConnection,
+            result_schema: llmConfiguration?.result_schema,
+          }
+        : { type: "passthrough" };
+
     onSubmit({
       name: trimmedName,
       trigger: {
         method: triggerMethod,
         namespace: triggerNamespace.trim() || undefined,
       },
-      llm: {
-        operation: llmOperation as "classify" | "filter" | "augment",
-        prompt: llmPrompt,
-        connection: llmConnection,
-      },
+      engine,
       processor: {
         path: processorPath.trim(),
       },
@@ -64,8 +83,7 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
     trimmedName &&
     !isDuplicate &&
     triggerMethod &&
-    llmPrompt.trim() &&
-    llmConnection &&
+    (engineType === "passthrough" || (llmPrompt.trim() && llmConnection)) &&
     processorPath.trim();
 
   return (
@@ -113,47 +131,64 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
         />
 
         <Select
-          id="llm-operation"
-          labelText="LLM Operation"
-          value={llmOperation}
+          id="evaluator-engine"
+          labelText="Evaluation Engine"
+          value={engineType}
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-            setLlmOperation(e.target.value as "classify" | "filter" | "augment")
+            setEngineType(e.target.value as EngineType)
           }
+          helperText="Select how the evaluator produces input for the processor"
         >
-          <SelectItem value="classify" text="Classify" />
-          <SelectItem value="filter" text="Filter" />
-          <SelectItem value="augment" text="Augment" />
+          <SelectItem value="llm" text="LLM" />
+          <SelectItem value="passthrough" text="Passthrough" />
         </Select>
 
-        <TextArea
-          id="llm-prompt"
-          labelText="LLM Prompt"
-          placeholder="System prompt for the LLM"
-          value={llmPrompt}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLlmPrompt(e.target.value)}
-          rows={4}
-          required
-        />
+        {engineType === "llm" && (
+          <>
+            <Select
+              id="llm-operation"
+              labelText="LLM Operation"
+              value={llmOperation}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setLlmOperation(e.target.value as LlmOperation)
+              }
+            >
+              <SelectItem value="classify" text="Classify" />
+              <SelectItem value="filter" text="Filter" />
+              <SelectItem value="augment" text="Augment" />
+            </Select>
 
-        <Select
-          id="llm-connection"
-          labelText="LLM Connection"
-          value={llmConnection}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLlmConnection(e.target.value)}
-          disabled={connections.length === 0}
-          helperText={connectionHelperText}
-        >
-          {connections.length === 0 ? (
-            <SelectItem disabled hidden text="No connections configured" value="" />
-          ) : (
-            <>
-              <SelectItem disabled hidden text="Select a connection..." value="" />
-              {connections.map((name) => (
-                <SelectItem key={name} value={name} text={name} />
-              ))}
-            </>
-          )}
-        </Select>
+            <TextArea
+              id="llm-prompt"
+              labelText="LLM Prompt"
+              placeholder="System prompt for the LLM"
+              value={llmPrompt}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setLlmPrompt(e.target.value)}
+              rows={4}
+              required
+            />
+
+            <Select
+              id="llm-connection"
+              labelText="LLM Connection"
+              value={llmConnection}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLlmConnection(e.target.value)}
+              disabled={connections.length === 0}
+              helperText={connectionHelperText}
+            >
+              {connections.length === 0 ? (
+                <SelectItem disabled hidden text="No connections configured" value="" />
+              ) : (
+                <>
+                  <SelectItem disabled hidden text="Select a connection..." value="" />
+                  {connections.map((name) => (
+                    <SelectItem key={name} value={name} text={name} />
+                  ))}
+                </>
+              )}
+            </Select>
+          </>
+        )}
 
         <TextInput
           id="processor-path"
