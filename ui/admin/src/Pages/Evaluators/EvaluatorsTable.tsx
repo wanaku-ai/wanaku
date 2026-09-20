@@ -14,7 +14,7 @@ import {
 import { Add, Edit, TrashCan } from "@carbon/icons-react";
 import React from "react";
 import { EvaluatorDef } from "../../hooks/api/use-evaluators";
-import type { LlmDef } from "../../models";
+import type { LlmDef, SystemOneDef } from "../../models";
 import { TableEmptyState } from "../EmptyTableState";
 
 interface EvaluatorsTableProps {
@@ -36,24 +36,37 @@ export const EvaluatorsTable: React.FC<EvaluatorsTableProps> = ({
     { key: "name", header: "Name" },
     { key: "method", header: "Trigger Method" },
     { key: "namespace", header: "Namespace" },
-    { key: "operation", header: "LLM Operation" },
-    { key: "connection", header: "LLM Connection" },
+    { key: "engine", header: "Engine" },
+    { key: "operation", header: "Operation / Primitive" },
+    { key: "connection", header: "Connection" },
     { key: "on_error", header: "Error Policy" },
   ];
 
   const getLlmConfiguration = (evaluator: EvaluatorDef): LlmDef | undefined =>
     evaluator.engine?.type === "llm" ? evaluator.engine : undefined;
 
+  const getSystemOneConfiguration = (evaluator: EvaluatorDef): SystemOneDef | undefined =>
+    evaluator.engine?.type === "typesafe-system-one" ? evaluator.engine : undefined;
+
   function evaluatorsToRows() {
     return evaluators.map((ev) => {
       const llmConfiguration = getLlmConfiguration(ev);
+      const systemOneConfiguration = getSystemOneConfiguration(ev);
       return {
         id: ev.name,
         name: ev.name,
         method: ev.trigger.method,
         namespace: ev.trigger.namespace || "—",
-        operation: llmConfiguration?.operation || (ev.engine?.type === "passthrough" ? "Passthrough" : "—"),
-        connection: llmConfiguration?.connection || "—",
+        engine:
+          ev.engine?.type === "llm"
+            ? "LLM"
+            : ev.engine?.type === "typesafe-system-one"
+              ? "TypeSafe System One"
+              : ev.engine?.type === "passthrough"
+                ? "Passthrough"
+                : "—",
+        operation: llmConfiguration?.operation || (systemOneConfiguration ? `Noul: ${systemOneConfiguration.noul.id}` : "—"),
+        connection: llmConfiguration?.connection || systemOneConfiguration?.connection || "—",
         on_error: ev.on_error || "continue",
       };
     });

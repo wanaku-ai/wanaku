@@ -20,6 +20,10 @@ pub async fn execute(
             "llm",
             execute_llm(evaluator, def, state, mcp, compiled_schema, metrics).await,
         ),
+        EvaluationEngine::TypesafeSystemOne(def) => (
+            "typesafe-system-one",
+            crate::engines::system_one::execute(def, state, mcp).await,
+        ),
         EvaluationEngine::Passthrough => (
             "passthrough",
             serde_json::to_string(&serde_json::json!({
@@ -69,9 +73,9 @@ async fn execute_llm(
                 definition.connection
             )
         })?;
-    let result = crate::llm_op::run_llm_operation(
+    let result = crate::engines::llm::run_llm_operation(
         &evaluator.name,
-        crate::llm_op::ResolvedLlm {
+        crate::engines::llm::ResolvedLlm {
             def: definition,
             connection: &connection,
         },
@@ -122,8 +126,8 @@ async fn validate_and_retry(
     let Some(raw_schema) = definition.result_schema.as_ref() else {
         return Ok(result.to_owned());
     };
-    let retry = crate::llm_op::retry_with_schema_correction(
-        crate::llm_op::ResolvedLlm {
+    let retry = crate::engines::llm::retry_with_schema_correction(
+        crate::engines::llm::ResolvedLlm {
             def: definition,
             connection,
         },

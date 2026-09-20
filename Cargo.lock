@@ -6690,6 +6690,7 @@ dependencies = [
  "tracing",
  "utoipa",
  "wanaku-types",
+ "wiremock",
 ]
 
 [[package]]

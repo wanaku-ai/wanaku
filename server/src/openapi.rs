@@ -17,7 +17,8 @@ use wanaku_feature_evaluator::api::{
     EvaluatorRevisionResponse, NamespaceBinding, UnbindNamespaceResponse, UpdateEvaluatorsRequest,
 };
 use wanaku_feature_evaluator::config::{
-    ErrorPolicy, EvaluatorDef, LlmDef, LlmOperation, ProcessorRef, TriggerDef,
+    ErrorPolicy, EvaluatorDef, LlmDef, LlmOperation, NoulCriteria, NoulDef, ProcessorRef,
+    SystemOneDef, SystemOneState, TriggerDef,
 };
 use wanaku_types::revision::{ActivationStatus, RevisionMetadata, RevisionOrigin};
 
@@ -499,6 +500,10 @@ impl utoipa::Modify for OptionalActivationBodies {
         TriggerDef,
         LlmDef,
         LlmOperation,
+        SystemOneDef,
+        SystemOneState,
+        NoulDef,
+        NoulCriteria,
         ProcessorRef,
         ErrorPolicy,
         UpdateEvaluatorsRequest,

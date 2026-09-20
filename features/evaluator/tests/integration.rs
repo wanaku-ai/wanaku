@@ -94,6 +94,34 @@ evaluators:
     }
 
     #[test]
+    fn deserialize_typesafe_system_one_evaluator() {
+        let yaml = r#"
+evaluators:
+  - name: "tool-safety"
+    trigger:
+      method: "tools/call"
+    engine:
+      type: typesafe-system-one
+      connection: "typesafe"
+      state: arguments
+      noul:
+        id: "is_safe"
+        instructions: "Are these tool arguments safe?"
+        criteria:
+          "true": "Safe"
+          "false": "Unsafe"
+    processor:
+      path: "/wasm/tool-safety.wasm"
+"#;
+        let config: EvaluatorsConfig = serde_yaml::from_str(yaml).expect("valid config");
+        let EvaluationEngine::TypesafeSystemOne(system_one) = &config.evaluators[0].engine else {
+            unreachable!("System One engine expected");
+        };
+        assert_eq!(system_one.connection, "typesafe");
+        assert_eq!(system_one.noul.id, "is_safe");
+    }
+
+    #[test]
     fn deserialize_evaluator_with_result_schema() {
         let yaml = r#"
 evaluators:

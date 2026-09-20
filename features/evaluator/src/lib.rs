@@ -5,11 +5,11 @@ pub mod action;
 pub mod api;
 pub mod config;
 pub mod engine;
+pub mod engines;
 pub mod evaluation;
 pub mod filter;
 mod host;
 pub use host::types as wit_types;
-pub mod llm_op;
 pub mod revision;
 pub mod revision_persistence;
 mod routes;
@@ -78,6 +78,18 @@ impl EvaluatorFeature {
 
         if let Err(e) = self.state.load_llm_connections(connections) {
             tracing::error!(error = %e, "llm_connections rejected; no connections loaded");
+        }
+    }
+
+    fn load_system_one_connections_from_yaml(&self, root: &serde_yaml::Value) {
+        let Some(conn_val) = root.get("typesafe_system_one_connections") else {
+            return;
+        };
+        let Some(connections) = parse_system_one_connections_yaml(conn_val) else {
+            return;
+        };
+        if let Err(error) = self.state.load_system_one_connections(connections) {
+            tracing::error!(error = %error, "typesafe_system_one_connections rejected; no connections loaded");
         }
     }
 }
@@ -152,6 +164,7 @@ impl Feature for EvaluatorFeature {
         // Connections are config-only and must load before reconciliation so
         // that activation can validate every evaluator's connection reference.
         self.load_llm_connections_from_yaml(root);
+        self.load_system_one_connections_from_yaml(root);
 
         // Absent or unparseable `evaluators` yields `None`, which tells
         // reconciliation to re-activate the persisted active revision (if any)
@@ -236,6 +249,18 @@ fn parse_llm_connections_yaml(
         Ok(connections) => Some(connections),
         Err(e) => {
             tracing::warn!(error = %e, "failed to parse llm_connections from wanaku.yaml");
+            None
+        }
+    }
+}
+
+fn parse_system_one_connections_yaml(
+    conn_val: &serde_yaml::Value,
+) -> Option<Vec<crate::config::SystemOneConnection>> {
+    match serde_yaml::from_value::<Vec<crate::config::SystemOneConnection>>(conn_val.clone()) {
+        Ok(connections) => Some(connections),
+        Err(error) => {
+            tracing::warn!(error = %error, "failed to parse typesafe_system_one_connections from wanaku.yaml");
             None
         }
     }

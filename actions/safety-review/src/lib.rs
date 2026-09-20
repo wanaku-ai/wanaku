@@ -1,8 +1,8 @@
 #[allow(warnings)]
 mod bindings;
 
-use bindings::wanaku::evaluator::types::EvaluationContext;
 use bindings::Guest;
+use bindings::wanaku::evaluator::types::EvaluationContext;
 
 struct SafetyReview;
 
@@ -37,14 +37,16 @@ impl Guest for SafetyReview {
     }
 }
 
-/// Extract the safety `level` and `reason` from the LLM result.
+/// Extract the safety `level` and `reason` from the engine result.
 ///
-/// The LLM is expected to return a JSON object of the form
-/// `{"level": "green|yellow|red", "reason": "..."}`. When the result is not
-/// valid JSON, the level is inferred from the raw text and the whole result
-/// is used as the reason.
-fn classify(llm_result: &str) -> (String, String) {
-    if let Ok(value) = serde_json::from_str::<serde_json::Value>(llm_result) {
+/// A TypeSafe Noul result contains the probability that its safety condition
+/// is true. A probability below 0.5 blocks the request. An LLM result uses
+/// `{"level": "green|yellow|red", "reason": "..."}`.
+fn classify(engine_result: &str) -> (String, String) {
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(engine_result) {
+        if let Some(result) = classify_system_one(&value) {
+            return result;
+        }
         let level = value
             .get("level")
             .and_then(serde_json::Value::as_str)
@@ -53,12 +55,12 @@ fn classify(llm_result: &str) -> (String, String) {
         let reason = value
             .get("reason")
             .and_then(serde_json::Value::as_str)
-            .unwrap_or(llm_result)
+            .unwrap_or(engine_result)
             .to_string();
         return (level, reason);
     }
 
-    let lower = llm_result.to_lowercase();
+    let lower = engine_result.to_lowercase();
     let level = if lower.contains("red") {
         "red"
     } else if lower.contains("yellow") {
@@ -66,7 +68,52 @@ fn classify(llm_result: &str) -> (String, String) {
     } else {
         "green"
     };
-    (level.to_string(), llm_result.to_string())
+    (level.to_string(), engine_result.to_string())
+}
+
+fn classify_system_one(value: &serde_json::Value) -> Option<(String, String)> {
+    let is_noul = value.get("engine").and_then(serde_json::Value::as_str)
+        == Some("typesafe-system-one")
+        && value
+            .pointer("/primitive/type")
+            .and_then(serde_json::Value::as_str)
+            == Some("noul");
+    if !is_noul {
+        return None;
+    }
+    let probability = value
+        .pointer("/answer/noul")
+        .and_then(serde_json::Value::as_f64)?;
+    if !(0.0..=1.0).contains(&probability) {
+        return None;
+    }
+    let level = if probability < 0.5 { "red" } else { "green" };
+    Some((
+        level.to_string(),
+        format!("TypeSafe Noul safety probability: {probability:.2}"),
+    ))
 }
 
 bindings::export!(SafetyReview with_types_in bindings);
+
+#[cfg(test)]
+mod tests {
+    use super::classify;
+
+    #[test]
+    fn blocks_when_system_one_marks_the_request_unsafe() {
+        let (level, reason) = classify(
+            r#"{"engine":"typesafe-system-one","primitive":{"type":"noul"},"answer":{"noul":0.05}}"#,
+        );
+        assert_eq!(level, "red");
+        assert!(reason.contains("0.05"));
+    }
+
+    #[test]
+    fn allows_when_system_one_marks_the_request_safe() {
+        let (level, _) = classify(
+            r#"{"engine":"typesafe-system-one","primitive":{"type":"noul"},"answer":{"noul":0.95}}"#,
+        );
+        assert_eq!(level, "green");
+    }
+}

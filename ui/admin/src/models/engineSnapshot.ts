@@ -17,4 +17,8 @@ export interface EngineSnapshot {
   passthrough_failure: number;
   /** @minimum 0 */
   passthrough_success: number;
+  /** @minimum 0 */
+  typesafe_system_one_failure: number;
+  /** @minimum 0 */
+  typesafe_system_one_success: number;
 }

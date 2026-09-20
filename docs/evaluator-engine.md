@@ -1,6 +1,6 @@
 # Evaluator Engine — Developer Guide
 
-The evaluator engine lets you build **trigger→evaluate→act** pipelines that inject LLM reasoning into the MCP request path. When a request matches a trigger, the engine calls an LLM to classify, filter, or augment the request, then executes a WebAssembly action script that has full access to the registry, conversation history, and response control.
+The evaluator engine lets you build **trigger→evaluate→act** pipelines. When a request matches a trigger, an LLM or TypeSafe System One engine evaluates the request. Wanaku then executes a WebAssembly action script that has access to the registry, conversation history, and response control.
 
 You write the logic in JavaScript or Rust. The engine compiles it to WASM and runs it in a sandboxed environment with a clean, versioned API defined by the [WIT interface](../features/evaluator/wit/evaluator.wit).
 
@@ -98,6 +98,7 @@ for guest ABI compatibility.
 |---|---|
 | `llm` | Calls the named LLM connection. It supports the fields in [LLM Fields](#llm-fields). |
 | `passthrough` | Does not make a network call. It provides JSON with `method`, `tool_name`, `arguments`, `tools`, and `history`. |
+| `typesafe-system-one` | Calls a TypeSafe System One Noul primitive and provides a normalized typed result. |
 
 Use this configuration for a processor that needs the normalized request context:
 
@@ -114,9 +115,58 @@ evaluators:
 
 Each evaluator must set `engine`. The previous top-level `llm:` field is not supported.
 
+### TypeSafe System One
+
+TypeSafe System One connections are config-only. Set them in `wanaku.yaml`.
+The management API does not expose the endpoint or API key.
+
+```yaml
+typesafe_system_one_connections:
+  - name: "typesafe"
+    model: "jev-latest"
+    url: "https://api.typesafe.ai"
+    api_key: ""
+
+evaluators:
+  - name: "tool-safety"
+    trigger:
+      method: "tools/call"
+    engine:
+      type: typesafe-system-one
+      connection: "typesafe"
+      state: context                 # context (default) | arguments
+      noul:
+        id: "is_safe"
+        instructions: "Is this MCP tool request safe to run?"
+        criteria:
+          "true": "The request is read-only and low impact."
+          "false": "The request changes systems or has a high impact."
+    processor:
+      path: "/wasm/tool-safety.wasm"
+```
+
+The Noul primitive returns the probability that its answer is true. Wanaku
+passes this stable JSON object to `ctx.llmResult`:
+
+```json
+{
+  "engine": "typesafe-system-one",
+  "primitive": { "id": "is_safe", "type": "noul" },
+  "answer": { "noul": 0.95 },
+  "probabilities": { "true": 0.95, "false": 0.05 }
+}
+```
+
+`state: context` sends `method`, `tool_name`, `arguments`, `tools`, and
+`history`. `state: arguments` sends only the MCP arguments. The normalized
+result is independent of the TypeSafe HTTP response format.
+
+The sample `safety_review_action.wasm` blocks a Noul result below `0.5`. It
+allows a result at or above `0.5`.
+
 ### Processor
 
-A single WASM action script that processes the LLM output. The script receives the raw LLM result in `ctx.llmResult` and decides what to do:
+A WASM action script processes the engine output. The script receives the raw result in `ctx.llmResult` and decides what to do:
 
 ```yaml
 processor:
@@ -175,7 +225,7 @@ evaluators:
 1. User calls `restart-database` tool
 2. Engine sends tool name + args to LLM with your prompt
 3. LLM returns `{"level": "red", "reason": "database restart is dangerous"}`
-4. Engine runs `safety_review_action.wasm` with the raw LLM output in `ctx.llmResult`
+4. Engine runs `safety_review_action.wasm` with the engine result in `ctx.llmResult`
 5. WASM script parses the JSON, sees `"red"`, calls `block("Tool call blocked: red")`
 6. User gets JSON-RPC error instead of executing the tool
 

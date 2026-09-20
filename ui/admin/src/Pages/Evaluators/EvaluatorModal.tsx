@@ -8,12 +8,21 @@ import {
 } from "@carbon/react";
 import React, { useState } from "react";
 import { EvaluatorDef } from "../../hooks/api/use-evaluators";
-import type { EvaluationEngine, LlmDef, LlmOperation } from "../../models";
+import type {
+  EvaluationEngine,
+  LlmDef,
+  LlmOperation,
+  SystemOneDef,
+  SystemOneState,
+} from "../../models";
 
-type EngineType = "llm" | "passthrough";
+type EngineType = "llm" | "passthrough" | "typesafe-system-one";
 
 const getLlmConfiguration = (evaluator?: EvaluatorDef): LlmDef | undefined =>
   evaluator?.engine?.type === "llm" ? evaluator.engine : undefined;
+
+const getSystemOneConfiguration = (evaluator?: EvaluatorDef): SystemOneDef | undefined =>
+  evaluator?.engine?.type === "typesafe-system-one" ? evaluator.engine : undefined;
 
 interface EvaluatorModalProps {
   evaluator?: EvaluatorDef;
@@ -23,6 +32,91 @@ interface EvaluatorModalProps {
   onSubmit: (evaluator: EvaluatorDef) => void;
 }
 
+interface SystemOneFieldsProps {
+  connection: string;
+  state: SystemOneState;
+  noulId: string;
+  instructions: string;
+  trueCriteria: string;
+  falseCriteria: string;
+  onConnectionChange: (value: string) => void;
+  onStateChange: (value: SystemOneState) => void;
+  onNoulIdChange: (value: string) => void;
+  onInstructionsChange: (value: string) => void;
+  onTrueCriteriaChange: (value: string) => void;
+  onFalseCriteriaChange: (value: string) => void;
+}
+
+const SystemOneFields: React.FC<SystemOneFieldsProps> = ({
+  connection,
+  state,
+  noulId,
+  instructions,
+  trueCriteria,
+  falseCriteria,
+  onConnectionChange,
+  onStateChange,
+  onNoulIdChange,
+  onInstructionsChange,
+  onTrueCriteriaChange,
+  onFalseCriteriaChange,
+}) => (
+  <>
+    <TextInput
+      id="system-one-connection"
+      labelText="TypeSafe Connection"
+      placeholder="Name from typesafe_system_one_connections"
+      value={connection}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => onConnectionChange(e.target.value)}
+      helperText="Connections and credentials are configured in wanaku.yaml"
+      required
+    />
+    <Select
+      id="system-one-state"
+      labelText="State Mapping"
+      value={state}
+      onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+        onStateChange(e.target.value as SystemOneState)
+      }
+    >
+      <SelectItem value="context" text="Full MCP context" />
+      <SelectItem value="arguments" text="Tool arguments only" />
+    </Select>
+    <TextInput
+      id="system-one-noul-id"
+      labelText="Noul Primitive ID"
+      value={noulId}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => onNoulIdChange(e.target.value)}
+      required
+    />
+    <TextArea
+      id="system-one-noul-instructions"
+      labelText="Noul Instructions"
+      placeholder="Is this request safe to run?"
+      value={instructions}
+      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onInstructionsChange(e.target.value)}
+      rows={3}
+      required
+    />
+    <TextInput
+      id="system-one-noul-true"
+      labelText="True Criteria (optional)"
+      value={trueCriteria}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => onTrueCriteriaChange(e.target.value)}
+      invalid={Boolean(trueCriteria.trim()) !== Boolean(falseCriteria.trim())}
+      invalidText="Set both true and false criteria, or leave both empty"
+    />
+    <TextInput
+      id="system-one-noul-false"
+      labelText="False Criteria (optional)"
+      value={falseCriteria}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => onFalseCriteriaChange(e.target.value)}
+      invalid={Boolean(trueCriteria.trim()) !== Boolean(falseCriteria.trim())}
+      invalidText="Set both true and false criteria, or leave both empty"
+    />
+  </>
+);
+
 export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
   evaluator,
   existingNames,
@@ -31,22 +125,48 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
   onSubmit,
 }) => {
   const llmConfiguration = getLlmConfiguration(evaluator);
+  const systemOneConfiguration = getSystemOneConfiguration(evaluator);
   const [name, setName] = useState(evaluator?.name || "");
   const [triggerMethod, setTriggerMethod] = useState(evaluator?.trigger.method || "tools/call");
   const [triggerNamespace, setTriggerNamespace] = useState(evaluator?.trigger.namespace || "");
   const [engineType, setEngineType] = useState<EngineType>(
-    evaluator?.engine?.type === "passthrough" ? "passthrough" : "llm",
+    evaluator?.engine?.type === "passthrough"
+      ? "passthrough"
+      : evaluator?.engine?.type === "typesafe-system-one"
+        ? "typesafe-system-one"
+        : "llm",
   );
   const [llmOperation, setLlmOperation] = useState<LlmOperation>(
     llmConfiguration?.operation || "classify",
   );
   const [llmPrompt, setLlmPrompt] = useState(llmConfiguration?.prompt || "");
   const [llmConnection, setLlmConnection] = useState(llmConfiguration?.connection || "");
+  const [systemOneConnection, setSystemOneConnection] = useState(systemOneConfiguration?.connection || "");
+  const [systemOneState, setSystemOneState] = useState(systemOneConfiguration?.state || "context");
+  const [noulId, setNoulId] = useState(systemOneConfiguration?.noul.id || "is_safe");
+  const [noulInstructions, setNoulInstructions] = useState(
+    typeof systemOneConfiguration?.noul.instructions === "string"
+      ? systemOneConfiguration.noul.instructions
+      : "",
+  );
+  const [noulTrueCriteria, setNoulTrueCriteria] = useState(
+    typeof systemOneConfiguration?.noul.criteria?.true === "string"
+      ? systemOneConfiguration.noul.criteria.true
+      : "",
+  );
+  const [noulFalseCriteria, setNoulFalseCriteria] = useState(
+    typeof systemOneConfiguration?.noul.criteria?.false === "string"
+      ? systemOneConfiguration.noul.criteria.false
+      : "",
+  );
   const [processorPath, setProcessorPath] = useState(evaluator?.processor.path || "");
   const [onError, setOnError] = useState(evaluator?.on_error || "continue");
 
   const trimmedName = name.trim();
   const isDuplicate = !evaluator && existingNames.includes(trimmedName);
+  const hasNoulCriteria = Boolean(noulTrueCriteria.trim() && noulFalseCriteria.trim());
+  const hasIncompleteNoulCriteria =
+    Boolean(noulTrueCriteria.trim()) !== Boolean(noulFalseCriteria.trim());
 
   const handleSubmit = () => {
     const engine: EvaluationEngine =
@@ -58,7 +178,21 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
             connection: llmConnection,
             result_schema: llmConfiguration?.result_schema,
           }
-        : { type: "passthrough" };
+        : engineType === "typesafe-system-one"
+          ? {
+              type: "typesafe-system-one",
+              connection: systemOneConnection.trim(),
+              state: systemOneState,
+              noul: {
+                id: noulId.trim(),
+                instructions: noulInstructions.trim(),
+                criteria:
+                  hasNoulCriteria
+                    ? { true: noulTrueCriteria.trim(), false: noulFalseCriteria.trim() }
+                    : undefined,
+              },
+            }
+          : { type: "passthrough" };
 
     onSubmit({
       name: trimmedName,
@@ -83,7 +217,13 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
     trimmedName &&
     !isDuplicate &&
     triggerMethod &&
-    (engineType === "passthrough" || (llmPrompt.trim() && llmConnection)) &&
+    (engineType === "passthrough" ||
+      (engineType === "llm" && llmPrompt.trim() && llmConnection) ||
+      (engineType === "typesafe-system-one" &&
+        systemOneConnection.trim() &&
+        noulId.trim() &&
+        noulInstructions.trim() &&
+        !hasIncompleteNoulCriteria)) &&
     processorPath.trim();
 
   return (
@@ -140,6 +280,7 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
           helperText="Select how the evaluator produces input for the processor"
         >
           <SelectItem value="llm" text="LLM" />
+          <SelectItem value="typesafe-system-one" text="TypeSafe System One" />
           <SelectItem value="passthrough" text="Passthrough" />
         </Select>
 
@@ -188,6 +329,23 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
               )}
             </Select>
           </>
+        )}
+
+        {engineType === "typesafe-system-one" && (
+          <SystemOneFields
+            connection={systemOneConnection}
+            state={systemOneState}
+            noulId={noulId}
+            instructions={noulInstructions}
+            trueCriteria={noulTrueCriteria}
+            falseCriteria={noulFalseCriteria}
+            onConnectionChange={setSystemOneConnection}
+            onStateChange={setSystemOneState}
+            onNoulIdChange={setNoulId}
+            onInstructionsChange={setNoulInstructions}
+            onTrueCriteriaChange={setNoulTrueCriteria}
+            onFalseCriteriaChange={setNoulFalseCriteria}
+          />
         )}
 
         <TextInput
