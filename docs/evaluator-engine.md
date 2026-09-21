@@ -157,9 +157,15 @@ passes this stable JSON object to `ctx.llmResult`:
 }
 ```
 
-`state: context` sends `method`, `tool_name`, `arguments`, `tools`, and
-`history`. `state: arguments` sends only the MCP arguments. The normalized
-result is independent of the TypeSafe HTTP response format.
+`state: context` sends `method`, `tool_name`, `arguments`, and `tools`.
+When the active conversation has usable history, it also sends `history` as a
+chronological array of `{role, content}` messages. Wanaku omits empty and
+invalid messages. If no usable messages exist, it omits `history`.
+
+`state: arguments` sends the MCP arguments when no usable history exists. When
+history exists, it sends an object with `arguments` and `history`. This avoids
+an argument named `history` from replacing the conversation history. The
+normalized result is independent of the TypeSafe HTTP response format.
 
 The sample `safety_review_action.wasm` blocks a Noul result below `0.5`. It
 allows a result at or above `0.5`.
