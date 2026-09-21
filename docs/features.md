@@ -20,11 +20,6 @@ Records MCP request/response interactions in an in-memory store. Other features 
 
 **Filter:** `wanaku_intercept` (runs in the inference proxy pipeline)
 
-**Management API routes:**
-
-- `GET /api/v1/interactions` — list recorded interactions
-- `DELETE /api/v1/interactions` — clear the interaction store
-
 **Configuration:**
 
 | Variable | Default | Purpose |

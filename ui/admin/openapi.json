@@ -973,40 +973,6 @@
         }
       }
     },
-    "/api/v1/interactions": {
-      "get": {
-        "tags": [
-          "Interactions"
-        ],
-        "operationId": "list_interactions",
-        "responses": {
-          "200": {
-            "description": "List recorded interactions",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Interaction"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Interactions"
-        ],
-        "operationId": "clear_interactions",
-        "responses": {
-          "200": {
-            "description": "Interactions cleared"
-          }
-        }
-      }
-    },
     "/api/v1/management/info": {
       "get": {
         "tags": [
@@ -2155,57 +2121,6 @@
           "wasm_compiled": {
             "type": "integer",
             "format": "int64",
-            "minimum": 0
-          }
-        }
-      },
-      "Interaction": {
-        "type": "object",
-        "required": [
-          "epoch_ms",
-          "path",
-          "request_body",
-          "response_body",
-          "status_code",
-          "duration_ms"
-        ],
-        "properties": {
-          "completion_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "conversation_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "duration_ms": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "epoch_ms": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "model": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "path": {
-            "type": "string"
-          },
-          "request_body": {},
-          "response_body": {},
-          "status_code": {
-            "type": "integer",
-            "format": "int32",
             "minimum": 0
           }
         }

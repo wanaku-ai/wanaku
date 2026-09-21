@@ -9,8 +9,7 @@ import type { NoulDef } from "./noulDef";
 import type { SystemOneState } from "./systemOneState";
 
 /**
- * TypeSafe System One configuration. This first engine version supports a
-Noul primitive, which returns the probability that a condition is true.
+ * TypeSafe System One engine configuration. It currently supports Noul.
  */
 export interface SystemOneDef {
   connection: string;

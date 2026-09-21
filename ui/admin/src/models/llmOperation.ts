@@ -7,7 +7,7 @@
  */
 
 /**
- * The type of cognitive operation the LLM performs.
+ * The cognitive operation that the LLM performs.
  */
 export type LlmOperation = (typeof LlmOperation)[keyof typeof LlmOperation];
 

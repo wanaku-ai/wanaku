@@ -103,15 +103,6 @@ Wanaku stores the forward even if discovery fails. In that case, the response re
 | --- | --- | --- |
 | `GET` | `/api/v1/metrics` | Get filter, evaluator, LLM, WASM, and pipeline metrics. |
 
-### Interactions
-
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/v1/interactions` | List recorded interactions. |
-| `DELETE` | `/api/v1/interactions` | Clear recorded interactions. |
-
-The evaluator uses these interactions as conversation history.
-
 ### Evaluators
 
 | Method | Path | Purpose |

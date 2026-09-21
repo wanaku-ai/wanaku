@@ -7,7 +7,7 @@
  */
 
 /**
- * Optional descriptions for true and false Noul outcomes.
+ * Optional descriptions for Noul true and false outcomes.
  */
 export interface NoulCriteria {
   false: unknown;
