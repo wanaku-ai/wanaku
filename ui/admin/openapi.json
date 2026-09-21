@@ -2212,7 +2212,7 @@
       },
       "LlmDef": {
         "type": "object",
-        "description": "LLM operation configuration.\n\nCarries only what an evaluator *does* with the LLM (operation, prompt,\nresult schema) plus a reference to a named [`LlmConnection`] configured\nin `wanaku.yaml`. Connection details (model/url/api_key) are deliberately\nnot fields here: `deny_unknown_fields` turns any legacy inline\n`model`/`url`/`api_key` in a client payload into a clear 400 instead of\nsilently dropping it.",
+        "description": "LLM engine configuration.",
         "required": [
           "operation",
           "prompt",
@@ -2234,7 +2234,7 @@
       },
       "LlmOperation": {
         "type": "string",
-        "description": "The type of cognitive operation the LLM performs.",
+        "description": "The cognitive operation that the LLM performs.",
         "enum": [
           "classify",
           "filter",
@@ -2440,7 +2440,7 @@
       },
       "NoulCriteria": {
         "type": "object",
-        "description": "Optional descriptions for true and false Noul outcomes.",
+        "description": "Optional descriptions for Noul true and false outcomes.",
         "required": [
           "true",
           "false"
@@ -3008,7 +3008,7 @@
       },
       "SystemOneDef": {
         "type": "object",
-        "description": "TypeSafe System One configuration. This first engine version supports a\nNoul primitive, which returns the probability that a condition is true.",
+        "description": "TypeSafe System One engine configuration. It currently supports Noul.",
         "required": [
           "connection",
           "noul"
@@ -3028,7 +3028,7 @@
       },
       "SystemOneState": {
         "type": "string",
-        "description": "Selects which part of an MCP request becomes the TypeSafe state.",
+        "description": "Selects the MCP data that becomes the TypeSafe state.",
         "enum": [
           "arguments",
           "context"
