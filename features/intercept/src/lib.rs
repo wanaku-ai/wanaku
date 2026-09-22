@@ -2,9 +2,9 @@
 
 pub mod filter;
 
-use std::sync::RwLock;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
+use std::sync::RwLock;
 
 use wanaku_types::feature::{Feature, HttpContext};
 use wanaku_types::interactions::InMemoryInteractionStore;
