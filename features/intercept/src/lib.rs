@@ -1,19 +1,13 @@
 #![deny(unsafe_code)]
 
 pub mod filter;
-mod routes;
-
-use std::sync::RwLock;
 
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
+use std::sync::RwLock;
 
 use wanaku_types::feature::{Feature, HttpContext};
 use wanaku_types::interactions::InMemoryInteractionStore;
-
-use crate::routes::{
-    InteractionRoute, handle_interaction_clear, handle_interaction_list, resolve_interaction_route,
-};
 
 const DEFAULT_CAPACITY: usize = 1000;
 
@@ -70,26 +64,8 @@ impl Feature for InterceptFeature {
         vec![Box::new(InteractionStoreExtension { store })]
     }
 
-    async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
-        let route = resolve_interaction_route(ctx.method, ctx.path);
-        if route == InteractionRoute::NotFound {
-            return None;
-        }
-        let store = match self.store.read() {
-            Ok(guard) => guard.clone(),
-            Err(e) => {
-                tracing::warn!(error = %e, "interaction store lock poisoned");
-                return Some(wanaku_types::http_response::json_err(
-                    http::StatusCode::INTERNAL_SERVER_ERROR,
-                    "interaction store unavailable",
-                ));
-            }
-        };
-        Some(match route {
-            InteractionRoute::List => handle_interaction_list(&store),
-            InteractionRoute::Clear => handle_interaction_clear(&store),
-            InteractionRoute::NotFound => return None,
-        })
+    async fn handle_route(&self, _: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
+        None
     }
 
     fn load_yaml_config(&self, _root: &serde_yaml::Value) {}

@@ -7,7 +7,7 @@
  */
 
 /**
- * Selects which part of an MCP request becomes the TypeSafe state.
+ * Selects the MCP data that becomes the TypeSafe state.
  */
 export type SystemOneState =
   (typeof SystemOneState)[keyof typeof SystemOneState];

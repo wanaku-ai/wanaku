@@ -17,7 +17,6 @@ import type {
   GetActiveEvaluatorRevision200,
   GetEffectiveActionPolicy200,
   GetEvaluatorRevision200,
-  Interaction,
   ListActionPolicyRevisions200Item,
   ListAuditEventsParams,
   ListEvaluatorBindings200,
@@ -939,52 +938,6 @@ export const refreshForward = async (
   return customFetch<refreshForwardResponse>(getRefreshForwardUrl(name), {
     ...options,
     method: "POST",
-  });
-};
-
-export type listInteractionsResponse200 = {
-  data: Interaction[];
-  status: 200;
-};
-
-export type listInteractionsResponseSuccess = listInteractionsResponse200 & {
-  headers: Headers;
-};
-export type listInteractionsResponse = listInteractionsResponseSuccess;
-
-export const getListInteractionsUrl = () => {
-  return `/api/v1/interactions`;
-};
-
-export const listInteractions = async (
-  options?: RequestInit,
-): Promise<listInteractionsResponse> => {
-  return customFetch<listInteractionsResponse>(getListInteractionsUrl(), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export type clearInteractionsResponse200 = {
-  data: void;
-  status: 200;
-};
-
-export type clearInteractionsResponseSuccess = clearInteractionsResponse200 & {
-  headers: Headers;
-};
-export type clearInteractionsResponse = clearInteractionsResponseSuccess;
-
-export const getClearInteractionsUrl = () => {
-  return `/api/v1/interactions`;
-};
-
-export const clearInteractions = async (
-  options?: RequestInit,
-): Promise<clearInteractionsResponse> => {
-  return customFetch<clearInteractionsResponse>(getClearInteractionsUrl(), {
-    ...options,
-    method: "DELETE",
   });
 };
 

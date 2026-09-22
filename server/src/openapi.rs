@@ -28,7 +28,6 @@ use wanaku_infra::metrics::{
     WasmSnapshot,
 };
 use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHealth, AuditPage};
-use wanaku_types::interactions::Interaction;
 use wanaku_types::registry::{
     ForwardEntry, McpServerInfo, NamespaceEntry, PromptArgument, PromptEntry, PromptMessage,
     ResourceEntry, ToolEntry,
@@ -201,18 +200,6 @@ const fn delete_forward() {}
     )
 )]
 const fn refresh_forward() {}
-
-// -- Interactions -------------------------------------------------------------
-
-#[utoipa::path(get, path = "/api/v1/interactions", tag = "Interactions",
-    responses((status = 200, description = "List recorded interactions", body = Vec<Interaction>))
-)]
-const fn list_interactions() {}
-
-#[utoipa::path(delete, path = "/api/v1/interactions", tag = "Interactions",
-    responses((status = 200, description = "Interactions cleared"))
-)]
-const fn clear_interactions() {}
 
 // -- Metrics ------------------------------------------------------------------
 
@@ -442,8 +429,6 @@ impl utoipa::Modify for OptionalActivationBodies {
         create_forward,
         delete_forward,
         refresh_forward,
-        list_interactions,
-        clear_interactions,
         get_metrics,
         list_audit_events,
         get_audit_event,
@@ -478,7 +463,6 @@ impl utoipa::Modify for OptionalActivationBodies {
         ForwardEntry,
         McpServerInfo,
         NamespaceEntry,
-        Interaction,
         MetricsSnapshot,
         FilterSnapshot,
         DurationSnapshot,

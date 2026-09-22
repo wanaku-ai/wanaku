@@ -8,14 +8,7 @@
 import type { LlmOperation } from "./llmOperation";
 
 /**
- * LLM operation configuration.
-
-Carries only what an evaluator *does* with the LLM (operation, prompt,
-result schema) plus a reference to a named [`LlmConnection`] configured
-in `wanaku.yaml`. Connection details (model/url/api_key) are deliberately
-not fields here: `deny_unknown_fields` turns any legacy inline
-`model`/`url`/`api_key` in a client payload into a clear 400 instead of
-silently dropping it.
+ * LLM engine configuration.
  */
 export interface LlmDef {
   connection: string;

@@ -1,4 +1,6 @@
 mod handlers;
+#[cfg(test)]
+mod interaction_tests;
 mod persistence;
 mod reconnect;
 mod response;

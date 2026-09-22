@@ -371,7 +371,6 @@ These endpoints are new in Wanaku Praxis:
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/v1/evaluators` | Evaluator configuration |
-| `GET /api/v1/interactions` | Recorded MCP interactions |
 | `GET /api/v1/metrics` | In-memory metrics snapshot |
 | `GET /api/v1/plugins` | Discovered UI plugins |
 
