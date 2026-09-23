@@ -63,7 +63,13 @@ services:
     image: quay.io/wanaku/wanaku-server:latest
     environment:
       WANAKU_AUTH_ISSUER: http://keycloak:8080/realms/wanaku
+      WANAKU_PERSIST_PATH: /data/registry
+    volumes:
+      - wanaku-data:/data
     depends_on:
       oauth2-proxy-mcp:
         condition: service_started
     # No ports exposed — only reachable via oauth2-proxy
+
+volumes:
+  wanaku-data:

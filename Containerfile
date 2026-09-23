@@ -122,6 +122,8 @@ RUN microdnf install -y ca-certificates \
     && chown -R 0:0 /etc/wanaku /data/registry \
     && chmod -R g=u  /etc/wanaku /data/registry
 
+ENV WANAKU_PERSIST_PATH=/data/registry
+
 COPY --from=builder --chown=root:root --chmod=0555 \
     /usr/local/bin/wanaku-server /usr/local/bin/wanaku-server
 
