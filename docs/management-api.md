@@ -69,7 +69,13 @@ Wanaku discovers tools, resources, and prompts when you create or refresh a forw
 
 ### Create a Namespace
 
-Send one request:
+Use the Wanaku CLI:
+
+```bash
+wanaku namespaces create finance --no-auth
+```
+
+The CLI sends this request to the management API:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/namespaces \
@@ -81,7 +87,13 @@ Namespace names can contain lowercase letters, numbers, and hyphens. They cannot
 
 ### Create a Forward
 
-Include the namespace in the request:
+Use the Wanaku CLI:
+
+```bash
+wanaku forwards add --service="http://upstream-server:8080/mcp" --name upstream-mcp --namespace finance --no-auth
+```
+
+The CLI sends this request to the management API. Include the namespace in the request:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/forwards \

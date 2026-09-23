@@ -145,7 +145,7 @@ Tools, resources, and prompts are obtained by registering a forwarded MCP server
 Using the [Wanaku CLI](https://github.com/wanaku-ai/wanaku-barn/releases/tag/early-access):
 
 ```bash
-wanaku forwards add --service="http://echo-mcp:8080/mcp" --name echo-server --no-auth
+wanaku forwards add --service="http://echo-mcp:8080/mcp" --name echo-server --namespace default --no-auth
 ```
 
 This automatically discovers and registers all tools exposed by the upstream MCP server.

@@ -166,15 +166,13 @@ http://localhost:8081/finance/mcp             # Streamable HTTP only
 Create as many namespaces as you need:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/namespaces \
-  -H "Content-Type: application/json" \
-  -d '{"name": "finance"}'
+wanaku namespaces create finance --no-auth
 ```
 
 ### Migration Steps
 
 1. List your Classic namespace assignments (`wanaku namespaces list --no-auth`) — note which slot maps to which name
-2. Create named namespaces in Wanaku Praxis using the label names you assigned in Classic (`POST /api/v1/namespaces`)
+2. Create named namespaces in Wanaku Praxis using the label names you assigned in Classic (`wanaku namespaces create <name> --no-auth`)
 3. Re-register forwards with the new namespace names
 4. Update MCP client configurations: replace slot-based URLs (`/ns-3/mcp/sse`) with name-based URLs (`/finance/mcp`) on port `8081`
 
@@ -261,7 +259,7 @@ Forward management works similarly in both versions. The `wanaku` CLI is compati
 ### Classic
 
 ```bash
-wanaku forwards add --service="http://echo-mcp:8080/mcp" --name echo --no-auth
+wanaku forwards add --service="http://echo-mcp:8080/mcp" --name echo --namespace default --no-auth
 wanaku forwards list --no-auth
 wanaku forwards remove --name echo --no-auth
 wanaku forwards refresh --name echo --no-auth
@@ -272,26 +270,13 @@ wanaku forwards refresh --name echo --no-auth
 Same CLI commands work:
 
 ```bash
-wanaku forwards add --service="http://echo-mcp:8080/mcp" --name echo --no-auth
+wanaku forwards add --service="http://echo-mcp:8080/mcp" --name echo --namespace default --no-auth
 wanaku forwards list --no-auth
 wanaku forwards remove --name echo --no-auth
 wanaku forwards refresh --name echo --no-auth
 ```
 
-Or use the management API directly:
-
-```bash
-# Add a forward
-curl -X POST http://localhost:8080/api/v1/forwards \
-  -H "Content-Type: application/json" \
-  -d '{"name": "echo", "address": "http://echo-mcp:8080/mcp"}'
-
-# Refresh (re-discover tools)
-curl -X POST http://localhost:8080/api/v1/forwards/echo/refreshes
-
-# Remove
-curl -X DELETE http://localhost:8080/api/v1/forwards/echo
-```
+Read [Management API](./management-api.md) for the equivalent REST routes.
 
 ### Bootstrap via wanaku.yaml
 
@@ -584,7 +569,7 @@ When running Wanaku Praxis without oauth2-proxy (the default), always pass `--no
 
 ```bash
 wanaku tools list --no-auth
-wanaku forwards add --service="http://echo:8080/mcp" --name echo --no-auth
+wanaku forwards add --service="http://echo:8080/mcp" --name echo --namespace default --no-auth
 ```
 
 This matches the Classic Wanaku behavior when `wanaku.http.auth=none`.

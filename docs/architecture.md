@@ -256,7 +256,7 @@ Now when an LLM calls one of those tools, Wanaku forwards the request to the ups
 To re-discover tools after upstream changes:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/forwards/upstream-mcp/refreshes
+wanaku forwards refresh --name upstream-mcp --no-auth
 ```
 
 This removes all tools previously discovered from that forward and re-queries the upstream server.
