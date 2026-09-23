@@ -899,7 +899,7 @@
       "consentRequired": false,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
+      "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": false,
       "publicClient": false,
       "frontchannelLogout": true,
@@ -936,6 +936,23 @@
         "token.response.type.bearer.lower-case": "false"
       },
       "authenticationFlowBindingOverrides": {},
+      "protocolMappers": [
+        {
+          "id": "e2e4d9cb-1b17-46f3-bc62-3b4600085f5e",
+          "name": "wanaku-mcp-router-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "false",
+            "lightweight.claim": "false",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "included.custom.audience": "wanaku-mcp-router",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ],
       "fullScopeAllowed": true,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [

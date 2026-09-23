@@ -40,6 +40,8 @@ The `wanaku-mcp-router` client in Keycloak must be **confidential** (not public)
 9. Add `http://localhost:4180/*` and `http://localhost:4181/*` under **Valid redirect URIs**.
 10. Add `*` under **Web origins**.
 
+Enable **Direct access grants** only when you use the local CLI password-grant example. Do not use password grants in a production deployment.
+
 ## Setup
 
 ### 1. Generate a Shared Cookie Secret
@@ -138,10 +140,12 @@ To restrict the management UI to administrators:
 
 MCP users without the `admin` role can use tools. They cannot access the management UI.
 
-## CLI Usage
+## CLI Usage (Local Development Only)
+
+Use the password grant only with a local development realm. Create a test user in Keycloak before you run this example. Replace `test` and `<your-secret>` with that user's credentials and the `wanaku-mcp-router` client secret.
 
 ```bash
-# Get a token from Keycloak (client must have direct access grants enabled)
+# Get a token from the local Keycloak realm.
 TOKEN=$(curl -s -X POST http://localhost:8543/realms/wanaku/protocol/openid-connect/token \
   -d grant_type=password \
   -d client_id=wanaku-mcp-router \

@@ -61,10 +61,16 @@ To restrict the management UI to administrators:
 
 MCP users who don't have the `admin` role can use tools but cannot access the management UI.
 
-## CLI Usage
+## CLI Usage (local development only)
+
+Use the password grant only for the local development realm. Do not use this flow in a production deployment.
+
+The bundled `wanaku-mcp-router` client enables direct access grants. Its access tokens include the `wanaku-mcp-router` audience. oauth2-proxy accepts this audience.
+
+Create a test user in Keycloak before you run this example. Replace `test` and `<your-secret>` with that user's credentials and the `wanaku-mcp-router` client secret.
 
 ```bash
-# Get a token from Keycloak (client must have direct access grants enabled)
+# Get a token from the local Keycloak realm.
 TOKEN=$(curl -s -X POST http://localhost:8543/realms/wanaku/protocol/openid-connect/token \
   -d grant_type=password \
   -d client_id=wanaku-mcp-router \
