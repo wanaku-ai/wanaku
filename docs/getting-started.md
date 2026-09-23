@@ -185,7 +185,8 @@ Read [Authentication](./auth.md) for setup instructions. It explains Keycloak co
 After you enable authentication, use a token to authenticate the CLI:
 
 ```bash
-# Get a token from Keycloak
+# Use this password grant only for local development.
+# Create the test user in Keycloak before you run this command.
 TOKEN=$(curl -s -X POST http://localhost:8543/realms/wanaku/protocol/openid-connect/token \
   -d grant_type=password \
   -d client_id=wanaku-mcp-router \
