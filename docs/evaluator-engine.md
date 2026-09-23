@@ -880,12 +880,10 @@ This script configures an evaluator, makes a tool call against a tool discovered
 **Prerequisites:** You need an upstream MCP server that exposes at least one tool. Register it as a forward before running this script:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/forwards \
-  -H "Content-Type: application/json" \
-  -d '{"name":"my-mcp-server","address":"http://<your-mcp-server>/mcp"}'
+wanaku forwards add --service="http://<your-mcp-server>/mcp" --name my-mcp-server --namespace default --no-auth
 ```
 
-Replace `restart-database` in the script below with a tool name discovered from your forward (`curl http://localhost:8080/api/v1/tools` to see available tools).
+Replace `restart-database` in the script below with a tool name discovered from your forward. Run `wanaku tools list --no-auth` to see the available tools.
 
 ```bash
 #!/usr/bin/env bash

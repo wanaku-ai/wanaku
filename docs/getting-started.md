@@ -88,7 +88,7 @@ The output contains an empty list. The server is running. It has not discovered 
 Wanaku automatically discovers tools from upstream MCP servers. Use the CLI to register a forward to an MCP server:
 
 ```bash
-wanaku forwards add --service="http://localhost:8180/mcp" --name my-mcp-server --no-auth
+wanaku forwards add --service="http://localhost:8180/mcp" --name my-mcp-server --namespace default --no-auth
 ```
 
 Wanaku connects to the upstream server. It discovers and registers all available tools.
@@ -147,17 +147,13 @@ Namespaces isolate tools and resources. Each namespace has a **name**. Wanaku us
 Create a `"finance"` namespace:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/namespaces \
-  -H "Content-Type: application/json" \
-  -d '{"name": "finance"}'
+wanaku namespaces create finance --no-auth
 ```
 
-Register a forward with `namespace` set to `"finance"`:
+Register a forward in the `finance` namespace:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/forwards \
-  -H "Content-Type: application/json" \
-  -d '{"name": "market-data-server", "address": "http://market-data-mcp:8080/mcp", "namespace": "finance"}'
+wanaku forwards add --service="http://market-data-mcp:8080/mcp" --name market-data-server --namespace finance --no-auth
 ```
 
 Send a query to the MCP endpoint for the `finance` namespace:
