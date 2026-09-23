@@ -32,6 +32,9 @@ The `wanaku-mcp-router` client in Keycloak must be **confidential** (not public)
    docker compose -f docker-compose-auth.yml up
    ```
 
+   The stack stores the Wanaku registry in the `wanaku-data` Docker volume.
+   Docker keeps this volume when you stop or recreate the containers.
+
 5. Access:
    - Admin UI: http://localhost:4181/admin/
    - MCP endpoint: http://localhost:4180/default/mcp
