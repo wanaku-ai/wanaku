@@ -113,17 +113,11 @@ The token command writes only the token to standard output. Diagnostics use stan
 ## 6. Call both APIs
 
 ```bash
-wanaku mcp tool list --verbose --uri http://localhost:4180 --token "$TOKEN"
+wanaku mcp tool list --verbose --uri http://localhost:4180/default/mcp --token "$TOKEN"
 wanaku tools list --verbose --host http://localhost:4181 --token "$TOKEN"
 ```
 
-Both commands must succeed. A new registry has no tools, so an empty list is expected.
-
-The updated CLI expands an MCP origin with no path to `/default/mcp`. For another namespace, specify the endpoint explicitly:
-
-```bash
-wanaku mcp tool list --verbose --uri http://localhost:4180/default/mcp --token "$TOKEN"
-```
+Both commands must succeed. The MCP command names the `default` namespace explicitly in its endpoint. Replace `default` with the namespace you want to access. A new registry has no tools, so an empty list is expected.
 
 The shell variable does not update when a token expires. Run the token command again to refresh an expired stored token. Run `wanaku auth login` again if the refresh token has expired.
 
@@ -150,7 +144,7 @@ Keycloak does not update an existing realm from the import file. To test a chang
 | `unauthorized_client` during login | Use `--client-id mcp-client`. An older imported realm can have direct access grants disabled. |
 | HTTP 401 from either API | Capture a fresh token. Use a `wanaku` realm user and `mcp-client`. Do not use an `admin-cli` token. |
 | Logs appear in `TOKEN` | Upgrade the wanaku-barn CLI. Do not remove log lines with a shell filter. |
-| Invalid MCP endpoint path | Upgrade the CLI or use `http://localhost:4180/default/mcp`. |
+| Invalid MCP endpoint path | Use the exact MCP endpoint for the namespace, such as `http://localhost:4180/default/mcp`. |
 | Proxy exits at startup | Export both secrets in the shell that runs Compose. Inspect the proxy logs. |
 | Browser redirects to `keycloak:8080` | Rebuild the server. The public issuer must be `http://localhost:8543/realms/wanaku`; the upstream issuer uses the container address. |
 
