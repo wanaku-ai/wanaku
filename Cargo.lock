@@ -6679,6 +6679,7 @@ dependencies = [
  "praxis-proxy-filter",
  "reqwest 0.12.28",
  "serde_json",
+ "tokio",
  "tracing",
  "wanaku-filters",
  "wanaku-infra",

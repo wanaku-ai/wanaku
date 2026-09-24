@@ -25,6 +25,7 @@ These control core server behavior:
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override (use for local dev) |
 | `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on all HTTP responses (management API, MCP endpoint, inference proxy, and CORS preflight) |
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata endpoint |
+| `WANAKU_AUTH_UPSTREAM_ISSUER` | `WANAKU_AUTH_ISSUER` | Internal OIDC issuer URL for token requests |
 | `WANAKU_FORWARD_HEADERS` | _(unset = none)_ | Comma-separated list of HTTP header names to forward from incoming MCP requests to downstream tool invocations (e.g., `Authorization,DPoP`). Per-tool overrides via the `wanaku.forward_headers` label. |
 | `WANAKU_FORWARD_HEALTHCHECK_INTERVAL` | `30` | Interval, in seconds, of the background loop that re-probes forwards currently marked unavailable and flips them back to available once they recover — no manual refresh required. Set to `0` to disable the loop. |
 
@@ -188,13 +189,16 @@ Features (mcp-metadata, evaluator, etc.) define their own environment variables.
 
 ### Authentication with oauth2-proxy
 
-Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. The only auth-related configuration in Wanaku itself is the OIDC issuer URL:
+Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. Wanaku provides OAuth metadata and forwards token requests to the configured issuer.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL (e.g., `http://localhost:8543/realms/wanaku`) |
+| `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | Public OIDC issuer URL (for example, `http://localhost:8543/realms/wanaku`) |
+| `WANAKU_AUTH_UPSTREAM_ISSUER` | `WANAKU_AUTH_ISSUER` | Internal OIDC issuer URL for token requests (for example, `http://keycloak:8080/realms/wanaku`) |
 
-When set, the endpoint `/.well-known/oauth-protected-resource/{namespace}/mcp` returns OAuth server metadata. When unset, the endpoint returns 404.
+When `WANAKU_AUTH_ISSUER` is set, the endpoint `/.well-known/oauth-protected-resource/{namespace}/mcp` returns OAuth server metadata. When it is unset, the metadata contains an empty `authorization_servers` list.
+
+The public issuer URL must be accessible to clients and browsers. Wanaku uses this URL in discovery metadata, authorization redirects, registration redirects, and the JWKS URL. Set `WANAKU_AUTH_UPSTREAM_ISSUER` when Wanaku must use a different address to reach the same issuer. Only the `/token` proxy uses this internal address. An unset or empty upstream issuer uses the public issuer URL.
 
 See [Authentication](./auth.md) for full oauth2-proxy setup instructions.
 

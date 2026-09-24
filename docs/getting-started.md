@@ -180,23 +180,19 @@ Use the admin UI to view and manage tools, namespaces, resources, prompts, and f
 
 Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. oauth2-proxy receives requests before it sends them to the MCP and management API ports.
 
-Read [Authentication](./auth.md) for setup instructions. It explains Keycloak configuration and role-based access. It also explains how to run oauth2-proxy locally.
+Follow [Authenticated local deployment](../deploy/auth/README.md) for the complete Docker Compose workflow. It starts Keycloak, Wanaku, and both oauth2-proxy instances, then verifies CLI access.
 
-After you enable authentication, use a token to authenticate the CLI:
+After setup, log in with the local CLI client and use one token with both APIs:
 
 ```bash
-# Use this password grant only for local development.
-# Create the test user in Keycloak before you run this command.
-TOKEN=$(curl -s -X POST http://localhost:8543/realms/wanaku/protocol/openid-connect/token \
-  -d grant_type=password \
-  -d client_id=wanaku-mcp-router \
-  -d client_secret=<your-secret> \
-  -d username=test \
-  -d password=test | jq -r .access_token)
-
-# Use the CLI with a token
-wanaku tools list --host http://localhost:4181 --token $TOKEN
+wanaku auth login --auth-server http://localhost:8543 --realm wanaku \
+  --client-id mcp-client --username alice --password
+TOKEN=$(wanaku auth token --get --plain --unmask)
+wanaku mcp tool list --verbose --uri http://localhost:4180 --token "$TOKEN"
+wanaku tools list --verbose --host http://localhost:4181 --token "$TOKEN"
 ```
+
+Use the password grant only for local development. The login command prompts for the user's password.
 
 ### Custom Configuration
 
