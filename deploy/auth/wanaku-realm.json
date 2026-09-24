@@ -887,8 +887,8 @@
       "redirectUris": [
         "http://localhost:8080/*",
         "http://localhost:4180/*",
-        "*",
-        "http://localhost:4181/*"
+        "http://localhost:4181/*",
+        "*"
       ],
       "webOrigins": [
         "http://localhost:8080/*",

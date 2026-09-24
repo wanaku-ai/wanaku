@@ -6,13 +6,38 @@ Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for aut
 
 ### Keycloak Client Setup
 
-The `wanaku-mcp-router` client in Keycloak must be **confidential** (not public):
+ 
+1. First, launch the containers, so that Keycloak is running:
+
+```shell
+podman compose -f deploy/auth/docker-compose-auth.yml up
+```
+
+> [NOTE] Although the system is up, it is not functional yet, as the secrets are stale. Only Keycloak is fully 
+> functional at this point.
+
+Using the Wanaku Keycloak Admin client, follow these steps. You can download the Wanaku Keycloak Admin CLI from the 
+[release page](https://github.com/wanaku-ai/wanaku-barn/releases) from the Wanaku Barn project.
+
+1. Regenerate the client secret:
+
+```shell
+wanaku-keycloak-admin credentials regenerate --admin-username admin --admin-password admin --client-id wanaku-mcp-router
+```
+
+2. Retrieve the secret: 
+
+```shell
+wanaku-keycloak-admin credentials show --admin-username admin --admin-password admin --client-id wanaku-mcp-router --show-secret --plain
+```
+
+Alternatively, you can manually set the `wanaku-mcp-router` client credentials in Keycloak.
+
+> [NOTE] It must be **confidential** (not public):
 
 1. Go to Keycloak Admin → Clients → `wanaku-mcp-router` → Settings
 2. Set **Client authentication** to **ON**
 3. Save, then go to the **Credentials** tab and copy the client secret
-4. Under **Valid redirect URIs**, add `http://localhost:4180/*` and `http://localhost:4181/*`
-5. Under **Web origins**, add `*`
 
 ## Quick Start (Docker Compose)
 
@@ -27,9 +52,9 @@ The `wanaku-mcp-router` client in Keycloak must be **confidential** (not public)
 
 3. Place your Keycloak realm export as `wanaku-realm.json` in this directory.
 
-4. Start the stack:
+4. Restart the stack (`Ctrl+C` to stop):
    ```bash
-   docker compose -f docker-compose-auth.yml up
+   podman compose -f deploy/auth/docker-compose-auth.yml up
    ```
 
    The stack stores the Wanaku registry in the `wanaku-data` Docker volume.
@@ -39,6 +64,21 @@ The `wanaku-mcp-router` client in Keycloak must be **confidential** (not public)
    - Admin UI: http://localhost:4181/admin/
    - MCP endpoint: http://localhost:4180/default/mcp
    - Public MCP (no auth): http://localhost:4180/public/mcp
+
+
+## Create an User
+
+You can create an user the first time you access the admin console or by using the Keycloak Admin CLI:
+
+```shell
+wanaku-keycloak-admin users add --admin-username admin --admin-password admin --username alice --password secretpass --email alice@example.com --first-name Alice --last-name Smith
+```
+
+You can also view if any user already exists using:
+
+```shell
+wanaku-keycloak-admin users list --admin-username admin --admin-password admin
+```
 
 ## Architecture
 
@@ -70,13 +110,11 @@ The bundled `wanaku-mcp-router` client enables direct access grants. Its access 
 Create a test user in Keycloak before you run this example. Replace `test` and `<your-secret>` with that user's credentials and the `wanaku-mcp-router` client secret.
 
 ```bash
-# Get a token from the local Keycloak realm.
-TOKEN=$(curl -s -X POST http://localhost:8543/realms/wanaku/protocol/openid-connect/token \
-  -d grant_type=password \
-  -d client_id=wanaku-mcp-router \
-  -d client_secret=<your-secret> \
-  -d username=test \
-  -d password=test | jq -r .access_token)
+# Login
+wanaku auth login --auth-server http://localhost:8543 --username alice --password --realm wanaku
+
+# Get the token
+TOKEN=$(wanaku auth token --get --plain --unmask)
 
 # Use with the management proxy
 wanaku tools list --host http://localhost:4181 --token $TOKEN
