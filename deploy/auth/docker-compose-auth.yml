@@ -18,6 +18,7 @@ services:
       - "8943:9000"
     volumes:
       - ./wanaku-realm.json:/opt/keycloak/data/import/wanaku-realm.json:ro
+      - keycloak-data:/opt/keycloak/data
     healthcheck:
       test:
         - "CMD-SHELL"
@@ -39,6 +40,9 @@ services:
     env_file:
       - oauth2-proxy-shared.env
       - oauth2-proxy-mcp.env
+    environment:
+      OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET:-}
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET:-}
     ports:
       - "4180:4180"
     depends_on:
@@ -50,6 +54,9 @@ services:
     env_file:
       - oauth2-proxy-shared.env
       - oauth2-proxy-mgmt.env
+    environment:
+      OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET:-}
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET:-}
     ports:
       - "4181:4181"
     depends_on:
@@ -62,7 +69,8 @@ services:
       dockerfile: Containerfile
     image: quay.io/wanaku/wanaku-server:latest
     environment:
-      WANAKU_AUTH_ISSUER: http://keycloak:8080/realms/wanaku
+      WANAKU_AUTH_ISSUER: http://localhost:8543/realms/wanaku
+      WANAKU_AUTH_UPSTREAM_ISSUER: http://keycloak:8080/realms/wanaku
       WANAKU_PERSIST_PATH: /data/registry
     volumes:
       - wanaku-data:/data
@@ -73,3 +81,4 @@ services:
 
 volumes:
   wanaku-data:
+  keycloak-data:

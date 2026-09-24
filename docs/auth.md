@@ -1,194 +1,42 @@
 # Authentication
 
-Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. Two oauth2-proxy instances run as reverse proxies in front of the MCP and management API ports, providing shared SSO via [Keycloak](https://keycloak.org).
+Wanaku uses Keycloak to issue tokens. oauth2-proxy validates browser sessions and bearer tokens before it forwards requests to Wanaku.
 
-## Architecture
-
-```
-Browser/CLI ----> oauth2-proxy-mcp (:4180) ----> Wanaku MCP (:8081)
-            \---> oauth2-proxy-mgmt (:4181) ---> Wanaku Mgmt (:8080)
+```text
+Browser/CLI ──► oauth2-proxy-mcp (:4180) ──► Wanaku MCP (:8081)
+            └─► oauth2-proxy-mgmt (:4181) ──► Wanaku Management API (:8080)
 ```
 
-Both instances share the same cookie secret, so logging in on one port authenticates you on the other (SSO).
+Both proxies share a cookie secret. A browser login through either proxy then works on both ports. CLI requests use a Keycloak access token.
 
-The MCP proxy accepts bearer tokens from multiple Keycloak clients (`mcp-client`, `wanaku-mcp-client`) via `--oidc-extra-audience`, so MCP Inspector and other MCP clients can authenticate with their own Keycloak client credentials.
+## Local Docker Compose setup
 
-## Prerequisites
+Follow the [authenticated local deployment guide](../deploy/auth/README.md). It starts Keycloak, Wanaku, and both proxies. It also creates a test user and demonstrates the `wanaku` and `wanaku-keycloak-admin` commands.
 
-### Install oauth2-proxy
+The bundled realm has three separate clients:
 
-**macOS:**
+- `admin-cli` lets `wanaku-keycloak-admin` manage Keycloak. Its token does not authorize Wanaku API requests.
+- `mcp-client` lets `wanaku` log in as a user. Its default scope adds the audience accepted by the proxies.
+- `wanaku-mcp-router` lets oauth2-proxy authenticate browser sessions. It is a confidential client with a generated secret.
 
-```bash
-brew install oauth2-proxy
-```
+The local realm enables the password grant for `mcp-client`. Use this grant only for local development. Production deployments should use an interactive OAuth flow and production Keycloak clients.
 
-**Linux:** Download from the [oauth2-proxy releases page](https://github.com/oauth2-proxy/oauth2-proxy/releases).
+## Issuer addresses
 
-### Keycloak Client Setup
+Set `WANAKU_AUTH_ISSUER` to the issuer URL that clients can reach. Set `WANAKU_AUTH_UPSTREAM_ISSUER` when the server must use a different URL to reach Keycloak. The upstream variable defaults to `WANAKU_AUTH_ISSUER`.
 
-The `wanaku-mcp-router` client in Keycloak must be **confidential** (not public):
+For the Compose setup, clients use `http://localhost:8543/realms/wanaku`; the server container uses `http://keycloak:8080/realms/wanaku` for token requests. This keeps public discovery metadata and browser redirects usable from the host.
 
-1. Open Keycloak Admin.
-2. Select **Clients**.
-3. Select `wanaku-mcp-router`.
-4. Select **Settings**.
-5. Set **Client authentication** to **ON**.
-6. Save the client.
-7. Open the **Credentials** tab.
-8. Copy the client secret.
-9. Add `http://localhost:4180/*` and `http://localhost:4181/*` under **Valid redirect URIs**.
-10. Add `*` under **Web origins**.
+When `WANAKU_AUTH_ISSUER` is set, Wanaku serves OAuth protected-resource metadata for MCP endpoints. When it is unset, these metadata routes return 404.
 
-Enable **Direct access grants** only when you use the local CLI password-grant example. Do not use password grants in a production deployment.
+## Proxy behavior
 
-## Setup
+The MCP proxy accepts bearer tokens with the configured Wanaku MCP audience. MCP endpoints use `/{namespace}/mcp`, such as `/default/mcp`. The CLI maps a bare server origin to `/default/mcp`.
 
-### 1. Generate a Shared Cookie Secret
+The management proxy accepts the same bearer tokens for `/api/` requests. It protects the admin UI with a browser session. Set the proxy's allowed roles only when the realm maps the selected administrator role into access tokens.
 
-The cookie secret must be exactly 16, 24, or 32 bytes. Both oauth2-proxy instances must use the same secret for SSO to work.
+Public MCP requests use `/public/mcp`. The Compose setup allows this endpoint without a token. Keep public tools safe for anonymous use.
 
-```bash
-export COOKIE_SECRET=$(openssl rand -hex 16)
-```
+## Logging out
 
-### 2. Start Wanaku with Auth Issuer
-
-```bash
-WANAKU_AUTH_ISSUER=http://localhost:8543/realms/wanaku wanaku-server
-```
-
-When `WANAKU_AUTH_ISSUER` is set, the endpoint `/.well-known/oauth-protected-resource/{namespace}/mcp` returns OAuth server metadata. When unset, the endpoint returns 404.
-
-### 3. Start the MCP Proxy
-
-```bash
-oauth2-proxy \
-  --http-address=127.0.0.1:4180 \
-  --upstream=http://127.0.0.1:8081 \
-  --provider=keycloak-oidc \
-  --oidc-issuer-url=http://localhost:8543/realms/wanaku \
-  --client-id=wanaku-mcp-router \
-  --client-secret=<your-secret> \
-  --cookie-secret=$COOKIE_SECRET \
-  --cookie-secure=false \
-  --redirect-url=http://localhost:4180/oauth2/callback \
-  --email-domain="*" \
-  --code-challenge-method=S256 \
-  --skip-jwt-bearer-tokens \
-  --pass-authorization-header \
-  --oidc-extra-audience=mcp-client \
-  --oidc-extra-audience=wanaku-mcp-client \
-  --insecure-oidc-allow-unverified-email \
-  --skip-auth-route="^/.well-known/.*" \
-  --skip-auth-route="^/public/.*" \
-  --skip-auth-route="^/authorize$" \
-  --skip-auth-route="^/token$" \
-  --skip-auth-route="^/register$" \
-  --skip-auth-route="OPTIONS=^/.*" \
-  --api-route="^/[^/]+/mcp/?$" \
-  --upstream-timeout=3600s
-```
-
-If keycloak has a public accessible URL different than the internal one, you may want to set these additional properties:
-```bash
---skip-oidc-discovery=true
---login-url=<public keycloak url>
---redeem-url=<internal keycloak url>
---oidc-jwks-url=<internal keycloak url>
-```
-
-### 4. Start the Management Proxy
-
-In another terminal, using the same `$COOKIE_SECRET` for SSO:
-
-```bash
-oauth2-proxy \
-  --http-address=127.0.0.1:4181 \
-  --upstream=http://127.0.0.1:8080 \
-  --provider=keycloak-oidc \
-  --oidc-issuer-url=http://localhost:8543/realms/wanaku \
-  --client-id=wanaku-mcp-router \
-  --client-secret=<your-secret> \
-  --cookie-secret=$COOKIE_SECRET \
-  --cookie-secure=false \
-  --redirect-url=http://localhost:4181/oauth2/callback \
-  --email-domain="*" \
-  --code-challenge-method=S256 \
-  --skip-jwt-bearer-tokens \
-  --pass-authorization-header \
-  --oidc-extra-audience=mcp-client \
-  --oidc-extra-audience=wanaku-mcp-client \
-  --insecure-oidc-allow-unverified-email \
-  --skip-auth-route="^/healthz$" \
-  --skip-auth-route="^/health$"
-```
-
-### 5. Access Wanaku
-
-- **Admin UI:** `http://localhost:4181/admin/`
-- **MCP endpoint:** `http://localhost:4180/default/mcp`
-- **Public MCP (no auth):** `http://localhost:4180/public/mcp`
-
-## Role-Based Access
-
-To restrict the management UI to administrators:
-
-1. Create an `admin` role in Keycloak
-2. Add `--allowed-role=admin` to the management proxy command (step 4)
-3. Assign the `admin` role to administrator users
-
-MCP users without the `admin` role can use tools. They cannot access the management UI.
-
-## CLI Usage (Local Development Only)
-
-Use the password grant only with a local development realm. Create a test user in Keycloak before you run this example. Replace `test` and `<your-secret>` with that user's credentials and the `wanaku-mcp-router` client secret.
-
-```bash
-# Get a token from the local Keycloak realm.
-TOKEN=$(curl -s -X POST http://localhost:8543/realms/wanaku/protocol/openid-connect/token \
-  -d grant_type=password \
-  -d client_id=wanaku-mcp-router \
-  -d client_secret=<your-secret> \
-  -d username=test \
-  -d password=test | jq -r .access_token)
-
-# Use with the Wanaku CLI
-wanaku tools list --host http://localhost:4181 --token $TOKEN
-
-# Use with MCP endpoint directly
-curl -H "Authorization: Bearer $TOKEN" http://localhost:4180/default/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
-```
-
-You can also use the CLI's built-in authentication:
-
-```bash
-wanaku auth login --api-token $TOKEN
-wanaku tools list --host http://localhost:4181
-```
-
-## Running Without Authentication
-
-For local development or testing, run Wanaku without oauth2-proxy:
-
-```bash
-wanaku-server
-```
-
-Use the `--no-auth` flag with CLI commands:
-
-```bash
-wanaku tools list --no-auth
-```
-
-## MCP Inspector
-
-Set the MCP Inspector endpoint to `http://localhost:4180/default/mcp`. The Inspector's OAuth flow uses the `mcp-client` Keycloak client. The `--oidc-extra-audience` flag permits tokens for this client.
-
-## Related Docs
-
-- [Getting Started](./getting-started.md) — initial setup
-- [Configuration](./configuration.md) — `WANAKU_AUTH_ISSUER` and other env vars
-- [FAQ](./faq.md) — troubleshooting authentication issues
+`wanaku auth logout` clears the CLI's saved credentials. It does not end a browser session or revoke a token that was already issued. Browser logout behavior is tracked in [issue #2026](https://github.com/wanaku-ai/wanaku/issues/2026).
