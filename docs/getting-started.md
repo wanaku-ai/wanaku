@@ -188,9 +188,11 @@ After setup, log in with the local CLI client and use one token with both APIs:
 wanaku auth login --auth-server http://localhost:8543 --realm wanaku \
   --client-id mcp-client --username alice --password
 TOKEN=$(wanaku auth token --get --plain --unmask)
-wanaku mcp tool list --verbose --uri http://localhost:4180 --token "$TOKEN"
+wanaku mcp tool list --verbose --uri http://localhost:4180/default/mcp --token "$TOKEN"
 wanaku tools list --verbose --host http://localhost:4181 --token "$TOKEN"
 ```
+
+Set the namespace in the MCP endpoint path. Replace `default` with the namespace that contains the tools you want to access.
 
 Use the password grant only for local development. The login command prompts for the user's password.
 

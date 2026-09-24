@@ -31,7 +31,7 @@ When `WANAKU_AUTH_ISSUER` is set, Wanaku serves OAuth protected-resource metadat
 
 ## Proxy behavior
 
-The MCP proxy accepts bearer tokens with the configured Wanaku MCP audience. MCP endpoints use `/{namespace}/mcp`, such as `/default/mcp`. The CLI maps a bare server origin to `/default/mcp`.
+The MCP proxy accepts bearer tokens with the configured Wanaku MCP audience. MCP endpoints use `/{namespace}/mcp`, such as `/default/mcp`. Pass the full endpoint to the CLI. The CLI does not infer or select a namespace from a bare server origin.
 
 The management proxy accepts the same bearer tokens for `/api/` requests. It protects the admin UI with a browser session. Set the proxy's allowed roles only when the realm maps the selected administrator role into access tokens.
 
