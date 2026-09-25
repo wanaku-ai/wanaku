@@ -180,23 +180,21 @@ Use the admin UI to view and manage tools, namespaces, resources, prompts, and f
 
 Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. oauth2-proxy receives requests before it sends them to the MCP and management API ports.
 
-Read [Authentication](./auth.md) for setup instructions. It explains Keycloak configuration and role-based access. It also explains how to run oauth2-proxy locally.
+Follow [Authenticated local deployment](../deploy/auth/README.md) for the complete Docker Compose workflow. It starts Keycloak, Wanaku, and both oauth2-proxy instances, then verifies CLI access.
 
-After you enable authentication, use a token to authenticate the CLI:
+After setup, log in with the local CLI client and use one token with both APIs:
 
 ```bash
-# Use this password grant only for local development.
-# Create the test user in Keycloak before you run this command.
-TOKEN=$(curl -s -X POST http://localhost:8543/realms/wanaku/protocol/openid-connect/token \
-  -d grant_type=password \
-  -d client_id=wanaku-mcp-router \
-  -d client_secret=<your-secret> \
-  -d username=test \
-  -d password=test | jq -r .access_token)
-
-# Use the CLI with a token
-wanaku tools list --host http://localhost:4181 --token $TOKEN
+wanaku auth login --auth-server http://localhost:8543 --realm wanaku \
+  --client-id mcp-client --username alice --password
+TOKEN=$(wanaku auth token --get --plain --unmask)
+wanaku mcp tool list --verbose --uri http://localhost:4181/default/mcp --token "$TOKEN"
+wanaku tools list --verbose --host http://localhost:4180 --token "$TOKEN"
 ```
+
+Set the namespace in the MCP endpoint path. Replace `default` with the namespace that contains the tools you want to access.
+
+Use the password grant only for local development. The login command prompts for the user's password.
 
 ### Custom Configuration
 
@@ -236,8 +234,8 @@ Read [Configuration](./configuration.md) for the complete list.
 
 Authentication is handled externally by [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy). Two instances sit in front of the MCP and management ports, sharing an SSO cookie:
 
-- **MCP proxy** (`:4180` → `:8081`) — protects MCP endpoints, any authenticated user
-- **Management proxy** (`:4181` → `:8080`) — protects the admin UI and REST API, admin role required
+- **Management proxy** (`:4180` → `:8080`) — protects the admin UI and REST API, admin role required
+- **MCP proxy** (`:4181` → `:8081`) — protects MCP endpoints, any authenticated user
 
 Wanaku also serves [RFC 9728](https://datatracker.ietf.org/doc/rfc9728/) OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. Set `WANAKU_AUTH_ISSUER` to your Keycloak realm URL to populate the `authorization_servers` field.
 

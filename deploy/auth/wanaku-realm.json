@@ -725,7 +725,7 @@
       "consentRequired": false,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
+      "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": false,
       "publicClient": true,
       "frontchannelLogout": true,
@@ -748,14 +748,14 @@
         "roles",
         "profile",
         "basic",
-        "email"
+        "email",
+        "wanaku-mcp-client"
       ],
       "optionalClientScopes": [
         "address",
         "phone",
         "offline_access",
         "organization",
-        "wanaku-mcp-client",
         "microprofile-jwt"
       ]
     },
@@ -883,12 +883,12 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "",
+      "secret": "${WANAKU_MCPROUTER_SECRET}",
       "redirectUris": [
         "http://localhost:8080/*",
         "http://localhost:4180/*",
-        "*",
-        "http://localhost:4181/*"
+        "http://localhost:4181/*",
+        "*"
       ],
       "webOrigins": [
         "http://localhost:8080/*",
