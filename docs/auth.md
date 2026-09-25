@@ -3,8 +3,8 @@
 Wanaku uses Keycloak to issue tokens. oauth2-proxy validates browser sessions and bearer tokens before it forwards requests to Wanaku.
 
 ```text
-Browser/CLI ──► oauth2-proxy-mcp (:4180) ──► Wanaku MCP (:8081)
-            └─► oauth2-proxy-mgmt (:4181) ──► Wanaku Management API (:8080)
+Browser/CLI ──► oauth2-proxy-mgmt (:4180) ──► Wanaku Management API (:8080)
+            └─► oauth2-proxy-mcp (:4181) ──► Wanaku MCP (:8081)
 ```
 
 Both proxies share a cookie secret. A browser login through either proxy then works on both ports. CLI requests use a Keycloak access token.
@@ -18,6 +18,8 @@ The bundled realm has three separate clients:
 - `admin-cli` lets `wanaku-keycloak-admin` manage Keycloak. Its token does not authorize Wanaku API requests.
 - `mcp-client` lets `wanaku` log in as a user. Its default scope adds the audience accepted by the proxies.
 - `wanaku-mcp-router` lets oauth2-proxy authenticate browser sessions. It is a confidential client with a generated secret.
+
+The CLI logs in with the public `mcp-client`, which does not need a client secret. The `wanaku-mcp-router` secret belongs to the oauth2-proxy instances.
 
 The local realm enables the password grant for `mcp-client`. Use this grant only for local development. Production deployments should use an interactive OAuth flow and production Keycloak clients.
 
