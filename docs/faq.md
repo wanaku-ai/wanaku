@@ -73,7 +73,7 @@ When authentication is enabled, authenticate first or pass a token:
 
 ```bash
 # Pass a token directly
-wanaku tools list --host http://localhost:4181 --token $TOKEN
+wanaku tools list --host http://localhost:4180 --token $TOKEN
 
 # Or use the CLI's built-in auth
 wanaku auth login --api-token <your-token>

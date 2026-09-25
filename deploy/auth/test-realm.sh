@@ -8,6 +8,7 @@ jq -e '
   .clients[]
   | select(.clientId == "wanaku-mcp-router")
   | .directAccessGrantsEnabled == true
+    and .secret == "${WANAKU_MCPROUTER_SECRET}"
     and any(
       .protocolMappers[]?;
       .protocolMapper == "oidc-audience-mapper"
