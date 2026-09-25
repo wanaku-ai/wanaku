@@ -465,7 +465,7 @@ The admin UI is protected by oauth2-proxy when auth is enabled. Users authentica
 
 **How it works:**
 
-1. User visits `http://localhost:4181/admin/` (oauth2-proxy management port)
+1. User visits `http://localhost:4180/admin/` (oauth2-proxy management port)
 2. oauth2-proxy checks for a valid session cookie
 3. If no cookie, oauth2-proxy redirects to Keycloak's login page
 4. User authenticates with Keycloak

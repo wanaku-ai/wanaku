@@ -188,8 +188,8 @@ After setup, log in with the local CLI client and use one token with both APIs:
 wanaku auth login --auth-server http://localhost:8543 --realm wanaku \
   --client-id mcp-client --username alice --password
 TOKEN=$(wanaku auth token --get --plain --unmask)
-wanaku mcp tool list --verbose --uri http://localhost:4180/default/mcp --token "$TOKEN"
-wanaku tools list --verbose --host http://localhost:4181 --token "$TOKEN"
+wanaku mcp tool list --verbose --uri http://localhost:4181/default/mcp --token "$TOKEN"
+wanaku tools list --verbose --host http://localhost:4180 --token "$TOKEN"
 ```
 
 Set the namespace in the MCP endpoint path. Replace `default` with the namespace that contains the tools you want to access.
@@ -234,8 +234,8 @@ Read [Configuration](./configuration.md) for the complete list.
 
 Authentication is handled externally by [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy). Two instances sit in front of the MCP and management ports, sharing an SSO cookie:
 
-- **MCP proxy** (`:4180` → `:8081`) — protects MCP endpoints, any authenticated user
-- **Management proxy** (`:4181` → `:8080`) — protects the admin UI and REST API, admin role required
+- **Management proxy** (`:4180` → `:8080`) — protects the admin UI and REST API, admin role required
+- **MCP proxy** (`:4181` → `:8081`) — protects MCP endpoints, any authenticated user
 
 Wanaku also serves [RFC 9728](https://datatracker.ietf.org/doc/rfc9728/) OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. Set `WANAKU_AUTH_ISSUER` to your Keycloak realm URL to populate the `authorization_servers` field.
 

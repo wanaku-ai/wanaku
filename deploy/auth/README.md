@@ -23,7 +23,18 @@ Run the commands from the Wanaku repository root. Use the same shell for all ste
 
 The bundled realm enables direct access grants for `mcp-client`. Its default `wanaku-mcp-client` scope adds the audience that both proxies accept. `admin-cli` does not grant access to Wanaku. Always specify `--client-id mcp-client` when you log in for this guide.
 
-## 1. Start Keycloak
+`mcp-client` is a public client, so its login does not need `--client-secret`. The confidential `wanaku-mcp-router` client secret is for the oauth2-proxy instances only.
+
+## 1. Set the browser client secret and start Keycloak
+
+Set a secret for the confidential `wanaku-mcp-router` client before Keycloak imports the realm:
+
+```bash
+WANAKU_MCPROUTER_SECRET=$(openssl rand -hex 32)
+export WANAKU_MCPROUTER_SECRET
+```
+
+Compose passes this value to Keycloak, and the realm import assigns it to `wanaku-mcp-router`. If you omit it, Compose uses `changeme`. That fallback is for local development only. Set a private value for each environment.
 
 ```bash
 docker compose -p wanaku-auth -f deploy/auth/docker-compose-auth.yml up -d --wait keycloak
@@ -31,18 +42,9 @@ docker compose -p wanaku-auth -f deploy/auth/docker-compose-auth.yml up -d --wai
 
 Compose waits for Keycloak to become healthy. Keycloak imports the bundled `wanaku-realm.json` on the first start. You do not need to supply another realm export.
 
-## 2. Configure the proxy secrets
+## 2. Capture the proxy secrets
 
-Regenerate the browser client secret:
-
-```bash
-wanaku-keycloak-admin credentials regenerate \
-  --keycloak-url http://localhost:8543 --realm wanaku \
-  --admin-username admin --admin-password admin \
-  --client-id wanaku-mcp-router
-```
-
-Capture the secret:
+Read the secret that the realm import assigned to `wanaku-mcp-router`:
 
 ```bash
 OAUTH2_PROXY_CLIENT_SECRET=$(wanaku-keycloak-admin credentials show \
@@ -51,6 +53,10 @@ OAUTH2_PROXY_CLIENT_SECRET=$(wanaku-keycloak-admin credentials show \
   --client-id wanaku-mcp-router --show-secret --plain)
 export OAUTH2_PROXY_CLIENT_SECRET
 ```
+
+The `--plain --show-secret` options write only the secret to standard output. Errors use standard error. If the command cannot return a secret, it fails and standard output stays empty.
+
+Do not regenerate this client secret after the realm import. Regeneration changes the Keycloak value and no longer matches `WANAKU_MCPROUTER_SECRET`.
 
 Generate the shared cookie secret:
 
@@ -86,13 +92,13 @@ docker compose -p wanaku-auth -f deploy/auth/docker-compose-auth.yml up -d --bui
 docker compose -p wanaku-auth -f deploy/auth/docker-compose-auth.yml ps
 ```
 
-The build includes this checkout's server changes. Wait for Wanaku to start before the next step. To inspect startup errors, run:
+`--build` builds the Wanaku server image from this checkout, so it includes the local server changes. Without `--build`, Compose uses `quay.io/wanaku/wanaku-server:latest` instead. Wait for Wanaku to start before the next step. To inspect startup errors, run:
 
 ```bash
 docker compose -p wanaku-auth -f deploy/auth/docker-compose-auth.yml logs --tail=50 wanaku-server oauth2-proxy-mcp oauth2-proxy-mgmt
 ```
 
-Only the proxies expose Wanaku to the host. The management API uses port `4181`. MCP uses port `4180`.
+Only the proxies expose Wanaku to the host. The management API and admin UI use port `4180`. MCP uses port `4181`.
 
 ## 5. Log in and capture a token
 
@@ -113,8 +119,8 @@ The token command writes only the token to standard output. Diagnostics use stan
 ## 6. Call both APIs
 
 ```bash
-wanaku mcp tool list --verbose --uri http://localhost:4180/default/mcp --token "$TOKEN"
-wanaku tools list --verbose --host http://localhost:4181 --token "$TOKEN"
+wanaku mcp tool list --verbose --uri http://localhost:4181/default/mcp --token "$TOKEN"
+wanaku tools list --verbose --host http://localhost:4180 --token "$TOKEN"
 ```
 
 Both commands must succeed. The MCP command names the `default` namespace explicitly in its endpoint. Replace `default` with the namespace you want to access. A new registry has no tools, so an empty list is expected.
@@ -123,7 +129,7 @@ The shell variable does not update when a token expires. Run the token command a
 
 ## Browser access and logout
 
-Open `http://localhost:4181/admin/` and log in as `alice`. Both proxies share a session cookie. The public MCP endpoint is `http://localhost:4180/public/mcp`; it intentionally permits unauthenticated requests.
+Open `http://localhost:4180/admin/` and log in as `alice`. Both proxies share a session cookie. The public MCP endpoint is `http://localhost:4181/public/mcp`; it intentionally permits unauthenticated requests.
 
 The admin UI logout defect is tracked separately in [issue #2026](https://github.com/wanaku-ai/wanaku/issues/2026). `wanaku auth logout` clears local CLI credentials. It does not end a browser session or revoke an access token. Use `unset TOKEN` to clear the shell variable.
 
@@ -144,7 +150,7 @@ Keycloak does not update an existing realm from the import file. To test a chang
 | `unauthorized_client` during login | Use `--client-id mcp-client`. An older imported realm can have direct access grants disabled. |
 | HTTP 401 from either API | Capture a fresh token. Use a `wanaku` realm user and `mcp-client`. Do not use an `admin-cli` token. |
 | Logs appear in `TOKEN` | Upgrade the wanaku-barn CLI. Do not remove log lines with a shell filter. |
-| Invalid MCP endpoint path | Use the exact MCP endpoint for the namespace, such as `http://localhost:4180/default/mcp`. |
+| Invalid MCP endpoint path | Use the exact MCP endpoint for the namespace, such as `http://localhost:4181/default/mcp`. |
 | Proxy exits at startup | Export both secrets in the shell that runs Compose. Inspect the proxy logs. |
 | Browser redirects to `keycloak:8080` | Rebuild the server. The public issuer must be `http://localhost:8543/realms/wanaku`; the upstream issuer uses the container address. |
 

@@ -11,6 +11,7 @@ services:
       KC_HOSTNAME_STRICT: false
       KC_HTTP_ENABLED: true
       KC_PROXY_HEADERS: "xforwarded"
+      WANAKU_MCPROUTER_SECRET: ${WANAKU_MCPROUTER_SECRET:-changeme}
       # the public accessible hostname
       KC_HOSTNAME: http://localhost:8543
     ports:
@@ -44,7 +45,7 @@ services:
       OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET:-}
       OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET:-}
     ports:
-      - "4180:4180"
+      - "4181:4181"
     depends_on:
       keycloak:
         condition: service_healthy
@@ -58,7 +59,7 @@ services:
       OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET:-}
       OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET:-}
     ports:
-      - "4181:4181"
+      - "4180:4180"
     depends_on:
       keycloak:
         condition: service_healthy

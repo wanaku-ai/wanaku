@@ -413,8 +413,8 @@ Wanaku delegates authentication to [oauth2-proxy](https://github.com/oauth2-prox
 
 Two oauth2-proxy instances with a shared cookie provide SSO across both endpoints:
 
-- **oauth2-proxy-mcp** (port 4180 → 8081) — protects MCP endpoints, requires `mcp-user` role
-- **oauth2-proxy-mgmt** (port 4181 → 8080) — protects admin UI and REST API, requires `admin` role
+- **oauth2-proxy-mgmt** (port 4180 → 8080) — protects admin UI and REST API, requires `admin` role
+- **oauth2-proxy-mcp** (port 4181 → 8081) — protects MCP endpoints, requires `mcp-user` role
 
 Users authenticate via oauth2-proxy's browser-based login flow (PKCE). CLI clients obtain tokens from Keycloak and pass them as `Authorization: Bearer <token>` headers — oauth2-proxy validates them before proxying to Wanaku.
 

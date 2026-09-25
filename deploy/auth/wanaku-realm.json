@@ -883,7 +883,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "",
+      "secret": "${WANAKU_MCPROUTER_SECRET}",
       "redirectUris": [
         "http://localhost:8080/*",
         "http://localhost:4180/*",
