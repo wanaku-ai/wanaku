@@ -21,6 +21,7 @@ use pingora_core::server::ShutdownWatch;
 use pingora_core::services::background::BackgroundService;
 use tracing::{debug, info};
 
+use wanaku_infra::credentials::CredentialBroker;
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::registry::ForwardRegistry;
 
@@ -29,6 +30,7 @@ use super::handlers::discover_and_update_forward;
 /// Periodically re-probes unavailable forwards and restores them once reachable.
 pub struct ForwardReconnectService {
     registry: InMemoryRegistry,
+    broker: Arc<CredentialBroker>,
     interval: Duration,
 }
 
@@ -36,8 +38,16 @@ impl ForwardReconnectService {
     /// Create a new reconnect service that probes unavailable forwards every
     /// `interval`.
     #[must_use]
-    pub const fn new(registry: InMemoryRegistry, interval: Duration) -> Self {
-        Self { registry, interval }
+    pub const fn new(
+        registry: InMemoryRegistry,
+        broker: Arc<CredentialBroker>,
+        interval: Duration,
+    ) -> Self {
+        Self {
+            registry,
+            broker,
+            interval,
+        }
     }
 
     /// Run a single reconnect sweep: probe every forward that is currently
@@ -59,7 +69,7 @@ impl ForwardReconnectService {
         debug!(forwards = count, "re-checking unavailable forwards");
         for fwd in &unavailable {
             debug!(forward = %fwd.name, address = %fwd.address, "probing unavailable forward");
-            discover_and_update_forward(&self.registry, fwd).await;
+            discover_and_update_forward(&self.registry, &self.broker, fwd).await;
         }
         count
     }
@@ -97,16 +107,22 @@ impl BackgroundService for ForwardReconnectService {
 #[must_use]
 pub fn reconnect_service(
     registry: InMemoryRegistry,
+    broker: Arc<CredentialBroker>,
     interval: Duration,
 ) -> Arc<ForwardReconnectService> {
-    Arc::new(ForwardReconnectService::new(registry, interval))
+    Arc::new(ForwardReconnectService::new(registry, broker, interval))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::collections::HashMap;
+    use wanaku_types::credentials::ResolverRegistry;
     use wanaku_types::registry::ForwardEntry;
+
+    fn test_broker() -> Arc<CredentialBroker> {
+        Arc::new(CredentialBroker::new(ResolverRegistry::new()))
+    }
 
     fn forward(name: &str, available: bool) -> ForwardEntry {
         ForwardEntry {
@@ -127,7 +143,7 @@ mod tests {
         let registry = InMemoryRegistry::new();
         registry.register_forward(forward("healthy", true));
 
-        let svc = ForwardReconnectService::new(registry, Duration::from_secs(30));
+        let svc = ForwardReconnectService::new(registry, test_broker(), Duration::from_secs(30));
         assert_eq!(
             svc.run_once().await,
             0,
@@ -142,7 +158,8 @@ mod tests {
         registry.register_forward(forward("down-1", false));
         registry.register_forward(forward("down-2", false));
 
-        let svc = ForwardReconnectService::new(registry.clone(), Duration::from_secs(30));
+        let svc =
+            ForwardReconnectService::new(registry.clone(), test_broker(), Duration::from_secs(30));
         assert_eq!(
             svc.run_once().await,
             2,

@@ -47,13 +47,23 @@ fn main() {
     // Paired with InterceptFeature: adds x-request-id to tool schemas for conversation tracking
     wanaku_registry.enable_request_id_injection();
 
+    // The credential broker holds a shared, single-flight resolution cache. It
+    // is built once and shared across startup discovery, every request pipeline,
+    // and the management and reconnect services.
+    let credential_broker = Arc::new(build_credential_broker());
+
     let wanaku_config = load_wanaku_yaml(&args.wanaku_config).unwrap_or_else(|error| fatal(&error));
     let governance = load_governance_config(wanaku_config.as_ref()).unwrap_or_else(|e| fatal(&e));
     // Feature status and pipeline filters use the same immutable startup posture.
     let features: Vec<Box<dyn Feature>> =
         build_features(&args, &metrics_store, wanaku_config.as_ref(), &governance);
 
-    load_config(wanaku_config.as_ref(), &wanaku_registry, &features);
+    load_config(
+        wanaku_config.as_ref(),
+        &wanaku_registry,
+        &credential_broker,
+        &features,
+    );
     for feature in &features {
         feature
             .validate_startup()
@@ -70,20 +80,11 @@ fn main() {
         kv_stores: praxis_core::kv::KvStoreRegistry::new(),
         mgmt_registry: wanaku_registry.clone(),
         governance,
+        broker: credential_broker,
         features,
     };
 
-    // The credential broker holds a shared, single-flight resolution cache. It
-    // is built once and shared across every request pipeline.
-    let credential_broker = Arc::new(build_credential_broker());
-
-    let pipelines = build_pipelines(
-        &config,
-        &wanaku_registry,
-        &mut filter_registry,
-        &credential_broker,
-        &service_deps,
-    );
+    let pipelines = build_pipelines(&config, &wanaku_registry, &mut filter_registry, &service_deps);
 
     info!("initializing server");
     let mut server = PingoraServerRuntime::new(&config);
@@ -98,7 +99,6 @@ fn build_pipelines(
     config: &Config,
     wanaku_registry: &InMemoryRegistry,
     filter_registry: &mut FilterRegistry,
-    broker: &Arc<CredentialBroker>,
     service_deps: &ServiceDeps,
 ) -> ListenerPipelines {
     info!("building wanaku pipelines");
@@ -108,7 +108,7 @@ fn build_pipelines(
         &service_deps.kv_stores,
         wanaku_registry,
         &service_deps.governance,
-        broker,
+        &service_deps.broker,
         &service_deps.features,
     );
     wanaku_server::pipelines::resolve_pipelines(config, &pipeline_deps)
@@ -130,16 +130,18 @@ struct ServiceDeps {
     kv_stores: praxis_core::kv::KvStoreRegistry,
     mgmt_registry: InMemoryRegistry,
     governance: GovernanceConfig,
+    broker: Arc<CredentialBroker>,
     features: Vec<Box<dyn Feature>>,
 }
 
 fn load_config(
     wanaku_config: Option<&serde_yaml::Value>,
     wanaku_registry: &InMemoryRegistry,
+    broker: &Arc<CredentialBroker>,
     features: &[Box<dyn Feature>],
 ) {
     if let Some(yaml) = wanaku_config {
-        load_core_config(yaml, wanaku_registry);
+        load_core_config(yaml, wanaku_registry, broker);
     }
     let empty = serde_yaml::Value::Mapping(serde_yaml::Mapping::new());
     for feature in features {
@@ -193,17 +195,21 @@ fn setup_management_service(
 
     let mgmt_registry = deps.mgmt_registry.clone();
     let persistence_registry = deps.mgmt_registry.clone();
+    let reconnect_broker = deps.broker.clone();
 
     let mgmt_addr = &wanaku_types::config::ENV.mgmt_listen;
-    let mgmt =
-        wanaku_server::management::WanakuManagementService::new(deps.mgmt_registry, deps.features);
+    let mgmt = wanaku_server::management::WanakuManagementService::new(
+        deps.mgmt_registry,
+        deps.broker,
+        deps.features,
+    );
     let mut mgmt_service =
         pingora_core::services::listening::Service::new("wanaku-management".to_owned(), mgmt);
     mgmt_service.add_tcp(mgmt_addr);
     server.server_mut().add_service(mgmt_service);
     info!(address = %mgmt_addr, "management API enabled");
 
-    register_forward_reconnect_service(mgmt_registry, server);
+    register_forward_reconnect_service(mgmt_registry, reconnect_broker, server);
     register_registry_persistence_service(persistence_registry, server);
 }
 
@@ -228,6 +234,7 @@ fn register_registry_persistence_service(
 /// one-shot). Disabled when `WANAKU_FORWARD_HEALTHCHECK_INTERVAL` is `0`.
 fn register_forward_reconnect_service(
     registry: InMemoryRegistry,
+    broker: Arc<CredentialBroker>,
     server: &mut PingoraServerRuntime,
 ) {
     let Some(interval) = wanaku_types::config::ENV.forward_healthcheck_interval else {
@@ -235,7 +242,7 @@ fn register_forward_reconnect_service(
         return;
     };
 
-    let task = wanaku_server::management::reconnect_service(registry, interval);
+    let task = wanaku_server::management::reconnect_service(registry, broker, interval);
     let reconnect_service = pingora_core::services::background::GenBackgroundService::new(
         "wanaku-forward-reconnect".to_owned(),
         task,
@@ -340,7 +347,11 @@ fn load_wanaku_yaml(path: &str) -> Result<Option<serde_yaml::Value>, String> {
     clippy::too_many_lines,
     reason = "config loading requires sequential steps"
 )]
-fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
+fn load_core_config(
+    config: &serde_yaml::Value,
+    registry: &InMemoryRegistry,
+    broker: &Arc<CredentialBroker>,
+) {
     let mut forwards = Vec::new();
     if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
         for fwd_value in fwd_list {
@@ -373,7 +384,7 @@ fn load_core_config(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
         rt.block_on(async {
             for fwd in &forwards {
                 info!(forward = %fwd.name, address = %fwd.address, "discovering from forward");
-                wanaku_server::management::discover_and_update_forward(registry, fwd).await;
+                wanaku_server::management::discover_and_update_forward(registry, broker, fwd).await;
             }
         });
     }

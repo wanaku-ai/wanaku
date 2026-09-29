@@ -465,9 +465,12 @@ pub struct ForwardDiscovery {
     clippy::large_stack_frames,
     reason = "MCP forward discovery aggregating multiple calls"
 )]
-pub async fn discover_forward(url: &str) -> Result<ForwardDiscovery, McpClientError> {
+pub async fn discover_forward(
+    url: &str,
+    forward_headers: HashMap<HeaderName, HeaderValue>,
+) -> Result<ForwardDiscovery, McpClientError> {
     let url = url.to_owned();
-    let transport = build_transport(&url);
+    let transport = build_transport_with_headers(&url, forward_headers);
 
     let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
         .await
