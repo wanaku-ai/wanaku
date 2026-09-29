@@ -64,6 +64,8 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `POST` | `/api/v1/forwards` | Create a forward and run upstream discovery. |
 | `DELETE` | `/api/v1/forwards/{name}` | Delete a forward and its discovered entries. |
 | `POST` | `/api/v1/forwards/{name}/refreshes` | Run upstream discovery again. |
+| `GET` | `/api/v1/bindings` | List credential bindings. |
+| `GET` | `/api/v1/bindings/{id}` | Get a credential binding. |
 
 Wanaku discovers tools, resources, and prompts when you create or refresh a forward. The API does not have create routes for these entries. The `PUT` routes let you change existing tool and resource metadata.
 
@@ -106,6 +108,16 @@ curl -X POST http://localhost:8080/api/v1/forwards \
 ```
 
 Wanaku stores the forward even if discovery fails. In that case, the response reports zero discovered entries and the forward records the error in `status_message`.
+
+### Inspect a Credential Binding
+
+The binding routes are read-only. They return only non-secret binding metadata — `secretRefs` lists opaque references such as `env:API_TOKEN`, never a resolved value.
+
+```bash
+curl http://localhost:8080/api/v1/bindings/b1
+```
+
+There is no create, update, or delete route for bindings in this release. Bindings are part of the registry snapshot. See [Credential Brokerage](credential-brokerage.md) for the binding schema and the brokerage flow.
 
 ## Feature Routes
 
@@ -237,3 +249,4 @@ The MCP endpoint (port 8081) and the inference proxy (port 8083) each use their 
 - [Configuration](configuration.md) — Configure the listen address, persistence, and CORS.
 - [Features](features.md) — Add management routes through the feature system.
 - [Authentication](auth.md) — Put the management API behind oauth2-proxy.
+- [Credential Brokerage](credential-brokerage.md) — Scoped, fail-closed upstream authentication for forwards.
