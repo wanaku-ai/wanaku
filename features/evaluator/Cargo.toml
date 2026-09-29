@@ -28,8 +28,8 @@ serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 tracing = { workspace = true }
 utoipa = { version = "5.5", optional = true }
-wasmtime = { version = "48", features = ["component-model"] }
-wasmtime-wasi = "48"
+wasmtime = { version = "49", features = ["component-model"] }
+wasmtime-wasi = "49"
 wanaku-infra = { workspace = true }
 wanaku-types = { workspace = true }
 wanaku-filters = { workspace = true }
