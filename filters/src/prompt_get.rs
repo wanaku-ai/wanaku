@@ -1,7 +1,12 @@
+use std::collections::HashMap;
+
 use bytes::Bytes;
+use http::{HeaderName, HeaderValue};
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
 use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_types::credentials::CredentialPurpose;
+use wanaku_types::credentials::binding::UseScope;
 use wanaku_types::registry::{ForwardRegistry, PromptRegistry};
 
 crate::body_filter_boilerplate!(PromptGetFilter, "wanaku_prompt_get");
@@ -88,8 +93,30 @@ impl PromptGetFilter {
                     &format!("forward not found for prompt: {prompt_name}"),
                 ));
             };
+            let address = forward.address.clone();
+
+            let mut forward_headers: HashMap<HeaderName, HeaderValue> = HashMap::new();
+            let request = crate::credentials::ForwardCredentialRequest {
+                forward: &forward,
+                address: &address,
+                purpose: CredentialPurpose::Invocation,
+                scope: UseScope {
+                    namespace: Some(namespace),
+                    governed_item: Some(prompt_name),
+                    operation: Some(crate::PROMPTS_GET),
+                    identity: None,
+                },
+                json_rpc_id: &parsed.id,
+            };
+            if let Err(action) =
+                crate::credentials::inject_forward_credentials(ctx, &request, &mut forward_headers)
+                    .await
+            {
+                return Ok(action);
+            }
+
             return self
-                .handle_forwarded_get(&forward.address, prompt_name, &parsed)
+                .handle_forwarded_get(&address, prompt_name, &parsed, forward_headers)
                 .await;
         }
 
@@ -141,6 +168,7 @@ impl PromptGetFilter {
         forward_address: &str,
         prompt_name: &str,
         parsed: &ParsedBody,
+        forward_headers: HashMap<HeaderName, HeaderValue>,
     ) -> Result<FilterAction, FilterError> {
         trace!(prompt = %prompt_name, forward = %forward_address, "forwarding prompts/get to remote MCP server");
 
@@ -150,7 +178,14 @@ impl PromptGetFilter {
             Some(parsed.arguments.clone())
         };
 
-        match wanaku_infra::mcp_client::get_prompt(forward_address, prompt_name, arguments).await {
+        match wanaku_infra::mcp_client::get_prompt(
+            forward_address,
+            prompt_name,
+            arguments,
+            forward_headers,
+        )
+        .await
+        {
             Ok(result) => {
                 let response = serde_json::json!({
                     "jsonrpc": "2.0",
