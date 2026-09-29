@@ -154,6 +154,27 @@ pub(super) fn resolve_namespace_route(method: &str, path: &str) -> NamespaceRout
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum BindingRoute {
+    List,
+    GetById(String),
+    NotFound,
+}
+
+pub(super) fn resolve_binding_route(method: &str, path: &str) -> BindingRoute {
+    let Some(suffix) = path.strip_prefix("/api/v1/bindings") else {
+        return BindingRoute::NotFound;
+    };
+
+    let id = suffix.strip_prefix('/').filter(|s| !s.is_empty());
+
+    match (method, id) {
+        ("GET", None) => BindingRoute::List,
+        ("GET", Some(i)) => BindingRoute::GetById(i.to_owned()),
+        _ => BindingRoute::NotFound,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -264,6 +285,34 @@ mod tests {
         assert_eq!(
             resolve_forward_route("DELETE", "/api/v1/forwards/a/b"),
             ForwardRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn binding_route_list() {
+        assert_eq!(
+            resolve_binding_route("GET", "/api/v1/bindings"),
+            BindingRoute::List
+        );
+    }
+
+    #[test]
+    fn binding_route_get_by_id() {
+        assert_eq!(
+            resolve_binding_route("GET", "/api/v1/bindings/my-binding"),
+            BindingRoute::GetById("my-binding".to_owned())
+        );
+    }
+
+    #[test]
+    fn binding_route_rejects_mutations() {
+        assert_eq!(
+            resolve_binding_route("POST", "/api/v1/bindings"),
+            BindingRoute::NotFound
+        );
+        assert_eq!(
+            resolve_binding_route("DELETE", "/api/v1/bindings/my-binding"),
+            BindingRoute::NotFound
         );
     }
 

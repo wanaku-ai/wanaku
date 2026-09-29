@@ -464,6 +464,63 @@
         }
       }
     },
+    "/api/v1/bindings": {
+      "get": {
+        "tags": [
+          "Bindings"
+        ],
+        "operationId": "list_bindings",
+        "responses": {
+          "200": {
+            "description": "List all credential bindings (non-secret metadata only)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CredentialBinding"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/bindings/{id}": {
+      "get": {
+        "tags": [
+          "Bindings"
+        ],
+        "operationId": "get_binding",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Credential binding id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Binding found (non-secret metadata only)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialBinding"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Binding not found"
+          }
+        }
+      }
+    },
     "/api/v1/evaluators": {
       "get": {
         "tags": [
@@ -826,37 +883,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ManagementErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/evaluators/status": {
-      "get": {
-        "tags": [
-          "Evaluators"
-        ],
-        "operationId": "get_evaluator_status",
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "query",
-            "description": "Namespace name; defaults to default",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WanakuResponse_EvaluatorStatus"
                 }
               }
             }
@@ -1707,14 +1733,6 @@
           }
         }
       },
-      "AuditLevel": {
-        "type": "string",
-        "description": "Controls whether audit mode invokes configured LLM evaluators.",
-        "enum": [
-          "basic",
-          "full"
-        ]
-      },
       "AuditPage": {
         "type": "object",
         "required": [
@@ -1767,6 +1785,121 @@
             "type": "string"
           }
         }
+      },
+      "BindingRestrictions": {
+        "type": "object",
+        "description": "Optional restrictions that further constrain where a binding may be used.\nAn empty vector means \"no restriction on this dimension\".",
+        "properties": {
+          "governed_items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Governed item identifiers this binding may be used for."
+          },
+          "identities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Authenticated identities this binding may be used for."
+          },
+          "namespaces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Namespaces in which this binding may be used."
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "MCP operations this binding may be used for."
+          }
+        }
+      },
+      "CacheRules": {
+        "type": "object",
+        "description": "Cache rules for a binding's resolved credentials.",
+        "properties": {
+          "maxTtlSeconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "An explicit bounded maximum TTL, in seconds. When absent and the\nresolver supplies no expiry metadata, results are not cached.",
+            "minimum": 0
+          }
+        }
+      },
+      "CredentialBinding": {
+        "type": "object",
+        "description": "A credential binding: a top-level resource operationally owned by one forward.\n\nThe binding holds only **opaque** secret references. It never stores inline\nsecret values, and management APIs expose only its non-secret metadata.",
+        "required": [
+          "id",
+          "forwardId",
+          "origin",
+          "mechanism",
+          "secretRefs",
+          "allowedPurposes"
+        ],
+        "properties": {
+          "allowedPurposes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CredentialPurpose"
+            },
+            "description": "The credential purposes this binding is allowed to serve."
+          },
+          "cache": {
+            "$ref": "#/components/schemas/CacheRules",
+            "description": "Cache rules for resolved credentials."
+          },
+          "forwardId": {
+            "type": "string",
+            "description": "The owning forward's stable identifier (the forward name)."
+          },
+          "id": {
+            "type": "string",
+            "description": "Stable, non-secret binding identifier."
+          },
+          "mechanism": {
+            "$ref": "#/components/schemas/InjectionMechanism",
+            "description": "The outbound injection mechanism."
+          },
+          "origin": {
+            "$ref": "#/components/schemas/NormalizedOrigin",
+            "description": "The exact normalized upstream origin this binding may target."
+          },
+          "restrictions": {
+            "$ref": "#/components/schemas/BindingRestrictions",
+            "description": "Optional additional restrictions."
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Monotonic binding revision. Any change to the binding must bump this so\ncached credentials for the old revision are never reused.",
+            "minimum": 0
+          },
+          "secretRefs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SecretRef"
+            },
+            "description": "One or more opaque secret references resolved just in time."
+          }
+        }
+      },
+      "CredentialPurpose": {
+        "type": "string",
+        "description": "The purpose a credential is used for. Discovery and invocation are kept\ndistinct in policy checks, resolution context, audit events, and cache keys.",
+        "enum": [
+          "discovery",
+          "invocation"
+        ]
       },
       "DecisionSnapshot": {
         "type": "object",
@@ -1841,15 +1974,6 @@
           "deny"
         ]
       },
-      "EnforcementMode": {
-        "type": "string",
-        "description": "Controls whether governance decisions affect traffic.",
-        "enum": [
-          "enforce",
-          "audit",
-          "disabled"
-        ]
-      },
       "EngineSnapshot": {
         "type": "object",
         "required": [
@@ -1896,6 +2020,14 @@
             "minimum": 0
           }
         }
+      },
+      "ErrorPolicy": {
+        "type": "string",
+        "description": "What to do when a WASM action fails.",
+        "enum": [
+          "continue",
+          "block"
+        ]
       },
       "EvaluationEngine": {
         "oneOf": [
@@ -1980,6 +2112,9 @@
           "name": {
             "type": "string"
           },
+          "on_error": {
+            "$ref": "#/components/schemas/ErrorPolicy"
+          },
           "processor": {
             "$ref": "#/components/schemas/ProcessorRef"
           },
@@ -1988,17 +2123,6 @@
           }
         },
         "additionalProperties": false
-      },
-      "EvaluatorReadiness": {
-        "type": "string",
-        "description": "Runtime readiness of the active evaluator configuration.",
-        "enum": [
-          "ready",
-          "degraded",
-          "invalid",
-          "unconfigured",
-          "disabled"
-        ]
       },
       "EvaluatorRevisionResponse": {
         "type": "object",
@@ -2048,45 +2172,6 @@
             "$ref": "#/components/schemas/WasmSnapshot"
           }
         }
-      },
-      "EvaluatorStatus": {
-        "type": "object",
-        "required": [
-          "namespace",
-          "state",
-          "reason_code",
-          "posture"
-        ],
-        "properties": {
-          "namespace": {
-            "type": "string"
-          },
-          "posture": {
-            "$ref": "#/components/schemas/GovernancePosture"
-          },
-          "reason_code": {
-            "type": "string"
-          },
-          "revision_id": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64",
-            "minimum": 0
-          },
-          "state": {
-            "$ref": "#/components/schemas/EvaluatorReadiness"
-          }
-        }
-      },
-      "FailureBehavior": {
-        "type": "string",
-        "description": "Controls the result when governance cannot produce a decision.",
-        "enum": [
-          "allow",
-          "deny"
-        ]
       },
       "FilterSnapshot": {
         "type": "object",
@@ -2212,89 +2297,60 @@
           }
         }
       },
-      "GovernanceMetric": {
-        "type": "object",
-        "required": [
-          "mode",
-          "outcome",
-          "count"
+      "InjectionMechanism": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "`Authorization: Bearer <token>`.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "bearer"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A static named header carrying the resolved secret as its value.",
+            "required": [
+              "header",
+              "type"
+            ],
+            "properties": {
+              "header": {
+                "type": "string",
+                "description": "The (validated) header name to inject."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "named_header"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "HTTP Basic authentication with separately resolved username and password.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "basic"
+                ]
+              }
+            }
+          }
         ],
-        "properties": {
-          "count": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "mode": {
-            "type": "string"
-          },
-          "outcome": {
-            "$ref": "#/components/schemas/GovernanceOutcome"
-          }
-        }
-      },
-      "GovernanceOutcome": {
-        "type": "string",
-        "description": "Fixed outcome dimensions; request identifiers and namespace names are excluded.",
-        "enum": [
-          "enforced_allow",
-          "enforced_deny",
-          "audit_allow",
-          "audit_deny",
-          "audit_skipped",
-          "no_match_allow",
-          "no_match_deny",
-          "fail_open",
-          "fail_closed",
-          "disabled"
-        ]
-      },
-      "GovernancePosture": {
-        "type": "object",
-        "description": "The effective governance settings for one namespace.",
-        "properties": {
-          "audit_level": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/AuditLevel"
-              }
-            ],
-            "default": "basic"
-          },
-          "disabled_reason": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Required when governance is intentionally disabled.",
-            "default": null
-          },
-          "mode": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/EnforcementMode"
-              }
-            ],
-            "default": "enforce"
-          },
-          "no_match": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/NoMatchBehavior"
-              }
-            ],
-            "default": "deny"
-          },
-          "on_failure": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/FailureBehavior"
-              }
-            ],
-            "default": "deny"
-          }
-        },
-        "additionalProperties": false
+        "description": "The supported outbound credential injection mechanisms."
       },
       "LlmDef": {
         "type": "object",
@@ -2441,7 +2497,6 @@
       "MetricsSnapshot": {
         "type": "object",
         "required": [
-          "evaluator_governance",
           "filters",
           "evaluators",
           "pipeline",
@@ -2451,12 +2506,6 @@
         "properties": {
           "audit": {
             "$ref": "#/components/schemas/AuditSnapshot"
-          },
-          "evaluator_governance": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GovernanceMetric"
-            }
           },
           "evaluators": {
             "type": "object",
@@ -2531,13 +2580,9 @@
           }
         }
       },
-      "NoMatchBehavior": {
+      "NormalizedOrigin": {
         "type": "string",
-        "description": "Controls the result when no governance rule matches an action.",
-        "enum": [
-          "allow",
-          "deny"
-        ]
+        "description": "An exact, normalized upstream origin (scheme + host + port).\n\nNormalization lower-cases the scheme and host and makes the port explicit,\nso that bindings can be matched exactly and credentials are never sent to a\ndifferent origin because of address-normalization ambiguity."
       },
       "NoulCriteria": {
         "type": "object",
@@ -2780,14 +2825,15 @@
               "$ref": "#/components/schemas/PromptArgument"
             }
           },
-          "configurationURI": {
+          "description": {
+            "type": "string"
+          },
+          "forwardId": {
             "type": [
               "string",
               "null"
-            ]
-          },
-          "description": {
-            "type": "string"
+            ],
+            "description": "Stable identity of the forward that owns this discovered prompt.\n\nThe forward name is immutable and serves as the `forwardId`. Routing\nresolves the current upstream address from this identifier at retrieval\ntime. The upstream address is never used as forward identity."
           },
           "id": {
             "type": [
@@ -2863,14 +2909,15 @@
           "type"
         ],
         "properties": {
-          "configurationURI": {
+          "description": {
+            "type": "string"
+          },
+          "forwardId": {
             "type": [
               "string",
               "null"
-            ]
-          },
-          "description": {
-            "type": "string"
+            ],
+            "description": "Stable identity of the forward that owns this discovered resource.\n\nThe forward name is immutable and serves as the `forwardId`. Routing\nresolves the current upstream address from this identifier at read time.\nThe upstream address is never used as forward identity."
           },
           "id": {
             "type": [
@@ -2897,12 +2944,6 @@
             "type": "string"
           },
           "namespace": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "secretsURI": {
             "type": [
               "string",
               "null"
@@ -3048,6 +3089,22 @@
           }
         }
       },
+      "SecretRef": {
+        "type": "object",
+        "description": "An opaque secret reference of the form `<scheme>:<path>`.\n\nThe scheme selects the resolver (e.g. `env`). The path is resolver-specific\nand is never derived from request data.",
+        "required": [
+          "scheme",
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "scheme": {
+            "type": "string"
+          }
+        }
+      },
       "Selectors": {
         "type": "object",
         "description": "Transport-neutral action selectors.",
@@ -3153,14 +3210,15 @@
           "inputSchema"
         ],
         "properties": {
-          "configurationURI": {
+          "description": {
+            "type": "string"
+          },
+          "forwardId": {
             "type": [
               "string",
               "null"
-            ]
-          },
-          "description": {
-            "type": "string"
+            ],
+            "description": "Stable identity of the forward that owns this discovered tool.\n\nThe forward name is immutable and serves as the `forwardId`. Routing\nresolves the current upstream address from this identifier at invocation\ntime. The upstream address is never used as forward identity."
           },
           "id": {
             "type": [
@@ -3182,12 +3240,6 @@
             "type": "string"
           },
           "namespace": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "secretsURI": {
             "type": [
               "string",
               "null"
@@ -3266,8 +3318,7 @@
             "format": "int64",
             "minimum": 0
           }
-        },
-        "additionalProperties": false
+        }
       },
       "WanakuResponse_ActionPolicyRevisionResponse": {
         "type": "object",
@@ -3587,48 +3638,6 @@
           }
         }
       },
-      "WanakuResponse_EvaluatorStatus": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "object",
-            "required": [
-              "namespace",
-              "state",
-              "reason_code",
-              "posture"
-            ],
-            "properties": {
-              "namespace": {
-                "type": "string"
-              },
-              "posture": {
-                "$ref": "#/components/schemas/GovernancePosture"
-              },
-              "reason_code": {
-                "type": "string"
-              },
-              "revision_id": {
-                "type": [
-                  "integer",
-                  "null"
-                ],
-                "format": "int64",
-                "minimum": 0
-              },
-              "state": {
-                "$ref": "#/components/schemas/EvaluatorReadiness"
-              }
-            }
-          },
-          "error": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
       "WanakuResponse_HashMap_String_String": {
         "type": "object",
         "properties": {
@@ -3718,6 +3727,9 @@
                 },
                 "name": {
                   "type": "string"
+                },
+                "on_error": {
+                  "$ref": "#/components/schemas/ErrorPolicy"
                 },
                 "processor": {
                   "$ref": "#/components/schemas/ProcessorRef"

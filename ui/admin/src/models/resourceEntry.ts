@@ -5,21 +5,24 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
-import type { ResourceEntryConfigurationURI } from "./resourceEntryConfigurationURI";
+import type { ResourceEntryForwardId } from "./resourceEntryForwardId";
 import type { ResourceEntryId } from "./resourceEntryId";
 import type { ResourceEntryLabels } from "./resourceEntryLabels";
 import type { ResourceEntryNamespace } from "./resourceEntryNamespace";
-import type { ResourceEntrySecretsURI } from "./resourceEntrySecretsURI";
 
 export interface ResourceEntry {
-  configurationURI?: ResourceEntryConfigurationURI;
   description?: string;
+  /** Stable identity of the forward that owns this discovered resource.
+
+The forward name is immutable and serves as the `forwardId`. Routing
+resolves the current upstream address from this identifier at read time.
+The upstream address is never used as forward identity. */
+  forwardId?: ResourceEntryForwardId;
   id?: ResourceEntryId;
   labels?: ResourceEntryLabels;
   location: string;
   mimeType?: string;
   name: string;
   namespace?: ResourceEntryNamespace;
-  secretsURI?: ResourceEntrySecretsURI;
   type: string;
 }

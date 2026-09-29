@@ -181,6 +181,24 @@ pub(super) fn handle_namespace_get(registry: &InMemoryRegistry, name: &str) -> R
     }
 }
 
+/// Lists credential-binding metadata.
+///
+/// The response contains only non-secret binding metadata. Bindings hold
+/// opaque secret references, never resolved secret values, so this endpoint
+/// cannot leak credentials.
+pub(super) fn handle_binding_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+    let bindings = registry.list_bindings();
+    json_ok(&serde_json::json!(bindings))
+}
+
+/// Returns the non-secret metadata of a single credential binding by id.
+pub(super) fn handle_binding_get(registry: &InMemoryRegistry, id: &str) -> Response<Vec<u8>> {
+    match registry.get_binding(id) {
+        Some(binding) => json_ok(&serde_json::json!(binding)),
+        None => json_err(StatusCode::NOT_FOUND, &format!("binding not found: {id}")),
+    }
+}
+
 pub(super) fn handle_namespace_create(
     registry: &InMemoryRegistry,
     body: &str,
@@ -1039,12 +1057,13 @@ mod tests {
     use wanaku_infra::credentials::CredentialBroker;
     use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::registry::{
-        ForwardEntry, ForwardRegistry, PromptEntry, PromptRegistry, ResourceEntry,
+        BindingRegistry, ForwardEntry, ForwardRegistry, PromptEntry, PromptRegistry, ResourceEntry,
         ResourceRegistry, ToolEntry, ToolRegistry,
     };
 
     use super::{
-        handle_forward_delete, handle_forward_get, handle_forward_list, handle_info,
+        handle_binding_get, handle_binding_list, handle_forward_delete, handle_forward_get,
+        handle_forward_list, handle_info,
         handle_namespace_create, handle_namespace_delete, handle_namespace_get,
         handle_namespace_list, handle_namespace_update, handle_prompt_delete, handle_prompt_get,
         handle_prompt_list, handle_resource_delete, handle_resource_get, handle_resource_list,
@@ -1486,6 +1505,72 @@ mod tests {
     fn namespace_update_invalid_json_returns_400() {
         let registry = InMemoryRegistry::new();
         assert_eq!(handle_namespace_update(&registry, "x", "???").status(), 400);
+    }
+
+    // ---- Binding handlers ----
+
+    fn sample_binding(id: &str) -> wanaku_types::credentials::CredentialBinding {
+        use wanaku_types::credentials::{
+            BindingRestrictions, CacheRules, CredentialBinding, CredentialPurpose,
+            InjectionMechanism, NormalizedOrigin, SecretRef,
+        };
+        CredentialBinding {
+            id: id.to_owned(),
+            forward_id: "fwd-a".to_owned(),
+            origin: NormalizedOrigin::from_address("https://api.example.com")
+                .expect("valid origin"),
+            mechanism: InjectionMechanism::Bearer,
+            secret_refs: vec![SecretRef::parse("env:API_TOKEN").expect("valid secret ref")],
+            allowed_purposes: vec![CredentialPurpose::Invocation],
+            restrictions: BindingRestrictions::default(),
+            cache: CacheRules::default(),
+            revision: 1,
+        }
+    }
+
+    #[test]
+    fn binding_list_empty_then_populated() {
+        let registry = InMemoryRegistry::new();
+        assert_eq!(
+            data_field(&handle_binding_list(&registry))
+                .as_array()
+                .map(|a| a.len()),
+            Some(0)
+        );
+
+        registry.register_binding(sample_binding("b1"));
+        assert_eq!(
+            data_field(&handle_binding_list(&registry))
+                .as_array()
+                .map(|a| a.len()),
+            Some(1)
+        );
+    }
+
+    #[test]
+    fn binding_get_returns_metadata_without_secrets() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(sample_binding("b1"));
+
+        let resp = handle_binding_get(&registry, "b1");
+        assert_eq!(resp.status(), 200);
+
+        let data = data_field(&resp);
+        assert_eq!(data.get("id").and_then(|v| v.as_str()), Some("b1"));
+        // Only the opaque reference is exposed, never a resolved secret value.
+        let refs = data
+            .get("secretRefs")
+            .and_then(|v| v.as_array())
+            .expect("secretRefs present");
+        assert_eq!(refs.first().and_then(|v| v.as_str()), Some("env:API_TOKEN"));
+        let serialized = serde_json::to_string(&data).unwrap_or_default();
+        assert!(!serialized.contains("REDACTED"));
+    }
+
+    #[test]
+    fn binding_get_nonexistent_returns_404() {
+        let registry = InMemoryRegistry::new();
+        assert_eq!(handle_binding_get(&registry, "nope").status(), 404);
     }
 
     // ---- Forward handlers (sync-only, skipping async create/refresh) ----

@@ -29,6 +29,10 @@ use wanaku_infra::metrics::{
     MetricsSnapshot, PipelineSnapshot, SchemaSnapshot, WasmSnapshot,
 };
 use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHealth, AuditPage};
+use wanaku_types::credentials::{
+    BindingRestrictions, CacheRules, CredentialBinding, CredentialPurpose, InjectionMechanism,
+    NormalizedOrigin, SecretRef,
+};
 use wanaku_types::registry::{
     ForwardEntry, McpServerInfo, NamespaceEntry, PromptArgument, PromptEntry, PromptMessage,
     ResourceEntry, ToolEntry,
@@ -161,6 +165,22 @@ const fn create_namespace() {}
     )
 )]
 const fn delete_namespace() {}
+
+// -- Bindings -----------------------------------------------------------------
+
+#[utoipa::path(get, path = "/api/v1/bindings", tag = "Bindings",
+    responses((status = 200, description = "List all credential bindings (non-secret metadata only)", body = Vec<CredentialBinding>))
+)]
+const fn list_bindings() {}
+
+#[utoipa::path(get, path = "/api/v1/bindings/{id}", tag = "Bindings",
+    params(("id" = String, Path, description = "Credential binding id")),
+    responses(
+        (status = 200, description = "Binding found (non-secret metadata only)", body = CredentialBinding),
+        (status = 404, description = "Binding not found"),
+    )
+)]
+const fn get_binding() {}
 
 // -- Forwards -----------------------------------------------------------------
 
@@ -431,6 +451,8 @@ impl utoipa::Modify for OptionalActivationBodies {
         get_namespace,
         create_namespace,
         delete_namespace,
+        list_bindings,
+        get_binding,
         list_forwards,
         get_forward,
         create_forward,
@@ -471,6 +493,13 @@ impl utoipa::Modify for OptionalActivationBodies {
         ForwardEntry,
         McpServerInfo,
         NamespaceEntry,
+        CredentialBinding,
+        CredentialPurpose,
+        NormalizedOrigin,
+        InjectionMechanism,
+        BindingRestrictions,
+        CacheRules,
+        SecretRef,
         MetricsSnapshot,
         GovernanceMetric,
         GovernanceOutcome,
@@ -612,6 +641,51 @@ mod tests {
             value
                 .pointer("/components/schemas/MetricsSnapshot/properties/evaluator_governance")
                 .is_some()
+        );
+    }
+
+    #[test]
+    fn includes_credential_binding_contracts() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        let paths = value.get("paths").and_then(serde_json::Value::as_object);
+        let schemas = value
+            .pointer("/components/schemas")
+            .and_then(serde_json::Value::as_object);
+
+        for path in ["/api/v1/bindings", "/api/v1/bindings/{id}"] {
+            assert!(
+                paths.is_some_and(|paths| paths.contains_key(path)),
+                "missing {path}"
+            );
+        }
+
+        for schema in [
+            "CredentialBinding",
+            "CredentialPurpose",
+            "NormalizedOrigin",
+            "InjectionMechanism",
+            "BindingRestrictions",
+            "CacheRules",
+            "SecretRef",
+        ] {
+            assert!(
+                schemas.is_some_and(|schemas| schemas.contains_key(schema)),
+                "missing {schema}"
+            );
+        }
+
+        // The binding schema must never expose resolved secret material. It
+        // carries only opaque secret references (`secretRefs`).
+        assert!(
+            !schemas.is_some_and(|schemas| schemas.contains_key("SecretMaterial")),
+            "secret material must not appear in the OpenAPI schema"
+        );
+        let binding = value
+            .pointer("/components/schemas/CredentialBinding/properties")
+            .and_then(serde_json::Value::as_object);
+        assert!(
+            binding.is_some_and(|properties| properties.contains_key("secretRefs")),
+            "binding must expose opaque secret references"
         );
     }
 
