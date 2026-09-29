@@ -113,7 +113,6 @@ impl ServeHttp for WanakuManagementService {
 
 #[expect(
     clippy::too_many_lines,
-    clippy::cognitive_complexity,
     reason = "route dispatch requires sequential matching"
 )]
 pub(crate) async fn dispatch(

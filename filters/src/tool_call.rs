@@ -139,22 +139,26 @@ impl ToolCallFilter {
         if tool.is_mcp_forward() {
             // Resolve the current upstream address from the immutable forwardId
             // provenance. Address is no longer identity: it can change while the
-            // forwardId stays stable. Fall back to the stored uri for tools
-            // registered without provenance (pre-migration compatibility).
-            let (address, forward) = match tool.forward_id.as_deref() {
-                Some(forward_id) => match registry.get_forward(forward_id) {
-                    Some(forward) => (forward.address.clone(), Some(forward)),
-                    None => {
-                        warn!(tool = %tool_name, forward_id = %forward_id, "forward not found for tool provenance");
-                        return Ok(crate::response::json_rpc_error(
-                            &parsed.id,
-                            crate::response::JSONRPC_INTERNAL_ERROR,
-                            &format!("forward not found for tool: {tool_name}"),
-                        ));
-                    }
-                },
-                None => (tool.uri.clone(), None),
+            // forwardId stays stable. Fail closed when a forwarded tool has no
+            // provenance: without it the owning forward is unknown, so credential
+            // enforcement cannot run. This matches the resources and prompts paths.
+            let Some(forward_id) = tool.forward_id.as_deref() else {
+                warn!(tool = %tool_name, "forwarded tool missing forwardId provenance");
+                return Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
+                    "forwarded tool has no forwardId provenance",
+                ));
             };
+            let Some(forward) = registry.get_forward(forward_id) else {
+                warn!(tool = %tool_name, forward_id = %forward_id, "forward not found for tool provenance");
+                return Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
+                    &format!("forward not found for tool: {tool_name}"),
+                ));
+            };
+            let address = forward.address.clone();
 
             let mut forward_headers = collect_forward_headers(&ctx.request.headers, &tool);
             if tool.inject_header_args() {
@@ -168,28 +172,23 @@ impl ToolCallFilter {
             // Inject brokered credentials only after governance has allowed the
             // call and after client-header argument mapping, so managed
             // credentials never leak into tool arguments.
-            if let Some(forward) = &forward {
-                let request = crate::credentials::ForwardCredentialRequest {
-                    forward,
-                    address: &address,
-                    purpose: CredentialPurpose::Invocation,
-                    scope: UseScope {
-                        namespace: Some(namespace),
-                        governed_item: Some(&tool_name),
-                        operation: Some(crate::TOOLS_CALL),
-                        identity: None,
-                    },
-                    json_rpc_id: &parsed.id,
-                };
-                if let Err(action) = crate::credentials::inject_forward_credentials(
-                    ctx,
-                    &request,
-                    &mut forward_headers,
-                )
-                .await
-                {
-                    return Ok(action);
-                }
+            let request = crate::credentials::ForwardCredentialRequest {
+                forward: &forward,
+                address: &address,
+                purpose: CredentialPurpose::Invocation,
+                scope: UseScope {
+                    namespace: Some(namespace),
+                    governed_item: Some(&tool_name),
+                    operation: Some(crate::TOOLS_CALL),
+                    identity: None,
+                },
+                json_rpc_id: &parsed.id,
+            };
+            if let Err(action) =
+                crate::credentials::inject_forward_credentials(ctx, &request, &mut forward_headers)
+                    .await
+            {
+                return Ok(action);
             }
 
             return self
