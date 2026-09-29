@@ -29,8 +29,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
   const [mimeType, setMimeType] = useState<string>(openedResource?.mimeType ?? "")
   const [namespace, setNamespace] = useState(openedResource?.namespace)
   const [params, setParams] = useState<Param[]>([])
-  const [configurationURI, setConfigurationURI] = useState(openedResource?.configurationURI)
-  const [secretsURI, setSecretsURI] = useState(openedResource?.secretsURI)
   const [submitDisable, setSubmitDisabled] = useState(false)
   function handleSubmit() {
     onSubmit({
@@ -42,8 +40,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
       mimeType,
       namespace,
       // params removed from API schema
-      configurationURI,
-      secretsURI
     })
   }
 
@@ -72,7 +68,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
         <TabList>
           <Tab>Overview</Tab>
           <Tab>Parameters</Tab>
-          <Tab>External</Tab>
         </TabList>
         <div id="resource-tab-panel-wrapper">
           <TabPanels>
@@ -135,22 +130,6 @@ export const ResourceModal: React.FC<ResourceModalProps> = ({ openedResource, on
                 onUpdate={(parameters: Param[]) => setParams(parameters)}
                 onInlineEditorOpen={() => setSubmitDisabled(true)}
                 onInlineEditorClose={() => setSubmitDisabled(false)}
-              />
-            </TabPanel>
-            <TabPanel>
-              <TextInput
-                id="resource-configuration-uri"
-                labelText="Configuration URI"
-                placeholder="e.g. file:///config/resource-config.json"
-                value={configurationURI ?? ""}
-                onChange={(event) => setConfigurationURI(event.target.value)}
-              />
-              <TextInput
-                id="resource-secrets-uri"
-                labelText="Secrets URI"
-                placeholder="e.g. vault://secrets/db-credentials"
-                value={secretsURI ?? ""}
-                onChange={(event) => setSecretsURI(event.target.value)}
               />
             </TabPanel>
           </TabPanels>

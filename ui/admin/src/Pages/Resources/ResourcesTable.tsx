@@ -6,9 +6,6 @@ import {
   TableBody,
   TableCell,
   TableContainer,
-  TableExpandedRow,
-  TableExpandHeader,
-  TableExpandRow,
   TableHead,
   TableHeader,
   TableRow,
@@ -86,10 +83,6 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
     }))
   }
 
-  function resourceHasDetails(resource: ResourceEntry) {
-    return resource.configurationURI || resource.secretsURI
-  }
-
   function tableCells(resource: ResourceEntry) {
     return (
       <React.Fragment>
@@ -119,24 +112,6 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
     )
   }
 
-  function resourceDetails(resource: ResourceEntry, rowProps) {
-    return (
-      <TableExpandedRow colSpan={headers.length + 3} {...rowProps}>
-        {/* params feature removed from API - omitted */}
-        {resource.configurationURI && (
-          <div>
-            <strong>Configuration URI:</strong> {resource.configurationURI}
-          </div>
-        )}
-        {resource.secretsURI && (
-          <div>
-            <strong>Secrets URI:</strong> {resource.secretsURI}
-          </div>
-        )}
-      </TableExpandedRow>
-    )
-  }
-  
   return isLoading
     ? (<DataTableSkeleton />)
     : (<DataTable headers={headers} rows={resourcesToRows()}>
@@ -146,7 +121,6 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
             getTableProps,
             getHeaderProps,
             getRowProps,
-            getExpandedRowProps,
             getToolbarProps
           }) => (
           <TableContainer>
@@ -156,7 +130,6 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
             <Table {...getTableProps()}>
               <TableHead>
                 <TableRow>
-                  <TableExpandHeader />
                   {headers.map((header) => (
                     <TableHeader {...getHeaderProps({header})}>
                       {header.header}
@@ -167,21 +140,9 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
               <TableBody>
                 {rows.map((row) => {
                   const resource = resources.find((item) => (item.name || item.id) === row.id)
-                  if (resource && resourceHasDetails(resource)) {
-                    // resource with details, expansion available
-                    return (
-                      <React.Fragment key={resource.name}>
-                        <TableExpandRow expandIconDescription="Show details" {...getRowProps({row})}>
-                          {tableCells(resource)}
-                        </TableExpandRow>
-                        {row.isExpanded && resourceDetails(resource, getExpandedRowProps({row}))}
-                      </React.Fragment>
-                    )
-                  } else if (resource) {
-                    // resource without details, no expansion available
+                  if (resource) {
                     return (
                       <TableRow {...getRowProps({row})}>
-                        <TableCell />
                         {tableCells(resource)}
                       </TableRow>
                     )
@@ -189,7 +150,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
                 })}
                 {resources.length == 0 && (
                   <TableEmptyState
-                    colSpan={headers.length + 1}
+                    colSpan={headers.length}
                     title="No resources discovered yet"
                     body="Register a forwarded MCP server to auto-discover resources"
                   />
