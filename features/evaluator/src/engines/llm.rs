@@ -262,8 +262,7 @@ mod tests {
             labels: HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         }
     }
 

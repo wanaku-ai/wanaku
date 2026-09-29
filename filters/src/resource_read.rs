@@ -2,7 +2,7 @@ use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
 use wanaku_infra::registry::InMemoryRegistry;
-use wanaku_types::registry::ResourceRegistry;
+use wanaku_types::registry::{ForwardRegistry, ResourceRegistry};
 
 crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
 
@@ -135,8 +135,26 @@ impl ResourceReadFilter {
         };
 
         if resource.is_mcp_forward() {
+            // Resolve the current upstream address from the immutable forwardId
+            // provenance. The address can change while the forwardId stays stable.
+            let Some(forward_id) = resource.forward_id.as_deref() else {
+                warn!(uri = %resource_uri, "forwarded resource missing forwardId provenance");
+                return Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
+                    "forwarded resource has no forwardId provenance",
+                ));
+            };
+            let Some(forward) = registry.get_forward(forward_id) else {
+                warn!(uri = %resource_uri, forward_id = %forward_id, "forward not found for resource provenance");
+                return Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
+                    &format!("forward not found for resource: {resource_uri}"),
+                ));
+            };
             return self
-                .handle_forwarded_read(&resource, resource_uri, &parsed)
+                .handle_forwarded_read(&forward.address, resource_uri, &parsed)
                 .await;
         }
 
@@ -153,19 +171,10 @@ impl ResourceReadFilter {
 
     async fn handle_forwarded_read(
         &self,
-        resource: &wanaku_types::registry::ResourceEntry,
+        forward_address: &str,
         resource_uri: &str,
         parsed: &ParsedBody,
     ) -> Result<FilterAction, FilterError> {
-        let Some(forward_address) = resource.forward_address() else {
-            warn!(uri = %resource_uri, "forwarded resource missing forward address label");
-            return Ok(crate::response::json_rpc_error(
-                &parsed.id,
-                crate::response::JSONRPC_INTERNAL_ERROR,
-                "forwarded resource has no upstream address configured",
-            ));
-        };
-
         trace!(uri = %resource_uri, forward = %forward_address, "forwarding resources/read to remote MCP server");
 
         match wanaku_infra::mcp_client::read_resource(forward_address, resource_uri).await {

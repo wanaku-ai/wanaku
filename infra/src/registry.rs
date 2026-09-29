@@ -707,8 +707,7 @@ mod tests {
             labels: HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         }
     }
 
@@ -722,8 +721,7 @@ mod tests {
             labels: HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         }
     }
 
@@ -830,8 +828,7 @@ mod tests {
             }),
             namespace: None,
             id: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
             labels: std::collections::HashMap::new(),
         };
         registry.register_tool(tool);
@@ -863,8 +860,7 @@ mod tests {
             }),
             namespace: None,
             id: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
             labels: std::collections::HashMap::new(),
         };
         registry.register_tool(tool);

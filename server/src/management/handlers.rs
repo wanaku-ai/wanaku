@@ -335,9 +335,9 @@ pub(super) fn handle_forward_delete(registry: &InMemoryRegistry, name: &str) -> 
     }
 
     if let Some(fwd) = forward {
-        remove_forwarded_tools(registry, &fwd.address);
-        remove_forwarded_resources(registry, &fwd.address);
-        remove_forwarded_prompts(registry, &fwd.address);
+        remove_forwarded_tools(registry, fwd.forward_id());
+        remove_forwarded_resources(registry, fwd.forward_id());
+        remove_forwarded_prompts(registry, fwd.forward_id());
     }
 
     info!(forward = %name, "removed forward via management API");
@@ -352,9 +352,9 @@ pub(super) async fn handle_forward_refresh(
         return json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}"));
     };
 
-    remove_forwarded_tools(registry, &forward.address);
-    remove_forwarded_resources(registry, &forward.address);
-    remove_forwarded_prompts(registry, &forward.address);
+    remove_forwarded_tools(registry, forward.forward_id());
+    remove_forwarded_resources(registry, forward.forward_id());
+    remove_forwarded_prompts(registry, forward.forward_id());
 
     let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address).await {
         Ok(d) => d,
@@ -484,8 +484,7 @@ fn register_discovered_tools(
             labels: forward.labels.clone(),
             id: None,
             namespace: Some(namespace.to_owned()),
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: Some(forward.forward_id().to_owned()),
         });
     }
 
@@ -559,12 +558,6 @@ fn register_discovered_resources(
             .and_then(|m| m.as_str())
             .unwrap_or_default();
 
-        let mut labels = std::collections::HashMap::new();
-        labels.insert(
-            wanaku_types::registry::FORWARD_ADDRESS_LABEL.to_owned(),
-            forward.address.clone(),
-        );
-
         info!(resource = %name, forward = %forward.name, "discovered forwarded resource");
         batch.push(ResourceEntry {
             name: name.to_owned(),
@@ -572,11 +565,10 @@ fn register_discovered_resources(
             location: uri.to_owned(),
             type_: MCP_FORWARD_TYPE.to_owned(),
             mime_type: mime_type.to_owned(),
-            labels,
+            labels: std::collections::HashMap::new(),
             id: None,
             namespace: Some(namespace.to_owned()),
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: Some(forward.forward_id().to_owned()),
         });
     }
 
@@ -614,10 +606,6 @@ fn register_discovered_resources(
 
         let mut labels = std::collections::HashMap::new();
         labels.insert(
-            wanaku_types::registry::FORWARD_ADDRESS_LABEL.to_owned(),
-            forward.address.clone(),
-        );
-        labels.insert(
             wanaku_types::registry::IS_TEMPLATE_LABEL.to_owned(),
             "true".to_owned(),
         );
@@ -632,8 +620,7 @@ fn register_discovered_resources(
             labels,
             id: None,
             namespace: Some(namespace.to_owned()),
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: Some(forward.forward_id().to_owned()),
         });
     }
 
@@ -642,22 +629,22 @@ fn register_discovered_resources(
     count
 }
 
-fn remove_forwarded_resources(registry: &InMemoryRegistry, address: &str) {
+fn remove_forwarded_resources(registry: &InMemoryRegistry, forward_id: &str) {
     let forwarded: Vec<String> = registry
         .list_resources()
         .iter()
-        .filter(|r| r.is_mcp_forward() && r.forward_address() == Some(address))
+        .filter(|r| r.is_mcp_forward() && r.forward_id.as_deref() == Some(forward_id))
         .map(|r| r.name.clone())
         .collect();
 
     registry.remove_resources_batch(&forwarded);
 }
 
-fn remove_forwarded_tools(registry: &InMemoryRegistry, address: &str) {
+fn remove_forwarded_tools(registry: &InMemoryRegistry, forward_id: &str) {
     let forwarded: Vec<String> = registry
         .list_tools()
         .iter()
-        .filter(|t| t.is_mcp_forward() && t.uri == address)
+        .filter(|t| t.is_mcp_forward() && t.forward_id.as_deref() == Some(forward_id))
         .map(|t| t.name.clone())
         .collect();
 
@@ -739,7 +726,7 @@ fn register_discovered_prompts(
             messages: Vec::new(),
             id: None,
             namespace: Some(namespace.to_owned()),
-            configuration_uri: Some(forward.address.clone()),
+            forward_id: Some(forward.forward_id().to_owned()),
         };
 
         info!(prompt = %name, forward = %forward.name, "discovered forwarded prompt");
@@ -751,11 +738,11 @@ fn register_discovered_prompts(
     count
 }
 
-fn remove_forwarded_prompts(registry: &InMemoryRegistry, address: &str) {
+fn remove_forwarded_prompts(registry: &InMemoryRegistry, forward_id: &str) {
     let forwarded: Vec<String> = registry
         .list_prompts()
         .iter()
-        .filter(|p| p.messages.is_empty() && p.configuration_uri.as_deref() == Some(address))
+        .filter(|p| p.forward_id.as_deref() == Some(forward_id))
         .map(|p| p.name.clone())
         .collect();
 
@@ -768,18 +755,13 @@ mod forward_helpers_tests {
     use std::collections::HashMap;
     use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::registry::{
-        FORWARD_ADDRESS_LABEL, PromptEntry, PromptRegistry, ResourceRegistry, ToolEntry,
-        ToolRegistry,
+        PromptEntry, PromptRegistry, ResourceRegistry, ToolEntry, ToolRegistry,
     };
-    use wanaku_types::registry::{PromptMessage, PromptRole};
 
     #[test]
     fn remove_forwarded_resources_clears_matching_resources() {
         let registry = InMemoryRegistry::new();
-        let fwd_addr = "http://remote:8080";
-
-        let mut fwd_labels = HashMap::new();
-        fwd_labels.insert(FORWARD_ADDRESS_LABEL.to_owned(), fwd_addr.to_owned());
+        let forward_id = "remote-forward";
 
         registry.register_resource(ResourceEntry {
             name: "fwd-res".to_owned(),
@@ -787,11 +769,10 @@ mod forward_helpers_tests {
             location: "file:///data/report.csv".to_owned(),
             type_: MCP_FORWARD_TYPE.to_owned(),
             mime_type: "text/csv".to_owned(),
-            labels: fwd_labels,
+            labels: HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: Some(forward_id.to_owned()),
         });
         registry.register_resource(ResourceEntry {
             name: "local-res".to_owned(),
@@ -802,11 +783,10 @@ mod forward_helpers_tests {
             labels: HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         });
 
-        remove_forwarded_resources(&registry, fwd_addr);
+        remove_forwarded_resources(&registry, forward_id);
 
         assert!(registry.get_resource("fwd-res").is_none());
         assert!(registry.get_resource("local-res").is_some());
@@ -815,19 +795,18 @@ mod forward_helpers_tests {
     #[test]
     fn remove_forwarded_tools_clears_matching_tools() {
         let registry = InMemoryRegistry::new();
-        let fwd_addr = "http://remote:8080";
+        let forward_id = "remote-forward";
 
         registry.register_tool(ToolEntry {
             name: "fwd-tool".to_owned(),
             description: "forwarded".to_owned(),
-            uri: fwd_addr.to_owned(),
+            uri: "http://remote:8080".to_owned(),
             type_: MCP_FORWARD_TYPE.to_owned(),
             input_schema: serde_json::json!({"type": "object"}),
             labels: HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: Some(forward_id.to_owned()),
         });
         registry.register_tool(ToolEntry {
             name: "local-tool".to_owned(),
@@ -838,11 +817,10 @@ mod forward_helpers_tests {
             labels: HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         });
 
-        remove_forwarded_tools(&registry, fwd_addr);
+        remove_forwarded_tools(&registry, forward_id);
 
         assert!(registry.get_tool("fwd-tool").is_none());
         assert!(registry.get_tool("local-tool").is_some());
@@ -851,7 +829,7 @@ mod forward_helpers_tests {
     #[test]
     fn remove_forwarded_prompts_clears_matching_prompts() {
         let registry = InMemoryRegistry::new();
-        let fwd_addr = "http://remote:8080";
+        let forward_id = "remote-forward";
 
         registry.register_prompt(PromptEntry {
             name: "fwd-prompt".to_owned(),
@@ -860,7 +838,7 @@ mod forward_helpers_tests {
             messages: Vec::new(),
             id: None,
             namespace: None,
-            configuration_uri: Some(fwd_addr.to_owned()),
+            forward_id: Some(forward_id.to_owned()),
         });
         registry.register_prompt(PromptEntry {
             name: "local-prompt".to_owned(),
@@ -869,38 +847,34 @@ mod forward_helpers_tests {
             messages: Vec::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
+            forward_id: None,
         });
 
-        remove_forwarded_prompts(&registry, fwd_addr);
+        remove_forwarded_prompts(&registry, forward_id);
 
         assert!(registry.get_prompt("fwd-prompt").is_none());
         assert!(registry.get_prompt("local-prompt").is_some());
     }
 
     #[test]
-    fn remove_forwarded_prompts_preserves_user_prompts_with_same_uri() {
+    fn remove_forwarded_prompts_preserves_prompts_from_other_forwards() {
         let registry = InMemoryRegistry::new();
-        let fwd_addr = "http://remote:8080";
 
         registry.register_prompt(PromptEntry {
-            name: "user-prompt".to_owned(),
-            description: "user-created with configurationURI".to_owned(),
+            name: "other-prompt".to_owned(),
+            description: "from another forward".to_owned(),
             arguments: Vec::new(),
-            messages: vec![PromptMessage {
-                role: PromptRole::User,
-                content: serde_json::json!("Hello {name}"),
-            }],
+            messages: Vec::new(),
             id: None,
             namespace: None,
-            configuration_uri: Some(fwd_addr.to_owned()),
+            forward_id: Some("other-forward".to_owned()),
         });
 
-        remove_forwarded_prompts(&registry, fwd_addr);
+        remove_forwarded_prompts(&registry, "remote-forward");
 
         assert!(
-            registry.get_prompt("user-prompt").is_some(),
-            "user-created prompt with messages must not be removed"
+            registry.get_prompt("other-prompt").is_some(),
+            "prompt from a different forward must not be removed"
         );
     }
 }
@@ -970,8 +944,7 @@ mod tests {
             labels: HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         }
     }
 
@@ -985,8 +958,7 @@ mod tests {
             labels: HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         }
     }
 
@@ -998,7 +970,7 @@ mod tests {
             messages: Vec::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
+            forward_id: None,
         }
     }
 
@@ -1510,15 +1482,15 @@ mod tests {
     fn tool_serializes_optional_camel_case_keys() {
         let registry = InMemoryRegistry::new();
         let mut tool = test_tool("cc-opt");
-        tool.configuration_uri = Some("cfg://a".to_owned());
-        tool.secrets_uri = Some("sec://b".to_owned());
+        tool.forward_id = Some("remote-forward".to_owned());
         registry.register_tool(tool);
 
         let data = data_field(&handle_tool_get(&registry, "cc-opt"));
-        assert!(data.get("configurationURI").is_some());
-        assert!(data.get("configuration_uri").is_none());
-        assert!(data.get("secretsURI").is_some());
-        assert!(data.get("secrets_uri").is_none());
+        assert_eq!(
+            data.get("forwardId").and_then(|v| v.as_str()),
+            Some("remote-forward")
+        );
+        assert!(data.get("forward_id").is_none());
     }
 
     #[test]
