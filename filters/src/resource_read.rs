@@ -1,7 +1,12 @@
+use std::collections::HashMap;
+
 use bytes::Bytes;
+use http::{HeaderName, HeaderValue};
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
 use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_types::credentials::CredentialPurpose;
+use wanaku_types::credentials::binding::UseScope;
 use wanaku_types::registry::{ForwardRegistry, ResourceRegistry};
 
 crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
@@ -153,8 +158,30 @@ impl ResourceReadFilter {
                     &format!("forward not found for resource: {resource_uri}"),
                 ));
             };
+            let address = forward.address.clone();
+
+            let mut forward_headers: HashMap<HeaderName, HeaderValue> = HashMap::new();
+            let request = crate::credentials::ForwardCredentialRequest {
+                forward: &forward,
+                address: &address,
+                purpose: CredentialPurpose::Invocation,
+                scope: UseScope {
+                    namespace: Some(namespace),
+                    governed_item: Some(resource_uri),
+                    operation: Some(crate::RESOURCES_READ),
+                    identity: None,
+                },
+                json_rpc_id: &parsed.id,
+            };
+            if let Err(action) =
+                crate::credentials::inject_forward_credentials(ctx, &request, &mut forward_headers)
+                    .await
+            {
+                return Ok(action);
+            }
+
             return self
-                .handle_forwarded_read(&forward.address, resource_uri, &parsed)
+                .handle_forwarded_read(&address, resource_uri, &parsed, forward_headers)
                 .await;
         }
 
@@ -174,10 +201,13 @@ impl ResourceReadFilter {
         forward_address: &str,
         resource_uri: &str,
         parsed: &ParsedBody,
+        forward_headers: HashMap<HeaderName, HeaderValue>,
     ) -> Result<FilterAction, FilterError> {
         trace!(uri = %resource_uri, forward = %forward_address, "forwarding resources/read to remote MCP server");
 
-        match wanaku_infra::mcp_client::read_resource(forward_address, resource_uri).await {
+        match wanaku_infra::mcp_client::read_resource(forward_address, resource_uri, forward_headers)
+            .await
+        {
             Ok(contents) => {
                 let response = serde_json::json!({
                     "jsonrpc": "2.0",

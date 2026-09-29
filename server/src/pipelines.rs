@@ -6,6 +6,7 @@ use praxis_filter::{FilterPipeline, FilterRegistry, PipelineExtension, RequestEx
 use praxis_protocol::ListenerPipelines;
 use tracing::info;
 
+use wanaku_infra::credentials::CredentialBroker;
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::feature::Feature;
 use wanaku_types::governance::GovernanceConfig;
@@ -26,6 +27,8 @@ pub struct PipelineDeps<'a> {
     pub wanaku_registry: &'a InMemoryRegistry,
     /// Immutable governance posture configuration.
     pub governance: &'a GovernanceConfig,
+    /// Shared just-in-time credential broker (shared cache across requests).
+    pub broker: &'a Arc<CredentialBroker>,
     /// Wanaku feature crates that provide pipeline extensions and filters.
     pub features: &'a [Box<dyn Feature>],
 }
@@ -39,6 +42,7 @@ impl<'a> PipelineDeps<'a> {
         kv_stores: &'a praxis_core::kv::KvStoreRegistry,
         wanaku_registry: &'a InMemoryRegistry,
         governance: &'a GovernanceConfig,
+        broker: &'a Arc<CredentialBroker>,
         features: &'a [Box<dyn Feature>],
     ) -> Self {
         Self {
@@ -47,6 +51,7 @@ impl<'a> PipelineDeps<'a> {
             kv_stores,
             wanaku_registry,
             governance,
+            broker,
             features,
         }
     }
@@ -54,6 +59,16 @@ impl<'a> PipelineDeps<'a> {
 
 struct RegistryExtension {
     registry: InMemoryRegistry,
+}
+
+struct BrokerExtension {
+    broker: Arc<CredentialBroker>,
+}
+
+impl PipelineExtension for BrokerExtension {
+    fn prepare(&self, extensions: &mut RequestExtensions) {
+        extensions.insert(self.broker.clone());
+    }
 }
 
 struct GovernanceExtension {
@@ -131,6 +146,9 @@ pub fn resolve_pipelines(
         }));
         pipeline.add_pipeline_extension(Box::new(GovernanceExtension {
             config: deps.governance.clone(),
+        }));
+        pipeline.add_pipeline_extension(Box::new(BrokerExtension {
+            broker: deps.broker.clone(),
         }));
 
         for feature in deps.features {

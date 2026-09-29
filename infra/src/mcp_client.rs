@@ -253,9 +253,13 @@ pub async fn list_resources(url: &str) -> Result<Vec<Value>, McpClientError> {
 }
 
 #[expect(clippy::large_stack_frames, reason = "MCP client call")]
-pub async fn read_resource(url: &str, resource_uri: &str) -> Result<Vec<Value>, McpClientError> {
+pub async fn read_resource(
+    url: &str,
+    resource_uri: &str,
+    forward_headers: HashMap<HeaderName, HeaderValue>,
+) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
-    let transport = build_transport(&url);
+    let transport = build_transport_with_headers(&url, forward_headers);
 
     let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
         .await
@@ -413,9 +417,10 @@ pub async fn get_prompt(
     url: &str,
     prompt_name: &str,
     arguments: Option<serde_json::Map<String, Value>>,
+    forward_headers: HashMap<HeaderName, HeaderValue>,
 ) -> Result<Value, McpClientError> {
     let url = url.to_owned();
-    let transport = build_transport(&url);
+    let transport = build_transport_with_headers(&url, forward_headers);
 
     let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
         .await

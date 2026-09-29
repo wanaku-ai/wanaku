@@ -5,6 +5,8 @@
 #[global_allocator]
 static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
+use std::sync::Arc;
+
 use clap::Parser;
 use praxis_core::PingoraServerRuntime;
 use praxis_core::config::{Config, ProtocolKind};
@@ -14,8 +16,10 @@ use praxis_protocol::http::PingoraHttp;
 use praxis_protocol::{ListenerPipelines, Protocol as _};
 use tracing::info;
 
+use wanaku_infra::credentials::CredentialBroker;
 use wanaku_infra::persistence::FilePersistence;
 use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_types::credentials::{EnvResolver, ResolverRegistry};
 use wanaku_types::feature::Feature;
 use wanaku_types::governance::GovernanceConfig;
 use wanaku_types::registry::{ForwardEntry, ForwardRegistry};
@@ -69,10 +73,15 @@ fn main() {
         features,
     };
 
+    // The credential broker holds a shared, single-flight resolution cache. It
+    // is built once and shared across every request pipeline.
+    let credential_broker = Arc::new(build_credential_broker());
+
     let pipelines = build_pipelines(
         &config,
         &wanaku_registry,
         &mut filter_registry,
+        &credential_broker,
         &service_deps,
     );
 
@@ -89,6 +98,7 @@ fn build_pipelines(
     config: &Config,
     wanaku_registry: &InMemoryRegistry,
     filter_registry: &mut FilterRegistry,
+    broker: &Arc<CredentialBroker>,
     service_deps: &ServiceDeps,
 ) -> ListenerPipelines {
     info!("building wanaku pipelines");
@@ -98,10 +108,21 @@ fn build_pipelines(
         &service_deps.kv_stores,
         wanaku_registry,
         &service_deps.governance,
+        broker,
         &service_deps.features,
     );
     wanaku_server::pipelines::resolve_pipelines(config, &pipeline_deps)
         .unwrap_or_else(|e| fatal(&e))
+}
+
+/// Build the shared credential broker.
+///
+/// The broker ships with the built-in `env:` resolver. Bindings are
+/// operator-controlled, so request data can never select an environment
+/// variable. Unknown resolver schemes fail closed.
+fn build_credential_broker() -> CredentialBroker {
+    let resolvers = ResolverRegistry::new().with_resolver(Arc::new(EnvResolver::new()));
+    CredentialBroker::new(resolvers)
 }
 
 struct ServiceDeps {

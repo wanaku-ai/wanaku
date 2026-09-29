@@ -6,6 +6,8 @@ use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::config::ENV;
+use wanaku_types::credentials::CredentialPurpose;
+use wanaku_types::credentials::binding::UseScope;
 use wanaku_types::registry::{ForwardRegistry, ToolEntry, ToolRegistry};
 
 crate::body_filter_boilerplate!(ToolCallFilter, "wanaku_tool_call");
@@ -139,9 +141,9 @@ impl ToolCallFilter {
             // provenance. Address is no longer identity: it can change while the
             // forwardId stays stable. Fall back to the stored uri for tools
             // registered without provenance (pre-migration compatibility).
-            let address = match tool.forward_id.as_deref() {
+            let (address, forward) = match tool.forward_id.as_deref() {
                 Some(forward_id) => match registry.get_forward(forward_id) {
-                    Some(forward) => forward.address.clone(),
+                    Some(forward) => (forward.address.clone(), Some(forward)),
                     None => {
                         warn!(tool = %tool_name, forward_id = %forward_id, "forward not found for tool provenance");
                         return Ok(crate::response::json_rpc_error(
@@ -151,10 +153,10 @@ impl ToolCallFilter {
                         ));
                     }
                 },
-                None => tool.uri.clone(),
+                None => (tool.uri.clone(), None),
             };
 
-            let forward_headers = collect_forward_headers(&ctx.request.headers, &tool);
+            let mut forward_headers = collect_forward_headers(&ctx.request.headers, &tool);
             if tool.inject_header_args() {
                 inject_header_arguments(
                     &mut parsed.arguments,
@@ -162,6 +164,34 @@ impl ToolCallFilter {
                     &forward_headers,
                 );
             }
+
+            // Inject brokered credentials only after governance has allowed the
+            // call and after client-header argument mapping, so managed
+            // credentials never leak into tool arguments.
+            if let Some(forward) = &forward {
+                let request = crate::credentials::ForwardCredentialRequest {
+                    forward,
+                    address: &address,
+                    purpose: CredentialPurpose::Invocation,
+                    scope: UseScope {
+                        namespace: Some(namespace),
+                        governed_item: Some(&tool_name),
+                        operation: Some(crate::TOOLS_CALL),
+                        identity: None,
+                    },
+                    json_rpc_id: &parsed.id,
+                };
+                if let Err(action) = crate::credentials::inject_forward_credentials(
+                    ctx,
+                    &request,
+                    &mut forward_headers,
+                )
+                .await
+                {
+                    return Ok(action);
+                }
+            }
+
             return self
                 .handle_forwarded_call(
                     &address,
