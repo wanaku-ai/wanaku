@@ -5,21 +5,24 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
-import type { ToolEntryConfigurationURI } from "./toolEntryConfigurationURI";
+import type { ToolEntryForwardId } from "./toolEntryForwardId";
 import type { ToolEntryId } from "./toolEntryId";
 import type { ToolEntryLabels } from "./toolEntryLabels";
 import type { ToolEntryNamespace } from "./toolEntryNamespace";
-import type { ToolEntrySecretsURI } from "./toolEntrySecretsURI";
 
 export interface ToolEntry {
-  configurationURI?: ToolEntryConfigurationURI;
   description: string;
+  /** Stable identity of the forward that owns this discovered tool.
+
+The forward name is immutable and serves as the `forwardId`. Routing
+resolves the current upstream address from this identifier at invocation
+time. The upstream address is never used as forward identity. */
+  forwardId?: ToolEntryForwardId;
   id?: ToolEntryId;
   inputSchema: unknown;
   labels?: ToolEntryLabels;
   name: string;
   namespace?: ToolEntryNamespace;
-  secretsURI?: ToolEntrySecretsURI;
   type: string;
   uri: string;
 }

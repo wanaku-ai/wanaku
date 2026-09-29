@@ -6,15 +6,20 @@
  * OpenAPI spec version: 0.3.0
  */
 import type { PromptArgument } from "./promptArgument";
-import type { PromptEntryConfigurationURI } from "./promptEntryConfigurationURI";
+import type { PromptEntryForwardId } from "./promptEntryForwardId";
 import type { PromptEntryId } from "./promptEntryId";
 import type { PromptMessage } from "./promptMessage";
 import type { PromptEntryNamespace } from "./promptEntryNamespace";
 
 export interface PromptEntry {
   arguments?: PromptArgument[];
-  configurationURI?: PromptEntryConfigurationURI;
   description?: string;
+  /** Stable identity of the forward that owns this discovered prompt.
+
+The forward name is immutable and serves as the `forwardId`. Routing
+resolves the current upstream address from this identifier at retrieval
+time. The upstream address is never used as forward identity. */
+  forwardId?: PromptEntryForwardId;
   id?: PromptEntryId;
   messages?: PromptMessage[];
   name: string;

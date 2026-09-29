@@ -27,20 +27,20 @@ use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::feature::{Feature, HttpContext};
 
 use self::handlers::{
-    handle_forward_create, handle_forward_delete, handle_forward_get, handle_forward_list,
-    handle_forward_refresh, handle_info, handle_namespace_create, handle_namespace_delete,
-    handle_namespace_get, handle_namespace_list, handle_namespace_update, handle_prompt_delete,
-    handle_prompt_get, handle_prompt_list, handle_resource_delete, handle_resource_get,
-    handle_resource_list, handle_resource_update, handle_statistics, handle_tool_delete,
-    handle_tool_get, handle_tool_list, handle_tool_update,
+    handle_binding_get, handle_binding_list, handle_forward_create, handle_forward_delete,
+    handle_forward_get, handle_forward_list, handle_forward_refresh, handle_info,
+    handle_namespace_create, handle_namespace_delete, handle_namespace_get, handle_namespace_list,
+    handle_namespace_update, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
+    handle_resource_delete, handle_resource_get, handle_resource_list, handle_resource_update,
+    handle_statistics, handle_tool_delete, handle_tool_get, handle_tool_list, handle_tool_update,
 };
 #[cfg(feature = "ui")]
 use self::response::redirect_response;
 use self::response::{raw_json_response, read_body};
 use self::routes::{
-    ForwardRoute, ManagementRoute, NamespaceRoute, PromptRoute, ResourceRoute, ToolRoute,
-    resolve_forward_route, resolve_management_route, resolve_namespace_route, resolve_prompt_route,
-    resolve_resource_route, resolve_tool_route,
+    BindingRoute, ForwardRoute, ManagementRoute, NamespaceRoute, PromptRoute, ResourceRoute,
+    ToolRoute, resolve_binding_route, resolve_forward_route, resolve_management_route,
+    resolve_namespace_route, resolve_prompt_route, resolve_resource_route, resolve_tool_route,
 };
 use crate::http_response::{json_err, json_ok};
 
@@ -189,6 +189,12 @@ pub(crate) async fn dispatch(
         }
         NamespaceRoute::Delete(name) => return handle_namespace_delete(registry, &name),
         NamespaceRoute::NotFound => {}
+    }
+
+    match resolve_binding_route(ctx.method, ctx.path) {
+        BindingRoute::List => return handle_binding_list(registry),
+        BindingRoute::GetById(id) => return handle_binding_get(registry, &id),
+        BindingRoute::NotFound => {}
     }
 
     match resolve_forward_route(ctx.method, ctx.path) {

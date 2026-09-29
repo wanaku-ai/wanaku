@@ -11,6 +11,7 @@ import type {
   ActivateRevisionRequest,
   BindEvaluatorNamespace200,
   BindNamespaceRequest,
+  CredentialBinding,
   ForwardEntry,
   GetActionPolicyRevision200,
   GetActiveActionPolicyRevision200,
@@ -413,6 +414,64 @@ export const getAuditSchema = async (
   options?: RequestInit,
 ): Promise<getAuditSchemaResponse> => {
   return customFetch<getAuditSchemaResponse>(getGetAuditSchemaUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type listBindingsResponse200 = {
+  data: CredentialBinding[];
+  status: 200;
+};
+
+export type listBindingsResponseSuccess = listBindingsResponse200 & {
+  headers: Headers;
+};
+export type listBindingsResponse = listBindingsResponseSuccess;
+
+export const getListBindingsUrl = () => {
+  return `/api/v1/bindings`;
+};
+
+export const listBindings = async (
+  options?: RequestInit,
+): Promise<listBindingsResponse> => {
+  return customFetch<listBindingsResponse>(getListBindingsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type getBindingResponse200 = {
+  data: CredentialBinding;
+  status: 200;
+};
+
+export type getBindingResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type getBindingResponseSuccess = getBindingResponse200 & {
+  headers: Headers;
+};
+export type getBindingResponseError = getBindingResponse404 & {
+  headers: Headers;
+};
+
+export type getBindingResponse =
+  | getBindingResponseSuccess
+  | getBindingResponseError;
+
+export const getGetBindingUrl = (id: string) => {
+  return `/api/v1/bindings/${id}`;
+};
+
+export const getBinding = async (
+  id: string,
+  options?: RequestInit,
+): Promise<getBindingResponse> => {
+  return customFetch<getBindingResponse>(getGetBindingUrl(id), {
     ...options,
     method: "GET",
   });
