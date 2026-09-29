@@ -16,6 +16,7 @@ struct StoreInner {
     pipeline: PipelineCounters,
     gauges: GaugeValues,
     audit_storage_failures: AtomicCounter,
+    governance: DashMap<(&'static str, GovernanceOutcome), AtomicCounter>,
 }
 
 // ---------------------------------------------------------------------------
@@ -174,6 +175,23 @@ pub enum SkipReason {
     MissingInteractions,
 }
 
+/// Fixed outcome dimensions; request identifiers and namespace names are excluded.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum GovernanceOutcome {
+    EnforcedAllow,
+    EnforcedDeny,
+    AuditAllow,
+    AuditDeny,
+    AuditSkipped,
+    NoMatchAllow,
+    NoMatchDeny,
+    FailOpen,
+    FailClosed,
+    Disabled,
+}
+
 impl MetricsStore {
     #[must_use]
     pub fn new() -> Self {
@@ -189,6 +207,24 @@ impl MetricsStore {
             FilterResult::Error => counters.errors.increment(),
         }
         counters.duration.record(duration);
+    }
+
+    pub fn record_governance(
+        &self,
+        mode: wanaku_types::governance::EnforcementMode,
+        outcome: GovernanceOutcome,
+    ) {
+        use wanaku_types::governance::EnforcementMode;
+        let mode = match mode {
+            EnforcementMode::Enforce => "enforce",
+            EnforcementMode::Audit => "audit",
+            EnforcementMode::Disabled => "disabled",
+        };
+        self.0
+            .governance
+            .entry((mode, outcome))
+            .or_default()
+            .increment();
     }
 
     pub fn record_evaluator_decision(&self, evaluator: &str, action: &str) {
@@ -400,6 +436,16 @@ impl MetricsStore {
         };
 
         MetricsSnapshot {
+            evaluator_governance: self
+                .0
+                .governance
+                .iter()
+                .map(|entry| GovernanceMetric {
+                    mode: entry.key().0.to_owned(),
+                    outcome: entry.key().1,
+                    count: entry.value().get(),
+                })
+                .collect(),
             filters,
             evaluators,
             pipeline,
@@ -423,7 +469,16 @@ impl wanaku_types::audit::AuditFailureObserver for MetricsStore {
 
 #[derive(Serialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub struct GovernanceMetric {
+    pub mode: String,
+    pub outcome: GovernanceOutcome,
+    pub count: u64,
+}
+
+#[derive(Serialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct MetricsSnapshot {
+    pub evaluator_governance: Vec<GovernanceMetric>,
     pub filters: HashMap<String, FilterSnapshot>,
     pub evaluators: HashMap<String, EvaluatorSnapshot>,
     pub pipeline: PipelineSnapshot,
@@ -538,6 +593,35 @@ pub struct GaugeSnapshot {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn governance_counters_separate_modes_and_share_clones() {
+        use wanaku_types::governance::EnforcementMode;
+        let store = MetricsStore::new();
+        store.record_governance(EnforcementMode::Enforce, GovernanceOutcome::FailClosed);
+        store
+            .clone()
+            .record_governance(EnforcementMode::Enforce, GovernanceOutcome::FailClosed);
+        store.record_governance(EnforcementMode::Audit, GovernanceOutcome::AuditDeny);
+        let snapshot = store.snapshot();
+        assert_eq!(snapshot.evaluator_governance.len(), 2);
+        let enforced = snapshot
+            .evaluator_governance
+            .iter()
+            .find(|m| m.mode == "enforce")
+            .unwrap();
+        assert_eq!(enforced.outcome, GovernanceOutcome::FailClosed);
+        assert_eq!(enforced.count, 2);
+        assert_eq!(
+            snapshot
+                .evaluator_governance
+                .iter()
+                .find(|m| m.mode == "audit")
+                .unwrap()
+                .count,
+            1
+        );
+    }
 
     #[test]
     fn filter_result_recording() {

@@ -120,6 +120,7 @@ Wanaku stores the forward even if discovery fails. In that case, the response re
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/v1/evaluators` | List evaluator definitions. |
+| `GET` | `/api/v1/evaluators/status` | Get runtime readiness, revision, safe reason code, and effective posture. The optional `namespace` query parameter defaults to `default`. |
 | `PUT` | `/api/v1/evaluators` | Replace evaluator definitions. The body uses the `evaluators` configuration schema. |
 | `GET` | `/api/v1/evaluators/llm-connections` | List configured LLM connection names only, never the model, URL, or credential. Connections are config-only. Set them in `wanaku.yaml`, not through this API. |
 | `GET` | `/api/v1/evaluators/namespaces` | List namespace-to-conversation bindings. |

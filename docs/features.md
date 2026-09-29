@@ -412,3 +412,7 @@ No env var or config flag. Features are compile-time dependencies.
 - [Architecture](./architecture.md) — how features fit into the filter pipeline
 - [Configuration](./configuration.md) — feature-specific env vars
 - [Management API](./management-api.md) — feature routes follow the same patterns
+
+### Startup validation
+
+The server loads feature configuration before it starts listeners. It calls `Feature::validate_startup` after YAML and environment configuration. The default implementation returns success. A feature can return an error to stop startup when its required configuration is invalid.

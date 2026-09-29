@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.3.0
  */
 import type { AuditSnapshot } from "./auditSnapshot";
+import type { GovernanceMetric } from "./governanceMetric";
 import type { MetricsSnapshotEvaluators } from "./metricsSnapshotEvaluators";
 import type { MetricsSnapshotFilters } from "./metricsSnapshotFilters";
 import type { GaugeSnapshot } from "./gaugeSnapshot";
@@ -13,6 +14,7 @@ import type { PipelineSnapshot } from "./pipelineSnapshot";
 
 export interface MetricsSnapshot {
   audit: AuditSnapshot;
+  evaluator_governance: GovernanceMetric[];
   evaluators: MetricsSnapshotEvaluators;
   filters: MetricsSnapshotFilters;
   gauges: GaugeSnapshot;

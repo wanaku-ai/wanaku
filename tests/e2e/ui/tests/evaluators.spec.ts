@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { EvaluatorsPage } from '../pages/evaluators.page';
+import { ApiHelper } from '../helpers/api-helpers';
+import { evaluatorData } from '../helpers/test-data';
 
 const routerUrl = process.env.WANAKU_ROUTER_URL ?? 'http://localhost:8080';
 
@@ -21,12 +23,29 @@ test.describe('Evaluators', () => {
     // llm_connections. The select must therefore be enabled and list them.
     await evaluators.goto();
     await evaluators.clickAddEvaluator();
+    await expect(evaluators.modal().locator('#on-error')).toHaveCount(0);
 
     const isDisabled = await evaluators.isConnectionSelectDisabled();
     expect(isDisabled).toBeFalsy();
 
     const options = await evaluators.connectionOptionValues();
     expect(options).toContain('local-llama');
+  });
+
+  test('deletes an evaluator without a legacy error policy', async ({ request }) => {
+    const api = new ApiHelper(request, routerUrl);
+    const original = await api.getEvaluators();
+    const evaluator = evaluatorData();
+    try {
+      await api.setEvaluators([...original, evaluator]);
+      await evaluators.goto();
+      await expect(evaluators.evaluatorRow(evaluator.name)).toBeVisible();
+      await evaluators.deleteEvaluator(evaluator.name);
+      await expect(evaluators.evaluatorRow(evaluator.name)).toHaveCount(0);
+      expect((await api.getEvaluators()).some((entry: { name: string }) => entry.name === evaluator.name)).toBeFalsy();
+    } finally {
+      await api.setEvaluators(original);
+    }
   });
 
   test('TypeSafe System One engine displays Noul configuration', async () => {

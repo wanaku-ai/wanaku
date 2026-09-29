@@ -39,7 +39,6 @@ export const EvaluatorsTable: React.FC<EvaluatorsTableProps> = ({
     { key: "engine", header: "Engine" },
     { key: "operation", header: "Operation / Primitive" },
     { key: "connection", header: "Connection" },
-    { key: "on_error", header: "Error Policy" },
   ];
 
   const getLlmConfiguration = (evaluator: EvaluatorDef): LlmDef | undefined =>
@@ -67,7 +66,6 @@ export const EvaluatorsTable: React.FC<EvaluatorsTableProps> = ({
                 : "—",
         operation: llmConfiguration?.operation || (systemOneConfiguration ? `Noul: ${systemOneConfiguration.noul.id}` : "—"),
         connection: llmConfiguration?.connection || systemOneConfiguration?.connection || "—",
-        on_error: ev.on_error || "continue",
       };
     });
   }

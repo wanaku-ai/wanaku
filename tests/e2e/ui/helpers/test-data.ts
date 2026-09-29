@@ -39,3 +39,12 @@ export function namespaceData(overrides?: Partial<{ name: string }>) {
     name: overrides?.name ?? `e2e-ns-${suffix()}`,
   };
 }
+
+export function evaluatorData() {
+  return {
+    name: `e2e-evaluator-${suffix()}`,
+    trigger: { method: 'tools/call', namespace: 'e2e-governance' },
+    engine: { type: 'passthrough' as const },
+    processor: { path: 'actions/dist/safety_review_action.wasm' },
+  };
+}

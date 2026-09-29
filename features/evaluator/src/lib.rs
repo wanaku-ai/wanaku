@@ -33,6 +33,8 @@ use crate::state::EvaluatorState;
 pub struct EvaluatorFeature {
     state: EvaluatorState,
     audit: Option<wanaku_types::audit::InMemoryAuditStore>,
+    governance: wanaku_types::governance::GovernanceConfig,
+    startup_deny: std::sync::atomic::AtomicBool,
 }
 
 impl EvaluatorFeature {
@@ -41,7 +43,15 @@ impl EvaluatorFeature {
         Self {
             state: EvaluatorState::new(),
             audit: None,
+            governance: wanaku_types::governance::GovernanceConfig::default(),
+            startup_deny: std::sync::atomic::AtomicBool::new(false),
         }
+    }
+
+    #[must_use]
+    pub fn with_governance(mut self, config: wanaku_types::governance::GovernanceConfig) -> Self {
+        self.governance = config;
+        self
     }
 
     #[must_use]
@@ -68,15 +78,34 @@ impl EvaluatorFeature {
         self
     }
 
+    fn load_startup_policy(&self, root: &serde_yaml::Value) -> bool {
+        let deny = match root.get("evaluator_startup_failure") {
+            None => false,
+            Some(value) => match value.as_str() {
+                Some("abort") => false,
+                Some("deny") => true,
+                _ => {
+                    self.state.mark_invalid("startup_policy_invalid");
+                    return false;
+                }
+            },
+        };
+        self.startup_deny
+            .store(deny, std::sync::atomic::Ordering::Relaxed);
+        true
+    }
+
     fn load_llm_connections_from_yaml(&self, root: &serde_yaml::Value) {
         let Some(conn_val) = root.get("llm_connections") else {
             return;
         };
         let Some(connections) = parse_llm_connections_yaml(conn_val) else {
+            self.state.mark_invalid("connection_configuration_invalid");
             return;
         };
 
         if let Err(e) = self.state.load_llm_connections(connections) {
+            self.state.mark_invalid("connection_configuration_invalid");
             tracing::error!(error = %e, "llm_connections rejected; no connections loaded");
         }
     }
@@ -86,9 +115,11 @@ impl EvaluatorFeature {
             return;
         };
         let Some(connections) = parse_system_one_connections_yaml(conn_val) else {
+            self.state.mark_invalid("connection_configuration_invalid");
             return;
         };
         if let Err(error) = self.state.load_system_one_connections(connections) {
+            self.state.mark_invalid("connection_configuration_invalid");
             tracing::error!(error = %error, "typesafe_system_one_connections rejected; no connections loaded");
         }
     }
@@ -131,11 +162,11 @@ impl Feature for EvaluatorFeature {
 
     async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
         let route = resolve_evaluator_route(ctx.method, ctx.path);
-        if route == EvaluatorRoute::NotFound {
-            return None;
-        }
         let administrative_operation = administrative_operation(&route);
         let response = match route {
+            EvaluatorRoute::Status => {
+                crate::routes::handle_status(&self.state, &self.governance, ctx.query)
+            }
             EvaluatorRoute::ListEvaluators => handle_list_evaluators(&self.state),
             EvaluatorRoute::UpdateEvaluators => {
                 handle_update_evaluators(&self.state, ctx.body.unwrap_or(""))
@@ -166,12 +197,22 @@ impl Feature for EvaluatorFeature {
         self.load_llm_connections_from_yaml(root);
         self.load_system_one_connections_from_yaml(root);
 
-        // Absent or unparseable `evaluators` yields `None`, which tells
-        // reconciliation to re-activate the persisted active revision (if any)
-        // rather than clear it — a restart keeps the last known configuration.
-        let startup_defs = root
-            .get("evaluators")
-            .and_then(|eval_val| parse_evaluator_yaml(eval_val));
+        if !self.load_startup_policy(root) {
+            return;
+        }
+        if self.state.active_config().invalid_reason.is_some() {
+            return;
+        }
+        let startup_defs = match root.get("evaluators") {
+            Some(value) => match parse_evaluator_yaml(value) {
+                Some(defs) => Some(defs),
+                None => {
+                    self.state.mark_invalid("configuration_invalid");
+                    return;
+                }
+            },
+            None => None,
+        };
 
         if let Some(ref defs) = startup_defs {
             tracing::info!(count = defs.len(), "evaluators loaded from wanaku.yaml");
@@ -183,10 +224,20 @@ impl Feature for EvaluatorFeature {
         self.state.reconcile_startup(startup_defs);
     }
 
+    fn validate_startup(&self) -> Result<(), String> {
+        let snapshot = self.state.try_active_config().map_err(str::to_owned)?;
+        match snapshot.invalid_reason {
+            Some(reason) if !self.startup_deny.load(std::sync::atomic::Ordering::Relaxed) => {
+                Err(format!("evaluator startup failed: {reason}"))
+            }
+            _ => Ok(()),
+        }
+    }
+
     fn load_env_config(&self) {}
 }
 
-fn administrative_operation(route: &EvaluatorRoute) -> Option<&'static str> {
+const fn administrative_operation(route: &EvaluatorRoute) -> Option<&'static str> {
     match route {
         EvaluatorRoute::UpdateEvaluators => Some("evaluator.update"),
         EvaluatorRoute::ActivateRevision(_) => Some("evaluator.revision.activate"),
@@ -287,6 +338,56 @@ mod audit_tests {
     use wanaku_types::audit::{AuditQuery, AuditStore as _, InMemoryAuditStore};
 
     use super::record_administrative_event;
+
+    #[test]
+    fn malformed_connections_make_startup_invalid() {
+        use wanaku_types::feature::Feature;
+        for yaml in [
+            "llm_connections: invalid",
+            "typesafe_system_one_connections: invalid",
+        ] {
+            let feature = super::EvaluatorFeature::new();
+            feature.load_yaml_config(&serde_yaml::from_str(yaml).unwrap());
+            assert!(feature.validate_startup().is_err());
+            assert_eq!(
+                feature.state.active_config().invalid_reason,
+                Some("connection_configuration_invalid")
+            );
+        }
+    }
+
+    #[test]
+    fn non_string_startup_policy_is_invalid() {
+        use wanaku_types::feature::Feature;
+        let feature = super::EvaluatorFeature::new();
+        feature.load_yaml_config(&serde_yaml::from_str("evaluator_startup_failure: true").unwrap());
+        assert!(feature.validate_startup().is_err());
+        assert_eq!(
+            feature.state.active_config().invalid_reason,
+            Some("startup_policy_invalid")
+        );
+    }
+
+    #[test]
+    fn malformed_startup_defaults_to_abort_and_can_explicitly_deny() {
+        use wanaku_types::feature::Feature;
+        let feature = super::EvaluatorFeature::new();
+        feature.load_yaml_config(&serde_yaml::from_str("evaluators: {evalutors: []}").unwrap());
+        assert!(feature.validate_startup().is_err());
+        assert_eq!(
+            feature.state.active_config().invalid_reason,
+            Some("configuration_invalid")
+        );
+        let feature = super::EvaluatorFeature::new();
+        feature.load_yaml_config(
+            &serde_yaml::from_str("evaluators: invalid\nevaluator_startup_failure: deny").unwrap(),
+        );
+        assert!(feature.validate_startup().is_ok());
+        assert_eq!(
+            feature.state.active_config().invalid_reason,
+            Some("configuration_invalid")
+        );
+    }
 
     #[test]
     fn administrative_events_use_request_correlation_header() {

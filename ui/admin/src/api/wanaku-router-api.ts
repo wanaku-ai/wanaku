@@ -17,6 +17,8 @@ import type {
   GetActiveEvaluatorRevision200,
   GetEffectiveActionPolicy200,
   GetEvaluatorRevision200,
+  GetEvaluatorStatus200,
+  GetEvaluatorStatusParams,
   ListActionPolicyRevisions200Item,
   ListAuditEventsParams,
   ListEvaluatorBindings200,
@@ -783,6 +785,46 @@ export const activateEvaluatorRevision = async (
       method: "POST",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(activateRevisionRequest),
+    },
+  );
+};
+
+export type getEvaluatorStatusResponse200 = {
+  data: GetEvaluatorStatus200;
+  status: 200;
+};
+
+export type getEvaluatorStatusResponseSuccess =
+  getEvaluatorStatusResponse200 & {
+    headers: Headers;
+  };
+export type getEvaluatorStatusResponse = getEvaluatorStatusResponseSuccess;
+
+export const getGetEvaluatorStatusUrl = (params?: GetEvaluatorStatusParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/evaluators/status?${stringifiedParams}`
+    : `/api/v1/evaluators/status`;
+};
+
+export const getEvaluatorStatus = async (
+  params?: GetEvaluatorStatusParams,
+  options?: RequestInit,
+): Promise<getEvaluatorStatusResponse> => {
+  return customFetch<getEvaluatorStatusResponse>(
+    getGetEvaluatorStatusUrl(params),
+    {
+      ...options,
+      method: "GET",
     },
   );
 };

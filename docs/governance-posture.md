@@ -3,7 +3,9 @@
 Governance posture defines how Wanaku handles policy decisions, unmatched actions, and evaluation failures. The model keeps these controls separate. This separation makes the effective behavior explicit for each namespace.
 
 > [!IMPORTANT]
-> Wanaku applies the posture model to action policies. Evaluator integration is not complete. The evaluator still uses its current error policy and execution behavior.
+> Wanaku applies the same posture to action policies and evaluators. Each filter applies the no-match baseline independently. An action-policy allow does not bypass evaluator governance.
+
+The implicit evaluator baseline applies to `tools/call`, `resources/read`, and `prompts/get`. Discovery and protocol methods continue when no evaluator matches them. An explicit evaluator can still govern a discovery method such as `tools/list`. A missing or invalid evaluator runtime does not apply the implicit baseline to discovery methods.
 
 ## Posture settings
 
@@ -32,7 +34,7 @@ The defaults are fail-safe. Wanaku denies an unmatched action or a failed govern
 
 `deny` rejects an action when no rule or evaluator matches it. This value is the default.
 
-The decision model keeps an explicit allow separate from an allow that comes from the no-match behavior. Audit events and metrics can use this distinction after runtime integration is complete.
+The decision model keeps an explicit allow separate from an allow that comes from the no-match behavior. Evaluator audit events and metrics record this distinction.
 
 ### Failure behavior
 
@@ -40,7 +42,7 @@ The decision model keeps an explicit allow separate from an allow that comes fro
 
 `deny` rejects an action when governance cannot produce a decision. This value is the default.
 
-The failure behavior applies to unavailable or invalid action-policy state and missing runtime state. Evaluator integration will apply it to LLM, schema, processor, WASM, registry, and internal failures.
+The failure behavior applies to unavailable or invalid action-policy state and missing runtime state. It also applies to evaluator engine, schema, processor, WASM, registry, and internal failures.
 
 ## Global posture and namespace overrides
 
@@ -88,20 +90,45 @@ The action-policy filter applies the effective namespace posture as follows:
 
 Basic and full audit levels have the same result for deterministic action policies. Action-policy evaluation does not call an LLM and does not have evaluator side effects.
 
-## Current implementation boundary
+## Evaluator behavior
 
-The shared model is in `types/src/governance.rs`. It provides:
+Wanaku resolves the posture before it calls an evaluation engine or creates WASM host state. One request uses one evaluator configuration revision.
 
-- Serializable posture enums and structures.
-- Fail-safe default values.
-- Global-to-namespace resolution.
-- Validation for namespace names and disabled-scope reasons.
-- OpenAPI schema derivation when the `openapi` feature is enabled.
+| Mode | Engine execution | Traffic and registry effects |
+| --- | --- | --- |
+| `enforce` | Run the matching evaluator | Apply its action. Apply `on_failure` if evaluation fails. |
+| `audit`, `basic` | Skip LLM and TypeSafe System One calls. Local passthrough processors can run. | Continue without traffic changes or registry writes. |
+| `audit`, `full` | Run the matching evaluator, including external calls | Continue without traffic changes or registry writes. |
+| `disabled` | Skip evaluation | Continue. Record the disabled state and reason. |
 
-The following work remains for complete runtime support:
+Basic audit records skipped external evaluation as `not_evaluated`. It does not report an invented would-be decision. Full audit is an explicit opt-in for external cost and latency.
 
-- Apply the posture in the evaluator filter.
-- Suppress evaluator side effects in audit mode.
-- Add readiness status, audit events, and bounded metrics.
+In audit mode, the `copy-tool-to-namespace` host function returns `false` without a registry write. Registry reads return the existing data. Wanaku does not simulate writes or subsequent reads of those writes. Processor response actions are recorded but do not change traffic or metadata. WASM execution has a fuel limit of 10 million units per invocation. Fuel exhaustion follows the failure policy.
 
-See [issue #1872](https://github.com/wanaku-ai/wanaku/issues/1872) for the complete acceptance criteria.
+The evaluator `on_error` field is removed. Configuration with this field is rejected. Set `governance.default.on_failure` or a namespace override instead. The default is `deny`.
+
+Wanaku 0.3.0 is unreleased. Earlier pre-release evaluator configurations and persisted revisions are not migrated automatically. See [Update an earlier pre-release configuration](configuration.md#update-an-earlier-pre-release-configuration) before you update a pre-release build.
+
+## Evaluator readiness
+
+Use `GET /api/v1/evaluators/status?namespace=default` to read the effective posture and runtime status. The response includes a safe reason code and the active runtime revision when available.
+
+| State | Meaning |
+| --- | --- |
+| `ready` | The configured evaluators are available. |
+| `degraded` | An evaluator reported an operational failure. |
+| `invalid` | The configured runtime could not be loaded or accessed. |
+| `unconfigured` | No evaluator is configured for the namespace. |
+| `disabled` | The effective posture disables evaluation. |
+
+A successful evaluation clears the failure state for that evaluator. A new active revision starts with its own runtime status. Wildcard evaluators share their runtime status across namespaces.
+
+Rejected management updates do not replace the working configuration. Invalid startup configuration stops the server by default. To start with an invalid evaluator runtime, set the top-level `evaluator_startup_failure: deny` option. In this mode, invalid runtime state blocks governed requests in enforce mode. Audit mode continues to observe traffic. Disabled mode skips evaluation.
+
+## Evaluator observability
+
+Evaluator audit events include the enforcement mode, effective action, would-be action when available, evaluation status, failure reason, and configuration revision. Events identify suppressed host writes. Raw engine errors are not used as public reason codes.
+
+`GET /api/v1/metrics` includes `evaluator_governance` counters. These counters use fixed mode and outcome values. They record enforcement, audit, no-match, fail-open, fail-closed, skipped evaluation, and disabled outcomes. Namespace names, evaluator names, and request identifiers are not dimensions of these counters.
+
+For audit mode, no-match and failure counter outcomes describe the configured would-be result. The effective request action remains allow.

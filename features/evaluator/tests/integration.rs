@@ -12,8 +12,8 @@ use std::path::PathBuf;
 
 use wanaku_feature_evaluator::action::ActionResult;
 use wanaku_feature_evaluator::config::{
-    ErrorPolicy, EvaluationEngine, EvaluatorDef, EvaluatorsConfig, LlmConnection, LlmDef,
-    LlmOperation, ProcessorRef, TriggerDef,
+    EvaluationEngine, EvaluatorDef, EvaluatorsConfig, LlmConnection, LlmDef, LlmOperation,
+    ProcessorRef, TriggerDef,
 };
 use wanaku_feature_evaluator::revision::RevisionOrigin;
 use wanaku_feature_evaluator::schema::validate_against_schema;
@@ -37,7 +37,6 @@ fn safety_evaluator(name: &str, method: &str, namespace: Option<&str>) -> Evalua
         processor: ProcessorRef {
             path: PathBuf::from("/nonexistent/test.wasm"),
         },
-        on_error: ErrorPolicy::Continue,
     }
 }
 
@@ -145,7 +144,6 @@ evaluators:
         required: ["level", "reason"]
     processor:
       path: "/wasm/safety.wasm"
-    on_error: block
 "#;
         let config: EvaluatorsConfig = serde_yaml::from_str(yaml).unwrap();
         let eval = &config.evaluators[0];
@@ -209,7 +207,7 @@ evaluators:
     }
 
     #[test]
-    fn default_on_error_is_continue() {
+    fn minimal_evaluator_uses_shared_governance() {
         let yaml = r#"
 evaluators:
   - name: "minimal"
@@ -224,10 +222,7 @@ evaluators:
       path: "/wasm/t.wasm"
 "#;
         let config: EvaluatorsConfig = serde_yaml::from_str(yaml).unwrap();
-        assert!(matches!(
-            config.evaluators[0].on_error,
-            ErrorPolicy::Continue
-        ));
+        assert_eq!(config.evaluators[0].name, "minimal");
     }
 }
 
@@ -927,6 +922,36 @@ mod engine {
     }
 
     #[test]
+    fn audit_capabilities_prevent_real_processor_registry_writes() {
+        use wanaku_types::registry::ToolRegistry;
+        let path = require_wasm!("assembly_filter_action.wasm");
+        let processor = CompiledEvaluator::from_file("assembly", &path).unwrap();
+        let registry = InMemoryRegistry::new();
+        registry.register_tool(
+            serde_json::from_value(serde_json::json!({
+                "name": "alpha", "description": "test", "uri": "test", "type": "mcp-forward",
+                "inputSchema": {}, "namespace": "source"
+            }))
+            .unwrap(),
+        );
+        let before = serde_json::to_value(registry.list_tools()).unwrap();
+        let result = processor
+            .evaluate(
+                wanaku_feature_evaluator::engine::ExecutionContext {
+                    registry: registry.clone(),
+                    interactions: InMemoryInteractionStore::new(10),
+                    compiled_schema: None,
+                    allow_side_effects: false,
+                },
+                eval_context("tools/list", r#"["alpha"]"#),
+            )
+            .unwrap();
+        assert!(matches!(result.action, ActionResult::FilterTools(_)));
+        assert!(result.side_effects_suppressed);
+        assert_eq!(serde_json::to_value(registry.list_tools()).unwrap(), before);
+    }
+
+    #[test]
     fn safety_action_blocks_on_red() {
         let path = require_wasm!("safety_review_action.wasm");
         let compiled = CompiledEvaluator::from_file("safety-review", &path)
@@ -935,12 +960,16 @@ mod engine {
         let ctx = eval_context("tools/call", r#"{"level": "red", "reason": "dangerous"}"#);
         let result = compiled
             .evaluate(
-                InMemoryRegistry::new(),
-                InMemoryInteractionStore::new(100),
+                wanaku_feature_evaluator::engine::ExecutionContext {
+                    registry: InMemoryRegistry::new(),
+                    interactions: InMemoryInteractionStore::new(100),
+                    compiled_schema: None,
+                    allow_side_effects: true,
+                },
                 ctx,
-                None,
             )
-            .expect("WASM evaluator execution failed");
+            .expect("WASM evaluator execution failed")
+            .action;
 
         assert!(
             matches!(result, ActionResult::Block(_)),
@@ -957,12 +986,16 @@ mod engine {
         let ctx = eval_context("tools/call", r#"{"level": "yellow", "reason": "elevated"}"#);
         let result = compiled
             .evaluate(
-                InMemoryRegistry::new(),
-                InMemoryInteractionStore::new(100),
+                wanaku_feature_evaluator::engine::ExecutionContext {
+                    registry: InMemoryRegistry::new(),
+                    interactions: InMemoryInteractionStore::new(100),
+                    compiled_schema: None,
+                    allow_side_effects: true,
+                },
                 ctx,
-                None,
             )
-            .expect("WASM evaluator execution failed");
+            .expect("WASM evaluator execution failed")
+            .action;
 
         assert!(
             matches!(result, ActionResult::Warn(_)),
@@ -979,12 +1012,16 @@ mod engine {
         let ctx = eval_context("tools/call", r#"{"level": "green", "reason": "safe"}"#);
         let result = compiled
             .evaluate(
-                InMemoryRegistry::new(),
-                InMemoryInteractionStore::new(100),
+                wanaku_feature_evaluator::engine::ExecutionContext {
+                    registry: InMemoryRegistry::new(),
+                    interactions: InMemoryInteractionStore::new(100),
+                    compiled_schema: None,
+                    allow_side_effects: true,
+                },
                 ctx,
-                None,
             )
-            .expect("WASM evaluator execution failed");
+            .expect("WASM evaluator execution failed")
+            .action;
 
         assert!(
             matches!(result, ActionResult::Pass),
@@ -1002,12 +1039,16 @@ mod engine {
         let ctx = eval_context("tools/call", llm_output);
         let result = compiled
             .evaluate(
-                InMemoryRegistry::new(),
-                InMemoryInteractionStore::new(100),
+                wanaku_feature_evaluator::engine::ExecutionContext {
+                    registry: InMemoryRegistry::new(),
+                    interactions: InMemoryInteractionStore::new(100),
+                    compiled_schema: None,
+                    allow_side_effects: true,
+                },
                 ctx,
-                None,
             )
-            .expect("WASM evaluator execution failed");
+            .expect("WASM evaluator execution failed")
+            .action;
 
         if let ActionResult::Block(reason) = result {
             assert!(
@@ -1038,12 +1079,16 @@ mod engine {
         let ctx = eval_context("tools/call", r#"{"level": "red", "reason": "test"}"#);
         let result = compiled
             .evaluate(
-                InMemoryRegistry::new(),
-                InMemoryInteractionStore::new(100),
+                wanaku_feature_evaluator::engine::ExecutionContext {
+                    registry: InMemoryRegistry::new(),
+                    interactions: InMemoryInteractionStore::new(100),
+                    compiled_schema,
+                    allow_side_effects: true,
+                },
                 ctx,
-                compiled_schema,
             )
-            .expect("WASM evaluator execution failed");
+            .expect("WASM evaluator execution failed")
+            .action;
 
         assert!(
             matches!(result, ActionResult::Block(_)),

@@ -14,18 +14,19 @@ use wanaku_feature_action_policy::{
 };
 use wanaku_feature_evaluator::api::{
     ActivateRevisionRequest as ActivateEvaluatorRevisionRequest, BindNamespaceRequest,
-    EvaluatorRevisionResponse, NamespaceBinding, UnbindNamespaceResponse, UpdateEvaluatorsRequest,
+    EvaluatorReadiness, EvaluatorRevisionResponse, EvaluatorStatus, NamespaceBinding,
+    UnbindNamespaceResponse, UpdateEvaluatorsRequest,
 };
 use wanaku_feature_evaluator::config::{
-    ErrorPolicy, EvaluatorDef, LlmDef, LlmOperation, NoulCriteria, NoulDef, ProcessorRef,
-    SystemOneDef, SystemOneState, TriggerDef,
+    EvaluatorDef, LlmDef, LlmOperation, NoulCriteria, NoulDef, ProcessorRef, SystemOneDef,
+    SystemOneState, TriggerDef,
 };
 use wanaku_types::revision::{ActivationStatus, RevisionMetadata, RevisionOrigin};
 
 use wanaku_infra::metrics::{
     AuditSnapshot, DecisionSnapshot, DurationSnapshot, EngineSnapshot, EvaluatorSnapshot,
-    FilterSnapshot, GaugeSnapshot, LlmSnapshot, MetricsSnapshot, PipelineSnapshot, SchemaSnapshot,
-    WasmSnapshot,
+    FilterSnapshot, GaugeSnapshot, GovernanceMetric, GovernanceOutcome, LlmSnapshot,
+    MetricsSnapshot, PipelineSnapshot, SchemaSnapshot, WasmSnapshot,
 };
 use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHealth, AuditPage};
 use wanaku_types::registry::{
@@ -268,6 +269,12 @@ const fn get_statistics() {}
 )]
 const fn list_evaluators() {}
 
+#[utoipa::path(get, path = "/api/v1/evaluators/status", tag = "Evaluators",
+    params(("namespace" = Option<String>, Query, description = "Namespace name; defaults to default")),
+    responses((status = 200, body = WanakuResponse<EvaluatorStatus>))
+)]
+const fn get_evaluator_status() {}
+
 #[utoipa::path(put, path = "/api/v1/evaluators", tag = "Evaluators",
     request_body = UpdateEvaluatorsRequest,
     responses(
@@ -437,6 +444,7 @@ impl utoipa::Modify for OptionalActivationBodies {
         get_info,
         get_statistics,
         list_evaluators,
+        get_evaluator_status,
         update_evaluators,
         list_evaluator_llm_connections,
         list_evaluator_bindings,
@@ -464,6 +472,8 @@ impl utoipa::Modify for OptionalActivationBodies {
         McpServerInfo,
         NamespaceEntry,
         MetricsSnapshot,
+        GovernanceMetric,
+        GovernanceOutcome,
         FilterSnapshot,
         DurationSnapshot,
         EvaluatorSnapshot,
@@ -481,6 +491,8 @@ impl utoipa::Modify for OptionalActivationBodies {
         AuditHealth,
         AuditSnapshot,
         EvaluatorDef,
+        EvaluatorStatus,
+        EvaluatorReadiness,
         TriggerDef,
         LlmDef,
         LlmOperation,
@@ -489,7 +501,6 @@ impl utoipa::Modify for OptionalActivationBodies {
         NoulDef,
         NoulCriteria,
         ProcessorRef,
-        ErrorPolicy,
         UpdateEvaluatorsRequest,
         ActivateEvaluatorRevisionRequest,
         EvaluatorRevisionResponse,
@@ -535,6 +546,7 @@ mod tests {
 
         for path in [
             "/api/v1/evaluators",
+            "/api/v1/evaluators/status",
             "/api/v1/evaluators/llm-connections",
             "/api/v1/evaluators/namespaces",
             "/api/v1/evaluators/namespaces/{namespace}",
@@ -556,6 +568,9 @@ mod tests {
 
         for schema in [
             "EvaluatorDef",
+            "EvaluatorStatus",
+            "EvaluatorReadiness",
+            "GovernanceMetric",
             "UpdateEvaluatorsRequest",
             "EvaluatorRevisionResponse",
             "ActionPolicy",
@@ -573,6 +588,31 @@ mod tests {
                 "missing {schema}"
             );
         }
+    }
+
+    #[test]
+    fn evaluator_status_and_shared_failure_contract() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        assert!(
+            value
+                .pointer("/components/schemas/EvaluatorDef/properties/on_error")
+                .is_none()
+        );
+        assert_eq!(
+            value.pointer("/components/schemas/EvaluatorReadiness/enum"),
+            Some(&serde_json::json!([
+                "ready",
+                "degraded",
+                "invalid",
+                "unconfigured",
+                "disabled"
+            ]))
+        );
+        assert!(
+            value
+                .pointer("/components/schemas/MetricsSnapshot/properties/evaluator_governance")
+                .is_some()
+        );
     }
 
     #[test]

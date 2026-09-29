@@ -21,6 +21,8 @@ pub struct HostState {
     pub registry: InMemoryRegistry,
     pub interactions: InMemoryInteractionStore,
     pub action: ActionResult,
+    pub allow_side_effects: bool,
+    pub side_effects_suppressed: bool,
     pub evaluator_name: String,
     pub compiled_schema: Option<Arc<CompiledSchema>>,
     pub wasi_ctx: wasmtime_wasi::WasiCtx,
@@ -49,6 +51,10 @@ impl wanaku::evaluator::registry::Host for HostState {
     }
 
     fn copy_tool_to_namespace(&mut self, tool_name: String, target_namespace: String) -> bool {
+        if !self.allow_side_effects {
+            self.side_effects_suppressed = true;
+            return false;
+        }
         if let Some(mut tool) = self.registry.get_tool(&tool_name) {
             tool.namespace = Some(target_namespace);
             self.registry.register_tool(tool);
@@ -176,6 +182,8 @@ mod tests {
             registry: InMemoryRegistry::new(),
             interactions: InMemoryInteractionStore::new(16),
             action: ActionResult::Pass,
+            allow_side_effects: true,
+            side_effects_suppressed: false,
             evaluator_name: "test-eval".to_owned(),
             compiled_schema: None,
             wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
@@ -290,6 +298,25 @@ mod tests {
             .expect("copied tool present");
         assert_eq!(copied.namespace.as_deref(), Some("prod"));
         assert!(!state.copy_tool_to_namespace("missing".to_owned(), "prod".to_owned()));
+    }
+
+    #[test]
+    fn audit_suppresses_registry_mutation_and_reports_failure_to_guest() {
+        let mut state = host_state();
+        state.allow_side_effects = false;
+        state.registry.register_tool(sample_tool("alpha"));
+        let shared_registry = state.registry.clone();
+        let original_namespace = shared_registry.get_tool("alpha").unwrap().namespace;
+        assert!(!state.copy_tool_to_namespace("alpha".to_owned(), "prod".to_owned()));
+        assert!(state.side_effects_suppressed);
+        assert_eq!(
+            shared_registry
+                .get_tool("alpha")
+                .expect("existing tool")
+                .namespace,
+            original_namespace
+        );
+        assert!(state.list_tools_in_namespace("prod".to_owned()).is_empty());
     }
 
     // ---- conversation history parsing ----

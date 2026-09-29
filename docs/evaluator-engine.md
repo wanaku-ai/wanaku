@@ -47,7 +47,6 @@ evaluators:
       connection: "local-llama"       # References an entry in llm_connections
     processor:                        # WASM action script
       path: "/wasm/safety-gate.wasm"
-    on_error: continue                # continue | block (default: continue)
 ```
 
 ### LLM Connections
@@ -183,8 +182,9 @@ The WASM script can call `block()`, `pass()`, `warn()`, `filterTools()`, or `set
 
 ### Error Policy
 
-- `on_error: continue` (default) — WASM failures are logged, request proceeds
-- `on_error: block` — WASM failures block the request with a JSON-RPC error
+- `governance.default.on_failure: allow` permits requests after evaluator failures.
+- `governance.default.on_failure: deny` blocks requests after evaluator failures. This is the default.
+- Namespace overrides can change the failure behavior. See [Governance Posture](governance-posture.md).
 
 ## Complete Examples
 
@@ -224,7 +224,6 @@ evaluators:
         required: ["level", "reason"]
     processor:
       path: "/wasm/safety_review_action.wasm"
-    on_error: continue
 ```
 
 **What happens:**
@@ -771,8 +770,7 @@ curl http://localhost:8080/api/v1/evaluators
         "prompt": "...",
         "connection": "local-llama"
       },
-      "processor": {"path": "/wasm/safety-gate.wasm"},
-      "on_error": "continue"
+      "processor": {"path": "/wasm/safety-gate.wasm"}
     }
   ],
   "error": null
@@ -1002,36 +1000,41 @@ Your system prompt tells the LLM what to extract from that context. The engine s
 
 ### Error Handling
 
-- **LLM schema validation failure**: If you set `result_schema` and the LLM output does not match, the engine retries once with a correction prompt. If the retry fails, the engine passes the raw result to the WASM guest. The guest can use `verifyLlmResult()` and `rejectMalformed()`.
-- **LLM failure** (network error, timeout, invalid response): logged, evaluator skipped, request proceeds
-- **WASM compile failure**: logged at hot-reload time, evaluator disabled
-- **WASM runtime failure**: depends on `on_error`:
-  - `continue` (default): logged, action is treated as `Pass`, request proceeds
-  - `block`: logged, request blocked with JSON-RPC error
+Evaluator execution uses the shared [governance posture](governance-posture.md). The `on_error` field is no longer accepted.
 
-**Philosophy:** Fail open for operational resilience. A safety gate must not cause an availability failure. To fail closed, use `on_error: block`.
+Users of earlier 0.3.0 pre-release builds must update both startup configuration and persisted evaluator revisions. See [Update an earlier pre-release configuration](configuration.md#update-an-earlier-pre-release-configuration).
+
+- LLM and TypeSafe failures follow `on_failure`.
+- Empty engine output is a failure.
+- Invalid LLM output gets one schema-correction attempt. If correction fails, the processor does not run.
+- Missing or failed processors, registry state, and internal state follow the failure policy.
+- Invalid startup configuration stops startup by default. The `evaluator_startup_failure: deny` option retains an explicit invalid runtime instead.
+- Invalid management updates do not replace the working revision.
+- Audit mode does not block traffic or apply processor mutations. Basic audit skips external engines. Full audit permits external calls only by explicit opt-in.
 
 ## Common Patterns
 
 ### Fail-Open Safety Gate
 
+Set the failure behavior in the top-level governance configuration:
+
 ```yaml
-on_error: continue  # LLM/WASM failures do not block production
-processor:
-  path: "/wasm/safety-gate.wasm"
+governance:
+  default:
+    on_failure: allow
 ```
 
-If the LLM is down, requests proceed. The WASM script decides whether to block based on the LLM output — if it never runs, the request continues.
+Requests continue if an evaluator cannot produce a decision. Successful evaluations still apply their processor actions in enforce mode.
 
 ### Fail-Closed Safety Gate
 
 ```yaml
-on_error: block  # Any failure blocks the request
-processor:
-  path: "/wasm/safety-gate.wasm"
+governance:
+  default:
+    on_failure: deny
 ```
 
-If the LLM is down or WASM crashes, the request is blocked. Use this for high-security environments where availability is secondary to safety.
+Requests are blocked if evaluation fails. This is the default failure behavior.
 
 ### Namespace-Scoped Evaluation
 
