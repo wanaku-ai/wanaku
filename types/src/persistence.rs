@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::credentials::CredentialBinding;
 use crate::registry::{ForwardEntry, NamespaceEntry, PromptEntry, ResourceEntry, ToolEntry};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -14,6 +15,10 @@ pub struct RegistrySnapshot {
     pub forwards: Vec<ForwardEntry>,
     #[serde(default)]
     pub namespaces: Vec<NamespaceEntry>,
+    /// Credential bindings. Only opaque, non-secret metadata is persisted; the
+    /// binding never stores inline secret values.
+    #[serde(default)]
+    pub bindings: Vec<CredentialBinding>,
 }
 
 #[derive(Debug, thiserror::Error)]

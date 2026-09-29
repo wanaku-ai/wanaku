@@ -4,11 +4,12 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 use dashmap::DashMap;
+use wanaku_types::credentials::CredentialBinding;
 use wanaku_types::persistence::{PersistenceBackend, PersistenceError, RegistrySnapshot};
 use wanaku_types::registry::{
-    DEFAULT_NAMESPACE, ForwardEntry, ForwardRegistry, NamespaceEntry, NamespaceRegistry,
-    PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry, ToolRegistry,
-    inject_request_id_arg,
+    BindingRegistry, DEFAULT_NAMESPACE, ForwardEntry, ForwardRegistry, NamespaceEntry,
+    NamespaceRegistry, PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry,
+    ToolRegistry, inject_request_id_arg,
 };
 
 #[derive(Clone)]
@@ -18,6 +19,7 @@ pub struct InMemoryRegistry {
     prompts: Arc<DashMap<String, PromptEntry>>,
     forwards: Arc<DashMap<String, ForwardEntry>>,
     namespaces: Arc<DashMap<String, NamespaceEntry>>,
+    bindings: Arc<DashMap<String, CredentialBinding>>,
     persistence: Option<PersistenceCoordinator>,
     persistence_lock: Arc<Mutex<()>>,
     inject_request_id: Arc<AtomicBool>,
@@ -42,6 +44,7 @@ impl InMemoryRegistry {
             prompts: Arc::new(DashMap::new()),
             forwards: Arc::new(DashMap::new()),
             namespaces: Arc::new(namespaces),
+            bindings: Arc::new(DashMap::new()),
             persistence: None,
             persistence_lock: Arc::new(Mutex::new(())),
             inject_request_id: Arc::new(AtomicBool::new(false)),
@@ -105,6 +108,9 @@ impl InMemoryRegistry {
         for forward in snapshot.forwards {
             self.insert_forward(forward);
         }
+        for binding in snapshot.bindings {
+            self.bindings.insert(binding.id.clone(), binding);
+        }
 
         tracing::info!("loaded registry from persistence backend");
     }
@@ -116,6 +122,7 @@ impl InMemoryRegistry {
             prompts: self.list_prompts(),
             forwards: self.list_forwards(),
             namespaces: self.list_namespaces(),
+            bindings: self.list_bindings(),
         }
     }
 
@@ -693,6 +700,57 @@ impl ForwardRegistry for InMemoryRegistry {
     }
 }
 
+impl BindingRegistry for InMemoryRegistry {
+    fn list_bindings(&self) -> Vec<CredentialBinding> {
+        self.bindings
+            .iter()
+            .map(|entry| entry.value().clone())
+            .collect()
+    }
+
+    fn list_bindings_for_forward(&self, forward_id: &str) -> Vec<CredentialBinding> {
+        self.bindings
+            .iter()
+            .filter(|entry| entry.value().forward_id == forward_id)
+            .map(|entry| entry.value().clone())
+            .collect()
+    }
+
+    fn get_binding(&self, id: &str) -> Option<CredentialBinding> {
+        self.bindings.get(id).map(|entry| entry.value().clone())
+    }
+
+    fn register_binding(&self, mut binding: CredentialBinding) {
+        // Keep the revision monotonic per binding id. Any change to the stored
+        // content bumps the revision so cached credentials keyed by the old
+        // revision are never reused. Identical re-registration keeps the
+        // revision unchanged.
+        if let Some(existing) = self.bindings.get(&binding.id) {
+            let mut probe = binding.clone();
+            probe.revision = existing.revision;
+            binding.revision = if probe == *existing.value() {
+                existing.revision
+            } else {
+                existing.revision.saturating_add(1)
+            };
+        }
+        self.bindings.insert(binding.id.clone(), binding);
+        self.persist();
+    }
+
+    fn remove_binding(&self, id: &str) -> bool {
+        let removed = self.bindings.remove(id).is_some();
+        if removed {
+            self.persist();
+        }
+        removed
+    }
+
+    fn binding_count(&self) -> usize {
+        self.bindings.len()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -889,6 +947,79 @@ mod tests {
         }
     }
 
+    fn sample_binding(id: &str, forward_id: &str) -> CredentialBinding {
+        use wanaku_types::credentials::{
+            BindingRestrictions, CacheRules, CredentialPurpose, InjectionMechanism,
+            NormalizedOrigin, SecretRef,
+        };
+        CredentialBinding {
+            id: id.to_owned(),
+            forward_id: forward_id.to_owned(),
+            origin: NormalizedOrigin::from_address("https://api.example.com")
+                .expect("valid origin"),
+            mechanism: InjectionMechanism::Bearer,
+            secret_refs: vec![SecretRef::parse("env:API_TOKEN").expect("valid secret ref")],
+            allowed_purposes: vec![CredentialPurpose::Invocation],
+            restrictions: BindingRestrictions::default(),
+            cache: CacheRules::default(),
+            revision: 1,
+        }
+    }
+
+    #[test]
+    fn register_and_get_binding() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(sample_binding("b1", "fwd-a"));
+
+        let binding = registry.get_binding("b1").expect("binding should exist");
+        assert_eq!(binding.id, "b1");
+        assert_eq!(binding.forward_id, "fwd-a");
+        assert_eq!(registry.binding_count(), 1);
+    }
+
+    #[test]
+    fn list_bindings_for_forward_filters_by_owner() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(sample_binding("b1", "fwd-a"));
+        registry.register_binding(sample_binding("b2", "fwd-a"));
+        registry.register_binding(sample_binding("b3", "fwd-b"));
+
+        let owned = registry.list_bindings_for_forward("fwd-a");
+        assert_eq!(owned.len(), 2);
+        assert!(owned.iter().all(|b| b.forward_id == "fwd-a"));
+    }
+
+    #[test]
+    fn register_binding_bumps_revision_on_change() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(sample_binding("b1", "fwd-a"));
+
+        // Identical re-registration keeps the revision unchanged.
+        registry.register_binding(sample_binding("b1", "fwd-a"));
+        assert_eq!(
+            registry.get_binding("b1").expect("binding exists").revision,
+            1
+        );
+
+        // A content change bumps the revision.
+        let mut changed = sample_binding("b1", "fwd-a");
+        changed.allowed_purposes = vec![wanaku_types::credentials::CredentialPurpose::Discovery];
+        registry.register_binding(changed);
+        assert_eq!(
+            registry.get_binding("b1").expect("binding exists").revision,
+            2
+        );
+    }
+
+    #[test]
+    fn remove_binding_removes_entry() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(sample_binding("b1", "fwd-a"));
+        assert!(registry.remove_binding("b1"));
+        assert!(registry.get_binding("b1").is_none());
+        assert!(!registry.remove_binding("b1"));
+    }
+
     #[test]
     fn register_forward_registers_referenced_namespace() {
         let registry = InMemoryRegistry::new();
@@ -1052,6 +1183,7 @@ mod tests {
                     prompts: snapshot.prompts.clone(),
                     forwards: snapshot.forwards.clone(),
                     namespaces: snapshot.namespaces.clone(),
+                    bindings: snapshot.bindings.clone(),
                 });
             self.active.fetch_sub(1, Ordering::SeqCst);
             Ok(())
