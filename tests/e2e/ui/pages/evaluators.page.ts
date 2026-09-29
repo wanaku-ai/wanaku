@@ -44,6 +44,12 @@ export class EvaluatorsPage extends BasePage {
     return this.page.locator(Carbon.tableRow).filter({ hasText: name });
   }
 
+  async deleteEvaluator(name: string) {
+    await this.evaluatorRow(name).getByRole('button', { name: 'Delete', exact: true }).click();
+    await this.modal().waitFor({ state: 'visible' });
+    await this.submitModal();
+  }
+
   async modalHasText(text: string): Promise<boolean> {
     const content = await this.modal().innerText();
     return content.includes(text);

@@ -1,3 +1,11 @@
+#![cfg_attr(
+    feature = "openapi",
+    expect(
+        clippy::large_stack_frames,
+        reason = "Utoipa generates nested governance schema construction"
+    )
+)]
+
 //! OpenAPI request and response types for evaluator management.
 
 use std::collections::HashMap;
@@ -9,6 +17,7 @@ use crate::config::EvaluatorDef;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
 pub struct UpdateEvaluatorsRequest {
     #[serde(default)]
     pub evaluators: Vec<EvaluatorDef>,
@@ -50,3 +59,25 @@ pub struct UnbindNamespaceResponse {
 }
 
 pub type NamespaceBindings = HashMap<String, String>;
+
+/// Runtime readiness of the active evaluator configuration.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "lowercase")]
+pub enum EvaluatorReadiness {
+    Ready,
+    Degraded,
+    Invalid,
+    Unconfigured,
+    Disabled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub struct EvaluatorStatus {
+    pub namespace: String,
+    pub state: EvaluatorReadiness,
+    pub reason_code: String,
+    pub revision_id: Option<u64>,
+    pub posture: wanaku_types::governance::GovernancePosture,
+}

@@ -6634,8 +6634,10 @@ version = "0.3.0"
 dependencies = [
  "async-trait",
  "bytes",
+ "form_urlencoded",
  "http 1.5.0",
  "jsonschema 0.57.0",
+ "praxis-proxy-core",
  "praxis-proxy-filter",
  "reqwest 0.12.28",
  "serde",
@@ -6766,6 +6768,7 @@ dependencies = [
  "rust-embed",
  "serde",
  "serde_json",
+ "tempfile",
  "tikv-jemallocator",
  "tokio",
  "tracing",

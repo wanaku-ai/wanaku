@@ -1,0 +1,18 @@
+name: Build evaluator actions
+description: Build the Rust WASM components for evaluator tests and server startup.
+runs:
+  using: composite
+  steps:
+    - name: Install component build tools
+      shell: bash
+      run: |
+        rustup target add wasm32-wasip1
+        cargo install cargo-component --version 0.21.1 --locked
+    - name: Build Rust evaluator actions
+      shell: bash
+      run: |
+        mkdir -p actions/dist
+        (cd actions/safety-review && cargo component build --release --locked)
+        cp actions/safety-review/target/wasm32-wasip1/release/safety_review_action.wasm actions/dist/
+        (cd actions/assembly-filter && cargo component build --release --locked)
+        cp actions/assembly-filter/target/wasm32-wasip1/release/assembly_filter_action.wasm actions/dist/

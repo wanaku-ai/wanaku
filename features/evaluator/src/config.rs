@@ -10,6 +10,7 @@ pub use crate::engines::system_one::{
 /// Top-level evaluator configuration containing multiple evaluator definitions.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
 pub struct EvaluatorsConfig {
     #[serde(default)]
     pub evaluators: Vec<EvaluatorDef>,
@@ -25,8 +26,6 @@ pub struct EvaluatorDef {
     /// The engine that produces the processor input.
     pub engine: EvaluationEngine,
     pub processor: ProcessorRef,
-    #[serde(default = "default_on_error")]
-    pub on_error: ErrorPolicy,
 }
 
 /// An evaluation implementation selected by an evaluator definition.
@@ -70,19 +69,6 @@ pub struct TriggerDef {
 pub struct ProcessorRef {
     #[cfg_attr(feature = "openapi", schema(value_type = String))]
     pub path: PathBuf,
-}
-
-/// What to do when a WASM action fails.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[serde(rename_all = "lowercase")]
-pub enum ErrorPolicy {
-    Continue,
-    Block,
-}
-
-const fn default_on_error() -> ErrorPolicy {
-    ErrorPolicy::Continue
 }
 
 impl TriggerDef {
@@ -141,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    fn error_policy_defaults_to_continue() {
+    fn evaluator_configuration_has_no_independent_failure_policy() {
         let json = serde_json::json!({
             "name": "eval-1",
             "trigger": {"method": TOOLS_CALL},
@@ -149,7 +135,7 @@ mod tests {
             "processor": {"path": "/proc.wasm"}
         });
         let def: EvaluatorDef = serde_json::from_value(json).expect("valid config");
-        assert!(matches!(def.on_error, ErrorPolicy::Continue));
+
         assert!(def.trigger.namespace.is_none());
     }
 
@@ -220,10 +206,12 @@ mod tests {
     }
 
     #[test]
-    fn error_policy_deserializes_lowercase() {
-        let block: ErrorPolicy = serde_json::from_str("\"block\"").unwrap();
-        assert!(matches!(block, ErrorPolicy::Block));
-        let cont: ErrorPolicy = serde_json::from_str("\"continue\"").unwrap();
-        assert!(matches!(cont, ErrorPolicy::Continue));
+    fn legacy_error_policy_is_rejected() {
+        let json = serde_json::json!({
+            "name": "eval", "trigger": {"method": TOOLS_CALL},
+            "engine": {"type": "passthrough"}, "processor": {"path": "/proc.wasm"},
+            "on_error": "continue"
+        });
+        assert!(serde_json::from_value::<EvaluatorDef>(json).is_err());
     }
 }

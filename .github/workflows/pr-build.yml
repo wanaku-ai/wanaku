@@ -64,6 +64,8 @@ jobs:
             ${{ runner.os }}-cargo-
       - name: Create UI dist stub
         run: mkdir -p ui/admin/dist
+      - name: Build evaluator actions
+        uses: ./.github/actions/build-evaluator-actions
       - name: Build
         run: cargo build --verbose
       - name: Build (headless)

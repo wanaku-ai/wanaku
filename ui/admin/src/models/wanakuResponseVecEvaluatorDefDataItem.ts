@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.3.0
  */
 import type { EvaluationEngine } from "./evaluationEngine";
-import type { ErrorPolicy } from "./errorPolicy";
 import type { ProcessorRef } from "./processorRef";
 import type { TriggerDef } from "./triggerDef";
 
@@ -17,7 +16,6 @@ export type WanakuResponseVecEvaluatorDefDataItem = {
   /** The engine that produces the processor input. */
   engine: EvaluationEngine;
   name: string;
-  on_error?: ErrorPolicy;
   processor: ProcessorRef;
   trigger: TriggerDef;
 };

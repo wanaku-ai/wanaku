@@ -53,4 +53,9 @@ pub trait Feature: Send + Sync {
     fn load_yaml_config(&self, root: &serde_yaml::Value);
 
     fn load_env_config(&self);
+
+    /// Reject invalid required configuration before listeners start.
+    fn validate_startup(&self) -> Result<(), String> {
+        Ok(())
+    }
 }

@@ -27,12 +27,87 @@ use crate::schema::CompiledSchema;
 /// swaps in a new snapshot while the request awaits the LLM.
 #[derive(Default)]
 pub struct ActiveSnapshot {
+    pub revision_id: Option<u64>,
+    pub invalid_reason: Option<&'static str>,
+    failures: Mutex<std::collections::HashSet<String>>,
     evaluators: Vec<EvaluatorDef>,
     compiled: HashMap<PathBuf, Arc<CompiledEvaluator>>,
     schemas: HashMap<String, Arc<CompiledSchema>>,
 }
 
 impl ActiveSnapshot {
+    /// Failures are limited to configured evaluators and belong to this revision.
+    pub fn record_failure(&self, evaluator: &str) {
+        if self.evaluators.iter().any(|entry| entry.name == evaluator) {
+            match self.failures.lock() {
+                Ok(mut failures) => {
+                    failures.insert(evaluator.to_owned());
+                }
+                Err(error) => tracing::error!(%error, "evaluator readiness lock unavailable"),
+            }
+        }
+    }
+
+    pub fn record_success(&self, evaluator: &str) {
+        match self.failures.lock() {
+            Ok(mut failures) => {
+                failures.remove(evaluator);
+            }
+            Err(error) => tracing::error!(%error, "evaluator readiness lock unavailable"),
+        }
+    }
+
+    pub fn status(
+        &self,
+        namespace: &str,
+        posture: wanaku_types::governance::GovernancePosture,
+    ) -> crate::api::EvaluatorStatus {
+        use crate::api::EvaluatorReadiness;
+        use wanaku_types::governance::EnforcementMode;
+        let (state, reason) = if posture.mode == EnforcementMode::Disabled {
+            (EvaluatorReadiness::Disabled, "governance_disabled")
+        } else if let Some(reason) = self.invalid_reason {
+            (EvaluatorReadiness::Invalid, reason)
+        } else if !self.evaluators.iter().any(|entry| {
+            entry
+                .trigger
+                .namespace
+                .as_deref()
+                .is_none_or(|scope| scope == namespace)
+        }) {
+            (EvaluatorReadiness::Unconfigured, "no_evaluators_configured")
+        } else {
+            self.execution_status(namespace)
+        };
+        crate::api::EvaluatorStatus {
+            namespace: namespace.to_owned(),
+            state,
+            reason_code: reason.to_owned(),
+            revision_id: self.revision_id,
+            posture,
+        }
+    }
+
+    fn execution_status(&self, namespace: &str) -> (crate::api::EvaluatorReadiness, &'static str) {
+        use crate::api::EvaluatorReadiness;
+        let Ok(failures) = self.failures.lock() else {
+            return (EvaluatorReadiness::Invalid, "runtime_unavailable");
+        };
+        let failed = self.evaluators.iter().any(|entry| {
+            failures.contains(&entry.name)
+                && entry
+                    .trigger
+                    .namespace
+                    .as_deref()
+                    .is_none_or(|scope| scope == namespace)
+        });
+        if failed {
+            (EvaluatorReadiness::Degraded, "evaluation_failed")
+        } else {
+            (EvaluatorReadiness::Ready, "configuration_ready")
+        }
+    }
+
     #[must_use]
     pub fn list_evaluators(&self) -> Vec<EvaluatorDef> {
         self.evaluators.clone()
@@ -107,6 +182,9 @@ impl EvaluatorState {
         backend: Arc<dyn crate::revision_persistence::RevisionPersistence>,
     ) -> Self {
         self.revisions = RevisionStore::with_persistence(backend);
+        if let Some(reason) = self.revisions.load_error() {
+            self.mark_invalid(reason);
+        }
         self
     }
 
@@ -130,34 +208,24 @@ impl EvaluatorState {
     /// validates or compiles on this host does not silently stay active — a
     /// rejected revision is recorded and the runtime is left without it.
     pub fn reconcile_startup(&self, startup_defs: Option<Vec<EvaluatorDef>>) {
+        if self.active_config().invalid_reason.is_some() {
+            return;
+        }
         let active = self.revisions.active_revision();
-
         match startup_defs {
-            Some(defs) => {
-                if Self::matches_active(active.as_ref(), &defs) {
-                    tracing::info!(
-                        count = defs.len(),
-                        "startup evaluator config matches persisted active revision; keeping it"
-                    );
-                    self.reinstall_active_revision();
-                } else {
-                    match self.try_activate(defs, RevisionOrigin::Startup, None, None) {
-                        Ok(rev) => tracing::info!(
-                            revision_id = rev.metadata.id,
-                            "startup evaluator revision activated"
-                        ),
-                        Err(e) => tracing::error!(
-                            error = %e,
-                            "startup evaluator configuration rejected; no evaluators loaded"
-                        ),
+            Some(defs) if !Self::matches_active(active.as_ref(), &defs) => {
+                match self.try_activate(defs, RevisionOrigin::Startup, None, None) {
+                    Ok(rev) => tracing::info!(
+                        revision_id = rev.metadata.id,
+                        "startup evaluator revision activated"
+                    ),
+                    Err(error) => {
+                        self.mark_invalid("configuration_invalid");
+                        tracing::error!(%error, "startup evaluator configuration rejected");
                     }
                 }
             }
-            None => {
-                if active.is_some() {
-                    self.reinstall_active_revision();
-                }
-            }
+            _ => self.reinstall_active_revision(),
         }
     }
 
@@ -192,39 +260,31 @@ impl EvaluatorState {
             return;
         };
         let revision_id = active.metadata.id;
-        let defs = active.evaluators;
-
-        if let Err(e) = validate_evaluator_names(&defs)
-            .and_then(|()| validate_triggers(&defs))
-            .and_then(|()| self.validate_engines(&defs))
-        {
-            tracing::error!(
-                revision_id = revision_id,
-                error = %e,
-                "persisted active evaluator revision failed validation on this host; runtime left empty"
-            );
-            return;
-        }
-
-        let (compiled, wasm_errors) = compile_wasm_map_with_errors(&defs);
-        let (schemas, schema_errors) = try_compile_schemas(&defs);
-        let errors = collect_errors(wasm_errors, schema_errors);
-
+        let prepared = self
+            .validate_definitions(&active.evaluators)
+            .map_err(|error| error.to_string())
+            .and_then(|()| compile_snapshot(&active.evaluators));
+        let mut snapshot = match prepared {
+            Ok(snapshot) => snapshot,
+            Err(error) => {
+                tracing::error!(revision_id, %error, "persisted evaluator revision rejected on this host");
+                self.mark_invalid("configuration_invalid");
+                return;
+            }
+        };
+        snapshot.revision_id = Some(revision_id);
         let _activation = self.lock_activation();
-        if !errors.is_empty() {
-            tracing::error!(
-                revision_id = revision_id,
-                errors = %errors.join("; "),
-                "persisted active evaluator revision failed to compile on this host; runtime left empty"
-            );
-            return;
+        match self.active.write() {
+            Ok(mut active) => {
+                self.update_metrics(&snapshot);
+                *active = Arc::new(snapshot);
+                tracing::info!(
+                    revision_id,
+                    "restored active evaluator revision from persistence"
+                );
+            }
+            Err(error) => tracing::error!(%error, "evaluator runtime unavailable"),
         }
-
-        self.install_snapshot(defs, compiled, schemas);
-        tracing::info!(
-            revision_id = revision_id,
-            "restored active evaluator revision from persistence"
-        );
     }
 
     /// Return a reference to the revision store for query operations.
@@ -265,9 +325,10 @@ impl EvaluatorState {
             .into_iter()
             .map(|c| (c.name.clone(), c))
             .collect();
-        if let Ok(mut guard) = self.connections.write() {
-            *guard = map;
-        }
+        *self
+            .connections
+            .write()
+            .map_err(|_| "LLM connection registry unavailable".to_owned())? = map;
         tracing::info!(count = count, "LLM connections loaded from config");
         Ok(())
     }
@@ -301,9 +362,10 @@ impl EvaluatorState {
             .into_iter()
             .map(|connection| (connection.name.clone(), connection))
             .collect();
-        if let Ok(mut guard) = self.system_one_connections.write() {
-            *guard = map;
-        }
+        *self
+            .system_one_connections
+            .write()
+            .map_err(|_| "TypeSafe connection registry unavailable".to_owned())? = map;
         tracing::info!(count, "TypeSafe System One connections loaded from config");
         Ok(())
     }
@@ -345,7 +407,9 @@ impl EvaluatorState {
         let compiled = compile_wasm_map(&defs);
         let schemas = compile_schema_map(&defs);
         let _activation = self.lock_activation();
-        self.install_snapshot(defs, compiled, schemas);
+        if let Err(reason) = self.install_snapshot(defs, compiled, schemas, None) {
+            tracing::error!(reason, "failed to seed evaluator snapshot");
+        }
     }
 
     /// Validate, compile, and atomically activate a new evaluator
@@ -363,43 +427,50 @@ impl EvaluatorState {
         actor: Option<String>,
         expected_revision: Option<u64>,
     ) -> Result<Revision, RevisionError> {
-        validate_evaluator_names(&defs)?;
-        validate_triggers(&defs)?;
-        self.validate_engines(&defs)?;
-
-        let (compiled_modules, wasm_errors) = compile_wasm_map_with_errors(&defs);
-        let (compiled_schemas, schema_errors) = try_compile_schemas(&defs);
-
-        let all_errors = collect_errors(wasm_errors, schema_errors);
-
-        let _activation = self.lock_activation();
-
-        if !all_errors.is_empty() {
-            return self.reject_config(&RecordRevisionParams {
-                evaluators: defs,
-                origin,
-                actor,
-                expected_revision,
-                activate: false,
-                failure_reason: Some(all_errors.join("; ")),
-            });
-        }
-
-        // Commit the revision, install the runtime snapshot, then persist. The
-        // in-memory commit and the snapshot install run back-to-back so readers
-        // never see the new active revision before it is enforced; the disk
-        // write happens afterward, still under the activation lock, so a slow
-        // disk cannot widen that window.
-        let revision = self.revisions.commit_revision(&RecordRevisionParams {
-            evaluators: defs.clone(),
+        self.try_active_config()
+            .map_err(|reason| RevisionError::ValidationFailed(reason.to_owned()))?;
+        self.validate_definitions(&defs)?;
+        let prepared = compile_snapshot(&defs);
+        let mut params = RecordRevisionParams {
+            evaluators: defs,
             origin,
             actor,
             expected_revision,
             activate: true,
             failure_reason: None,
-        })?;
+        };
+        let _activation = self.lock_activation();
+        match prepared {
+            Ok(snapshot) => self.commit_snapshot(snapshot, &params),
+            Err(reason) => {
+                params.activate = false;
+                params.failure_reason = Some(reason);
+                self.reject_config(&params)
+            }
+        }
+    }
 
-        self.install_snapshot(defs, compiled_modules, compiled_schemas);
+    fn validate_definitions(&self, defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
+        validate_evaluator_names(defs)?;
+        validate_triggers(defs)?;
+        self.validate_engines(defs)
+    }
+
+    /// Hold the snapshot lock during the revision commit; persist after installation.
+    fn commit_snapshot(
+        &self,
+        mut snapshot: ActiveSnapshot,
+        params: &RecordRevisionParams,
+    ) -> Result<Revision, RevisionError> {
+        let mut active = self
+            .active
+            .write()
+            .map_err(|_| RevisionError::ValidationFailed("runtime_unavailable".to_owned()))?;
+        let revision = self.revisions.commit_revision(params)?;
+        snapshot.revision_id = Some(revision.metadata.id);
+        self.update_metrics(&snapshot);
+        *active = Arc::new(snapshot);
+        drop(active);
         self.revisions.persist();
         Ok(revision)
     }
@@ -450,34 +521,70 @@ impl EvaluatorState {
     /// different revisions across an `await`.
     #[must_use]
     pub fn active_config(&self) -> Arc<ActiveSnapshot> {
+        self.try_active_config().unwrap_or_else(|reason| {
+            Arc::new(ActiveSnapshot {
+                invalid_reason: Some(reason),
+                ..ActiveSnapshot::default()
+            })
+        })
+    }
+
+    pub fn try_active_config(&self) -> Result<Arc<ActiveSnapshot>, &'static str> {
+        if self.bindings.is_poisoned()
+            || self.connections.is_poisoned()
+            || self.system_one_connections.is_poisoned()
+            || self.activation.is_poisoned()
+        {
+            return Err("runtime_unavailable");
+        }
         self.active
             .read()
             .map(|guard| Arc::clone(&guard))
-            .unwrap_or_default()
+            .map_err(|_| "runtime_unavailable")
+    }
+
+    /// Startup errors remain visible and cannot become an ordinary no-match.
+    pub fn mark_invalid(&self, reason: &'static str) {
+        match self.active.write() {
+            Ok(mut active) => {
+                *active = Arc::new(ActiveSnapshot {
+                    invalid_reason: Some(reason),
+                    ..ActiveSnapshot::default()
+                });
+            }
+            Err(error) => tracing::error!(%error, "evaluator runtime unavailable"),
+        }
     }
 
     /// Bundle the config-derived state into an immutable snapshot and replace
     /// the active one in a single `Arc` swap. Callers must hold the activation
     /// lock so the snapshot swap stays paired with its revision commit.
+    #[cfg(any(test, feature = "test-util"))]
     fn install_snapshot(
         &self,
         evaluators: Vec<EvaluatorDef>,
         compiled: HashMap<PathBuf, Arc<CompiledEvaluator>>,
         schemas: HashMap<String, Arc<CompiledSchema>>,
-    ) {
-        let evaluator_count = evaluators.len() as u64;
-        let wasm_count = compiled.len() as u64;
+        revision_id: Option<u64>,
+    ) -> Result<(), &'static str> {
         let snapshot = Arc::new(ActiveSnapshot {
+            revision_id,
+            invalid_reason: None,
+            failures: Mutex::default(),
             evaluators,
             compiled,
             schemas,
         });
-        if let Ok(mut guard) = self.active.write() {
-            *guard = snapshot;
-        }
+        let mut guard = self.active.write().map_err(|_| "runtime_unavailable")?;
+        self.update_metrics(&snapshot);
+        *guard = snapshot;
+        Ok(())
+    }
+
+    fn update_metrics(&self, snapshot: &ActiveSnapshot) {
         if let Some(ref store) = self.metrics {
-            store.set_evaluators_loaded(evaluator_count);
-            store.set_wasm_compiled(wasm_count);
+            store.set_evaluators_loaded(snapshot.evaluators.len() as u64);
+            store.set_wasm_compiled(snapshot.compiled.len() as u64);
         }
     }
 
@@ -562,6 +669,21 @@ impl EvaluatorState {
         }
         Ok(())
     }
+}
+
+fn compile_snapshot(defs: &[EvaluatorDef]) -> Result<ActiveSnapshot, String> {
+    let (compiled, wasm_errors) = compile_wasm_map_with_errors(defs);
+    let (schemas, schema_errors) = try_compile_schemas(defs);
+    let errors = collect_errors(wasm_errors, schema_errors);
+    if !errors.is_empty() {
+        return Err(errors.join("; "));
+    }
+    Ok(ActiveSnapshot {
+        evaluators: defs.to_vec(),
+        compiled,
+        schemas,
+        ..ActiveSnapshot::default()
+    })
 }
 
 /// Best-effort WASM compilation, silently dropping any module that fails.
@@ -693,9 +815,7 @@ fn collect_wasm_paths(def: &EvaluatorDef) -> Vec<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{
-        ErrorPolicy, LlmConnection, LlmDef, LlmOperation, ProcessorRef, TriggerDef,
-    };
+    use crate::config::{LlmConnection, LlmDef, LlmOperation, ProcessorRef, TriggerDef};
     use wanaku_types::registry::DEFAULT_NAMESPACE;
     use wanaku_types::{TOOLS_CALL, TOOLS_LIST};
 
@@ -715,7 +835,6 @@ mod tests {
             processor: ProcessorRef {
                 path: PathBuf::from("/test.wasm"),
             },
-            on_error: ErrorPolicy::Continue,
         }
     }
 
@@ -909,6 +1028,106 @@ mod tests {
             .load_llm_connections(vec![connection("test-connection")])
             .unwrap();
         assert!(state.validate_engines(&[test_evaluator("a")]).is_ok());
+    }
+
+    #[test]
+    fn readiness_tracks_failure_and_recovery() {
+        use crate::api::EvaluatorReadiness;
+        use wanaku_types::governance::GovernancePosture;
+        let state = EvaluatorState::new();
+        assert_eq!(
+            state
+                .active_config()
+                .status("default", GovernancePosture::default())
+                .state,
+            EvaluatorReadiness::Unconfigured
+        );
+        state.load_evaluators(vec![test_evaluator("eval")]);
+        let old = state.active_config();
+        old.record_failure("unknown");
+        assert_eq!(
+            old.status("default", GovernancePosture::default()).state,
+            EvaluatorReadiness::Ready
+        );
+        old.record_failure("eval");
+        assert_eq!(
+            old.status("default", GovernancePosture::default()).state,
+            EvaluatorReadiness::Degraded
+        );
+        old.record_success("eval");
+        assert_eq!(
+            old.status("default", GovernancePosture::default()).state,
+            EvaluatorReadiness::Ready
+        );
+    }
+
+    #[test]
+    fn readiness_failures_do_not_cross_revision_boundaries() {
+        use crate::api::EvaluatorReadiness;
+        use wanaku_types::governance::GovernancePosture;
+        let state = EvaluatorState::new();
+        state.load_evaluators(vec![test_evaluator("eval")]);
+        let old = state.active_config();
+        state.load_evaluators(vec![test_evaluator("eval")]);
+        old.record_failure("eval");
+        assert_eq!(
+            state
+                .active_config()
+                .status("default", GovernancePosture::default())
+                .state,
+            EvaluatorReadiness::Ready
+        );
+    }
+
+    #[test]
+    fn namespace_without_applicable_evaluators_is_unconfigured() {
+        use crate::api::EvaluatorReadiness;
+        use wanaku_types::governance::GovernancePosture;
+        let state = EvaluatorState::new();
+        let mut def = test_evaluator("eval");
+        def.trigger.namespace = Some("production".to_owned());
+        state.load_evaluators(vec![def]);
+        let snapshot = state.active_config();
+        assert_eq!(
+            snapshot
+                .status("default", GovernancePosture::default())
+                .state,
+            EvaluatorReadiness::Unconfigured
+        );
+        assert_eq!(
+            snapshot
+                .status("production", GovernancePosture::default())
+                .state,
+            EvaluatorReadiness::Ready
+        );
+    }
+
+    #[test]
+    fn corrupt_persisted_history_is_invalid() {
+        let file = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(file.path(), "not json").unwrap();
+        let backend = Arc::new(crate::revision_persistence::FileRevisionPersistence::new(
+            file.path(),
+        ));
+        let state = EvaluatorState::new().with_revision_persistence(backend);
+        state.reconcile_startup(None);
+        assert_eq!(
+            state.active_config().invalid_reason,
+            Some("persisted_configuration_unavailable")
+        );
+    }
+
+    #[test]
+    fn invalid_startup_is_distinct_from_unconfigured() {
+        use crate::api::EvaluatorReadiness;
+        use wanaku_types::governance::GovernancePosture;
+        let state = EvaluatorState::new();
+        state.reconcile_startup(Some(vec![test_evaluator("eval")]));
+        let status = state
+            .active_config()
+            .status("default", GovernancePosture::default());
+        assert_eq!(status.state, EvaluatorReadiness::Invalid);
+        assert_eq!(status.reason_code, "configuration_invalid");
     }
 
     // ---- find_matching via test-only seeding ----

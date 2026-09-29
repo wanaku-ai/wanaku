@@ -43,12 +43,18 @@ fn main() {
     // Paired with InterceptFeature: adds x-request-id to tool schemas for conversation tracking
     wanaku_registry.enable_request_id_injection();
 
-    let wanaku_config = load_wanaku_yaml(&args.wanaku_config);
+    let wanaku_config = load_wanaku_yaml(&args.wanaku_config).unwrap_or_else(|error| fatal(&error));
     let governance = load_governance_config(wanaku_config.as_ref()).unwrap_or_else(|e| fatal(&e));
+    // Feature status and pipeline filters use the same immutable startup posture.
     let features: Vec<Box<dyn Feature>> =
-        build_features(&args, &metrics_store, wanaku_config.as_ref());
+        build_features(&args, &metrics_store, wanaku_config.as_ref(), &governance);
 
     load_config(wanaku_config.as_ref(), &wanaku_registry, &features);
+    for feature in &features {
+        feature
+            .validate_startup()
+            .unwrap_or_else(|error| fatal(&error));
+    }
 
     let mut filter_registry = wanaku_server::build_full_registry();
     for feature in &features {
@@ -113,12 +119,10 @@ fn load_config(
 ) {
     if let Some(yaml) = wanaku_config {
         load_core_config(yaml, wanaku_registry);
-        for feature in features {
-            feature.load_yaml_config(yaml);
-        }
     }
-
+    let empty = serde_yaml::Value::Mapping(serde_yaml::Mapping::new());
     for feature in features {
+        feature.load_yaml_config(wanaku_config.unwrap_or(&empty));
         feature.load_env_config();
     }
 }
@@ -226,6 +230,7 @@ fn build_features(
     args: &ServerArgs,
     metrics_store: &wanaku_infra::metrics::MetricsStore,
     wanaku_config: Option<&serde_yaml::Value>,
+    governance: &GovernanceConfig,
 ) -> Vec<Box<dyn Feature>> {
     let mut audit = wanaku_feature_audit::AuditFeature::new().with_metrics(metrics_store.clone());
     if let Some(backend) = wanaku_feature_audit::persistence::FileAuditPersistence::from_config() {
@@ -240,15 +245,7 @@ fn build_features(
         info!("action policy revision persistence enabled");
         action_policy = action_policy.with_revision_persistence(backend);
     }
-    let mut evaluator = wanaku_feature_evaluator::EvaluatorFeature::new()
-        .with_metrics(metrics_store.clone())
-        .with_audit(audit.store());
-    if let Some(backend) =
-        wanaku_feature_evaluator::revision_persistence::FileRevisionPersistence::from_config()
-    {
-        info!("evaluator revision persistence enabled");
-        evaluator = evaluator.with_revision_persistence(backend);
-    }
+    let evaluator = build_evaluator(metrics_store, audit.store(), governance);
 
     vec![
         Box::new(audit),
@@ -263,6 +260,24 @@ fn build_features(
             args.plugins_path.as_deref(),
         )),
     ]
+}
+
+fn build_evaluator(
+    metrics_store: &wanaku_infra::metrics::MetricsStore,
+    audit: wanaku_types::audit::InMemoryAuditStore,
+    governance: &GovernanceConfig,
+) -> wanaku_feature_evaluator::EvaluatorFeature {
+    let mut evaluator = wanaku_feature_evaluator::EvaluatorFeature::new()
+        .with_metrics(metrics_store.clone())
+        .with_audit(audit)
+        .with_governance(governance.clone());
+    if let Some(backend) =
+        wanaku_feature_evaluator::revision_persistence::FileRevisionPersistence::from_config()
+    {
+        info!("evaluator revision persistence enabled");
+        evaluator = evaluator.with_revision_persistence(backend);
+    }
+    evaluator
 }
 
 #[derive(Debug, Parser)]
@@ -281,21 +296,21 @@ struct ServerArgs {
     plugins_path: Option<String>,
 }
 
-fn load_wanaku_yaml(path: &str) -> Option<serde_yaml::Value> {
+fn load_wanaku_yaml(path: &str) -> Result<Option<serde_yaml::Value>, String> {
     let content = match std::fs::read_to_string(path) {
-        Ok(c) => c,
-        Err(e) => {
-            tracing::warn!(path = %path, error = %e, "wanaku config not found, starting with empty registry");
-            return None;
+        Ok(content) => content,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            tracing::warn!(path, "wanaku config not found, using defaults");
+            return Ok(None);
         }
+        Err(_) => return Err("cannot read wanaku configuration".to_owned()),
     };
-
-    match serde_yaml::from_str(&content) {
-        Ok(c) => Some(c),
-        Err(e) => {
-            tracing::warn!(path = %path, error = %e, "failed to parse wanaku config");
-            None
-        }
+    let root: serde_yaml::Value = serde_yaml::from_str(&content)
+        .map_err(|_| "invalid wanaku configuration YAML".to_owned())?;
+    match root {
+        serde_yaml::Value::Mapping(_) => Ok(Some(root)),
+        serde_yaml::Value::Null => Ok(None),
+        _ => Err("wanaku configuration must be a YAML mapping".to_owned()),
     }
 }
 
@@ -355,8 +370,23 @@ fn fatal(err: &dyn std::fmt::Display) -> ! {
 
 #[cfg(test)]
 mod tests {
-    use super::load_governance_config;
+    use super::{load_governance_config, load_wanaku_yaml};
     use wanaku_types::governance::{AuditLevel, EnforcementMode, FailureBehavior, NoMatchBehavior};
+
+    #[test]
+    fn malformed_bootstrap_yaml_is_not_missing_configuration() {
+        let file = tempfile::NamedTempFile::new().unwrap();
+        for invalid in ["evaluators: [", "[evaluators]", "not-a-mapping"] {
+            std::fs::write(file.path(), invalid).unwrap();
+            assert!(load_wanaku_yaml(file.path().to_str().unwrap()).is_err());
+        }
+        std::fs::write(file.path(), "evaluators: []").unwrap();
+        assert!(
+            load_wanaku_yaml(file.path().to_str().unwrap())
+                .unwrap()
+                .is_some()
+        );
+    }
 
     #[test]
     fn absent_governance_config_uses_fail_safe_defaults() {

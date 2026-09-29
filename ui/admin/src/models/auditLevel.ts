@@ -7,12 +7,12 @@
  */
 
 /**
- * What to do when a WASM action fails.
+ * Controls whether audit mode invokes configured LLM evaluators.
  */
-export type ErrorPolicy = (typeof ErrorPolicy)[keyof typeof ErrorPolicy];
+export type AuditLevel = (typeof AuditLevel)[keyof typeof AuditLevel];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ErrorPolicy = {
-  continue: "continue",
-  block: "block",
+export const AuditLevel = {
+  basic: "basic",
+  full: "full",
 } as const;

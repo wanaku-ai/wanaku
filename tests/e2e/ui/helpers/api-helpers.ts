@@ -15,6 +15,19 @@ export class ApiHelper {
     return response;
   }
 
+  async getEvaluators() {
+    const response = await this.request.get(`${this.baseUrl}/api/v1/evaluators`);
+    await this.assertOk(response, 'getEvaluators');
+    return (await response.json()).data;
+  }
+
+  async setEvaluators(evaluators: unknown[]) {
+    const response = await this.request.put(`${this.baseUrl}/api/v1/evaluators`, {
+      data: { evaluators },
+    });
+    return this.assertOk(response, 'setEvaluators');
+  }
+
   async getTool(name: string) {
     const resp = await this.request.get(`${this.baseUrl}/api/v1/tools/${name}`);
     return this.assertOk(resp, `getTool(${name})`);

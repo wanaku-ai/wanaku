@@ -218,8 +218,7 @@ mod engine {
                     "prompt": "test",
                     "connection": "local-llama"
                 },
-                "processor": {"path": "/nonexistent.wasm"},
-                "on_error": "continue"
+                "processor": {"path": "/nonexistent.wasm"}
             }]
         }));
 
@@ -267,8 +266,7 @@ mod engine {
                     "prompt": "Classify as green/yellow/red",
                     "connection": "local-llama"
                 },
-                "processor": {"path": block_wasm},
-                "on_error": "continue"
+                "processor": {"path": block_wasm}
             }]
         }));
 
@@ -307,8 +305,7 @@ mod engine {
                     "prompt": "Classify",
                     "connection": "local-llama"
                 },
-                "processor": {"path": block_wasm},
-                "on_error": "continue"
+                "processor": {"path": block_wasm}
             }]
         }));
 
@@ -346,8 +343,7 @@ mod engine {
                     "prompt": "Classify",
                     "connection": "local-llama"
                 },
-                "processor": {"path": block_wasm},
-                "on_error": "continue"
+                "processor": {"path": block_wasm}
             }]
         }));
 
@@ -392,8 +388,7 @@ mod engine {
                         "required": ["level", "reason"]
                     }
                 },
-                "processor": {"path": block_wasm},
-                "on_error": "continue"
+                "processor": {"path": block_wasm}
             }]
         }));
 
@@ -443,8 +438,7 @@ mod engine {
                     "prompt": "Classify",
                     "connection": "local-llama"
                 },
-                "processor": {"path": block_wasm},
-                "on_error": "continue"
+                "processor": {"path": block_wasm}
             }]
         }));
 
@@ -497,8 +491,7 @@ mod classification {
                         "required": ["level", "reason"]
                     }
                 },
-                "processor": {"path": block_wasm},
-                "on_error": "continue"
+                "processor": {"path": block_wasm}
             }]
         }));
     }

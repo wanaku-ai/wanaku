@@ -15,6 +15,33 @@ governance:
     on_failure: deny
     audit_level: basic
 
+# Uncomment the namespace overrides below to enable these examples.
+# Remove only the first "# " from each line. Keep the YAML indentation.
+#   namespaces:
+#     # Allow requests when a governance decision fails.
+#     # Explicit denials still apply. Unmatched actions inherit no_match: deny.
+#     # This setting does not permit an invalid evaluator runtime.
+#     other-ns:
+#       on_failure: allow
+#
+#     # Apply matching policies and evaluators. Deny requests on failure.
+#     # Each filter permits unmatched actions. A denial from either filter
+#     # still blocks the request.
+#     test-ns:
+#       mode: enforce
+#       on_failure: deny
+#       no_match: allow
+#
+#     # Skip action-policy and evaluator evaluation in this namespace.
+#     # Disabled mode requires a non-empty reason.
+#     maintenance:
+#       mode: disabled
+#       disabled_reason: Scheduled maintenance window
+
+# audit_level applies only when mode is audit. Basic audit skips external
+# evaluator calls. Full audit runs them without applying processor mutations.
+# Both audit levels let requests continue through these governance filters.
+
 # Sample evaluator configuration. See docs/evaluator-engine.md for the full guide.
 # LLM connections are config-only: they can't be set or read through the
 # management API, only here.
@@ -63,4 +90,3 @@ evaluators:
     #            && cp target/wasm32-wasip1/release/*.wasm ../dist/
     processor:
       path: "actions/dist/safety_review_action.wasm"
-    on_error: continue

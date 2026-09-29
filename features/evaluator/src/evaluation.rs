@@ -5,46 +5,85 @@ use crate::config::{EvaluationEngine, EvaluatorDef, LlmDef};
 use crate::schema::CompiledSchema;
 use crate::state::EvaluatorState;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EvaluationError {
+    MissingConnection,
+    Llm,
+    Schema,
+    Remote,
+    Internal,
+}
+
+impl EvaluationError {
+    pub const fn reason_code(self) -> &'static str {
+        match self {
+            Self::MissingConnection => "evaluator_connection_unavailable",
+            Self::Llm => "evaluator_llm_failed",
+            Self::Schema => "evaluator_schema_invalid",
+            Self::Remote => "evaluator_remote_engine_failed",
+            Self::Internal => "evaluator_internal_error",
+        }
+    }
+}
+
+impl std::fmt::Display for EvaluationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.reason_code())
+    }
+}
+
+pub struct EvaluationContext<'a, 'm> {
+    pub state: &'a EvaluatorState,
+    pub mcp: &'a McpContext<'m>,
+    pub compiled_schema: Option<&'a CompiledSchema>,
+    pub metrics: Option<&'a MetricsStore>,
+}
+
 /// Execute the selected engine and return the normalized processor input.
 pub async fn execute(
     evaluator: &EvaluatorDef,
     engine: &EvaluationEngine,
-    state: &EvaluatorState,
-    mcp: &McpContext<'_>,
-    compiled_schema: Option<&CompiledSchema>,
-    metrics: Option<&MetricsStore>,
-) -> Result<String, String> {
+    context: &EvaluationContext<'_, '_>,
+) -> Result<String, EvaluationError> {
     let start = std::time::Instant::now();
-    let (engine_name, result) = match engine {
-        EvaluationEngine::Llm(def) => (
-            "llm",
-            execute_llm(evaluator, def, state, mcp, compiled_schema, metrics).await,
-        ),
-        EvaluationEngine::TypesafeSystemOne(def) => (
-            "typesafe-system-one",
-            crate::engines::system_one::execute(def, state, mcp).await,
-        ),
-        EvaluationEngine::Passthrough => (
-            "passthrough",
-            serde_json::to_string(&serde_json::json!({
-                "method": mcp.method,
-                "tool_name": mcp.tool_name,
-                "arguments": mcp.arguments,
-                "tools": mcp.tools,
-                "history": mcp.history,
-            }))
-            .map_err(|error| format!("failed to serialize passthrough context: {error}")),
-        ),
+    let result = match engine {
+        EvaluationEngine::Llm(def) => execute_llm(&evaluator.name, def, context).await,
+        EvaluationEngine::TypesafeSystemOne(def) => execute_system_one(def, context).await,
+        EvaluationEngine::Passthrough => passthrough_input(context.mcp),
     };
-    if let Some(store) = metrics {
+    if let Some(store) = context.metrics {
         store.record_evaluation_engine(
             &evaluator.name,
-            engine_name,
+            engine.kind(),
             result.is_ok(),
             start.elapsed(),
         );
     }
     result
+}
+
+async fn execute_system_one(
+    definition: &crate::config::SystemOneDef,
+    context: &EvaluationContext<'_, '_>,
+) -> Result<String, EvaluationError> {
+    context
+        .state
+        .get_system_one_connection(&definition.connection)
+        .ok_or(EvaluationError::MissingConnection)?;
+    crate::engines::system_one::execute(definition, context.state, context.mcp)
+        .await
+        .map_err(|_| EvaluationError::Remote)
+}
+
+fn passthrough_input(mcp: &McpContext<'_>) -> Result<String, EvaluationError> {
+    serde_json::to_string(&serde_json::json!({
+        "method": mcp.method,
+        "tool_name": mcp.tool_name,
+        "arguments": mcp.arguments,
+        "tools": mcp.tools,
+        "history": mcp.history,
+    }))
+    .map_err(|_| EvaluationError::Internal)
 }
 
 pub const fn requires_tools(engine: &EvaluationEngine) -> bool {
@@ -58,99 +97,78 @@ pub const fn requires_tools(engine: &EvaluationEngine) -> bool {
 }
 
 async fn execute_llm(
-    evaluator: &EvaluatorDef,
+    evaluator_name: &str,
     definition: &LlmDef,
-    state: &EvaluatorState,
-    mcp: &McpContext<'_>,
-    compiled_schema: Option<&CompiledSchema>,
-    metrics: Option<&MetricsStore>,
-) -> Result<String, String> {
-    let connection = state
+    context: &EvaluationContext<'_, '_>,
+) -> Result<String, EvaluationError> {
+    let connection = context
+        .state
         .get_llm_connection(&definition.connection)
-        .ok_or_else(|| {
-            format!(
-                "evaluator LLM connection '{}' not available",
-                definition.connection
-            )
-        })?;
-    let result = crate::engines::llm::run_llm_operation(
-        &evaluator.name,
-        crate::engines::llm::ResolvedLlm {
-            def: definition,
-            connection: &connection,
-        },
-        mcp,
-        metrics,
-    )
-    .await;
-    let result = result
-        .filter(|value| !value.is_empty())
-        .ok_or_else(|| "evaluator LLM operation failed".to_owned())?;
+        .ok_or(EvaluationError::MissingConnection)?;
+    let llm = crate::engines::llm::ResolvedLlm {
+        def: definition,
+        connection: &connection,
+    };
+    let result =
+        crate::engines::llm::run_llm_operation(evaluator_name, llm, context.mcp, context.metrics)
+            .await;
+    let result = nonempty_llm_result(result)?;
+    validate_and_retry(evaluator_name, llm, context, &result).await
+}
 
-    validate_and_retry(
-        &evaluator.name,
-        definition,
-        &connection,
-        mcp,
-        &result,
-        compiled_schema,
-        metrics,
-    )
-    .await
+fn nonempty_llm_result(result: Option<String>) -> Result<String, EvaluationError> {
+    result
+        .filter(|value| !value.trim().is_empty())
+        .ok_or(EvaluationError::Llm)
 }
 
 async fn validate_and_retry(
     evaluator_name: &str,
-    definition: &LlmDef,
-    connection: &crate::config::LlmConnection,
-    mcp: &McpContext<'_>,
+    llm: crate::engines::llm::ResolvedLlm<'_>,
+    context: &EvaluationContext<'_, '_>,
     result: &str,
-    compiled_schema: Option<&CompiledSchema>,
-    metrics: Option<&MetricsStore>,
-) -> Result<String, String> {
-    let Some(schema) = compiled_schema else {
+) -> Result<String, EvaluationError> {
+    let Some(schema) = context.compiled_schema else {
         return Ok(result.to_owned());
     };
-    let validation_error = match schema.validate(result) {
-        Ok(()) => {
-            if let Some(store) = metrics {
-                store.record_schema_validation(evaluator_name, true);
-            }
-            return Ok(result.to_owned());
-        }
-        Err(error) => error,
-    };
-    if let Some(store) = metrics {
-        store.record_schema_validation(evaluator_name, false);
+    let validation = schema.validate(result);
+    if let Some(store) = context.metrics {
+        store.record_schema_validation(evaluator_name, validation.is_ok());
     }
-    let Some(raw_schema) = definition.result_schema.as_ref() else {
-        return Ok(result.to_owned());
-    };
+    match validation {
+        Ok(()) => Ok(result.to_owned()),
+        Err(error) => retry_invalid_result(evaluator_name, llm, context, result, &error).await,
+    }
+}
+
+async fn retry_invalid_result(
+    evaluator_name: &str,
+    llm: crate::engines::llm::ResolvedLlm<'_>,
+    context: &EvaluationContext<'_, '_>,
+    result: &str,
+    validation_error: &str,
+) -> Result<String, EvaluationError> {
+    let raw_schema = llm
+        .def
+        .result_schema
+        .as_ref()
+        .ok_or(EvaluationError::Schema)?;
+    let schema = context.compiled_schema.ok_or(EvaluationError::Schema)?;
     let retry = crate::engines::llm::retry_with_schema_correction(
-        crate::engines::llm::ResolvedLlm {
-            def: definition,
-            connection,
-        },
-        mcp,
+        llm,
+        context.mcp,
         result,
         raw_schema,
-        &validation_error,
+        validation_error,
     )
     .await;
-    match retry {
-        Some(retried) if schema.validate(&retried).is_ok() => {
-            if let Some(store) = metrics {
-                store.record_schema_retry(evaluator_name, true);
-            }
-            Ok(retried)
-        }
-        _ => {
-            if let Some(store) = metrics {
-                store.record_schema_retry(evaluator_name, false);
-            }
-            Ok(result.to_owned())
-        }
+    let validated = retry
+        .filter(|retried| schema.validate(retried).is_ok())
+        .ok_or(EvaluationError::Schema);
+    if let Some(store) = context.metrics {
+        store.record_schema_retry(evaluator_name, validated.is_ok());
     }
+    validated
 }
 
 #[cfg(test)]
@@ -172,15 +190,16 @@ mod tests {
             processor: crate::config::ProcessorRef {
                 path: "/unused.wasm".into(),
             },
-            on_error: crate::config::ErrorPolicy::Continue,
         };
         let result = execute(
             &evaluator,
             &EvaluationEngine::Passthrough,
-            &EvaluatorState::new(),
-            &context,
-            None,
-            None,
+            &EvaluationContext {
+                state: &EvaluatorState::new(),
+                mcp: &context,
+                compiled_schema: None,
+                metrics: None,
+            },
         )
         .await
         .expect("pass-through result");
@@ -188,5 +207,69 @@ mod tests {
             serde_json::from_str::<serde_json::Value>(&result).expect("JSON")["arguments"]["city"],
             "Berlin"
         );
+    }
+
+    #[test]
+    fn empty_and_whitespace_llm_responses_are_failures() {
+        for response in [None, Some(String::new()), Some(" \n\t".to_owned())] {
+            assert_eq!(nonempty_llm_result(response), Err(EvaluationError::Llm));
+        }
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "complete initial-response and correction HTTP scenario"
+    )]
+    async fn exhausted_schema_correction_returns_failure_instead_of_invalid_result() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "choices": [{"message": {"content": "{\"allowed\":\"invalid\"}"}}]
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+        let raw_schema = serde_json::json!({
+            "type": "object",
+            "properties": {"allowed": {"type": "boolean"}},
+            "required": ["allowed"]
+        });
+        let schema = CompiledSchema::compile(&raw_schema).expect("valid schema");
+        let definition = LlmDef {
+            operation: crate::config::LlmOperation::Classify,
+            prompt: "classify".to_owned(),
+            connection: "test".to_owned(),
+            result_schema: Some(raw_schema),
+        };
+        let connection = crate::config::LlmConnection {
+            name: "test".to_owned(),
+            model: "test".to_owned(),
+            url: server.uri(),
+            api_key: String::new(),
+        };
+        let arguments = HashMap::new();
+        let mcp = McpContext::new("tools/call", Some("test"), &arguments, &[], &[]);
+        let state = EvaluatorState::new();
+        let result = validate_and_retry(
+            "test",
+            crate::engines::llm::ResolvedLlm {
+                def: &definition,
+                connection: &connection,
+            },
+            &EvaluationContext {
+                state: &state,
+                mcp: &mcp,
+                compiled_schema: Some(&schema),
+                metrics: None,
+            },
+            "not JSON",
+        )
+        .await;
+        assert_eq!(result, Err(EvaluationError::Schema));
     }
 }

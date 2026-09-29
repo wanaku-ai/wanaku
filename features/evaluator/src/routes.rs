@@ -11,6 +11,7 @@ type ParseResult<T> = Result<T, Box<Response<Vec<u8>>>>;
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum EvaluatorRoute {
     ListEvaluators,
+    Status,
     UpdateEvaluators,
     ListLlmConnections,
     ListBindings,
@@ -33,6 +34,14 @@ pub(crate) fn resolve_evaluator_route(method: &str, path: &str) -> EvaluatorRout
             "GET" => EvaluatorRoute::ListEvaluators,
             "PUT" => EvaluatorRoute::UpdateEvaluators,
             _ => EvaluatorRoute::NotFound,
+        };
+    }
+
+    if matches!(suffix, "/status" | "/status/") {
+        return if method == "GET" {
+            EvaluatorRoute::Status
+        } else {
+            EvaluatorRoute::NotFound
         };
     }
 
@@ -113,6 +122,20 @@ fn resolve_revision_route(method: &str, suffix: &str) -> EvaluatorRoute {
     }
 }
 
+pub(crate) fn handle_status(
+    state: &EvaluatorState,
+    governance: &wanaku_types::governance::GovernanceConfig,
+    query: Option<&str>,
+) -> Response<Vec<u8>> {
+    let namespace = form_urlencoded::parse(query.unwrap_or_default().as_bytes())
+        .find(|(key, _)| key == "namespace")
+        .map_or_else(|| "default".to_owned(), |(_, value)| value.into_owned());
+    let posture = governance.resolve(&namespace);
+    json_ok(&serde_json::json!(
+        state.active_config().status(&namespace, posture)
+    ))
+}
+
 pub(crate) fn handle_list_evaluators(state: &EvaluatorState) -> Response<Vec<u8>> {
     json_ok(&serde_json::json!(state.list_evaluators()))
 }
@@ -125,6 +148,7 @@ pub(crate) fn handle_list_llm_connections(state: &EvaluatorState) -> Response<Ve
 /// Request body for the update evaluators endpoint. Optionally includes
 /// an expected revision for optimistic concurrency control.
 #[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 struct UpdateEvaluatorsRequest {
     #[serde(default)]
     evaluators: Vec<crate::config::EvaluatorDef>,
@@ -300,8 +324,48 @@ pub(crate) fn handle_unbind_namespace(
 mod tests {
     use super::*;
 
+    #[test]
+    fn misspelled_update_does_not_clear_configuration() {
+        let state = EvaluatorState::new();
+        let response = handle_update_evaluators(&state, r#"{"evalutors": []}"#);
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert!(state.revision_store().active_revision_id().is_none());
+    }
+
     fn resolve(method: &str, path: &str) -> EvaluatorRoute {
         resolve_evaluator_route(method, path)
+    }
+
+    #[test]
+    fn status_route_and_namespace_posture() {
+        use wanaku_types::governance::{
+            EnforcementMode, GovernanceConfig, GovernancePostureOverride,
+        };
+        assert_eq!(
+            resolve("GET", "/api/v1/evaluators/status"),
+            EvaluatorRoute::Status
+        );
+        assert_eq!(
+            resolve("PUT", "/api/v1/evaluators/status"),
+            EvaluatorRoute::NotFound
+        );
+        let mut governance = GovernanceConfig::default();
+        governance.namespaces.insert(
+            "finance team".to_owned(),
+            GovernancePostureOverride {
+                mode: Some(EnforcementMode::Disabled),
+                disabled_reason: Some("maintenance".to_owned()),
+                ..GovernancePostureOverride::default()
+            },
+        );
+        let response = handle_status(
+            &EvaluatorState::new(),
+            &governance,
+            Some("namespace=finance%20team"),
+        );
+        let body: serde_json::Value = serde_json::from_slice(response.body()).unwrap();
+        assert_eq!(body["data"]["state"], "disabled");
+        assert_eq!(body["data"]["posture"]["disabled_reason"], "maintenance");
     }
 
     #[test]

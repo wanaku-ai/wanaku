@@ -160,7 +160,6 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
       : "",
   );
   const [processorPath, setProcessorPath] = useState(evaluator?.processor.path || "");
-  const [onError, setOnError] = useState(evaluator?.on_error || "continue");
 
   const trimmedName = name.trim();
   const isDuplicate = !evaluator && existingNames.includes(trimmedName);
@@ -204,7 +203,6 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
       processor: {
         path: processorPath.trim(),
       },
-      on_error: onError as "continue" | "block",
     });
   };
 
@@ -358,18 +356,7 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
           required
         />
 
-        <Select
-          id="on-error"
-          labelText="Error Policy"
-          value={onError}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-            setOnError(e.target.value as "continue" | "block")
-          }
-          helperText="What to do if the evaluator fails"
-        >
-          <SelectItem value="continue" text="Continue" />
-          <SelectItem value="block" text="Block" />
-        </Select>
+
       </Stack>
     </Modal>
   );

@@ -101,7 +101,7 @@ The server writes the file after every revision change, not only at shutdown. A 
 
 On startup the server loads the persisted history. The `wanaku.yaml` configuration is the source of truth for the live runtime. If the startup configuration matches the persisted active revision, the server re-validates and recompiles that revision and installs it, without recording a new revision. If the startup configuration differs, the server activates it as a new revision.
 
-When the server re-applies an existing active revision, it re-validates the evaluator names, triggers, and LLM connection references and recompiles the WASM processors and result schemas. If the revision no longer validates or compiles on the current host, the server leaves the runtime configuration empty and logs the error. The server does not append a revision in this case, so a repeatedly failing host does not churn the bounded history.
+When the server re-applies an existing active revision, it re-validates the evaluator names, triggers, and LLM connection references and recompiles the WASM processors and result schemas. If the revision no longer validates or compiles on the current host, the server marks the evaluator runtime invalid and logs the error. Startup stops by default. The top-level `evaluator_startup_failure: deny` option permits startup with an invalid runtime. Governed actions are then blocked in enforce mode. The server does not append a revision in this case.
 
 The server keeps a bounded history of the most recent 50 revisions. Older revisions are dropped. Rejected revisions are also persisted, so a failed activation stays visible in the history.
 
@@ -118,6 +118,22 @@ If the startup `wanaku.yaml` evaluator configuration is identical to the persist
 ```
 
 **Limitation:** File persistence supports one writer. Use a shared external persistence implementation before you run multiple replicas.
+
+### Update an earlier pre-release configuration
+
+Wanaku 0.3.0 is unreleased. Evaluator configuration can change between pre-release builds. This change removes `on_error` without an automatic migration. The field is rejected in YAML, API requests, and all persisted evaluator revisions, including inactive revisions.
+
+Before you start the updated build:
+
+1. Stop the server.
+2. Back up the configuration and `evaluator-revisions.json` in `WANAKU_PERSIST_PATH`. The default directory is `$HOME/.wanaku/server`.
+3. Remove `on_error` from each evaluator in the startup YAML and each definition in the persisted revision history.
+4. Set `governance.default.on_failure` or a namespace override in the startup YAML. Use `allow` for the former `continue` behavior. Use `deny` for the former `block` behavior. The setting applies to shared namespace governance, not to one evaluator. Evaluators in the same namespace must use the same failure behavior.
+5. Start the server with the updated configuration.
+
+To discard pre-release evaluator history instead, move the backed-up `evaluator-revisions.json` out of the persistence directory while the server is stopped. Restore the required evaluator definitions in the startup YAML before restart. This resets evaluator revision history. Keep `registry.json` and other persistence files in place.
+
+The server stops at startup if legacy fields remain in the revision file. `evaluator_startup_failure: deny` does not migrate this file or restore evaluator readiness.
 
 ### Action Policy Revision Persistence
 
@@ -529,3 +545,9 @@ The server does not reject unknown environment variable names. A misspelled name
 - [Features](./features.md) — enable evaluators and create custom features
 - [Management API](./management-api.md) — API routes that respect configuration
 - [FAQ](./faq.md) — troubleshooting common issues
+
+## Evaluator governance startup
+
+Evaluator execution uses the global and namespace [governance posture](governance-posture.md). The default failure behavior is `deny`. The evaluator `on_error` field is not accepted.
+
+Invalid evaluator configuration stops startup by default. Set the top-level `evaluator_startup_failure: deny` option to start with an invalid runtime that blocks evaluation in enforce mode. Valid management updates can replace this invalid runtime. Audit and disabled modes retain their configured behavior.

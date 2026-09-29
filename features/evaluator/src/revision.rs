@@ -83,6 +83,7 @@ pub struct RecordRevisionParams {
 pub struct RevisionStore {
     history: RevisionHistory<Revision>,
     persistence: Option<Arc<dyn RevisionPersistence>>,
+    load_error: Option<&'static str>,
 }
 
 struct PersistenceAdapter<'a>(&'a dyn RevisionPersistence);
@@ -112,6 +113,7 @@ impl RevisionStore {
         Self {
             history: RevisionHistory::new(max_history),
             persistence: None,
+            load_error: None,
         }
     }
 
@@ -127,18 +129,18 @@ impl RevisionStore {
         max_history: usize,
         backend: Arc<dyn RevisionPersistence>,
     ) -> Self {
-        let store = Self {
+        let mut store = Self {
             history: RevisionHistory::new(max_history),
             persistence: Some(backend),
+            load_error: None,
         };
         store.load_persisted();
         store
     }
 
     /// Load persisted revisions into the store, replacing any current state.
-    /// Best-effort: a load failure leaves the store empty and is logged, so a
-    /// corrupt or unreadable file never blocks startup.
-    fn load_persisted(&self) {
+    /// A load failure leaves the store empty and makes startup invalid.
+    fn load_persisted(&mut self) {
         let Some(backend) = self.persistence.as_ref() else {
             return;
         };
@@ -146,15 +148,30 @@ impl RevisionStore {
         let snapshot = match wanaku_types::revision::RevisionPersistence::load(&adapter) {
             Ok(s) => s,
             Err(e) => {
-                tracing::error!(error = %e, "failed to load persisted evaluator revisions; starting empty");
+                tracing::error!(error = %e, "failed to load persisted evaluator revisions");
+                self.load_error = Some("persisted_configuration_unavailable");
                 return;
             }
         };
+        self.restore_persisted(snapshot);
+    }
+
+    fn restore_persisted(&mut self, snapshot: RevisionsSnapshot) {
+        if snapshot.active_id.is_some_and(|id| {
+            !snapshot
+                .revisions
+                .iter()
+                .any(|revision| revision.metadata.id == id)
+        }) {
+            self.load_error = Some("persisted_configuration_invalid");
+            return;
+        }
         let count = snapshot.revisions.len();
         let active_id = snapshot.active_id;
         let next_id = snapshot.next_id;
         if self.history.restore(snapshot).is_err() {
             tracing::warn!("revision store lock poisoned; persisted revisions not loaded");
+            self.load_error = Some("runtime_unavailable");
             return;
         }
         tracing::info!(
@@ -163,6 +180,10 @@ impl RevisionStore {
             next_id,
             "loaded persisted evaluator revisions"
         );
+    }
+
+    pub(crate) const fn load_error(&self) -> Option<&'static str> {
+        self.load_error
     }
 
     /// Persist the current history. Best-effort: a save failure is logged but
@@ -364,7 +385,7 @@ fn compute_checksum(defs: &[EvaluatorDef]) -> Result<String, RevisionError> {
 mod tests {
     use super::*;
     use crate::config::{
-        ErrorPolicy, EvaluationEngine, EvaluatorDef, LlmDef, LlmOperation, ProcessorRef, TriggerDef,
+        EvaluationEngine, EvaluatorDef, LlmDef, LlmOperation, ProcessorRef, TriggerDef,
     };
     use std::path::PathBuf;
 
@@ -395,7 +416,6 @@ mod tests {
             processor: ProcessorRef {
                 path: PathBuf::from("/test.wasm"),
             },
-            on_error: ErrorPolicy::Continue,
         }
     }
 

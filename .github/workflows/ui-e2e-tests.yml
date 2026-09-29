@@ -54,6 +54,9 @@ jobs:
         yarn install --frozen-lockfile
         yarn run build
 
+    - name: Build evaluator actions
+      uses: ./.github/actions/build-evaluator-actions
+
     - name: Build Server
       run: cargo build
 
