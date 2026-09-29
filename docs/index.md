@@ -41,6 +41,7 @@ All in a single binary with no runtime dependencies (except libc).
 
 - **[Architecture](./architecture.md)** — filter pipeline, registry, tool routing, deployment patterns
 - **[Features](./features.md)** — evaluators and how to create custom features
+- **[Credential Brokerage](./credential-brokerage.md)** — scoped, fail-closed upstream authentication for forwards
 
 ### Contributing
 
