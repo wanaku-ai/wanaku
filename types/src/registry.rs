@@ -381,6 +381,31 @@ pub trait ForwardRegistry: Send + Sync {
     fn remove_forward(&self, name: &str) -> bool;
 }
 
+/// Registry for credential bindings.
+///
+/// A [`CredentialBinding`](crate::credentials::CredentialBinding) is a top-level
+/// resource owned by exactly one forward. Bindings hold only opaque secret
+/// references; secret material is resolved just in time by the broker.
+pub trait BindingRegistry: Send + Sync {
+    /// List all credential bindings.
+    fn list_bindings(&self) -> Vec<crate::credentials::CredentialBinding>;
+    /// List the bindings owned by one forward.
+    fn list_bindings_for_forward(
+        &self,
+        forward_id: &str,
+    ) -> Vec<crate::credentials::CredentialBinding>;
+    /// Get one binding by its stable identifier.
+    fn get_binding(&self, id: &str) -> Option<crate::credentials::CredentialBinding>;
+    /// Register or replace a binding. The revision is bumped when the stored
+    /// content changes, so cached credentials for the old revision are never
+    /// reused.
+    fn register_binding(&self, binding: crate::credentials::CredentialBinding);
+    /// Remove a binding by its identifier. Returns whether an entry was removed.
+    fn remove_binding(&self, id: &str) -> bool;
+    /// The number of registered bindings.
+    fn binding_count(&self) -> usize;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
