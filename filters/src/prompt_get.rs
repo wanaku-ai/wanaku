@@ -2,7 +2,7 @@ use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
 use wanaku_infra::registry::InMemoryRegistry;
-use wanaku_types::registry::PromptRegistry;
+use wanaku_types::registry::{ForwardRegistry, PromptRegistry};
 
 crate::body_filter_boilerplate!(PromptGetFilter, "wanaku_prompt_get");
 
@@ -76,9 +76,21 @@ impl PromptGetFilter {
         };
 
         if prompt.messages.is_empty()
-            && let Some(ref uri) = prompt.configuration_uri
+            && let Some(forward_id) = prompt.forward_id.as_deref()
         {
-            return self.handle_forwarded_get(uri, prompt_name, &parsed).await;
+            // Resolve the current upstream address from the immutable forwardId
+            // provenance. The address can change while the forwardId stays stable.
+            let Some(forward) = registry.get_forward(forward_id) else {
+                warn!(prompt = %prompt_name, forward_id = %forward_id, "forward not found for prompt provenance");
+                return Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
+                    &format!("forward not found for prompt: {prompt_name}"),
+                ));
+            };
+            return self
+                .handle_forwarded_get(&forward.address, prompt_name, &parsed)
+                .await;
         }
 
         let messages: Vec<serde_json::Value> = prompt

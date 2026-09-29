@@ -622,8 +622,7 @@ mod tests {
             labels: std::collections::HashMap::from([("risk".to_owned(), "high".to_owned())]),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         });
         registry.register_resource(ResourceEntry {
             name: "secrets".to_owned(),
@@ -634,8 +633,7 @@ mod tests {
             labels: std::collections::HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         });
         registry.register_prompt(PromptEntry {
             name: "admin".to_owned(),
@@ -644,7 +642,7 @@ mod tests {
             messages: Vec::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
+            forward_id: None,
         });
 
         let cases = [
@@ -867,8 +865,7 @@ mod tests {
             labels: std::collections::HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         });
         registry.register_tool(ToolEntry {
             name: "tool-with-uri".to_owned(),
@@ -879,8 +876,7 @@ mod tests {
             labels: std::collections::HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         });
         let id = serde_json::json!(7);
 

@@ -6,7 +6,7 @@ use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::config::ENV;
-use wanaku_types::registry::{ToolEntry, ToolRegistry};
+use wanaku_types::registry::{ForwardRegistry, ToolEntry, ToolRegistry};
 
 crate::body_filter_boilerplate!(ToolCallFilter, "wanaku_tool_call");
 
@@ -135,6 +135,25 @@ impl ToolCallFilter {
         };
 
         if tool.is_mcp_forward() {
+            // Resolve the current upstream address from the immutable forwardId
+            // provenance. Address is no longer identity: it can change while the
+            // forwardId stays stable. Fall back to the stored uri for tools
+            // registered without provenance (pre-migration compatibility).
+            let address = match tool.forward_id.as_deref() {
+                Some(forward_id) => match registry.get_forward(forward_id) {
+                    Some(forward) => forward.address.clone(),
+                    None => {
+                        warn!(tool = %tool_name, forward_id = %forward_id, "forward not found for tool provenance");
+                        return Ok(crate::response::json_rpc_error(
+                            &parsed.id,
+                            crate::response::JSONRPC_INTERNAL_ERROR,
+                            &format!("forward not found for tool: {tool_name}"),
+                        ));
+                    }
+                },
+                None => tool.uri.clone(),
+            };
+
             let forward_headers = collect_forward_headers(&ctx.request.headers, &tool);
             if tool.inject_header_args() {
                 inject_header_arguments(
@@ -145,7 +164,7 @@ impl ToolCallFilter {
             }
             return self
                 .handle_forwarded_call(
-                    &tool,
+                    &address,
                     &tool_name,
                     &parsed,
                     forward_headers,
@@ -171,7 +190,7 @@ impl ToolCallFilter {
     )]
     async fn handle_forwarded_call(
         &self,
-        tool: &ToolEntry,
+        address: &str,
         tool_name: &str,
         parsed: &ParsedBody,
         forward_headers: HashMap<HeaderName, HeaderValue>,
@@ -179,7 +198,7 @@ impl ToolCallFilter {
     ) -> Result<FilterAction, FilterError> {
         trace!(
             tool = %tool_name,
-            uri = %tool.uri,
+            uri = %address,
             forwarded_header_count = forward_headers.len(),
             "forwarding tools/call to remote MCP server"
         );
@@ -200,7 +219,7 @@ impl ToolCallFilter {
         // error path redacts it by exact match, even when it has no known shape.
         let forwarded_values = forwarded_header_values(&forward_headers);
 
-        match wanaku_infra::mcp_client::call_tool(&tool.uri, tool_name, arguments, forward_headers)
+        match wanaku_infra::mcp_client::call_tool(address, tool_name, arguments, forward_headers)
             .await
         {
             Ok(call_result) => {

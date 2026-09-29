@@ -29,20 +29,18 @@ pub struct ToolEntry {
     pub id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
+    /// Stable identity of the forward that owns this discovered tool.
+    ///
+    /// The forward name is immutable and serves as the `forwardId`. Routing
+    /// resolves the current upstream address from this identifier at invocation
+    /// time. The upstream address is never used as forward identity.
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
-        rename = "configurationURI",
-        alias = "configuration_uri"
+        rename = "forwardId",
+        alias = "forward_id"
     )]
-    pub configuration_uri: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        rename = "secretsURI",
-        alias = "secrets_uri"
-    )]
-    pub secrets_uri: Option<String>,
+    pub forward_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,20 +61,18 @@ pub struct ResourceEntry {
     pub id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
+    /// Stable identity of the forward that owns this discovered resource.
+    ///
+    /// The forward name is immutable and serves as the `forwardId`. Routing
+    /// resolves the current upstream address from this identifier at read time.
+    /// The upstream address is never used as forward identity.
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
-        rename = "configurationURI",
-        alias = "configuration_uri"
+        rename = "forwardId",
+        alias = "forward_id"
     )]
-    pub configuration_uri: Option<String>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        rename = "secretsURI",
-        alias = "secrets_uri"
-    )]
-    pub secrets_uri: Option<String>,
+    pub forward_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -119,13 +115,18 @@ pub struct PromptEntry {
     pub id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub namespace: Option<String>,
+    /// Stable identity of the forward that owns this discovered prompt.
+    ///
+    /// The forward name is immutable and serves as the `forwardId`. Routing
+    /// resolves the current upstream address from this identifier at retrieval
+    /// time. The upstream address is never used as forward identity.
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
-        rename = "configurationURI",
-        alias = "configuration_uri"
+        rename = "forwardId",
+        alias = "forward_id"
     )]
-    pub configuration_uri: Option<String>,
+    pub forward_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -261,7 +262,6 @@ pub fn validate_namespace_name(name: &str) -> Result<(), String> {
 
 pub const MCP_FORWARD_TYPE: &str = "mcp-forward";
 
-pub const FORWARD_ADDRESS_LABEL: &str = "wanaku.forward_address";
 pub const IS_TEMPLATE_LABEL: &str = "wanaku.is_template";
 pub const FORWARD_HEADERS_LABEL: &str = "wanaku.forward_headers";
 pub const INJECT_HEADER_ARGS_LABEL: &str = "wanaku.inject_header_args";
@@ -299,12 +299,6 @@ impl ResourceEntry {
         self.labels
             .get(IS_TEMPLATE_LABEL)
             .is_some_and(|v| v == "true")
-    }
-
-    pub fn forward_address(&self) -> Option<&str> {
-        self.labels
-            .get(FORWARD_ADDRESS_LABEL)
-            .map(std::string::String::as_str)
     }
 }
 
@@ -401,8 +395,7 @@ mod tests {
             labels: HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         }
     }
 
@@ -416,8 +409,7 @@ mod tests {
             labels: HashMap::new(),
             id: None,
             namespace: None,
-            configuration_uri: None,
-            secrets_uri: None,
+            forward_id: None,
         }
     }
 
@@ -428,18 +420,6 @@ mod tests {
 
         resource.type_ = MCP_FORWARD_TYPE.to_owned();
         assert!(resource.is_mcp_forward());
-    }
-
-    #[test]
-    fn resource_forward_address_from_labels() {
-        let mut resource = sample_resource();
-        assert!(resource.forward_address().is_none());
-
-        resource.labels.insert(
-            FORWARD_ADDRESS_LABEL.to_owned(),
-            "http://remote:8080/mcp".to_owned(),
-        );
-        assert_eq!(resource.forward_address(), Some("http://remote:8080/mcp"));
     }
 
     #[test]
