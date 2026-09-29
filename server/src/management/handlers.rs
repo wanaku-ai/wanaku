@@ -6,9 +6,12 @@ use tracing::{info, warn};
 use crate::http_response::{json_err, json_ok};
 use wanaku_infra::credentials::{CredentialBroker, resolve_discovery_headers};
 use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_types::credentials::CredentialPurpose;
+use wanaku_types::credentials::binding::NormalizedOrigin;
 use wanaku_types::registry::{
-    ForwardEntry, ForwardRegistry, MCP_FORWARD_TYPE, NamespaceEntry, NamespaceRegistry,
-    PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry, ToolRegistry,
+    BindingRegistry, ForwardEntry, ForwardRegistry, MCP_FORWARD_TYPE, NamespaceEntry,
+    NamespaceRegistry, PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry,
+    ToolRegistry,
 };
 
 pub(super) fn handle_tool_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
@@ -292,6 +295,15 @@ pub(super) async fn handle_forward_create(
         }
     };
 
+    // A re-registration that changes the upstream address must drop credentials
+    // cached against the previous origin before anything is brokered anew.
+    if let Some(existing) = registry.get_forward(&forward.name)
+        && existing.address != forward.address
+    {
+        info!(forward = %forward.name, "forward address changed; revalidating credentials");
+        revalidate_forward_credentials(registry, broker, &forward);
+    }
+
     let discovery_headers = match discovery_headers_or_status(registry, broker, &forward).await {
         Ok(headers) => headers,
         Err(message) => {
@@ -347,7 +359,11 @@ pub(super) async fn handle_forward_create(
     }))
 }
 
-pub(super) fn handle_forward_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+pub(super) fn handle_forward_delete(
+    registry: &InMemoryRegistry,
+    broker: &CredentialBroker,
+    name: &str,
+) -> Response<Vec<u8>> {
     let forward = registry.get_forward(name);
 
     if !registry.remove_forward(name) {
@@ -355,6 +371,8 @@ pub(super) fn handle_forward_delete(registry: &InMemoryRegistry, name: &str) -> 
     }
 
     if let Some(fwd) = forward {
+        // Drop credentials cached for the forward so no secret outlives it.
+        broker.cache().invalidate_forward(fwd.forward_id());
         remove_forwarded_tools(registry, fwd.forward_id());
         remove_forwarded_resources(registry, fwd.forward_id());
         remove_forwarded_prompts(registry, fwd.forward_id());
@@ -421,6 +439,49 @@ pub(super) async fn handle_forward_refresh(
     json_ok(
         &serde_json::json!({"refreshed": name, "tools_discovered": tools_count, "resources_discovered": resources_count, "prompts_discovered": prompts_count}),
     )
+}
+
+/// React to a forward whose upstream address changed.
+///
+/// Drops every cached credential scoped to the forward so a stale secret
+/// resolved for the previous origin can never be reused. Then revalidates each
+/// referenced binding against the new origin and warns (secret-free) when a
+/// binding no longer matches. A mismatched binding fails closed at use time; the
+/// warning is an early operator signal to update the binding.
+fn revalidate_forward_credentials(
+    registry: &InMemoryRegistry,
+    broker: &CredentialBroker,
+    forward: &ForwardEntry,
+) {
+    broker.cache().invalidate_forward(forward.forward_id());
+
+    let new_origin = NormalizedOrigin::from_address(&forward.address);
+    for purpose in [CredentialPurpose::Discovery, CredentialPurpose::Invocation] {
+        let Some(binding_id) = forward.binding_for(purpose) else {
+            continue;
+        };
+        let Some(binding) = registry.get_binding(binding_id) else {
+            warn!(
+                forward = %forward.name,
+                binding_id = %binding_id,
+                "forward references a missing credential binding after address change"
+            );
+            continue;
+        };
+        match &new_origin {
+            Ok(origin) if origin.as_str() == binding.origin.as_str() => {}
+            Ok(_) => warn!(
+                forward = %forward.name,
+                binding_id = %binding_id,
+                "forward address changed to a different origin; credential binding no longer matches and will be denied until updated"
+            ),
+            Err(_) => warn!(
+                forward = %forward.name,
+                binding_id = %binding_id,
+                "forward address changed to an invalid origin; credential binding will be denied until updated"
+            ),
+        }
+    }
 }
 
 /// Resolve discovery credential headers for a forward, failing closed.
@@ -975,6 +1036,7 @@ mod tests {
     use std::collections::HashMap;
 
     use http::Response;
+    use wanaku_infra::credentials::CredentialBroker;
     use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::registry::{
         ForwardEntry, ForwardRegistry, PromptEntry, PromptRegistry, ResourceEntry,
@@ -989,6 +1051,10 @@ mod tests {
         handle_resource_update, handle_statistics, handle_tool_delete, handle_tool_get,
         handle_tool_list, handle_tool_update,
     };
+
+    fn test_broker() -> CredentialBroker {
+        CredentialBroker::new(wanaku_types::credentials::ResolverRegistry::new())
+    }
 
     fn parse_body(resp: &Response<Vec<u8>>) -> serde_json::Value {
         serde_json::from_slice(resp.body()).unwrap_or_default()
@@ -1471,14 +1537,20 @@ mod tests {
             status_message: None,
             credential_bindings: HashMap::new(),
         });
-        assert_eq!(handle_forward_delete(&registry, "del-fwd").status(), 200);
+        assert_eq!(
+            handle_forward_delete(&registry, &test_broker(), "del-fwd").status(),
+            200
+        );
         assert_eq!(handle_forward_get(&registry, "del-fwd").status(), 404);
     }
 
     #[test]
     fn forward_delete_nonexistent_returns_404() {
         let registry = InMemoryRegistry::new();
-        assert_eq!(handle_forward_delete(&registry, "nope").status(), 404);
+        assert_eq!(
+            handle_forward_delete(&registry, &test_broker(), "nope").status(),
+            404
+        );
     }
 
     // ---- Statistics handler ----

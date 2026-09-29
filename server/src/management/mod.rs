@@ -200,7 +200,7 @@ pub(crate) async fn dispatch(
                 None => json_err(StatusCode::BAD_REQUEST, "request body required"),
             };
         }
-        ForwardRoute::Delete(name) => return handle_forward_delete(registry, &name),
+        ForwardRoute::Delete(name) => return handle_forward_delete(registry, broker, &name),
         ForwardRoute::Refresh(name) => {
             return handle_forward_refresh(registry, broker, &name).await;
         }
