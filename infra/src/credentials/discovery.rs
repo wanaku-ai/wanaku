@@ -121,3 +121,115 @@ pub async fn resolve_discovery_headers(
 
     Ok(headers)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use std::sync::Arc;
+
+    use super::*;
+    use wanaku_types::credentials::binding::{
+        BindingRestrictions, CacheRules, CredentialBinding, NormalizedOrigin,
+    };
+    use wanaku_types::credentials::fake_resolver::FakeResolver;
+    use wanaku_types::credentials::injection::InjectionMechanism;
+    use wanaku_types::credentials::resolver::{ResolverRegistry, SecretRef};
+    use wanaku_types::registry::BindingRegistry;
+
+    fn broker() -> CredentialBroker {
+        let resolvers = ResolverRegistry::new()
+            .with_resolver(Arc::new(FakeResolver::new().with_value("token", "s3cr3t")));
+        CredentialBroker::new(resolvers)
+    }
+
+    fn binding(id: &str) -> CredentialBinding {
+        CredentialBinding {
+            id: id.to_owned(),
+            forward_id: "fwd-a".to_owned(),
+            origin: NormalizedOrigin::from_address("https://api.example.com").unwrap(),
+            mechanism: InjectionMechanism::Bearer,
+            secret_refs: vec![SecretRef::parse("fake:token").unwrap()],
+            allowed_purposes: vec![CredentialPurpose::Discovery],
+            restrictions: BindingRestrictions::default(),
+            cache: CacheRules::default(),
+            revision: 1,
+        }
+    }
+
+    fn forward(address: &str, binding_id: Option<&str>) -> ForwardEntry {
+        let mut credential_bindings = HashMap::new();
+        if let Some(id) = binding_id {
+            credential_bindings.insert(CredentialPurpose::Discovery, id.to_owned());
+        }
+        ForwardEntry {
+            name: "fwd-a".to_owned(),
+            address: address.to_owned(),
+            namespace: None,
+            server_info: None,
+            labels: HashMap::new(),
+            available: true,
+            status_message: None,
+            credential_bindings,
+        }
+    }
+
+    #[tokio::test]
+    async fn no_binding_returns_empty() {
+        let broker = broker();
+        let registry = InMemoryRegistry::new();
+        let forward = forward("https://api.example.com/mcp", None);
+
+        let headers = resolve_discovery_headers(&broker, &registry, &forward)
+            .await
+            .unwrap();
+
+        assert!(headers.is_empty());
+    }
+
+    #[tokio::test]
+    async fn missing_binding_fails_closed() {
+        let broker = broker();
+        let registry = InMemoryRegistry::new();
+        let forward = forward("https://api.example.com/mcp", Some("missing"));
+
+        let err = resolve_discovery_headers(&broker, &registry, &forward)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, DiscoveryCredentialError::BindingNotFound));
+    }
+
+    #[tokio::test]
+    async fn brokerage_error_fails_closed() {
+        let broker = broker();
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        // The forward address origin does not match the binding origin.
+        let forward = forward("https://evil.example.com/mcp", Some("b1"));
+
+        let err = resolve_discovery_headers(&broker, &registry, &forward)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, DiscoveryCredentialError::Brokerage(_)));
+    }
+
+    #[tokio::test]
+    async fn success_marks_headers_sensitive() {
+        let broker = broker();
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        let forward = forward("https://api.example.com/mcp", Some("b1"));
+
+        let headers = resolve_discovery_headers(&broker, &registry, &forward)
+            .await
+            .unwrap();
+
+        let value = headers
+            .get(&HeaderName::from_static("authorization"))
+            .unwrap();
+        assert_eq!(value.to_str().unwrap(), "Bearer s3cr3t");
+        // Discovery credentials must be marked sensitive for transport redaction.
+        assert!(value.is_sensitive());
+    }
+}
