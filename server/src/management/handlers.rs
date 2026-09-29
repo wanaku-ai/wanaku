@@ -1,7 +1,10 @@
-use http::{Response, StatusCode};
+use std::collections::HashMap;
+
+use http::{HeaderName, HeaderValue, Response, StatusCode};
 use tracing::{info, warn};
 
 use crate::http_response::{json_err, json_ok};
+use wanaku_infra::credentials::{CredentialBroker, resolve_discovery_headers};
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::registry::{
     ForwardEntry, ForwardRegistry, MCP_FORWARD_TYPE, NamespaceEntry, NamespaceRegistry,
@@ -274,6 +277,7 @@ pub(super) fn handle_forward_get(registry: &InMemoryRegistry, name: &str) -> Res
 )]
 pub(super) async fn handle_forward_create(
     registry: &InMemoryRegistry,
+    broker: &CredentialBroker,
     body: &str,
 ) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, "forward create request body");
@@ -288,7 +292,23 @@ pub(super) async fn handle_forward_create(
         }
     };
 
-    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address).await {
+    let discovery_headers = match discovery_headers_or_status(registry, broker, &forward).await {
+        Ok(headers) => headers,
+        Err(message) => {
+            warn!(forward = %forward.name, "forward discovery credential brokerage failed");
+            forward.available = false;
+            forward.status_message = Some(message);
+            registry.register_forward(forward.clone());
+            return json_ok(&serde_json::json!({
+                "forward": &forward,
+                "tools_discovered": 0,
+                "resources_discovered": 0,
+                "prompts_discovered": 0,
+            }));
+        }
+    };
+
+    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address, discovery_headers).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "forward discovery failed");
@@ -346,6 +366,7 @@ pub(super) fn handle_forward_delete(registry: &InMemoryRegistry, name: &str) -> 
 
 pub(super) async fn handle_forward_refresh(
     registry: &InMemoryRegistry,
+    broker: &CredentialBroker,
     name: &str,
 ) -> Response<Vec<u8>> {
     let Some(mut forward) = registry.get_forward(name) else {
@@ -356,7 +377,20 @@ pub(super) async fn handle_forward_refresh(
     remove_forwarded_resources(registry, forward.forward_id());
     remove_forwarded_prompts(registry, forward.forward_id());
 
-    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address).await {
+    let discovery_headers = match discovery_headers_or_status(registry, broker, &forward).await {
+        Ok(headers) => headers,
+        Err(message) => {
+            warn!(forward = %name, "forward refresh credential brokerage failed");
+            forward.available = false;
+            forward.status_message = Some(message);
+            registry.register_forward(forward.clone());
+            return json_ok(
+                &serde_json::json!({"refreshed": name, "tools_discovered": 0, "resources_discovered": 0, "prompts_discovered": 0}),
+            );
+        }
+    };
+
+    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address, discovery_headers).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %name, error = %e, "forward refresh discovery failed");
@@ -389,8 +423,39 @@ pub(super) async fn handle_forward_refresh(
     )
 }
 
-pub async fn discover_and_update_forward(registry: &InMemoryRegistry, forward: &ForwardEntry) {
-    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address).await {
+/// Resolve discovery credential headers for a forward, failing closed.
+///
+/// Returns the brokered headers on success, or a redacted status message when a
+/// configured discovery binding cannot be brokered. Callers must not run
+/// discovery when this returns an error.
+async fn discovery_headers_or_status(
+    registry: &InMemoryRegistry,
+    broker: &CredentialBroker,
+    forward: &ForwardEntry,
+) -> Result<HashMap<HeaderName, HeaderValue>, String> {
+    resolve_discovery_headers(broker, registry, forward)
+        .await
+        .map_err(|e| format!("discovery credential brokerage failed: {e}"))
+}
+
+pub async fn discover_and_update_forward(
+    registry: &InMemoryRegistry,
+    broker: &CredentialBroker,
+    forward: &ForwardEntry,
+) {
+    let discovery_headers = match discovery_headers_or_status(registry, broker, forward).await {
+        Ok(headers) => headers,
+        Err(message) => {
+            warn!(forward = %forward.name, "forward discovery credential brokerage failed");
+            let mut unavailable = forward.clone();
+            unavailable.available = false;
+            unavailable.status_message = Some(message);
+            registry.register_forward(unavailable);
+            return;
+        }
+    };
+
+    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address, discovery_headers).await {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %forward.name, error = %e, "forward discovery failed at startup");

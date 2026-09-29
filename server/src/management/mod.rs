@@ -15,11 +15,14 @@ pub use handlers::discover_tools_from_forward;
 pub use persistence::{RegistryPersistenceService, registry_persistence_service};
 pub use reconnect::{ForwardReconnectService, reconnect_service};
 
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use http::{Response, StatusCode};
 use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
 
+use wanaku_infra::credentials::CredentialBroker;
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::feature::{Feature, HttpContext};
 
@@ -43,13 +46,18 @@ use crate::http_response::{json_err, json_ok};
 
 pub struct WanakuManagementService {
     registry: InMemoryRegistry,
+    broker: Arc<CredentialBroker>,
     features: Vec<Box<dyn Feature>>,
     #[cfg(feature = "ui")]
     ui_path: Option<std::path::PathBuf>,
 }
 
 impl WanakuManagementService {
-    pub fn new(registry: InMemoryRegistry, features: Vec<Box<dyn Feature>>) -> Self {
+    pub fn new(
+        registry: InMemoryRegistry,
+        broker: Arc<CredentialBroker>,
+        features: Vec<Box<dyn Feature>>,
+    ) -> Self {
         #[cfg(feature = "ui")]
         let ui_path = wanaku_types::config::ENV.ui_path.clone();
         #[cfg(feature = "ui")]
@@ -59,6 +67,7 @@ impl WanakuManagementService {
 
         Self {
             registry,
+            broker,
             features,
             #[cfg(feature = "ui")]
             ui_path,
@@ -98,7 +107,7 @@ impl ServeHttp for WanakuManagementService {
         };
 
         let ctx = HttpContext::new(&method, &path, query.as_deref(), body.as_deref(), &headers);
-        dispatch(&ctx, &self.registry, &self.features).await
+        dispatch(&ctx, &self.registry, &self.broker, &self.features).await
     }
 }
 
@@ -110,6 +119,7 @@ impl ServeHttp for WanakuManagementService {
 pub(crate) async fn dispatch(
     ctx: &HttpContext<'_>,
     registry: &InMemoryRegistry,
+    broker: &CredentialBroker,
     features: &[Box<dyn Feature>],
 ) -> Response<Vec<u8>> {
     if ctx.path == "/healthz" || ctx.path == "/health" {
@@ -186,12 +196,14 @@ pub(crate) async fn dispatch(
         ForwardRoute::GetByName(name) => return handle_forward_get(registry, &name),
         ForwardRoute::Create => {
             return match ctx.body {
-                Some(b) => handle_forward_create(registry, b).await,
+                Some(b) => handle_forward_create(registry, broker, b).await,
                 None => json_err(StatusCode::BAD_REQUEST, "request body required"),
             };
         }
         ForwardRoute::Delete(name) => return handle_forward_delete(registry, &name),
-        ForwardRoute::Refresh(name) => return handle_forward_refresh(registry, &name).await,
+        ForwardRoute::Refresh(name) => {
+            return handle_forward_refresh(registry, broker, &name).await;
+        }
         ForwardRoute::NotFound => {}
     }
 
@@ -211,7 +223,12 @@ pub(crate) async fn dispatch(
 mod dispatch_tests {
     use super::*;
     use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_types::credentials::ResolverRegistry;
     use wanaku_types::feature::{Feature, HttpContext};
+
+    fn test_broker() -> CredentialBroker {
+        CredentialBroker::new(ResolverRegistry::new())
+    }
 
     fn parse_body(resp: &http::Response<Vec<u8>>) -> serde_json::Value {
         serde_json::from_slice(resp.body()).unwrap_or_default()
@@ -229,7 +246,7 @@ mod dispatch_tests {
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/api/v1/tools", None, None, &headers);
 
-        let resp = dispatch(&ctx, &registry, features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
 
         assert_eq!(resp.status(), 200);
         assert_eq!(data_field(&resp).as_array().map(|a| a.len()), Some(0));
@@ -242,7 +259,7 @@ mod dispatch_tests {
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/no/such/path", None, None, &headers);
 
-        let resp = dispatch(&ctx, &registry, features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
 
         assert_eq!(resp.status(), 404);
     }
@@ -255,7 +272,7 @@ mod dispatch_tests {
         let body = r#"{"name":"test-ns"}"#;
         let ctx = HttpContext::new("POST", "/api/v1/namespaces", None, Some(body), &headers);
 
-        let resp = dispatch(&ctx, &registry, features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
 
         assert_eq!(resp.status(), 200);
         let data = data_field(&resp);
@@ -269,7 +286,7 @@ mod dispatch_tests {
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/healthz", None, None, &headers);
 
-        let resp = dispatch(&ctx, &registry, features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
 
         assert_eq!(resp.status(), 200);
         let body = parse_body(&resp);
@@ -284,7 +301,7 @@ mod dispatch_tests {
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/api/v1/management/info", None, None, &headers);
 
-        let resp = dispatch(&ctx, &registry, features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
 
         assert_eq!(resp.status(), 200);
         let data = data_field(&resp);
@@ -299,7 +316,7 @@ mod dispatch_tests {
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("POST", "/api/v1/namespaces", None, None, &headers);
 
-        let resp = dispatch(&ctx, &registry, features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
 
         assert_eq!(resp.status(), 400);
     }
