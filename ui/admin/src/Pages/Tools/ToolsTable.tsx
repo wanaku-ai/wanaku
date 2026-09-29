@@ -6,9 +6,6 @@ import {
     TableBody,
     TableCell,
     TableContainer,
-    TableExpandedRow,
-    TableExpandHeader,
-    TableExpandRow,
     TableHead,
     TableHeader,
     TableRow,
@@ -48,10 +45,6 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
       ...tool,
       id: tool.name || tool.id || `tool-${index}`,
     }))
-  }
-
-  function toolHasDetails(tool: ToolEntry) {
-    return tool.configurationURI || tool.secretsURI
   }
 
   function tableCells(tool: ToolEntry) {
@@ -99,23 +92,6 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
     )
   }
 
-  function toolDetails(tool: ToolEntry, rowProps) {
-    return (
-        <TableExpandedRow colSpan={headers.length + 3} {...rowProps}>
-          {tool.configurationURI && (
-            <div>
-              <strong>Configuration URI:</strong> {tool.configurationURI}
-            </div>
-          )}
-          {tool.secretsURI && (
-            <div>
-              <strong>Secrets URI:</strong> {tool.secretsURI}
-            </div>
-          )}
-        </TableExpandedRow>
-    )
-  }
-
   return (
     <>
       <DataTable headers={headers} rows={toolsToRows()}>
@@ -125,7 +101,6 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
           getTableProps,
           getHeaderProps,
           getRowProps,
-          getExpandedRowProps,
           getToolbarProps
           }) => (
             <TableContainer>
@@ -135,7 +110,6 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
               <Table {...getTableProps()}>
                 <TableHead>
                   <TableRow>
-                    <TableExpandHeader/>
                     {headers.map((header) => (
                         <TableHeader {...getHeaderProps({header})}>
                           {header.header}
@@ -146,21 +120,9 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
                 <TableBody>
                   {rows.map((row) => {
                     const tool = fetchedData.find((item) => (item.name || item.id) === row.id)
-                    if (tool && toolHasDetails(tool)) {
-                      // tool with details, expansion available
-                      return (
-                          <React.Fragment key={tool.id}>
-                            <TableExpandRow expandIconDescription="Show details" {...getRowProps({row})}>
-                              {tableCells(tool)}
-                            </TableExpandRow>
-                            {row.isExpanded && toolDetails(tool, getExpandedRowProps({row}))}
-                          </React.Fragment>
-                      )
-                    } else if (tool) {
-                      // tool without details, no expansion available
+                    if (tool) {
                       return (
                         <TableRow {...getRowProps({row})}>
-                          <TableCell />
                           {tableCells(tool)}
                         </TableRow>
                       )
@@ -168,7 +130,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
                   })}
                   {fetchedData.length == 0 && (
                     <TableEmptyState
-                      colSpan={headers.length + 1}
+                      colSpan={headers.length}
                       title="No tools discovered yet"
                       body="Register a forwarded MCP server to auto-discover tools"
                     />

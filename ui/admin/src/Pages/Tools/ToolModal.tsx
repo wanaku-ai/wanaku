@@ -1,10 +1,5 @@
 import {
   Modal,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
   TextInput
 } from "@carbon/react";
 import React, {useEffect, useState} from "react";
@@ -41,8 +36,6 @@ export const ToolModal: React.FC<ToolModalProps> = ({
   const [inputSchemaInvalid, setInputSchemaInvalid] = useState(false)
   const [inputSchemaInvalidText, setInputSchemaInvalidText] = useState("")
   const [selectedNamespace, setSelectedNamespace] = useState(tool?.namespace ?? undefined)
-  const [configurationURI, setConfigurationURI] = useState(tool?.configurationURI ?? "")
-  const [secretsURI, setSecretsURI] = useState(tool?.secretsURI ?? "")
   const { listNamespaces } = useNamespaces()
 
   useEffect(() => {
@@ -66,8 +59,6 @@ export const ToolModal: React.FC<ToolModalProps> = ({
         type: toolType,
         inputSchema: schema,
         namespace: selectedNamespace,
-        configurationURI,
-        secretsURI
       })
     } catch {
       setInputSchemaInvalid(true)
@@ -121,14 +112,7 @@ export const ToolModal: React.FC<ToolModalProps> = ({
       onRequestSubmit={handleSubmit}
       onRequestClose={onRequestClose}
     >
-      <Tabs>
-        <TabList>
-          <Tab>Overview</Tab>
-          <Tab>External</Tab>
-        </TabList>
-        <TabPanels>
-          <TabPanel>
-            <TextInput
+      <TextInput
               id="tool-name"
               labelText="Tool Name"
               placeholder="e.g. meow-facts"
@@ -185,25 +169,6 @@ export const ToolModal: React.FC<ToolModalProps> = ({
                 validateToolName(toolName, namespace.name)
               }}
             />
-          </TabPanel>
-          <TabPanel>
-            <TextInput
-              id="configuration-uri"
-              labelText="Configuration URI"
-              placeholder="e.g., file:///config/tool-config.json"
-              value={configurationURI}
-              onChange={(event) => setConfigurationURI(event.target.value)}
-            />
-            <TextInput
-              id="secrets-uri"
-              labelText="Secrets URI"
-              placeholder="e.g., vault://secrets/api-keys/tool-name"
-              value={secretsURI}
-              onChange={(event) => setSecretsURI(event.target.value)}
-            />
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
     </Modal>
   )
 }
