@@ -379,4 +379,19 @@ mod tests {
         };
         assert!(detect_collisions(&mech, ["authorization", "x-request-id"]).is_ok());
     }
+
+    #[test]
+    fn credential_header_debug_redacts_value() {
+        let header = InjectionMechanism::NamedHeader {
+            header: "X-Api-Key".to_owned(),
+        }
+        .build_headers(&[SecretMaterial::from("super-secret-token")])
+        .unwrap()
+        .remove(0);
+        let rendered = format!("{header:?}");
+        // The header name is safe to log; the secret value must never appear.
+        assert!(rendered.contains("x-api-key"));
+        assert!(rendered.contains("[REDACTED]"));
+        assert!(!rendered.contains("super-secret-token"));
+    }
 }

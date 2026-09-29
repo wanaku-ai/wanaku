@@ -338,21 +338,23 @@ pub(super) async fn handle_forward_create(
         }
     };
 
-    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address, discovery_headers).await {
-        Ok(d) => d,
-        Err(e) => {
-            warn!(forward = %forward.name, error = %e, "forward discovery failed");
-            forward.available = false;
-            forward.status_message = Some(e.to_string());
-            registry.register_forward(forward.clone());
-            return json_ok(&serde_json::json!({
-                "forward": &forward,
-                "tools_discovered": 0,
-                "resources_discovered": 0,
-                "prompts_discovered": 0,
-            }));
-        }
-    };
+    let discovery =
+        match wanaku_infra::mcp_client::discover_forward(&forward.address, discovery_headers).await
+        {
+            Ok(d) => d,
+            Err(e) => {
+                warn!(forward = %forward.name, error = %e, "forward discovery failed");
+                forward.available = false;
+                forward.status_message = Some(e.to_string());
+                registry.register_forward(forward.clone());
+                return json_ok(&serde_json::json!({
+                    "forward": &forward,
+                    "tools_discovered": 0,
+                    "resources_discovered": 0,
+                    "prompts_discovered": 0,
+                }));
+            }
+        };
 
     forward.server_info = discovery.server_info;
     forward.available = true;
@@ -426,7 +428,12 @@ pub(super) async fn handle_forward_refresh(
         }
     };
 
-    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address, discovery_headers).await {
+    let discovery = match wanaku_infra::mcp_client::discover_forward(
+        &forward.address,
+        discovery_headers,
+    )
+    .await
+    {
         Ok(d) => d,
         Err(e) => {
             warn!(forward = %name, error = %e, "forward refresh discovery failed");
@@ -534,17 +541,19 @@ pub async fn discover_and_update_forward(
         }
     };
 
-    let discovery = match wanaku_infra::mcp_client::discover_forward(&forward.address, discovery_headers).await {
-        Ok(d) => d,
-        Err(e) => {
-            warn!(forward = %forward.name, error = %e, "forward discovery failed at startup");
-            let mut unavailable = forward.clone();
-            unavailable.available = false;
-            unavailable.status_message = Some(e.to_string());
-            registry.register_forward(unavailable);
-            return;
-        }
-    };
+    let discovery =
+        match wanaku_infra::mcp_client::discover_forward(&forward.address, discovery_headers).await
+        {
+            Ok(d) => d,
+            Err(e) => {
+                warn!(forward = %forward.name, error = %e, "forward discovery failed at startup");
+                let mut unavailable = forward.clone();
+                unavailable.available = false;
+                unavailable.status_message = Some(e.to_string());
+                registry.register_forward(unavailable);
+                return;
+            }
+        };
 
     let mut updated = forward.clone();
     updated.server_info = discovery.server_info;
@@ -1063,12 +1072,11 @@ mod tests {
 
     use super::{
         handle_binding_get, handle_binding_list, handle_forward_delete, handle_forward_get,
-        handle_forward_list, handle_info,
-        handle_namespace_create, handle_namespace_delete, handle_namespace_get,
-        handle_namespace_list, handle_namespace_update, handle_prompt_delete, handle_prompt_get,
-        handle_prompt_list, handle_resource_delete, handle_resource_get, handle_resource_list,
-        handle_resource_update, handle_statistics, handle_tool_delete, handle_tool_get,
-        handle_tool_list, handle_tool_update,
+        handle_forward_list, handle_info, handle_namespace_create, handle_namespace_delete,
+        handle_namespace_get, handle_namespace_list, handle_namespace_update, handle_prompt_delete,
+        handle_prompt_get, handle_prompt_list, handle_resource_delete, handle_resource_get,
+        handle_resource_list, handle_resource_update, handle_statistics, handle_tool_delete,
+        handle_tool_get, handle_tool_list, handle_tool_update,
     };
 
     fn test_broker() -> CredentialBroker {
@@ -1636,6 +1644,94 @@ mod tests {
             handle_forward_delete(&registry, &test_broker(), "nope").status(),
             404
         );
+    }
+
+    /// Build a broker holding one cached credential for `forward_id`.
+    fn broker_with_cached_forward(forward_id: &str) -> CredentialBroker {
+        use std::sync::Arc;
+        use wanaku_types::credentials::binding::UseScope;
+        use wanaku_types::credentials::fake_resolver::FakeResolver;
+        use wanaku_types::credentials::{
+            BindingRestrictions, CacheRules, CredentialBinding, CredentialPurpose,
+            InjectionMechanism, NormalizedOrigin, ResolverRegistry, SecretRef,
+        };
+
+        let resolvers = ResolverRegistry::new()
+            .with_resolver(Arc::new(FakeResolver::new().with_value("token", "s3cr3t")));
+        let broker = CredentialBroker::new(resolvers);
+        let binding = CredentialBinding {
+            id: "b1".to_owned(),
+            forward_id: forward_id.to_owned(),
+            origin: NormalizedOrigin::from_address("https://api.example.com")
+                .expect("valid origin"),
+            mechanism: InjectionMechanism::Bearer,
+            secret_refs: vec![SecretRef::parse("fake:token").expect("valid ref")],
+            allowed_purposes: vec![CredentialPurpose::Invocation],
+            restrictions: BindingRestrictions::default(),
+            // A TTL is required for the credential to be cached at all.
+            cache: CacheRules {
+                max_ttl_seconds: Some(60),
+                ..CacheRules::default()
+            },
+            revision: 1,
+        };
+
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            broker
+                .broker(
+                    &binding,
+                    forward_id,
+                    "https://api.example.com/mcp",
+                    CredentialPurpose::Invocation,
+                    &UseScope::default(),
+                )
+                .await
+                .expect("brokerage succeeds");
+        });
+        assert_eq!(broker.cache().len(), 1, "cache should be seeded");
+        broker
+    }
+
+    fn cached_forward(name: &str) -> ForwardEntry {
+        ForwardEntry {
+            name: name.to_owned(),
+            address: "https://api.example.com/mcp".to_owned(),
+            namespace: None,
+            server_info: None,
+            labels: HashMap::new(),
+            available: true,
+            status_message: None,
+            credential_bindings: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn forward_delete_invalidates_cached_credentials() {
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(cached_forward("cred-fwd"));
+        let broker = broker_with_cached_forward("cred-fwd");
+
+        assert_eq!(
+            handle_forward_delete(&registry, &broker, "cred-fwd").status(),
+            200
+        );
+
+        // No cached secret may outlive the forward it was brokered for.
+        assert!(broker.cache().is_empty());
+    }
+
+    #[test]
+    fn revalidate_forward_credentials_drops_cached_entries() {
+        let registry = InMemoryRegistry::new();
+        let broker = broker_with_cached_forward("cred-fwd");
+
+        super::revalidate_forward_credentials(&registry, &broker, &cached_forward("cred-fwd"));
+
+        // An address change must invalidate credentials cached for the forward.
+        assert!(broker.cache().is_empty());
     }
 
     // ---- Statistics handler ----

@@ -47,12 +47,31 @@ pub struct ForwardCredentialRequest<'a> {
 /// for this purpose) or when injection succeeds. Returns `Err(FilterAction)`
 /// with a ready JSON-RPC error when the request must be denied. On any error
 /// path no credential header is added.
+pub async fn inject_forward_credentials(
+    ctx: &HttpFilterContext<'_>,
+    request: &ForwardCredentialRequest<'_>,
+    forward_headers: &mut HashMap<HeaderName, HeaderValue>,
+) -> Result<(), FilterAction> {
+    // Extract the brokerage dependencies from the request extensions and defer
+    // to the pure core so the fail-closed paths stay unit-testable without a
+    // full filter context.
+    let broker = ctx.extensions.get::<Arc<CredentialBroker>>().cloned();
+    let registry = ctx.extensions.get::<InMemoryRegistry>();
+    inject_forward_credentials_inner(broker.as_ref(), registry, request, forward_headers).await
+}
+
+/// The pure brokerage core, independent of the filter context.
+///
+/// `broker` and `registry` are the dependencies resolved from the request
+/// extensions. Both must be present once a binding is configured; a missing
+/// dependency fails closed.
 #[expect(
     clippy::too_many_lines,
     reason = "fail-closed credential brokerage with distinct error paths"
 )]
-pub async fn inject_forward_credentials(
-    ctx: &HttpFilterContext<'_>,
+async fn inject_forward_credentials_inner(
+    broker: Option<&Arc<CredentialBroker>>,
+    registry: Option<&InMemoryRegistry>,
     request: &ForwardCredentialRequest<'_>,
     forward_headers: &mut HashMap<HeaderName, HeaderValue>,
 ) -> Result<(), FilterAction> {
@@ -66,7 +85,7 @@ pub async fn inject_forward_credentials(
 
     // Once a binding is configured the request must fail closed if any part of
     // the brokerage path is unavailable.
-    let Some(broker) = ctx.extensions.get::<Arc<CredentialBroker>>().cloned() else {
+    let Some(broker) = broker else {
         warn!(
             forward_id = %forward.forward_id(),
             binding_id = %binding_id,
@@ -75,7 +94,7 @@ pub async fn inject_forward_credentials(
         return Err(internal_error(json_rpc_id, "credential broker unavailable"));
     };
 
-    let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+    let Some(registry) = registry else {
         warn!("registry unavailable while resolving credential binding");
         return Err(internal_error(
             json_rpc_id,
@@ -163,5 +182,209 @@ pub async fn inject_forward_credentials(
 }
 
 fn internal_error(json_rpc_id: &serde_json::Value, message: &str) -> FilterAction {
-    crate::response::json_rpc_error(json_rpc_id, crate::response::JSONRPC_INTERNAL_ERROR, message)
+    crate::response::json_rpc_error(
+        json_rpc_id,
+        crate::response::JSONRPC_INTERNAL_ERROR,
+        message,
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use wanaku_types::credentials::binding::{
+        BindingRestrictions, CacheRules, CredentialBinding, NormalizedOrigin,
+    };
+    use wanaku_types::credentials::fake_resolver::FakeResolver;
+    use wanaku_types::credentials::injection::InjectionMechanism;
+    use wanaku_types::credentials::resolver::{ResolverRegistry, SecretRef};
+
+    const ADDRESS: &str = "https://api.example.com/mcp";
+
+    fn broker() -> Arc<CredentialBroker> {
+        let resolvers = ResolverRegistry::new()
+            .with_resolver(Arc::new(FakeResolver::new().with_value("token", "s3cr3t")));
+        Arc::new(CredentialBroker::new(resolvers))
+    }
+
+    fn binding(id: &str) -> CredentialBinding {
+        CredentialBinding {
+            id: id.to_owned(),
+            forward_id: "fwd-a".to_owned(),
+            origin: NormalizedOrigin::from_address("https://api.example.com").unwrap(),
+            mechanism: InjectionMechanism::Bearer,
+            secret_refs: vec![SecretRef::parse("fake:token").unwrap()],
+            allowed_purposes: vec![CredentialPurpose::Invocation],
+            restrictions: BindingRestrictions::default(),
+            cache: CacheRules::default(),
+            revision: 1,
+        }
+    }
+
+    fn forward(binding_id: Option<&str>) -> ForwardEntry {
+        let mut credential_bindings = HashMap::new();
+        if let Some(id) = binding_id {
+            credential_bindings.insert(CredentialPurpose::Invocation, id.to_owned());
+        }
+        ForwardEntry {
+            name: "fwd-a".to_owned(),
+            address: ADDRESS.to_owned(),
+            namespace: None,
+            server_info: None,
+            labels: HashMap::new(),
+            available: true,
+            status_message: None,
+            credential_bindings,
+        }
+    }
+
+    fn request<'a>(
+        forward: &'a ForwardEntry,
+        address: &'a str,
+        json_rpc_id: &'a serde_json::Value,
+    ) -> ForwardCredentialRequest<'a> {
+        ForwardCredentialRequest {
+            forward,
+            address,
+            purpose: CredentialPurpose::Invocation,
+            scope: UseScope::default(),
+            json_rpc_id,
+        }
+    }
+
+    #[tokio::test]
+    async fn noop_when_forward_has_no_binding() {
+        let forward = forward(None);
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        let mut headers = HashMap::new();
+
+        // No broker or registry is required when the forward has no binding.
+        let result = inject_forward_credentials_inner(None, None, &req, &mut headers).await;
+
+        assert!(result.is_ok());
+        assert!(headers.is_empty());
+    }
+
+    #[tokio::test]
+    async fn injects_bearer_header_on_success() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        let broker = broker();
+        let forward = forward(Some("b1"));
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        let mut headers = HashMap::new();
+
+        let result =
+            inject_forward_credentials_inner(Some(&broker), Some(&registry), &req, &mut headers)
+                .await;
+
+        assert!(result.is_ok());
+        let value = headers
+            .get(&HeaderName::from_static("authorization"))
+            .unwrap();
+        assert_eq!(value.to_str().unwrap(), "Bearer s3cr3t");
+        // The injected value must be marked sensitive so the transport redacts it.
+        assert!(value.is_sensitive());
+    }
+
+    #[tokio::test]
+    async fn denies_when_broker_unavailable() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        let forward = forward(Some("b1"));
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        let mut headers = HashMap::new();
+
+        let result =
+            inject_forward_credentials_inner(None, Some(&registry), &req, &mut headers).await;
+
+        assert!(result.is_err());
+        assert!(headers.is_empty());
+    }
+
+    #[tokio::test]
+    async fn denies_when_registry_unavailable() {
+        let broker = broker();
+        let forward = forward(Some("b1"));
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        let mut headers = HashMap::new();
+
+        let result =
+            inject_forward_credentials_inner(Some(&broker), None, &req, &mut headers).await;
+
+        assert!(result.is_err());
+        assert!(headers.is_empty());
+    }
+
+    #[tokio::test]
+    async fn denies_when_binding_missing() {
+        let registry = InMemoryRegistry::new();
+        let broker = broker();
+        let forward = forward(Some("missing"));
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        let mut headers = HashMap::new();
+
+        let result =
+            inject_forward_credentials_inner(Some(&broker), Some(&registry), &req, &mut headers)
+                .await;
+
+        assert!(result.is_err());
+        assert!(headers.is_empty());
+    }
+
+    #[tokio::test]
+    async fn denies_on_client_header_collision() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        let broker = broker();
+        let forward = forward(Some("b1"));
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        // The client forwards the same header the Bearer mechanism manages.
+        let mut headers = HashMap::new();
+        headers.insert(
+            HeaderName::from_static("authorization"),
+            HeaderValue::from_static("client-supplied"),
+        );
+
+        let result =
+            inject_forward_credentials_inner(Some(&broker), Some(&registry), &req, &mut headers)
+                .await;
+
+        assert!(result.is_err());
+        // The client header must be left untouched; no managed credential injected.
+        assert_eq!(
+            headers
+                .get(&HeaderName::from_static("authorization"))
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "client-supplied"
+        );
+    }
+
+    #[tokio::test]
+    async fn fails_closed_on_origin_mismatch() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        let broker = broker();
+        let forward = forward(Some("b1"));
+        let id = serde_json::json!(1);
+        // The resolved address origin does not match the binding origin.
+        let req = request(&forward, "https://evil.example.com/mcp", &id);
+        let mut headers = HashMap::new();
+
+        let result =
+            inject_forward_credentials_inner(Some(&broker), Some(&registry), &req, &mut headers)
+                .await;
+
+        assert!(result.is_err());
+        assert!(headers.is_empty());
+    }
 }

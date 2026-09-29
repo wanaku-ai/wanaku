@@ -22,3 +22,6 @@ wanaku-infra = { workspace = true }
 wanaku-types = { workspace = true }
 praxis-filter = { workspace = true }
 serde_yaml = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

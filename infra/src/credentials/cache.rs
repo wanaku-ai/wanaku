@@ -290,4 +290,50 @@ mod tests {
         cache.invalidate_binding("b1");
         assert!(cache.is_empty());
     }
+
+    #[test]
+    fn invalidate_removes_only_the_named_entry() {
+        let cache = CredentialCache::new();
+        let now = OffsetDateTime::UNIX_EPOCH;
+        let mut other = key();
+        other.binding_revision = 2;
+        cache.insert(
+            key(),
+            SecretMaterial::from("v1"),
+            now + time::Duration::seconds(60),
+            super::super::broker::ExpiryCategory::BindingTtl,
+        );
+        cache.insert(
+            other.clone(),
+            SecretMaterial::from("v2"),
+            now + time::Duration::seconds(60),
+            super::super::broker::ExpiryCategory::BindingTtl,
+        );
+        cache.invalidate(&key());
+        assert!(cache.get(&key(), now).is_none());
+        assert!(cache.get(&other, now).is_some());
+    }
+
+    #[test]
+    fn invalidate_forward_clears_only_matching_forward() {
+        let cache = CredentialCache::new();
+        let now = OffsetDateTime::UNIX_EPOCH;
+        let mut other_forward = key();
+        other_forward.forward_id = "fwd-other".to_owned();
+        cache.insert(
+            key(),
+            SecretMaterial::from("v"),
+            now + time::Duration::seconds(60),
+            super::super::broker::ExpiryCategory::BindingTtl,
+        );
+        cache.insert(
+            other_forward.clone(),
+            SecretMaterial::from("v"),
+            now + time::Duration::seconds(60),
+            super::super::broker::ExpiryCategory::BindingTtl,
+        );
+        cache.invalidate_forward("fwd");
+        assert!(cache.get(&key(), now).is_none());
+        assert!(cache.get(&other_forward, now).is_some());
+    }
 }

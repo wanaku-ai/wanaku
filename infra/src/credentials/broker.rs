@@ -645,4 +645,51 @@ mod tests {
         );
         assert_ne!(prod, dev);
     }
+
+    #[test]
+    fn cache_key_distinct_per_origin_forward_and_purpose() {
+        let binding = binding();
+        let reference = SecretRef::parse("fake:token").unwrap();
+        let base = build_cache_key(
+            &binding,
+            CredentialPurpose::Invocation,
+            "fwd-a",
+            "https://api.example.com:443",
+            &reference,
+            &UseScope::default(),
+        );
+
+        // A different origin must never reuse the same cache entry.
+        let other_origin = build_cache_key(
+            &binding,
+            CredentialPurpose::Invocation,
+            "fwd-a",
+            "https://other.example.com:443",
+            &reference,
+            &UseScope::default(),
+        );
+        assert_ne!(base, other_origin);
+
+        // A different forward must never reuse the same cache entry.
+        let other_forward = build_cache_key(
+            &binding,
+            CredentialPurpose::Invocation,
+            "fwd-b",
+            "https://api.example.com:443",
+            &reference,
+            &UseScope::default(),
+        );
+        assert_ne!(base, other_forward);
+
+        // A different purpose must never reuse the same cache entry.
+        let other_purpose = build_cache_key(
+            &binding,
+            CredentialPurpose::Discovery,
+            "fwd-a",
+            "https://api.example.com:443",
+            &reference,
+            &UseScope::default(),
+        );
+        assert_ne!(base, other_purpose);
+    }
 }
