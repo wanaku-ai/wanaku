@@ -86,12 +86,12 @@ capture or share logs.
   a `token_prefix`, or a `sensitive_json_pointer` for a custom format.
 - **Upstream error text.** Wanaku redacts a forwarded tool-call error before the
   error reaches the client or the log. Wanaku removes each forwarded header value.
-  Wanaku also removes each long token segment of a forwarded value. This step
-  covers an error that echoes only the token part of an authorization header.
-  Wanaku then applies the default shape rules as a backstop. This redaction is
-  best-effort. An upstream error that echoes only a fragment of a forwarded value
-  can pass the rules. A custom-shaped secret that originates in the upstream system
-  can also pass the rules.
+  Wanaku also removes each token segment of a forwarded value. This step covers an
+  error that echoes only the token part of an authorization header. This step also
+  covers a short token. Wanaku then applies the default shape rules as a backstop.
+  This redaction is best-effort. An upstream error that echoes only a fragment of a
+  forwarded value can pass the rules. A custom-shaped secret that originates in the
+  upstream system can also pass the rules.
 - **Configuration key spelling.** Wanaku ignores an unknown redaction key. A
   mistyped key (for example, `sensitive_field` instead of `sensitive_fields`) is
   dropped without an error. The default value applies. Verify the key spelling after

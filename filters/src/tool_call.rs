@@ -247,28 +247,22 @@ fn forwarded_header_values(forward_headers: &HashMap<HeaderName, HeaderValue>) -
         .collect()
 }
 
-/// Minimum length for a whitespace-separated needle taken from a forwarded value.
-///
-/// #1964: a short segment (for example, the `Bearer` scheme keyword) is skipped,
-/// so the error redaction does not over-redact ordinary error text. A full
-/// forwarded value is always a needle, regardless of length.
-const MIN_ECHOED_SEGMENT_LEN: usize = 8;
-
 /// Build the exact strings to remove from a failed forwarded-call error.
 ///
 /// #1964: an upstream error can echo a forwarded credential verbatim, or it can
 /// echo only the token part after the auth scheme (for example, `Bearer ` is
-/// stripped). This returns each full value and each long whitespace-separated
-/// segment, sorted from longest to shortest. The longest-first order stops a
-/// short value from mangling a longer value that contains it.
+/// stripped). This returns each full value and each whitespace-separated segment,
+/// sorted from longest to shortest. Every segment comes from a value that Wanaku
+/// forwarded, so it is safe to redact all of them, including a short segment. The
+/// only over-redaction is an auth-scheme keyword such as `Bearer`, which is
+/// acceptable diagnostic noise. The longest-first order stops a short value from
+/// mangling a longer value that contains it.
 fn redaction_needles(forwarded_values: &[String]) -> Vec<String> {
     let mut needles: Vec<String> = Vec::new();
     for value in forwarded_values {
         needles.push(value.clone());
         for segment in value.split_whitespace() {
-            if segment.len() >= MIN_ECHOED_SEGMENT_LEN {
-                needles.push(segment.to_owned());
-            }
+            needles.push(segment.to_owned());
         }
     }
     needles.sort_by(|a, b| b.len().cmp(&a.len()).then_with(|| a.cmp(b)));
@@ -701,6 +695,24 @@ mod tests {
         assert!(
             !detail.contains(sentinel),
             "redacted detail must not contain the scheme-stripped token: {detail}"
+        );
+    }
+
+    #[test]
+    fn redacted_forward_error_redacts_short_scheme_stripped_echo() {
+        // #1964 review: a forwarded credential shorter than a normal token must
+        // still be removed when the upstream echoes only the token part of the
+        // auth header, without the "Bearer " scheme. A short segment has no known
+        // shape, so only the forwarded token segment can remove it.
+        let sentinel = "abc123";
+        let forwarded = vec![format!("Bearer {sentinel}")];
+        let upstream = format!("401 Unauthorized: invalid token {sentinel}");
+
+        let detail = redacted_forward_error(&upstream, &forwarded);
+
+        assert!(
+            !detail.contains(sentinel),
+            "redacted detail must not contain the short scheme-stripped token: {detail}"
         );
     }
 
