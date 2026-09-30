@@ -19,7 +19,8 @@ use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::UseScope;
 use wanaku_types::registry::{BindingRegistry, ForwardEntry};
 
-use super::broker::{BrokerError, CredentialBroker};
+use super::audit_sink::{CredentialAuditSink, record_audit};
+use super::broker::{BrokerError, CredentialAuditRecord, CredentialBroker, ResolutionOutcome};
 use super::redaction::CredentialRedactor;
 use crate::registry::InMemoryRegistry;
 
@@ -59,10 +60,17 @@ pub enum DiscoveryCredentialError {
 /// sensitive headers and a redactor for the injected secret when a binding is
 /// configured and brokerage succeeds. Returns an error (fail closed) when a
 /// configured binding cannot be brokered.
+///
+/// When `audit_sink` is present, every fail-closed denial records exactly one
+/// redacted audit record through it: a configured binding that is not registered
+/// records a `Denied` record, a brokerage failure records the broker's record,
+/// and a success records the brokerage record after the headers are built. Only
+/// the no-binding early return performs no brokerage and records nothing.
 pub async fn resolve_discovery_headers(
     broker: &CredentialBroker,
     registry: &InMemoryRegistry,
     forward: &ForwardEntry,
+    audit_sink: Option<&dyn CredentialAuditSink>,
 ) -> Result<DiscoveryExchange, DiscoveryCredentialError> {
     let mut headers = HashMap::new();
 
@@ -76,6 +84,17 @@ pub async fn resolve_discovery_headers(
     };
 
     let Some(binding) = registry.get_binding(binding_id) else {
+        // Fail closed and audit the denial: a forward that references a binding
+        // that is not registered never reaches the broker.
+        record_audit(
+            audit_sink,
+            &CredentialAuditRecord::denial(
+                binding_id,
+                forward.forward_id(),
+                CredentialPurpose::Discovery,
+                CredentialAuditRecord::REASON_BINDING_NOT_FOUND,
+            ),
+        );
         warn!(
             forward_id = %forward.forward_id(),
             binding_id = %binding_id,
@@ -106,6 +125,7 @@ pub async fn resolve_discovery_headers(
         Ok(brokered) => brokered,
         Err(e) => {
             // Fail closed. The audit record is redacted (no secret material).
+            record_audit(audit_sink, &e.audit);
             warn!(
                 forward_id = %forward.forward_id(),
                 binding_id = %e.audit.binding_id,
@@ -119,6 +139,14 @@ pub async fn resolve_discovery_headers(
 
     for header in &brokered.headers {
         let Ok(mut value) = HeaderValue::from_bytes(header.expose_value().expose_bytes()) else {
+            // The brokerage succeeded but the resolved value is not a valid header
+            // value. Record the failure so a denied discovery is never audited as
+            // allowed, then fail closed.
+            let mut audit = brokered.audit.clone();
+            audit.outcome = ResolutionOutcome::Failed;
+            audit.failure_reason =
+                Some(CredentialAuditRecord::REASON_INVALID_HEADER_VALUE.to_owned());
+            record_audit(audit_sink, &audit);
             warn!(
                 forward_id = %forward.forward_id(),
                 header = %header.name(),
@@ -129,6 +157,11 @@ pub async fn resolve_discovery_headers(
         value.set_sensitive(true);
         headers.insert(header.header_name().clone(), value);
     }
+
+    // The headers are built, so record the brokerage outcome now. Recording after
+    // the header loop keeps a header-rejection denial from being audited as an
+    // allowed brokerage.
+    record_audit(audit_sink, &brokered.audit);
 
     trace!(
         forward_id = %forward.forward_id(),
@@ -202,7 +235,7 @@ mod tests {
         let registry = InMemoryRegistry::new();
         let forward = forward("https://api.example.com/mcp", None);
 
-        let exchange = resolve_discovery_headers(&broker, &registry, &forward)
+        let exchange = resolve_discovery_headers(&broker, &registry, &forward, None)
             .await
             .unwrap();
 
@@ -217,7 +250,7 @@ mod tests {
         let registry = InMemoryRegistry::new();
         let forward = forward("https://api.example.com/mcp", Some("missing"));
 
-        let err = resolve_discovery_headers(&broker, &registry, &forward)
+        let err = resolve_discovery_headers(&broker, &registry, &forward, None)
             .await
             .unwrap_err();
 
@@ -232,7 +265,7 @@ mod tests {
         // The forward address origin does not match the binding origin.
         let forward = forward("https://evil.example.com/mcp", Some("b1"));
 
-        let err = resolve_discovery_headers(&broker, &registry, &forward)
+        let err = resolve_discovery_headers(&broker, &registry, &forward, None)
             .await
             .unwrap_err();
 
@@ -246,7 +279,7 @@ mod tests {
         registry.register_binding(binding("b1"));
         let forward = forward("https://api.example.com/mcp", Some("b1"));
 
-        let exchange = resolve_discovery_headers(&broker, &registry, &forward)
+        let exchange = resolve_discovery_headers(&broker, &registry, &forward, None)
             .await
             .unwrap();
 
@@ -264,6 +297,116 @@ mod tests {
         assert_eq!(
             exchange.redactor.redact("Authorization: Bearer s3cr3t"),
             "Authorization: <redacted>"
+        );
+    }
+
+    #[derive(Default)]
+    struct RecordingSink {
+        records: std::sync::Mutex<Vec<super::super::CredentialAuditRecord>>,
+    }
+
+    impl super::super::CredentialAuditSink for RecordingSink {
+        fn record_credential_audit(&self, record: &super::super::CredentialAuditRecord) {
+            if let Ok(mut records) = self.records.lock() {
+                records.push(record.clone());
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn successful_discovery_emits_one_audit_record() {
+        let broker = broker();
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        let forward = forward("https://api.example.com/mcp", Some("b1"));
+        let sink = RecordingSink::default();
+
+        resolve_discovery_headers(&broker, &registry, &forward, Some(&sink))
+            .await
+            .unwrap();
+
+        let records = sink.records.lock().unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(
+            records[0].outcome,
+            super::super::ResolutionOutcome::Resolved
+        );
+        assert_eq!(records[0].purpose, CredentialPurpose::Discovery);
+        // The record must never carry secret material.
+        assert!(!format!("{:?}", records[0]).contains("s3cr3t"));
+    }
+
+    #[tokio::test]
+    async fn failed_discovery_emits_one_audit_record() {
+        let broker = broker();
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        // The forward address origin does not match the binding origin.
+        let forward = forward("https://evil.example.com/mcp", Some("b1"));
+        let sink = RecordingSink::default();
+
+        let err = resolve_discovery_headers(&broker, &registry, &forward, Some(&sink))
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, DiscoveryCredentialError::Brokerage(_)));
+        let records = sink.records.lock().unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].outcome, super::super::ResolutionOutcome::Denied);
+        assert_eq!(
+            records[0].failure_reason.as_deref(),
+            Some("origin_mismatch")
+        );
+    }
+
+    #[tokio::test]
+    async fn missing_binding_emits_denial_record() {
+        let broker = broker();
+        let registry = InMemoryRegistry::new();
+        // The forward references a binding that is not registered.
+        let forward = forward("https://api.example.com/mcp", Some("missing"));
+        let sink = RecordingSink::default();
+
+        let err = resolve_discovery_headers(&broker, &registry, &forward, Some(&sink))
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, DiscoveryCredentialError::BindingNotFound));
+        let records = sink.records.lock().unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].outcome, super::super::ResolutionOutcome::Denied);
+        assert_eq!(
+            records[0].failure_reason.as_deref(),
+            Some(CredentialAuditRecord::REASON_BINDING_NOT_FOUND)
+        );
+    }
+
+    #[tokio::test]
+    async fn unusable_resolved_value_records_failure_not_allow() {
+        // A resolved value with a control character cannot form a valid header.
+        // The broker rejects it during header construction, so the recorded
+        // outcome must be a failure, never an allow.
+        let resolvers = ResolverRegistry::new().with_resolver(Arc::new(
+            FakeResolver::new().with_value("token", "bad\nvalue"),
+        ));
+        let broker = CredentialBroker::new(resolvers);
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        let forward = forward("https://api.example.com/mcp", Some("b1"));
+        let sink = RecordingSink::default();
+
+        let err = resolve_discovery_headers(&broker, &registry, &forward, Some(&sink))
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, DiscoveryCredentialError::Brokerage(_)));
+        let records = sink.records.lock().unwrap();
+        assert_eq!(records.len(), 1);
+        // The denied discovery must never be audited as allowed.
+        assert_eq!(records[0].outcome, super::super::ResolutionOutcome::Failed);
+        assert_eq!(
+            records[0].failure_reason.as_deref(),
+            Some("injection_failure")
         );
     }
 }

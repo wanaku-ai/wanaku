@@ -6,6 +6,8 @@ The current schema version is `1.0`. Each event contains an event ID, a stream I
 
 Wanaku records action-policy and evaluator decisions. Wanaku also records evaluator configuration updates, revision activations, namespace bindings, and namespace unbindings. Action-policy events retain all matched rule IDs and deny reason codes. The response to the caller still contains only the selected safe reason.
 
+Wanaku also records credential brokerage decisions. Each brokerage attempt that reaches the broker records one event. Each fail-closed denial that happens before the broker runs also records one event with the `block` decision. The `filter` field is `wanaku_credentials`. The `operation` field is `credential/discovery` or `credential/invocation`. The `target` field is the forward id and the `target_type` field is `forward`. A resolved or cached credential maps to the `allow` decision. A denied credential maps to the `block` decision. A failed resolution maps to the `error` decision. The event carries only non-secret metadata. See [Credential Brokerage](credential-brokerage.md).
+
 Wanaku uses the HTTP `x-request-id` header as the request, correlation, and stream ID when the header is present. For MCP requests without this header, Wanaku uses the `x-request-id` tool argument or the JSON-RPC request ID. The tool argument also supplies the conversation ID. Administrative events use the HTTP `x-request-id` header. Actor and workload fields remain empty until a trusted identity source supplies these values.
 
 ## Configure audit storage

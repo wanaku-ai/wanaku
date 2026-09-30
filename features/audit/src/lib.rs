@@ -2,12 +2,16 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 mod config;
+mod credential_recorder;
 pub mod persistence;
 mod routes;
+
+pub use credential_recorder::CredentialAuditRecorder;
 
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 use std::sync::{Arc, RwLock};
+use wanaku_infra::credentials::CredentialAuditSink;
 use wanaku_types::audit::{AuditPersistence, DEFAULT_AUDIT_CAPACITY, InMemoryAuditStore};
 use wanaku_types::audit_redaction::{AuditRedactionRules, AuditRedactor};
 use wanaku_types::feature::{Feature, HttpContext};
@@ -35,6 +39,21 @@ impl AuditFeature {
         self.persistence = Some(backend);
         self.rebuild_store();
         self
+    }
+
+    /// A sink that records credential brokerage outcomes into the audit store.
+    ///
+    /// The request pipeline gets this sink from the request extensions. The
+    /// forward discovery path runs outside the pipeline, so the server obtains
+    /// the sink here and threads it explicitly into the discovery callers.
+    ///
+    /// Ordering invariant: the sink captures the current store handle. The
+    /// builders `with_persistence`, `with_metrics`, and `configured_from` call
+    /// `rebuild_store`, which replaces the store. Call `credential_audit_sink`
+    /// after every builder, or the sink writes into a discarded store.
+    #[must_use]
+    pub fn credential_audit_sink(&self) -> Arc<dyn CredentialAuditSink> {
+        Arc::new(CredentialAuditRecorder::new(self.store()))
     }
 
     #[must_use]
@@ -126,6 +145,17 @@ impl PipelineExtension for AuditStoreExtension {
     }
 }
 
+/// Injects the credential audit sink so the credential filter can record
+/// brokerage outcomes on the request-pipeline path.
+struct CredentialAuditSinkExtension {
+    sink: Arc<dyn CredentialAuditSink>,
+}
+impl PipelineExtension for CredentialAuditSinkExtension {
+    fn prepare(&self, extensions: &mut RequestExtensions) {
+        extensions.insert(self.sink.clone());
+    }
+}
+
 #[async_trait::async_trait]
 impl Feature for AuditFeature {
     fn name(&self) -> &'static str {
@@ -136,9 +166,14 @@ impl Feature for AuditFeature {
         self.store
             .read()
             .map(|store| {
-                vec![Box::new(AuditStoreExtension {
-                    store: store.clone(),
-                }) as Box<dyn PipelineExtension>]
+                let sink: Arc<dyn CredentialAuditSink> =
+                    Arc::new(CredentialAuditRecorder::new(store.clone()));
+                vec![
+                    Box::new(AuditStoreExtension {
+                        store: store.clone(),
+                    }) as Box<dyn PipelineExtension>,
+                    Box::new(CredentialAuditSinkExtension { sink }) as Box<dyn PipelineExtension>,
+                ]
             })
             .unwrap_or_default()
     }

@@ -16,7 +16,7 @@ async fn dispatch_interaction_routes_return_404() {
     for method in ["GET", "DELETE"] {
         let ctx = HttpContext::new(method, "/api/v1/interactions", None, None, &headers);
 
-        let resp = dispatch(&ctx, &registry, &broker, &features).await;
+        let resp = dispatch(&ctx, &registry, &broker, None, &features).await;
 
         assert_eq!(resp.status(), 404, "{method} must not expose interactions");
     }
