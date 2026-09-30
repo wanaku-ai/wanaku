@@ -1,6 +1,7 @@
 import {NamespaceEntry, ToolEntry} from "../../models"
 
 export const STORE_IN_LOCAL_STORAGE = "storeInLocalStorage"
+export const STORE_API_KEY_IN_LOCAL_STORAGE = "storeApiKeyInLocalStorage"
 export const LLM_CONFIG = "llmConfig"
 
 const DEFAULT_EXTRA_LLM_PARAMS = ""
@@ -30,6 +31,10 @@ export function isConfigStoredInLocalStorage() {
   return localStorage.getItem(STORE_IN_LOCAL_STORAGE) === "true"
 }
 
+export function isApiKeyStoredInLocalStorage() {
+  return localStorage.getItem(STORE_API_KEY_IN_LOCAL_STORAGE) === "true"
+}
+
 function parseConfig(json: string): LlmConfig {
   const config: LlmConfig = JSON.parse(json)
   config.selectedModel ??= ""
@@ -45,7 +50,13 @@ export function loadConfig(): LlmConfig {
     const configJson = localStorage.getItem(LLM_CONFIG)
     if (configJson) {
       try {
-        return parseConfig(configJson)
+        const config = parseConfig(configJson)
+        if (!isApiKeyStoredInLocalStorage()) {
+          // The API key is restored only when the user opted in to storing it. Otherwise strip any
+          // key that may be present in the stored payload.
+          config.apiKey = undefined
+        }
+        return config
       } catch (error) {
         console.log(`Error loading config: ${error}`)
         return defaultLlmConfig()
@@ -56,13 +67,24 @@ export function loadConfig(): LlmConfig {
 }
 
 /**
- * Persists the LLM config to local storage, excluding the API key. The API key is sensitive and is
- * kept in memory for the current session only — it is never written to local storage (where it
- * would be readable by any script/extension on the page).
+ * Persists the LLM config to local storage.
+ *
+ * Local storage is the source of truth for both persistence decisions, so this reads the flags at
+ * write time rather than trusting caller state. That prevents a stale caller (for example another
+ * browser tab that still holds outdated state) from writing after storage was turned off.
+ *
+ * When config storage is disabled, nothing is written. The API key is sensitive: it is written only
+ * when the user explicitly opted in. Otherwise it is stripped and kept in memory for the current
+ * session only, since a stored key is readable by any script or extension that runs on the page.
  */
 export function persistConfig(config: LlmConfig) {
-  // JSON.stringify drops undefined values, so the api key is omitted from the stored payload.
+  if (!isConfigStoredInLocalStorage()) {
+    return
+  }
   const safeConfig: LlmConfig = structuredClone(config)
-  safeConfig.apiKey = undefined
+  if (!isApiKeyStoredInLocalStorage()) {
+    // JSON.stringify drops undefined values, so the api key is omitted from the stored payload.
+    safeConfig.apiKey = undefined
+  }
   localStorage.setItem(LLM_CONFIG, JSON.stringify(safeConfig))
 }
