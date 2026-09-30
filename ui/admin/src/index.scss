@@ -48,3 +48,9 @@ body {
   word-wrap: break-word;
   border: 1px solid theme.$border-subtle;
 }
+
+.tool-response {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
