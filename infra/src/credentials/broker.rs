@@ -104,16 +104,24 @@ pub struct CredentialAuditRecord {
 pub struct BrokeredCredential {
     /// The credential header(s) to inject at the transport boundary.
     pub headers: Vec<CredentialHeader>,
+    /// The raw resolved secret material used to build the headers.
+    ///
+    /// Retained so the caller can redact any occurrence of a secret (not just
+    /// the wrapped header value) from upstream responses and errors before they
+    /// reach the agent or the logs. Never serialize or log this field.
+    pub redaction_material: Vec<SecretMaterial>,
     /// Redacted audit metadata.
     pub audit: CredentialAuditRecord,
 }
 
 impl std::fmt::Debug for BrokeredCredential {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // redaction_material is intentionally omitted: it holds raw secrets and
+        // must never appear in logs or debug output.
         f.debug_struct("BrokeredCredential")
             .field("headers", &self.headers)
             .field("audit", &self.audit)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -293,6 +301,7 @@ impl CredentialBroker {
         };
         Ok(BrokeredCredential {
             headers,
+            redaction_material: materials,
             audit: CredentialAuditRecord {
                 binding_id: binding.id.clone(),
                 binding_revision: binding.revision,

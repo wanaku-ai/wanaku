@@ -20,7 +20,22 @@ use wanaku_types::credentials::binding::UseScope;
 use wanaku_types::registry::{BindingRegistry, ForwardEntry};
 
 use super::broker::{BrokerError, CredentialBroker};
+use super::redaction::CredentialRedactor;
 use crate::registry::InMemoryRegistry;
+
+/// The outbound discovery headers plus the redactor for the discovery response.
+///
+/// Mirrors the request-pipeline `ForwardExchange`: the headers authenticate the
+/// discovery call, and the redactor strips any injected secret the upstream
+/// echoes back into the discovered tools, resources, prompts, or server identity
+/// before that metadata is persisted and served to agents.
+#[derive(Debug)]
+pub struct DiscoveryExchange {
+    /// Headers to send on the discovery call (may include a brokered credential).
+    pub headers: HashMap<HeaderName, HeaderValue>,
+    /// Redactor for the discovery response content.
+    pub redactor: CredentialRedactor,
+}
 
 /// A discovery credential resolution failure. Every variant fails closed: the
 /// caller must not run discovery against the upstream when this is returned.
@@ -37,22 +52,27 @@ pub enum DiscoveryCredentialError {
     InvalidHeaderValue,
 }
 
-/// Resolve the outbound discovery headers for a forward.
+/// Resolve the outbound discovery exchange for a forward.
 ///
-/// Returns an empty map when the forward has no discovery binding (discovery
-/// proceeds unauthenticated). Returns brokered, sensitive headers when a binding
-/// is configured and brokerage succeeds. Returns an error (fail closed) when a
+/// Returns an empty exchange (no headers, no-op redactor) when the forward has no
+/// discovery binding (discovery proceeds unauthenticated). Returns brokered,
+/// sensitive headers and a redactor for the injected secret when a binding is
+/// configured and brokerage succeeds. Returns an error (fail closed) when a
 /// configured binding cannot be brokered.
 pub async fn resolve_discovery_headers(
     broker: &CredentialBroker,
     registry: &InMemoryRegistry,
     forward: &ForwardEntry,
-) -> Result<HashMap<HeaderName, HeaderValue>, DiscoveryCredentialError> {
+) -> Result<DiscoveryExchange, DiscoveryCredentialError> {
     let mut headers = HashMap::new();
 
     let Some(binding_id) = forward.binding_for(CredentialPurpose::Discovery) else {
-        // No discovery binding configured: discover unauthenticated.
-        return Ok(headers);
+        // No discovery binding configured: discover unauthenticated and redact
+        // nothing.
+        return Ok(DiscoveryExchange {
+            headers,
+            redactor: CredentialRedactor::default(),
+        });
     };
 
     let Some(binding) = registry.get_binding(binding_id) else {
@@ -119,7 +139,10 @@ pub async fn resolve_discovery_headers(
         "resolved brokered discovery credential headers"
     );
 
-    Ok(headers)
+    // Carry a redactor for the injected secret so the caller can strip it from
+    // the discovery response before persisting and serving it to agents.
+    let redactor = CredentialRedactor::from_brokered(&brokered);
+    Ok(DiscoveryExchange { headers, redactor })
 }
 
 #[cfg(test)]
@@ -179,11 +202,13 @@ mod tests {
         let registry = InMemoryRegistry::new();
         let forward = forward("https://api.example.com/mcp", None);
 
-        let headers = resolve_discovery_headers(&broker, &registry, &forward)
+        let exchange = resolve_discovery_headers(&broker, &registry, &forward)
             .await
             .unwrap();
 
-        assert!(headers.is_empty());
+        assert!(exchange.headers.is_empty());
+        // With no binding there is nothing to redact.
+        assert!(exchange.redactor.is_empty());
     }
 
     #[tokio::test]
@@ -221,15 +246,24 @@ mod tests {
         registry.register_binding(binding("b1"));
         let forward = forward("https://api.example.com/mcp", Some("b1"));
 
-        let headers = resolve_discovery_headers(&broker, &registry, &forward)
+        let exchange = resolve_discovery_headers(&broker, &registry, &forward)
             .await
             .unwrap();
 
-        let value = headers
+        let value = exchange
+            .headers
             .get(&HeaderName::from_static("authorization"))
             .unwrap();
         assert_eq!(value.to_str().unwrap(), "Bearer s3cr3t");
         // Discovery credentials must be marked sensitive for transport redaction.
         assert!(value.is_sensitive());
+        // The redactor must strip both the raw secret and the full injected
+        // header value from any echo in the discovery response.
+        assert!(!exchange.redactor.is_empty());
+        assert_eq!(exchange.redactor.redact("saw s3cr3t"), "saw <redacted>");
+        assert_eq!(
+            exchange.redactor.redact("Authorization: Bearer s3cr3t"),
+            "Authorization: <redacted>"
+        );
     }
 }

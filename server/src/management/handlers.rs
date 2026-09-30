@@ -1,17 +1,18 @@
-use std::collections::HashMap;
-
-use http::{HeaderName, HeaderValue, Response, StatusCode};
+use http::{Response, StatusCode};
 use tracing::{info, warn};
 
 use crate::http_response::{json_err, json_ok};
-use wanaku_infra::credentials::{CredentialBroker, resolve_discovery_headers};
+use wanaku_infra::credentials::{
+    CredentialBroker, CredentialRedactor, DiscoveryExchange, resolve_discovery_headers,
+};
+use wanaku_infra::mcp_client::ForwardDiscovery;
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::NormalizedOrigin;
 use wanaku_types::registry::{
-    BindingRegistry, ForwardEntry, ForwardRegistry, MCP_FORWARD_TYPE, NamespaceEntry,
-    NamespaceRegistry, PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry,
-    ToolRegistry,
+    BindingRegistry, ForwardEntry, ForwardRegistry, MCP_FORWARD_TYPE, McpServerInfo,
+    NamespaceEntry, NamespaceRegistry, PromptEntry, PromptRegistry, ResourceEntry,
+    ResourceRegistry, ToolEntry, ToolRegistry,
 };
 
 pub(super) fn handle_tool_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
@@ -322,8 +323,11 @@ pub(super) async fn handle_forward_create(
         revalidate_forward_credentials(registry, broker, &forward);
     }
 
-    let discovery_headers = match discovery_headers_or_status(registry, broker, &forward).await {
-        Ok(headers) => headers,
+    let DiscoveryExchange {
+        headers: discovery_headers,
+        redactor,
+    } = match discovery_headers_or_status(registry, broker, &forward).await {
+        Ok(exchange) => exchange,
         Err(message) => {
             warn!(forward = %forward.name, "forward discovery credential brokerage failed");
             forward.available = false;
@@ -343,9 +347,12 @@ pub(super) async fn handle_forward_create(
         {
             Ok(d) => d,
             Err(e) => {
-                warn!(forward = %forward.name, error = %e, "forward discovery failed");
+                // Redact any injected discovery secret the upstream echoed into
+                // its error before it reaches the operator or the logs.
+                let message = redactor.redact(&e.to_string());
+                warn!(forward = %forward.name, error = %message, "forward discovery failed");
                 forward.available = false;
-                forward.status_message = Some(e.to_string());
+                forward.status_message = Some(message);
                 registry.register_forward(forward.clone());
                 return json_ok(&serde_json::json!({
                     "forward": &forward,
@@ -356,6 +363,7 @@ pub(super) async fn handle_forward_create(
             }
         };
 
+    let discovery = redact_discovery(&redactor, discovery);
     forward.server_info = discovery.server_info;
     forward.available = true;
     forward.status_message = None;
@@ -415,8 +423,11 @@ pub(super) async fn handle_forward_refresh(
     remove_forwarded_resources(registry, forward.forward_id());
     remove_forwarded_prompts(registry, forward.forward_id());
 
-    let discovery_headers = match discovery_headers_or_status(registry, broker, &forward).await {
-        Ok(headers) => headers,
+    let DiscoveryExchange {
+        headers: discovery_headers,
+        redactor,
+    } = match discovery_headers_or_status(registry, broker, &forward).await {
+        Ok(exchange) => exchange,
         Err(message) => {
             warn!(forward = %name, "forward refresh credential brokerage failed");
             forward.available = false;
@@ -436,9 +447,12 @@ pub(super) async fn handle_forward_refresh(
     {
         Ok(d) => d,
         Err(e) => {
-            warn!(forward = %name, error = %e, "forward refresh discovery failed");
+            // Redact any injected discovery secret the upstream echoed into its
+            // error before it reaches the operator or the logs.
+            let message = redactor.redact(&e.to_string());
+            warn!(forward = %name, error = %message, "forward refresh discovery failed");
             forward.available = false;
-            forward.status_message = Some(e.to_string());
+            forward.status_message = Some(message);
             registry.register_forward(forward.clone());
             return json_ok(
                 &serde_json::json!({"refreshed": name, "tools_discovered": 0, "resources_discovered": 0, "prompts_discovered": 0}),
@@ -446,6 +460,7 @@ pub(super) async fn handle_forward_refresh(
         }
     };
 
+    let discovery = redact_discovery(&redactor, discovery);
     forward.server_info = discovery.server_info;
     forward.available = true;
     forward.status_message = None;
@@ -509,19 +524,67 @@ fn revalidate_forward_credentials(
     }
 }
 
-/// Resolve discovery credential headers for a forward, failing closed.
+/// Resolve the discovery exchange for a forward, failing closed.
 ///
-/// Returns the brokered headers on success, or a redacted status message when a
-/// configured discovery binding cannot be brokered. Callers must not run
-/// discovery when this returns an error.
+/// Returns the brokered headers and the response redactor on success, or a
+/// redacted status message when a configured discovery binding cannot be
+/// brokered. Callers must not run discovery when this returns an error.
 async fn discovery_headers_or_status(
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
     forward: &ForwardEntry,
-) -> Result<HashMap<HeaderName, HeaderValue>, String> {
+) -> Result<DiscoveryExchange, String> {
     resolve_discovery_headers(broker, registry, forward)
         .await
         .map_err(|e| format!("discovery credential brokerage failed: {e}"))
+}
+
+/// Redact any brokered discovery credential the upstream echoed into its
+/// discovery response before the metadata is persisted and served to agents.
+///
+/// The upstream can reflect an injected discovery credential into a tool
+/// description, a resource, a prompt, or its server identity. The management API
+/// persists this metadata and serves it to agents through `tools/list`,
+/// `resources/list`, and `prompts/list`. This strips the injected secret first.
+/// An empty redactor (no discovery binding) leaves the response unchanged.
+fn redact_discovery(
+    redactor: &CredentialRedactor,
+    discovery: ForwardDiscovery,
+) -> ForwardDiscovery {
+    if redactor.is_empty() {
+        return discovery;
+    }
+    ForwardDiscovery {
+        server_info: discovery
+            .server_info
+            .map(|info| redact_server_info(redactor, info)),
+        tools: redactor.redact_json_each(&discovery.tools),
+        resources: redactor.redact_json_each(&discovery.resources),
+        resource_templates: redactor.redact_json_each(&discovery.resource_templates),
+        prompts: redactor.redact_json_each(&discovery.prompts),
+    }
+}
+
+/// Redact the fields of a discovered server identity.
+///
+/// The upstream controls every field it returns. `capabilities` uses a fixed
+/// vocabulary and is unlikely to carry a secret, but `extensions` holds arbitrary
+/// upstream-chosen keys, so both lists are redacted for consistency with the rest
+/// of the discovery response. Redaction is a no-op on values that hold no secret.
+fn redact_server_info(redactor: &CredentialRedactor, info: McpServerInfo) -> McpServerInfo {
+    McpServerInfo {
+        server_name: redactor.redact(&info.server_name),
+        version: redactor.redact(&info.version),
+        description: info.description.map(|s| redactor.redact(&s)),
+        website_url: info.website_url.map(|s| redactor.redact(&s)),
+        capabilities: info
+            .capabilities
+            .iter()
+            .map(|s| redactor.redact(s))
+            .collect(),
+        extensions: info.extensions.iter().map(|s| redactor.redact(s)).collect(),
+        instructions: info.instructions.map(|s| redactor.redact(&s)),
+    }
 }
 
 pub async fn discover_and_update_forward(
@@ -529,8 +592,11 @@ pub async fn discover_and_update_forward(
     broker: &CredentialBroker,
     forward: &ForwardEntry,
 ) {
-    let discovery_headers = match discovery_headers_or_status(registry, broker, forward).await {
-        Ok(headers) => headers,
+    let DiscoveryExchange {
+        headers: discovery_headers,
+        redactor,
+    } = match discovery_headers_or_status(registry, broker, forward).await {
+        Ok(exchange) => exchange,
         Err(message) => {
             warn!(forward = %forward.name, "forward discovery credential brokerage failed");
             let mut unavailable = forward.clone();
@@ -541,20 +607,27 @@ pub async fn discover_and_update_forward(
         }
     };
 
-    let discovery =
-        match wanaku_infra::mcp_client::discover_forward(&forward.address, discovery_headers).await
-        {
-            Ok(d) => d,
-            Err(e) => {
-                warn!(forward = %forward.name, error = %e, "forward discovery failed at startup");
-                let mut unavailable = forward.clone();
-                unavailable.available = false;
-                unavailable.status_message = Some(e.to_string());
-                registry.register_forward(unavailable);
-                return;
-            }
-        };
+    let discovery = match wanaku_infra::mcp_client::discover_forward(
+        &forward.address,
+        discovery_headers,
+    )
+    .await
+    {
+        Ok(d) => d,
+        Err(e) => {
+            // Redact any injected discovery secret the upstream echoed into
+            // its error before it reaches the operator or the logs.
+            let message = redactor.redact(&e.to_string());
+            warn!(forward = %forward.name, error = %message, "forward discovery failed at startup");
+            let mut unavailable = forward.clone();
+            unavailable.available = false;
+            unavailable.status_message = Some(message);
+            registry.register_forward(unavailable);
+            return;
+        }
+    };
 
+    let discovery = redact_discovery(&redactor, discovery);
     let mut updated = forward.clone();
     updated.server_info = discovery.server_info;
     updated.available = true;

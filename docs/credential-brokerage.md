@@ -143,8 +143,36 @@ This guarantees a cached secret never outlives the forward it belongs to, and a 
 - Injected header values are marked sensitive so the transport layer redacts them in logs and traces.
 - Audit records contain only non-secret metadata: binding id, revision, resolver scheme, mechanism type, forward id, origin, purpose, outcome, expiry category, and a stable failure reason code. An audit record never contains a secret reference path or a resolved value.
 - Only header names are safe to log. Header values that carry credentials are never logged.
+- The proxy redacts injected credential material from the upstream response before the response reaches the agent or the logs. This applies to both the request pipeline and the forward discovery path. This closes the leak-back path where an upstream server echoes the credential in its output. See [Response Redaction](#response-redaction).
 - Every failure mode — missing broker, missing binding, forward mismatch, origin mismatch, disallowed purpose, restriction violation, secret arity mismatch, unknown resolver scheme, missing secret, or an invalid header value — denies the request and injects no credential.
 - A client-forwarded header that collides with a broker-managed header is rejected, not merged or overwritten.
+
+## Response Redaction
+
+An upstream server can echo an injected credential in its response. For example, a verbose error can include the received `Authorization` header, or a debug endpoint can reflect the request. The proxy redacts this material before the response reaches the agent or the logs.
+
+The redactor runs on the forwarded `tools/call`, `resources/read`, and `prompts/get` paths. It also runs on the forward discovery path. See [Discovery Redaction](#discovery-redaction). For each brokered request it strips two patterns:
+
+1. The full injected header value, for example `Bearer <secret>`.
+2. The raw resolved secret material.
+
+The proxy replaces each match with the placeholder `<redacted>`. It redacts the response content, the upstream error text, and the error text that goes to the logs.
+
+The redactor uses exact substring matching. This has the following limits:
+
+- A secret that the upstream re-encodes (for example base64 or URL-encoded) before it echoes the value is not matched. The redactor only matches the injected form.
+- A secret that the upstream splits across two separate content items is not matched. The redactor checks each content item on its own.
+- A very short secret can match unrelated text and cause over-redaction. Use secrets with sufficient length and entropy.
+
+Response redaction is a defense-in-depth control. It reduces the impact of an upstream that echoes a credential. It does not replace the primary controls: scope enforcement, origin binding, and fail-closed brokerage.
+
+### Discovery Redaction
+
+Forward discovery runs outside the request filter pipeline. It runs at startup, in the management API, and in the background reconnect loop. When a forward configures a `discovery` binding, Wanaku injects the brokered credential into the discovery call. The upstream can echo that credential back in the discovered metadata.
+
+The proxy redacts the injected discovery credential from the discovery response before it persists the metadata and serves it to agents. The redactor strips the same two patterns as the request pipeline: the full injected header value and the raw resolved secret material. It applies to the discovered tools, resources, resource templates, and prompts, and to the server identity fields. The proxy also redacts the discovery error text before it logs the error or stores it in the forward status message.
+
+Discovery redaction has the same exact-substring-matching limits as response redaction. A re-encoded or split secret is not matched.
 
 ## Inspecting Bindings
 

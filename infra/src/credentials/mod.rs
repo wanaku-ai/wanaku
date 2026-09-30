@@ -6,10 +6,12 @@
 mod broker;
 mod cache;
 mod discovery;
+mod redaction;
 
 pub use broker::{
     BrokerError, BrokerErrorKind, BrokeredCredential, CredentialAuditRecord, CredentialBroker,
     ExpiryCategory, ResolutionOutcome,
 };
 pub use cache::{CacheKey, CredentialCache, effective_expiry};
-pub use discovery::{DiscoveryCredentialError, resolve_discovery_headers};
+pub use discovery::{DiscoveryCredentialError, DiscoveryExchange, resolve_discovery_headers};
+pub use redaction::CredentialRedactor;

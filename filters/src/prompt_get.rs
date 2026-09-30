@@ -108,15 +108,23 @@ impl PromptGetFilter {
                 },
                 json_rpc_id: &parsed.id,
             };
-            if let Err(action) =
-                crate::credentials::inject_forward_credentials(ctx, &request, &mut forward_headers)
-                    .await
+            let redactor = match crate::credentials::inject_forward_credentials(
+                ctx,
+                &request,
+                &mut forward_headers,
+            )
+            .await
             {
-                return Ok(action);
-            }
+                Ok(redactor) => redactor,
+                Err(action) => return Ok(action),
+            };
+            let exchange = crate::credentials::ForwardExchange {
+                headers: forward_headers,
+                redactor,
+            };
 
             return self
-                .handle_forwarded_get(&address, prompt_name, &parsed, forward_headers)
+                .handle_forwarded_get(&address, prompt_name, &parsed, exchange)
                 .await;
         }
 
@@ -163,13 +171,21 @@ impl PromptGetFilter {
         )))
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "MCP forwarding handler with error paths"
+    )]
     async fn handle_forwarded_get(
         &self,
         forward_address: &str,
         prompt_name: &str,
         parsed: &ParsedBody,
-        forward_headers: HashMap<HeaderName, HeaderValue>,
+        exchange: crate::credentials::ForwardExchange,
     ) -> Result<FilterAction, FilterError> {
+        let crate::credentials::ForwardExchange {
+            headers: forward_headers,
+            redactor,
+        } = exchange;
         trace!(prompt = %prompt_name, forward = %forward_address, "forwarding prompts/get to remote MCP server");
 
         let arguments = if parsed.arguments.is_empty() {
@@ -187,27 +203,39 @@ impl PromptGetFilter {
         .await
         {
             Ok(result) => {
-                let response = serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": parsed.id,
-                    "result": result,
-                });
-
+                let response = build_get_response(&parsed.id, &result, &redactor);
                 let response_body = Bytes::from(response.to_string());
                 Ok(FilterAction::Reject(crate::response::json_response(
                     response_body,
                 )))
             }
             Err(e) => {
-                warn!(prompt = %prompt_name, error = %e, "MCP forward prompt get failed");
+                // Redact any injected secret the upstream may have echoed into its
+                // error text before it reaches the logs or the agent.
+                let message = redactor.redact(&e.to_string());
+                warn!(prompt = %prompt_name, error = %message, "MCP forward prompt get failed");
                 Ok(crate::response::json_rpc_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
-                    &format!("forwarded prompt get failed: {e}"),
+                    &format!("forwarded prompt get failed: {message}"),
                 ))
             }
         }
     }
+}
+
+/// Build the JSON-RPC response for a forwarded prompt get, redacting any injected
+/// credential the upstream echoed back into the prompt result.
+fn build_get_response(
+    id: &serde_json::Value,
+    result: &serde_json::Value,
+    redactor: &crate::credentials::CredentialRedactor,
+) -> serde_json::Value {
+    serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": id,
+        "result": redactor.redact_json(result),
+    })
 }
 
 #[cfg(test)]
@@ -226,6 +254,45 @@ mod tests {
         assert_eq!(
             parsed.arguments.get("topic"),
             Some(&serde_json::Value::from("rust"))
+        );
+    }
+
+    #[test]
+    fn build_get_response_redacts_injected_credential() {
+        // The upstream echoes the secret inside the prompt messages.
+        let result = serde_json::json!({
+            "description": "echoed Authorization: Bearer s3cr3t",
+            "messages": [
+                {"role": "user", "content": {"type": "text", "text": "token s3cr3t"}}
+            ]
+        });
+        let redactor = crate::credentials::CredentialRedactor::from_patterns(vec![
+            "s3cr3t".to_owned(),
+            "Bearer s3cr3t".to_owned(),
+        ]);
+
+        let response = build_get_response(&serde_json::json!(1), &result, &redactor);
+
+        assert_eq!(
+            response.pointer("/result/description").unwrap(),
+            "echoed Authorization: <redacted>"
+        );
+        assert_eq!(
+            response.pointer("/result/messages/0/content/text").unwrap(),
+            "token <redacted>"
+        );
+    }
+
+    #[test]
+    fn build_get_response_is_noop_without_binding() {
+        let result = serde_json::json!({"description": "plain s3cr3t"});
+        let redactor = crate::credentials::CredentialRedactor::default();
+
+        let response = build_get_response(&serde_json::json!(1), &result, &redactor);
+
+        assert_eq!(
+            response.pointer("/result/description").unwrap(),
+            "plain s3cr3t"
         );
     }
 
