@@ -890,6 +890,37 @@
         }
       }
     },
+    "/api/v1/evaluators/status": {
+      "get": {
+        "tags": [
+          "Evaluators"
+        ],
+        "operationId": "get_evaluator_status",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace name; defaults to default",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_EvaluatorStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/forwards": {
       "get": {
         "tags": [
@@ -1733,6 +1764,14 @@
           }
         }
       },
+      "AuditLevel": {
+        "type": "string",
+        "description": "Controls whether audit mode invokes configured LLM evaluators.",
+        "enum": [
+          "basic",
+          "full"
+        ]
+      },
       "AuditPage": {
         "type": "object",
         "required": [
@@ -1974,6 +2013,15 @@
           "deny"
         ]
       },
+      "EnforcementMode": {
+        "type": "string",
+        "description": "Controls whether governance decisions affect traffic.",
+        "enum": [
+          "enforce",
+          "audit",
+          "disabled"
+        ]
+      },
       "EngineSnapshot": {
         "type": "object",
         "required": [
@@ -2020,14 +2068,6 @@
             "minimum": 0
           }
         }
-      },
-      "ErrorPolicy": {
-        "type": "string",
-        "description": "What to do when a WASM action fails.",
-        "enum": [
-          "continue",
-          "block"
-        ]
       },
       "EvaluationEngine": {
         "oneOf": [
@@ -2112,9 +2152,6 @@
           "name": {
             "type": "string"
           },
-          "on_error": {
-            "$ref": "#/components/schemas/ErrorPolicy"
-          },
           "processor": {
             "$ref": "#/components/schemas/ProcessorRef"
           },
@@ -2123,6 +2160,17 @@
           }
         },
         "additionalProperties": false
+      },
+      "EvaluatorReadiness": {
+        "type": "string",
+        "description": "Runtime readiness of the active evaluator configuration.",
+        "enum": [
+          "ready",
+          "degraded",
+          "invalid",
+          "unconfigured",
+          "disabled"
+        ]
       },
       "EvaluatorRevisionResponse": {
         "type": "object",
@@ -2172,6 +2220,45 @@
             "$ref": "#/components/schemas/WasmSnapshot"
           }
         }
+      },
+      "EvaluatorStatus": {
+        "type": "object",
+        "required": [
+          "namespace",
+          "state",
+          "reason_code",
+          "posture"
+        ],
+        "properties": {
+          "namespace": {
+            "type": "string"
+          },
+          "posture": {
+            "$ref": "#/components/schemas/GovernancePosture"
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "revision_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "state": {
+            "$ref": "#/components/schemas/EvaluatorReadiness"
+          }
+        }
+      },
+      "FailureBehavior": {
+        "type": "string",
+        "description": "Controls the result when governance cannot produce a decision.",
+        "enum": [
+          "allow",
+          "deny"
+        ]
       },
       "FilterSnapshot": {
         "type": "object",
@@ -2296,6 +2383,90 @@
             "minimum": 0
           }
         }
+      },
+      "GovernanceMetric": {
+        "type": "object",
+        "required": [
+          "mode",
+          "outcome",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "mode": {
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/GovernanceOutcome"
+          }
+        }
+      },
+      "GovernanceOutcome": {
+        "type": "string",
+        "description": "Fixed outcome dimensions; request identifiers and namespace names are excluded.",
+        "enum": [
+          "enforced_allow",
+          "enforced_deny",
+          "audit_allow",
+          "audit_deny",
+          "audit_skipped",
+          "no_match_allow",
+          "no_match_deny",
+          "fail_open",
+          "fail_closed",
+          "disabled"
+        ]
+      },
+      "GovernancePosture": {
+        "type": "object",
+        "description": "The effective governance settings for one namespace.",
+        "properties": {
+          "audit_level": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AuditLevel"
+              }
+            ],
+            "default": "basic"
+          },
+          "disabled_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Required when governance is intentionally disabled.",
+            "default": null
+          },
+          "mode": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EnforcementMode"
+              }
+            ],
+            "default": "enforce"
+          },
+          "no_match": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NoMatchBehavior"
+              }
+            ],
+            "default": "deny"
+          },
+          "on_failure": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FailureBehavior"
+              }
+            ],
+            "default": "deny"
+          }
+        },
+        "additionalProperties": false
       },
       "InjectionMechanism": {
         "oneOf": [
@@ -2497,6 +2668,7 @@
       "MetricsSnapshot": {
         "type": "object",
         "required": [
+          "evaluator_governance",
           "filters",
           "evaluators",
           "pipeline",
@@ -2506,6 +2678,12 @@
         "properties": {
           "audit": {
             "$ref": "#/components/schemas/AuditSnapshot"
+          },
+          "evaluator_governance": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GovernanceMetric"
+            }
           },
           "evaluators": {
             "type": "object",
@@ -2579,6 +2757,14 @@
             "type": "string"
           }
         }
+      },
+      "NoMatchBehavior": {
+        "type": "string",
+        "description": "Controls the result when no governance rule matches an action.",
+        "enum": [
+          "allow",
+          "deny"
+        ]
       },
       "NormalizedOrigin": {
         "type": "string",
@@ -3090,20 +3276,11 @@
         }
       },
       "SecretRef": {
-        "type": "object",
-        "description": "An opaque secret reference of the form `<scheme>:<path>`.\n\nThe scheme selects the resolver (e.g. `env`). The path is resolver-specific\nand is never derived from request data.",
-        "required": [
-          "scheme",
-          "path"
-        ],
-        "properties": {
-          "path": {
-            "type": "string"
-          },
-          "scheme": {
-            "type": "string"
-          }
-        }
+        "type": "string",
+        "description": "An opaque secret reference of the form '<scheme>:<path>'.",
+        "examples": [
+          "env:API_TOKEN"
+        ]
       },
       "Selectors": {
         "type": "object",
@@ -3318,7 +3495,8 @@
             "format": "int64",
             "minimum": 0
           }
-        }
+        },
+        "additionalProperties": false
       },
       "WanakuResponse_ActionPolicyRevisionResponse": {
         "type": "object",
@@ -3638,6 +3816,48 @@
           }
         }
       },
+      "WanakuResponse_EvaluatorStatus": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "namespace",
+              "state",
+              "reason_code",
+              "posture"
+            ],
+            "properties": {
+              "namespace": {
+                "type": "string"
+              },
+              "posture": {
+                "$ref": "#/components/schemas/GovernancePosture"
+              },
+              "reason_code": {
+                "type": "string"
+              },
+              "revision_id": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64",
+                "minimum": 0
+              },
+              "state": {
+                "$ref": "#/components/schemas/EvaluatorReadiness"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "WanakuResponse_HashMap_String_String": {
         "type": "object",
         "properties": {
@@ -3727,9 +3947,6 @@
                 },
                 "name": {
                   "type": "string"
-                },
-                "on_error": {
-                  "$ref": "#/components/schemas/ErrorPolicy"
                 },
                 "processor": {
                   "$ref": "#/components/schemas/ProcessorRef"

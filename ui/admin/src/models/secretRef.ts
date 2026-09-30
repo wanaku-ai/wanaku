@@ -7,12 +7,6 @@
  */
 
 /**
- * An opaque secret reference of the form `<scheme>:<path>`.
-
-The scheme selects the resolver (e.g. `env`). The path is resolver-specific
-and is never derived from request data.
+ * An opaque secret reference of the form '<scheme>:<path>'.
  */
-export interface SecretRef {
-  path: string;
-  scheme: string;
-}
+export type SecretRef = string;
