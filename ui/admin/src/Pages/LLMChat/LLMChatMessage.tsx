@@ -66,10 +66,9 @@ export const LLMChatMessage = ({ message }) => {
       </div>
       <div className="message">
         {(message.role === "tool-response" && (
-          <p dangerouslySetInnerHTML={{
-            __html: hljs.highlightAuto(message.content).value
-          }}
-          />
+          <pre className="tool-response">
+            <code>{message.content}</code>
+          </pre>
         )) || <MarkdownRenderer content={ message.content } />
         }
       </div>
