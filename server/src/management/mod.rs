@@ -22,7 +22,7 @@ use http::{Response, StatusCode};
 use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
 
-use wanaku_infra::credentials::CredentialBroker;
+use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::feature::{Feature, HttpContext};
 
@@ -47,6 +47,7 @@ use crate::http_response::{json_err, json_ok};
 pub struct WanakuManagementService {
     registry: InMemoryRegistry,
     broker: Arc<CredentialBroker>,
+    audit_sink: Option<Arc<dyn CredentialAuditSink>>,
     features: Vec<Box<dyn Feature>>,
     #[cfg(feature = "ui")]
     ui_path: Option<std::path::PathBuf>,
@@ -56,6 +57,7 @@ impl WanakuManagementService {
     pub fn new(
         registry: InMemoryRegistry,
         broker: Arc<CredentialBroker>,
+        audit_sink: Option<Arc<dyn CredentialAuditSink>>,
         features: Vec<Box<dyn Feature>>,
     ) -> Self {
         #[cfg(feature = "ui")]
@@ -68,6 +70,7 @@ impl WanakuManagementService {
         Self {
             registry,
             broker,
+            audit_sink,
             features,
             #[cfg(feature = "ui")]
             ui_path,
@@ -107,7 +110,14 @@ impl ServeHttp for WanakuManagementService {
         };
 
         let ctx = HttpContext::new(&method, &path, query.as_deref(), body.as_deref(), &headers);
-        dispatch(&ctx, &self.registry, &self.broker, &self.features).await
+        dispatch(
+            &ctx,
+            &self.registry,
+            &self.broker,
+            self.audit_sink.as_deref(),
+            &self.features,
+        )
+        .await
     }
 }
 
@@ -119,6 +129,7 @@ pub(crate) async fn dispatch(
     ctx: &HttpContext<'_>,
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
+    audit_sink: Option<&dyn CredentialAuditSink>,
     features: &[Box<dyn Feature>],
 ) -> Response<Vec<u8>> {
     if ctx.path == "/healthz" || ctx.path == "/health" {
@@ -189,13 +200,13 @@ pub(crate) async fn dispatch(
         ForwardRoute::GetByName(name) => return handle_forward_get(registry, &name),
         ForwardRoute::Create => {
             return match ctx.body {
-                Some(b) => handle_forward_create(registry, broker, b).await,
+                Some(b) => handle_forward_create(registry, broker, audit_sink, b).await,
                 None => json_err(StatusCode::BAD_REQUEST, "request body required"),
             };
         }
         ForwardRoute::Delete(name) => return handle_forward_delete(registry, broker, &name),
         ForwardRoute::Refresh(name) => {
-            return handle_forward_refresh(registry, broker, &name).await;
+            return handle_forward_refresh(registry, broker, audit_sink, &name).await;
         }
         ForwardRoute::NotFound => {}
     }
@@ -239,7 +250,7 @@ mod dispatch_tests {
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/api/v1/tools", None, None, &headers);
 
-        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), None, features).await;
 
         assert_eq!(resp.status(), 200);
         assert_eq!(data_field(&resp).as_array().map(|a| a.len()), Some(0));
@@ -252,7 +263,7 @@ mod dispatch_tests {
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/no/such/path", None, None, &headers);
 
-        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), None, features).await;
 
         assert_eq!(resp.status(), 404);
     }
@@ -265,7 +276,7 @@ mod dispatch_tests {
         let body = r#"{"name":"test-ns"}"#;
         let ctx = HttpContext::new("POST", "/api/v1/namespaces", None, Some(body), &headers);
 
-        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), None, features).await;
 
         assert_eq!(resp.status(), 200);
         let data = data_field(&resp);
@@ -279,7 +290,7 @@ mod dispatch_tests {
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/healthz", None, None, &headers);
 
-        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), None, features).await;
 
         assert_eq!(resp.status(), 200);
         let body = parse_body(&resp);
@@ -294,7 +305,7 @@ mod dispatch_tests {
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/api/v1/management/info", None, None, &headers);
 
-        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), None, features).await;
 
         assert_eq!(resp.status(), 200);
         let data = data_field(&resp);
@@ -309,7 +320,7 @@ mod dispatch_tests {
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("POST", "/api/v1/namespaces", None, None, &headers);
 
-        let resp = dispatch(&ctx, &registry, &test_broker(), features).await;
+        let resp = dispatch(&ctx, &registry, &test_broker(), None, features).await;
 
         assert_eq!(resp.status(), 400);
     }

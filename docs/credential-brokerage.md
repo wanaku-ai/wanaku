@@ -205,11 +205,40 @@ This guarantees a cached secret never outlives the forward it belongs to, and a 
 
 - Resolved secrets are held in memory as redacted, non-serializable material. They never implement `Display` or `Serialize`, their `Debug` output is a fixed redaction placeholder, and their backing bytes are zeroed when dropped.
 - Injected header values are marked sensitive so the transport layer redacts them in logs and traces.
-- Audit records contain only non-secret metadata: binding id, revision, resolver scheme, mechanism type, forward id, origin, purpose, outcome, expiry category, and a stable failure reason code. An audit record never contains a secret reference path or a resolved value.
+- Audit records contain only non-secret metadata: binding id, revision, resolver scheme, mechanism type, forward id, origin, purpose, outcome, expiry category, and a stable failure reason code. An audit record never contains a secret reference path or a resolved value. Wanaku persists each record to the audit trail. See [Audit Trail Integration](#audit-trail-integration).
 - Only header names are safe to log. Header values that carry credentials are never logged.
 - The proxy redacts injected credential material from the upstream response before the response reaches the agent or the logs. This applies to both the request pipeline and the forward discovery path. This closes the leak-back path where an upstream server echoes the credential in its output. See [Response Redaction](#response-redaction).
 - Every failure mode — missing broker, missing binding, forward mismatch, origin mismatch, disallowed purpose, restriction violation, secret arity mismatch, unknown resolver scheme, missing secret, or an invalid header value — denies the request and injects no credential.
 - A client-forwarded header that collides with a broker-managed header is rejected, not merged or overwritten.
+
+## Audit Trail Integration
+
+Wanaku persists each credential brokerage decision to the governance audit trail. Wanaku records one event for each brokerage attempt that reaches the broker. Wanaku also records one event for each fail-closed denial that happens before the broker runs. Every record is redacted and contains only non-secret metadata.
+
+The event uses these fields:
+
+- The `filter` field is `wanaku_credentials`.
+- The `operation` field is `credential/discovery` or `credential/invocation`. The purpose keeps discovery records and invocation records distinct.
+- The `target` field is the forward id. The `target_type` field is `forward`.
+- The `upstream_id` field is the normalized upstream origin.
+- The `attributes` field carries the binding id, binding revision, resolver types, mechanism, purpose, outcome, and expiry category.
+
+Wanaku maps the resolution outcome to the audit decision:
+
+- A resolved credential and a cache hit map to the `allow` decision.
+- A denied credential maps to the `block` decision.
+- A failed resolution maps to the `error` decision.
+
+Wanaku records a fail-closed denial that happens before the broker runs with the `block` decision. The `reason_code` field identifies the cause: `binding_not_found`, `header_collision`, `broker_unavailable`, or `registry_unavailable`. A pre-broker denial knows only non-secret identifiers, so it sets an empty binding revision, empty resolver types, an empty mechanism, and an empty origin.
+
+Wanaku records the event on both paths. The request pipeline records the event for the `tools/call`, `resources/read`, and `prompts/get` paths. The forward discovery path records the event at startup, in the management API, and in the background reconnect loop.
+
+Wanaku records the success event after it builds the transport headers. If a resolved credential produces an invalid header value, Wanaku records a failed event with the `invalid_header_value` reason code and denies the request. Wanaku never records an allow decision for a denied request.
+
+An audit storage failure does not change or block the brokerage decision. See [Governance audit trail](audit-trail.md).
+
+> [!NOTE]
+> A credential audit event carries no correlation or request identifier in this release. You cannot yet join a credential event to the tool call or governance decision that triggered it.
 
 ## Response Redaction
 

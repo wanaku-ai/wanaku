@@ -16,7 +16,7 @@ use praxis_protocol::http::PingoraHttp;
 use praxis_protocol::{ListenerPipelines, Protocol as _};
 use tracing::info;
 
-use wanaku_infra::credentials::CredentialBroker;
+use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
 use wanaku_infra::persistence::FilePersistence;
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::credentials::{
@@ -57,13 +57,14 @@ fn main() {
     let wanaku_config = load_wanaku_yaml(&args.wanaku_config).unwrap_or_else(|error| fatal(&error));
     let governance = load_governance_config(wanaku_config.as_ref()).unwrap_or_else(|e| fatal(&e));
     // Feature status and pipeline filters use the same immutable startup posture.
-    let features: Vec<Box<dyn Feature>> =
+    let (features, credential_audit_sink) =
         build_features(&args, &metrics_store, wanaku_config.as_ref(), &governance);
 
     load_config(
         wanaku_config.as_ref(),
         &wanaku_registry,
         &credential_broker,
+        Some(credential_audit_sink.as_ref()),
         &features,
     );
     for feature in &features {
@@ -83,10 +84,16 @@ fn main() {
         mgmt_registry: wanaku_registry.clone(),
         governance,
         broker: credential_broker,
+        audit_sink: credential_audit_sink,
         features,
     };
 
-    let pipelines = build_pipelines(&config, &wanaku_registry, &mut filter_registry, &service_deps);
+    let pipelines = build_pipelines(
+        &config,
+        &wanaku_registry,
+        &mut filter_registry,
+        &service_deps,
+    );
 
     info!("initializing server");
     let mut server = PingoraServerRuntime::new(&config);
@@ -133,6 +140,7 @@ struct ServiceDeps {
     mgmt_registry: InMemoryRegistry,
     governance: GovernanceConfig,
     broker: Arc<CredentialBroker>,
+    audit_sink: Arc<dyn CredentialAuditSink>,
     features: Vec<Box<dyn Feature>>,
 }
 
@@ -140,10 +148,11 @@ fn load_config(
     wanaku_config: Option<&serde_yaml::Value>,
     wanaku_registry: &InMemoryRegistry,
     broker: &Arc<CredentialBroker>,
+    audit_sink: Option<&dyn CredentialAuditSink>,
     features: &[Box<dyn Feature>],
 ) {
     if let Some(yaml) = wanaku_config {
-        load_core_config(yaml, wanaku_registry, broker);
+        load_core_config(yaml, wanaku_registry, broker, audit_sink);
     }
     let empty = serde_yaml::Value::Mapping(serde_yaml::Mapping::new());
     for feature in features {
@@ -198,11 +207,13 @@ fn setup_management_service(
     let mgmt_registry = deps.mgmt_registry.clone();
     let persistence_registry = deps.mgmt_registry.clone();
     let reconnect_broker = deps.broker.clone();
+    let reconnect_audit_sink = deps.audit_sink.clone();
 
     let mgmt_addr = &wanaku_types::config::ENV.mgmt_listen;
     let mgmt = wanaku_server::management::WanakuManagementService::new(
         deps.mgmt_registry,
         deps.broker,
+        Some(deps.audit_sink),
         deps.features,
     );
     let mut mgmt_service =
@@ -211,7 +222,12 @@ fn setup_management_service(
     server.server_mut().add_service(mgmt_service);
     info!(address = %mgmt_addr, "management API enabled");
 
-    register_forward_reconnect_service(mgmt_registry, reconnect_broker, server);
+    register_forward_reconnect_service(
+        mgmt_registry,
+        reconnect_broker,
+        Some(reconnect_audit_sink),
+        server,
+    );
     register_registry_persistence_service(persistence_registry, server);
 }
 
@@ -237,6 +253,7 @@ fn register_registry_persistence_service(
 fn register_forward_reconnect_service(
     registry: InMemoryRegistry,
     broker: Arc<CredentialBroker>,
+    audit_sink: Option<Arc<dyn CredentialAuditSink>>,
     server: &mut PingoraServerRuntime,
 ) {
     let Some(interval) = wanaku_types::config::ENV.forward_healthcheck_interval else {
@@ -244,7 +261,7 @@ fn register_forward_reconnect_service(
         return;
     };
 
-    let task = wanaku_server::management::reconnect_service(registry, broker, interval);
+    let task = wanaku_server::management::reconnect_service(registry, broker, audit_sink, interval);
     let reconnect_service = pingora_core::services::background::GenBackgroundService::new(
         "wanaku-forward-reconnect".to_owned(),
         task,
@@ -256,18 +273,26 @@ fn register_forward_reconnect_service(
     );
 }
 
+/// Build the feature set and the credential audit sink.
+///
+/// The sink adapts credential brokerage records into audit events on the shared
+/// audit store. The request pipeline gets it from the request extensions; the
+/// forward discovery path runs outside the pipeline, so this returns the sink for
+/// the server to thread into the management, reconnect, and startup discovery
+/// callers explicitly.
 fn build_features(
     args: &ServerArgs,
     metrics_store: &wanaku_infra::metrics::MetricsStore,
     wanaku_config: Option<&serde_yaml::Value>,
     governance: &GovernanceConfig,
-) -> Vec<Box<dyn Feature>> {
+) -> (Vec<Box<dyn Feature>>, Arc<dyn CredentialAuditSink>) {
     let mut audit = wanaku_feature_audit::AuditFeature::new().with_metrics(metrics_store.clone());
     if let Some(backend) = wanaku_feature_audit::persistence::FileAuditPersistence::from_config() {
         info!("audit persistence enabled");
         audit = audit.with_persistence(backend);
     }
     audit = audit.configured_from(wanaku_config);
+    let credential_audit_sink = audit.credential_audit_sink();
     let mut action_policy = wanaku_feature_action_policy::ActionPolicyFeature::new();
     if let Some(backend) =
         wanaku_feature_action_policy::revision_persistence::FileRevisionPersistence::from_config()
@@ -277,7 +302,7 @@ fn build_features(
     }
     let evaluator = build_evaluator(metrics_store, audit.store(), governance);
 
-    vec![
+    let features: Vec<Box<dyn Feature>> = vec![
         Box::new(audit),
         Box::new(wanaku_feature_metrics::MetricsFeature::new(
             metrics_store.clone(),
@@ -289,7 +314,8 @@ fn build_features(
         Box::new(wanaku_feature_plugins::PluginsFeature::new(
             args.plugins_path.as_deref(),
         )),
-    ]
+    ];
+    (features, credential_audit_sink)
 }
 
 fn build_evaluator(
@@ -353,6 +379,7 @@ fn load_core_config(
     config: &serde_yaml::Value,
     registry: &InMemoryRegistry,
     broker: &Arc<CredentialBroker>,
+    audit_sink: Option<&dyn CredentialAuditSink>,
 ) {
     let mut forwards = Vec::new();
     if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
@@ -392,7 +419,10 @@ fn load_core_config(
         rt.block_on(async {
             for fwd in &forwards {
                 info!(forward = %fwd.name, address = %fwd.address, "discovering from forward");
-                wanaku_server::management::discover_and_update_forward(registry, broker, fwd).await;
+                wanaku_server::management::discover_and_update_forward(
+                    registry, broker, audit_sink, fwd,
+                )
+                .await;
             }
         });
     }

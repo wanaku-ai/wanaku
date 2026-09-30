@@ -21,7 +21,7 @@ use pingora_core::server::ShutdownWatch;
 use pingora_core::services::background::BackgroundService;
 use tracing::{debug, info};
 
-use wanaku_infra::credentials::CredentialBroker;
+use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::registry::ForwardRegistry;
 
@@ -31,6 +31,7 @@ use super::handlers::discover_and_update_forward;
 pub struct ForwardReconnectService {
     registry: InMemoryRegistry,
     broker: Arc<CredentialBroker>,
+    audit_sink: Option<Arc<dyn CredentialAuditSink>>,
     interval: Duration,
 }
 
@@ -41,11 +42,13 @@ impl ForwardReconnectService {
     pub const fn new(
         registry: InMemoryRegistry,
         broker: Arc<CredentialBroker>,
+        audit_sink: Option<Arc<dyn CredentialAuditSink>>,
         interval: Duration,
     ) -> Self {
         Self {
             registry,
             broker,
+            audit_sink,
             interval,
         }
     }
@@ -69,7 +72,13 @@ impl ForwardReconnectService {
         debug!(forwards = count, "re-checking unavailable forwards");
         for fwd in &unavailable {
             debug!(forward = %fwd.name, address = %fwd.address, "probing unavailable forward");
-            discover_and_update_forward(&self.registry, &self.broker, fwd).await;
+            discover_and_update_forward(
+                &self.registry,
+                &self.broker,
+                self.audit_sink.as_deref(),
+                fwd,
+            )
+            .await;
         }
         count
     }
@@ -108,9 +117,12 @@ impl BackgroundService for ForwardReconnectService {
 pub fn reconnect_service(
     registry: InMemoryRegistry,
     broker: Arc<CredentialBroker>,
+    audit_sink: Option<Arc<dyn CredentialAuditSink>>,
     interval: Duration,
 ) -> Arc<ForwardReconnectService> {
-    Arc::new(ForwardReconnectService::new(registry, broker, interval))
+    Arc::new(ForwardReconnectService::new(
+        registry, broker, audit_sink, interval,
+    ))
 }
 
 #[cfg(test)]
@@ -143,7 +155,8 @@ mod tests {
         let registry = InMemoryRegistry::new();
         registry.register_forward(forward("healthy", true));
 
-        let svc = ForwardReconnectService::new(registry, test_broker(), Duration::from_secs(30));
+        let svc =
+            ForwardReconnectService::new(registry, test_broker(), None, Duration::from_secs(30));
         assert_eq!(
             svc.run_once().await,
             0,
@@ -158,8 +171,12 @@ mod tests {
         registry.register_forward(forward("down-1", false));
         registry.register_forward(forward("down-2", false));
 
-        let svc =
-            ForwardReconnectService::new(registry.clone(), test_broker(), Duration::from_secs(30));
+        let svc = ForwardReconnectService::new(
+            registry.clone(),
+            test_broker(),
+            None,
+            Duration::from_secs(30),
+        );
         assert_eq!(
             svc.run_once().await,
             2,

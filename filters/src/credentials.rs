@@ -18,7 +18,9 @@ use std::sync::Arc;
 use http::{HeaderName, HeaderValue};
 use praxis_filter::{FilterAction, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_infra::credentials::CredentialBroker;
+use wanaku_infra::credentials::{
+    CredentialAuditRecord, CredentialAuditSink, CredentialBroker, ResolutionOutcome, record_audit,
+};
 use wanaku_infra::registry::InMemoryRegistry;
 
 // The redactor is shared with the forward discovery path, so it lives in
@@ -79,7 +81,18 @@ pub async fn inject_forward_credentials(
     // full filter context.
     let broker = ctx.extensions.get::<Arc<CredentialBroker>>().cloned();
     let registry = ctx.extensions.get::<InMemoryRegistry>();
-    inject_forward_credentials_inner(broker.as_ref(), registry, request, forward_headers).await
+    let audit_sink = ctx
+        .extensions
+        .get::<Arc<dyn CredentialAuditSink>>()
+        .map(AsRef::as_ref);
+    inject_forward_credentials_inner(
+        broker.as_ref(),
+        registry,
+        audit_sink,
+        request,
+        forward_headers,
+    )
+    .await
 }
 
 /// The pure brokerage core, independent of the filter context.
@@ -94,6 +107,7 @@ pub async fn inject_forward_credentials(
 async fn inject_forward_credentials_inner(
     broker: Option<&Arc<CredentialBroker>>,
     registry: Option<&InMemoryRegistry>,
+    audit_sink: Option<&dyn CredentialAuditSink>,
     request: &ForwardCredentialRequest<'_>,
     forward_headers: &mut HashMap<HeaderName, HeaderValue>,
 ) -> Result<CredentialRedactor, FilterAction> {
@@ -109,6 +123,15 @@ async fn inject_forward_credentials_inner(
     // Once a binding is configured the request must fail closed if any part of
     // the brokerage path is unavailable.
     let Some(broker) = broker else {
+        record_audit(
+            audit_sink,
+            &CredentialAuditRecord::denial(
+                binding_id,
+                forward.forward_id(),
+                request.purpose,
+                CredentialAuditRecord::REASON_BROKER_UNAVAILABLE,
+            ),
+        );
         warn!(
             forward_id = %forward.forward_id(),
             binding_id = %binding_id,
@@ -118,6 +141,15 @@ async fn inject_forward_credentials_inner(
     };
 
     let Some(registry) = registry else {
+        record_audit(
+            audit_sink,
+            &CredentialAuditRecord::denial(
+                binding_id,
+                forward.forward_id(),
+                request.purpose,
+                CredentialAuditRecord::REASON_REGISTRY_UNAVAILABLE,
+            ),
+        );
         warn!("registry unavailable while resolving credential binding");
         return Err(internal_error(
             json_rpc_id,
@@ -126,6 +158,15 @@ async fn inject_forward_credentials_inner(
     };
 
     let Some(binding) = registry.get_binding(binding_id) else {
+        record_audit(
+            audit_sink,
+            &CredentialAuditRecord::denial(
+                binding_id,
+                forward.forward_id(),
+                request.purpose,
+                CredentialAuditRecord::REASON_BINDING_NOT_FOUND,
+            ),
+        );
         warn!(
             forward_id = %forward.forward_id(),
             binding_id = %binding_id,
@@ -141,6 +182,15 @@ async fn inject_forward_credentials_inner(
         .map(|name| name.as_str().to_owned())
         .collect();
     if let Err(e) = detect_collisions(&binding.mechanism, client_names.iter().map(String::as_str)) {
+        record_audit(
+            audit_sink,
+            &CredentialAuditRecord::denial(
+                binding_id,
+                forward.forward_id(),
+                request.purpose,
+                CredentialAuditRecord::REASON_HEADER_COLLISION,
+            ),
+        );
         warn!(
             forward_id = %forward.forward_id(),
             error = %e,
@@ -168,6 +218,14 @@ async fn inject_forward_credentials_inner(
                 // debuggers redact the secret at the transport boundary.
                 let Ok(mut value) = HeaderValue::from_bytes(header.expose_value().expose_bytes())
                 else {
+                    // The brokerage succeeded but the resolved value is not a valid
+                    // header value. Record the failure so a denied request is never
+                    // audited as allowed, then fail closed.
+                    let mut audit = brokered.audit.clone();
+                    audit.outcome = ResolutionOutcome::Failed;
+                    audit.failure_reason =
+                        Some(CredentialAuditRecord::REASON_INVALID_HEADER_VALUE.to_owned());
+                    record_audit(audit_sink, &audit);
                     warn!(
                         header = %header.name(),
                         "brokered credential produced an invalid header value; denying request"
@@ -180,6 +238,10 @@ async fn inject_forward_credentials_inner(
                 value.set_sensitive(true);
                 forward_headers.insert(header.header_name().clone(), value);
             }
+            // The headers are built, so record the brokerage outcome now. Recording
+            // after the header loop keeps a header-rejection denial from being
+            // audited as an allowed brokerage.
+            record_audit(audit_sink, &brokered.audit);
             trace!(
                 forward_id = %forward.forward_id(),
                 binding_id = %brokered.audit.binding_id,
@@ -195,6 +257,7 @@ async fn inject_forward_credentials_inner(
         }
         Err(e) => {
             // Fail closed. The audit record is redacted (no secret material).
+            record_audit(audit_sink, &e.audit);
             warn!(
                 forward_id = %forward.forward_id(),
                 binding_id = %e.audit.binding_id,
@@ -287,7 +350,7 @@ mod tests {
         let mut headers = HashMap::new();
 
         // No broker or registry is required when the forward has no binding.
-        let result = inject_forward_credentials_inner(None, None, &req, &mut headers).await;
+        let result = inject_forward_credentials_inner(None, None, None, &req, &mut headers).await;
 
         assert!(result.is_ok());
         assert!(headers.is_empty());
@@ -303,9 +366,14 @@ mod tests {
         let req = request(&forward, ADDRESS, &id);
         let mut headers = HashMap::new();
 
-        let result =
-            inject_forward_credentials_inner(Some(&broker), Some(&registry), &req, &mut headers)
-                .await;
+        let result = inject_forward_credentials_inner(
+            Some(&broker),
+            Some(&registry),
+            None,
+            &req,
+            &mut headers,
+        )
+        .await;
 
         let redactor = result.expect("brokerage should succeed");
         let value = headers
@@ -333,7 +401,7 @@ mod tests {
         let req = request(&forward, ADDRESS, &id);
         let mut headers = HashMap::new();
 
-        let redactor = inject_forward_credentials_inner(None, None, &req, &mut headers)
+        let redactor = inject_forward_credentials_inner(None, None, None, &req, &mut headers)
             .await
             .expect("no binding should succeed");
 
@@ -351,7 +419,7 @@ mod tests {
         let mut headers = HashMap::new();
 
         let result =
-            inject_forward_credentials_inner(None, Some(&registry), &req, &mut headers).await;
+            inject_forward_credentials_inner(None, Some(&registry), None, &req, &mut headers).await;
 
         assert!(result.is_err());
         assert!(headers.is_empty());
@@ -366,7 +434,7 @@ mod tests {
         let mut headers = HashMap::new();
 
         let result =
-            inject_forward_credentials_inner(Some(&broker), None, &req, &mut headers).await;
+            inject_forward_credentials_inner(Some(&broker), None, None, &req, &mut headers).await;
 
         assert!(result.is_err());
         assert!(headers.is_empty());
@@ -381,9 +449,14 @@ mod tests {
         let req = request(&forward, ADDRESS, &id);
         let mut headers = HashMap::new();
 
-        let result =
-            inject_forward_credentials_inner(Some(&broker), Some(&registry), &req, &mut headers)
-                .await;
+        let result = inject_forward_credentials_inner(
+            Some(&broker),
+            Some(&registry),
+            None,
+            &req,
+            &mut headers,
+        )
+        .await;
 
         assert!(result.is_err());
         assert!(headers.is_empty());
@@ -404,9 +477,14 @@ mod tests {
             HeaderValue::from_static("client-supplied"),
         );
 
-        let result =
-            inject_forward_credentials_inner(Some(&broker), Some(&registry), &req, &mut headers)
-                .await;
+        let result = inject_forward_credentials_inner(
+            Some(&broker),
+            Some(&registry),
+            None,
+            &req,
+            &mut headers,
+        )
+        .await;
 
         assert!(result.is_err());
         // The client header must be left untouched; no managed credential injected.
@@ -431,11 +509,228 @@ mod tests {
         let req = request(&forward, "https://evil.example.com/mcp", &id);
         let mut headers = HashMap::new();
 
-        let result =
-            inject_forward_credentials_inner(Some(&broker), Some(&registry), &req, &mut headers)
-                .await;
+        let result = inject_forward_credentials_inner(
+            Some(&broker),
+            Some(&registry),
+            None,
+            &req,
+            &mut headers,
+        )
+        .await;
 
         assert!(result.is_err());
         assert!(headers.is_empty());
+    }
+
+    #[derive(Default)]
+    struct RecordingSink {
+        records: std::sync::Mutex<Vec<wanaku_infra::credentials::CredentialAuditRecord>>,
+    }
+
+    impl CredentialAuditSink for RecordingSink {
+        fn record_credential_audit(
+            &self,
+            record: &wanaku_infra::credentials::CredentialAuditRecord,
+        ) {
+            if let Ok(mut records) = self.records.lock() {
+                records.push(record.clone());
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn successful_injection_emits_one_audit_record() {
+        use wanaku_infra::credentials::ResolutionOutcome;
+
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        let broker = broker();
+        let forward = forward(Some("b1"));
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        let mut headers = HashMap::new();
+        let sink = RecordingSink::default();
+
+        inject_forward_credentials_inner(
+            Some(&broker),
+            Some(&registry),
+            Some(&sink),
+            &req,
+            &mut headers,
+        )
+        .await
+        .expect("brokerage should succeed");
+
+        let records = sink.records.lock().unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].outcome, ResolutionOutcome::Resolved);
+        assert_eq!(records[0].purpose, CredentialPurpose::Invocation);
+        // The record must never carry secret material.
+        assert!(!format!("{:?}", records[0]).contains("s3cr3t"));
+    }
+
+    #[tokio::test]
+    async fn fail_closed_denial_emits_one_audit_record() {
+        use wanaku_infra::credentials::ResolutionOutcome;
+
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        let broker = broker();
+        let forward = forward(Some("b1"));
+        let id = serde_json::json!(1);
+        // The resolved address origin does not match the binding origin.
+        let req = request(&forward, "https://evil.example.com/mcp", &id);
+        let mut headers = HashMap::new();
+        let sink = RecordingSink::default();
+
+        let result = inject_forward_credentials_inner(
+            Some(&broker),
+            Some(&registry),
+            Some(&sink),
+            &req,
+            &mut headers,
+        )
+        .await;
+
+        assert!(result.is_err());
+        let records = sink.records.lock().unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].outcome, ResolutionOutcome::Denied);
+        assert_eq!(
+            records[0].failure_reason.as_deref(),
+            Some("origin_mismatch")
+        );
+    }
+
+    #[tokio::test]
+    async fn broker_unavailable_emits_denial_record() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        let forward = forward(Some("b1"));
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        let mut headers = HashMap::new();
+        let sink = RecordingSink::default();
+
+        let result = inject_forward_credentials_inner(
+            None,
+            Some(&registry),
+            Some(&sink),
+            &req,
+            &mut headers,
+        )
+        .await;
+
+        assert!(result.is_err());
+        let records = sink.records.lock().unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].outcome, ResolutionOutcome::Denied);
+        assert_eq!(
+            records[0].failure_reason.as_deref(),
+            Some(CredentialAuditRecord::REASON_BROKER_UNAVAILABLE)
+        );
+    }
+
+    #[tokio::test]
+    async fn binding_missing_emits_denial_record() {
+        let registry = InMemoryRegistry::new();
+        let broker = broker();
+        let forward = forward(Some("missing"));
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        let mut headers = HashMap::new();
+        let sink = RecordingSink::default();
+
+        let result = inject_forward_credentials_inner(
+            Some(&broker),
+            Some(&registry),
+            Some(&sink),
+            &req,
+            &mut headers,
+        )
+        .await;
+
+        assert!(result.is_err());
+        let records = sink.records.lock().unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].outcome, ResolutionOutcome::Denied);
+        assert_eq!(
+            records[0].failure_reason.as_deref(),
+            Some(CredentialAuditRecord::REASON_BINDING_NOT_FOUND)
+        );
+    }
+
+    #[tokio::test]
+    async fn header_collision_emits_denial_record() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        let broker = broker();
+        let forward = forward(Some("b1"));
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        // The client forwards the same header the Bearer mechanism manages.
+        let mut headers = HashMap::new();
+        headers.insert(
+            HeaderName::from_static("authorization"),
+            HeaderValue::from_static("client-supplied"),
+        );
+        let sink = RecordingSink::default();
+
+        let result = inject_forward_credentials_inner(
+            Some(&broker),
+            Some(&registry),
+            Some(&sink),
+            &req,
+            &mut headers,
+        )
+        .await;
+
+        assert!(result.is_err());
+        let records = sink.records.lock().unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].outcome, ResolutionOutcome::Denied);
+        assert_eq!(
+            records[0].failure_reason.as_deref(),
+            Some(CredentialAuditRecord::REASON_HEADER_COLLISION)
+        );
+    }
+
+    #[tokio::test]
+    async fn unusable_resolved_value_records_failure_not_allow() {
+        let registry = InMemoryRegistry::new();
+        registry.register_binding(binding("b1"));
+        // A resolved value with a control character cannot form a valid header.
+        // The broker rejects it during header construction, so the recorded
+        // outcome must be a failure, never an allow.
+        let resolvers = ResolverRegistry::new().with_resolver(Arc::new(
+            FakeResolver::new().with_value("token", "bad\nvalue"),
+        ));
+        let broker = Arc::new(CredentialBroker::new(resolvers));
+        let forward = forward(Some("b1"));
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        let mut headers = HashMap::new();
+        let sink = RecordingSink::default();
+
+        let result = inject_forward_credentials_inner(
+            Some(&broker),
+            Some(&registry),
+            Some(&sink),
+            &req,
+            &mut headers,
+        )
+        .await;
+
+        assert!(result.is_err());
+        // No credential header may be injected on the failure path.
+        assert!(headers.is_empty());
+        let records = sink.records.lock().unwrap();
+        assert_eq!(records.len(), 1);
+        // The denied request must never be audited as allowed.
+        assert_eq!(records[0].outcome, ResolutionOutcome::Failed);
+        assert_eq!(
+            records[0].failure_reason.as_deref(),
+            Some("injection_failure")
+        );
     }
 }

@@ -100,6 +100,45 @@ pub struct CredentialAuditRecord {
     pub failure_reason: Option<String>,
 }
 
+impl CredentialAuditRecord {
+    /// Reason code: the forward referenced a binding that is not registered.
+    pub const REASON_BINDING_NOT_FOUND: &'static str = "binding_not_found";
+    /// Reason code: a client-forwarded header collided with a managed header.
+    pub const REASON_HEADER_COLLISION: &'static str = "header_collision";
+    /// Reason code: the credential broker was unavailable.
+    pub const REASON_BROKER_UNAVAILABLE: &'static str = "broker_unavailable";
+    /// Reason code: the registry was unavailable during binding resolution.
+    pub const REASON_REGISTRY_UNAVAILABLE: &'static str = "registry_unavailable";
+    /// Reason code: a brokered credential produced an invalid header value.
+    pub const REASON_INVALID_HEADER_VALUE: &'static str = "invalid_header_value";
+
+    /// Build a redacted `Denied` record for a fail-closed rejection that happens
+    /// before the broker runs (missing binding, header collision, or an
+    /// unavailable dependency). Only non-secret identifiers are known at these
+    /// sites, so the binding revision, resolver types, mechanism, and origin are
+    /// left empty.
+    #[must_use]
+    pub fn denial(
+        binding_id: &str,
+        forward_id: &str,
+        purpose: CredentialPurpose,
+        reason_code: &str,
+    ) -> Self {
+        Self {
+            binding_id: binding_id.to_owned(),
+            binding_revision: 0,
+            resolver_types: Vec::new(),
+            outcome: ResolutionOutcome::Denied,
+            mechanism: String::new(),
+            forward_id: forward_id.to_owned(),
+            upstream_origin: String::new(),
+            purpose,
+            expiry_category: ExpiryCategory::NotCached,
+            failure_reason: Some(reason_code.to_owned()),
+        }
+    }
+}
+
 /// A successfully brokered credential: injectable headers plus audit metadata.
 pub struct BrokeredCredential {
     /// The credential header(s) to inject at the transport boundary.

@@ -3,7 +3,8 @@ use tracing::{info, warn};
 
 use crate::http_response::{json_err, json_ok};
 use wanaku_infra::credentials::{
-    CredentialBroker, CredentialRedactor, DiscoveryExchange, resolve_discovery_headers,
+    CredentialAuditSink, CredentialBroker, CredentialRedactor, DiscoveryExchange,
+    resolve_discovery_headers,
 };
 use wanaku_infra::mcp_client::ForwardDiscovery;
 use wanaku_infra::registry::InMemoryRegistry;
@@ -217,6 +218,7 @@ pub(super) fn handle_forward_get(registry: &InMemoryRegistry, name: &str) -> Res
 pub(super) async fn handle_forward_create(
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
+    audit_sink: Option<&dyn CredentialAuditSink>,
     body: &str,
 ) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, "forward create request body");
@@ -243,7 +245,7 @@ pub(super) async fn handle_forward_create(
     let DiscoveryExchange {
         headers: discovery_headers,
         redactor,
-    } = match discovery_headers_or_status(registry, broker, &forward).await {
+    } = match discovery_headers_or_status(registry, broker, audit_sink, &forward).await {
         Ok(exchange) => exchange,
         Err(message) => {
             warn!(forward = %forward.name, "forward discovery credential brokerage failed");
@@ -330,6 +332,7 @@ pub(super) fn handle_forward_delete(
 pub(super) async fn handle_forward_refresh(
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
+    audit_sink: Option<&dyn CredentialAuditSink>,
     name: &str,
 ) -> Response<Vec<u8>> {
     let Some(mut forward) = registry.get_forward(name) else {
@@ -343,7 +346,7 @@ pub(super) async fn handle_forward_refresh(
     let DiscoveryExchange {
         headers: discovery_headers,
         redactor,
-    } = match discovery_headers_or_status(registry, broker, &forward).await {
+    } = match discovery_headers_or_status(registry, broker, audit_sink, &forward).await {
         Ok(exchange) => exchange,
         Err(message) => {
             warn!(forward = %name, "forward refresh credential brokerage failed");
@@ -449,9 +452,10 @@ fn revalidate_forward_credentials(
 async fn discovery_headers_or_status(
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
+    audit_sink: Option<&dyn CredentialAuditSink>,
     forward: &ForwardEntry,
 ) -> Result<DiscoveryExchange, String> {
-    resolve_discovery_headers(broker, registry, forward)
+    resolve_discovery_headers(broker, registry, forward, audit_sink)
         .await
         .map_err(|e| format!("discovery credential brokerage failed: {e}"))
 }
@@ -507,12 +511,13 @@ fn redact_server_info(redactor: &CredentialRedactor, info: McpServerInfo) -> Mcp
 pub async fn discover_and_update_forward(
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
+    audit_sink: Option<&dyn CredentialAuditSink>,
     forward: &ForwardEntry,
 ) {
     let DiscoveryExchange {
         headers: discovery_headers,
         redactor,
-    } = match discovery_headers_or_status(registry, broker, forward).await {
+    } = match discovery_headers_or_status(registry, broker, audit_sink, forward).await {
         Ok(exchange) => exchange,
         Err(message) => {
             warn!(forward = %forward.name, "forward discovery credential brokerage failed");
