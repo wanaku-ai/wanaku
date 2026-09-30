@@ -32,7 +32,7 @@ use self::handlers::{
     handle_namespace_create, handle_namespace_delete, handle_namespace_get, handle_namespace_list,
     handle_namespace_update, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
     handle_resource_delete, handle_resource_get, handle_resource_list, handle_resource_update,
-    handle_statistics, handle_tool_delete, handle_tool_get, handle_tool_list, handle_tool_update,
+    handle_statistics, handle_tool_delete, handle_tool_get, handle_tool_list,
 };
 #[cfg(feature = "ui")]
 use self::response::redirect_response;
@@ -141,12 +141,6 @@ pub(crate) async fn dispatch(
     match resolve_tool_route(ctx.method, ctx.path) {
         ToolRoute::List => return handle_tool_list(registry),
         ToolRoute::GetByName(name) => return handle_tool_get(registry, &name),
-        ToolRoute::Update(name) => {
-            return match ctx.body {
-                Some(b) => handle_tool_update(registry, &name, b),
-                None => json_err(StatusCode::BAD_REQUEST, "request body required"),
-            };
-        }
         ToolRoute::Delete(name) => return handle_tool_delete(registry, &name),
         ToolRoute::NotFound => {}
     }

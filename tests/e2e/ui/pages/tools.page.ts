@@ -1,6 +1,5 @@
 import { type Page, expect } from '@playwright/test';
 import { BasePage } from './base.page';
-import { Carbon } from '../helpers/carbon';
 
 export class ToolsPage extends BasePage {
   constructor(page: Page, baseUrl: string) {
@@ -9,25 +8,6 @@ export class ToolsPage extends BasePage {
 
   async goto() {
     await this.navigateTo('/tools');
-  }
-
-  async fillToolForm(tool: { name: string; description: string; uri: string }) {
-    await this.page.locator(Carbon.textInput('tool-name')).fill(tool.name);
-    await this.page.locator(Carbon.textInput('tool-description')).fill(tool.description);
-    await this.page.locator(Carbon.textInput('tool-uri')).fill(tool.uri);
-  }
-
-  async clickEditTool(name: string) {
-    await this.rowWithText(name).getByRole('button', { name: 'Edit' }).click();
-    await this.modal().waitFor({ state: 'visible' });
-  }
-
-  async getModalHeadingText(): Promise<string> {
-    return this.modal().locator(Carbon.modalHeading).innerText();
-  }
-
-  async fillDescription(description: string) {
-    await this.page.locator(Carbon.textInput('tool-description')).fill(description);
   }
 
   async clickDeleteTool(name: string) {

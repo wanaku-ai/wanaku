@@ -309,7 +309,6 @@ The management API uses the same `/api/v1/` prefix and response envelope in both
 |---|---|---|---|
 | `GET /api/v1/tools` | Yes | Yes | |
 | `GET /api/v1/tools/{name}` | Yes | Yes | |
-| `PUT /api/v1/tools/{name}` | No | Yes | Rename/update tools |
 | `DELETE /api/v1/tools/{name}` | No | Yes | |
 | `GET /api/v1/resources` | Yes | Yes | |
 | `GET /api/v1/resources/{name}` | Yes | Yes | |
