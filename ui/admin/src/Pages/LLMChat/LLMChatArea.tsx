@@ -147,7 +147,7 @@ export const LLMChatArea: React.FC<LLMChatAreaProps> = ({ config, onSystemPrompt
                   name: toolName,
                   arguments: toolArgs
                 })
-                const toolResultType = (toolResult.content as any).type
+                const toolResultType = (toolResult.content as any)[0]?.type
                 let toolResultText = ""
                 if (toolResultType === "text") {
                   toolResultText = (toolResult.content as Array<{ text: string }>)[0].text
