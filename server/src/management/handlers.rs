@@ -51,55 +51,6 @@ pub(super) fn handle_resource_get(registry: &InMemoryRegistry, name: &str) -> Re
     }
 }
 
-#[expect(clippy::cognitive_complexity, reason = "sequential validation steps")]
-pub(super) fn handle_resource_update(
-    registry: &InMemoryRegistry,
-    path_name: &str,
-    body: &str,
-) -> Response<Vec<u8>> {
-    tracing::debug!(body = %body, name = %path_name, "resource update request body");
-    let mut resource: ResourceEntry = match serde_json::from_str(body) {
-        Ok(r) => r,
-        Err(e) => {
-            warn!(error = %e, "invalid resource JSON");
-            return json_err(
-                StatusCode::BAD_REQUEST,
-                &format!("invalid resource JSON: {e}"),
-            );
-        }
-    };
-
-    if let Some(existing) = registry.get_resource(path_name) {
-        for (k, v) in &existing.labels {
-            if k.starts_with("wanaku.") {
-                resource
-                    .labels
-                    .entry(k.clone())
-                    .or_insert_with(|| v.clone());
-            }
-        }
-    }
-
-    let new_name = resource.name.trim().to_owned();
-    if !new_name.is_empty() && new_name != path_name {
-        registry.remove_resource(path_name);
-        resource.name = new_name;
-    } else {
-        resource.name = path_name.to_owned();
-    }
-
-    let name = resource.name.clone();
-    registry.register_resource(resource);
-    info!(resource = %name, "updated resource via management API");
-    match registry.get_resource(&name) {
-        Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(
-            StatusCode::NOT_FOUND,
-            &format!("resource not found after update: {name}"),
-        ),
-    }
-}
-
 pub(super) fn handle_resource_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     if registry.remove_resource(name) {
         info!(resource = %name, "removed resource via management API");
@@ -1114,7 +1065,7 @@ mod tests {
         handle_forward_list, handle_info, handle_namespace_create, handle_namespace_delete,
         handle_namespace_get, handle_namespace_list, handle_namespace_update, handle_prompt_delete,
         handle_prompt_get, handle_prompt_list, handle_resource_delete, handle_resource_get,
-        handle_resource_list, handle_resource_update, handle_statistics, handle_tool_delete,
+        handle_resource_list, handle_statistics, handle_tool_delete,
         handle_tool_get, handle_tool_list,
     };
 
@@ -1250,84 +1201,6 @@ mod tests {
     fn resource_delete_nonexistent_returns_404() {
         let registry = InMemoryRegistry::new();
         assert_eq!(handle_resource_delete(&registry, "nope").status(), 404);
-    }
-
-    #[test]
-    fn resource_update_changes_description() {
-        let registry = InMemoryRegistry::new();
-        let mut res = test_resource("res");
-        res.description = "old".to_owned();
-        res.location = "/a".to_owned();
-        registry.register_resource(res);
-
-        let resp = handle_resource_update(
-            &registry,
-            "res",
-            r#"{"name":"res","description":"new","location":"/b","type":"file"}"#,
-        );
-        assert_eq!(resp.status(), 200);
-
-        let data = data_field(&handle_resource_get(&registry, "res"));
-        assert_eq!(
-            data.get("description").and_then(|v| v.as_str()),
-            Some("new")
-        );
-        assert_eq!(data.get("location").and_then(|v| v.as_str()), Some("/b"));
-    }
-
-    #[test]
-    fn resource_update_rename_removes_old_entry() {
-        let registry = InMemoryRegistry::new();
-        registry.register_resource(test_resource("old-res"));
-
-        let resp = handle_resource_update(
-            &registry,
-            "old-res",
-            r#"{"name":"new-res","description":"d","location":"/x","type":"file"}"#,
-        );
-        assert_eq!(resp.status(), 200);
-        assert_eq!(handle_resource_get(&registry, "old-res").status(), 404);
-        assert_eq!(handle_resource_get(&registry, "new-res").status(), 200);
-    }
-
-    #[test]
-    fn resource_update_invalid_json_returns_400() {
-        let registry = InMemoryRegistry::new();
-        assert_eq!(handle_resource_update(&registry, "r", "???").status(), 400);
-    }
-
-    #[test]
-    fn resource_update_preserves_internal_labels() {
-        let registry = InMemoryRegistry::new();
-        let mut res = test_resource("fwd-res");
-        res.description = "old".to_owned();
-        res.location = "file:///data".to_owned();
-        res.type_ = "mcp-forward".to_owned();
-        res.labels.insert(
-            "wanaku.forward_address".to_owned(),
-            "http://remote:8080".to_owned(),
-        );
-        registry.register_resource(res);
-
-        let resp = handle_resource_update(
-            &registry,
-            "fwd-res",
-            r#"{"name":"fwd-res","description":"new","location":"file:///data","type":"mcp-forward"}"#,
-        );
-        assert_eq!(resp.status(), 200);
-
-        let data = data_field(&handle_resource_get(&registry, "fwd-res"));
-        assert_eq!(
-            data.get("description").and_then(|v| v.as_str()),
-            Some("new")
-        );
-        let labels = data.get("labels").and_then(|v| v.as_object());
-        assert_eq!(
-            labels
-                .and_then(|l| l.get("wanaku.forward_address"))
-                .and_then(|v| v.as_str()),
-            Some("http://remote:8080"),
-        );
     }
 
     // ---- Prompt handlers ----

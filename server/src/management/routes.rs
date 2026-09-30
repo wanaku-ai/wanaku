@@ -25,7 +25,6 @@ pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
 pub(super) enum ResourceRoute {
     List,
     GetByName(String),
-    Update(String),
     Delete(String),
     NotFound,
 }
@@ -40,7 +39,6 @@ pub(super) fn resolve_resource_route(method: &str, path: &str) -> ResourceRoute 
     match (method, name) {
         ("GET", None) => ResourceRoute::List,
         ("GET", Some(n)) => ResourceRoute::GetByName(n.to_owned()),
-        ("PUT", Some(n)) => ResourceRoute::Update(n.to_owned()),
         ("DELETE", Some(n)) => ResourceRoute::Delete(n.to_owned()),
         _ => ResourceRoute::NotFound,
     }
@@ -239,10 +237,10 @@ mod tests {
     }
 
     #[test]
-    fn resource_route_update() {
+    fn resource_route_update_not_supported() {
         assert_eq!(
             resolve_resource_route("PUT", "/api/v1/resources/my-res"),
-            ResourceRoute::Update("my-res".to_owned())
+            ResourceRoute::NotFound
         );
     }
 
