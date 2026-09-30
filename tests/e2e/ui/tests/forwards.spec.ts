@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { ForwardsPage } from '../pages/forwards.page';
 import { ApiHelper } from '../helpers/api-helpers';
-import { forwardData } from '../helpers/test-data';
+import { bindingData, forwardData } from '../helpers/test-data';
 
 const routerUrl = process.env.WANAKU_ROUTER_URL ?? 'http://localhost:8080';
 
@@ -42,6 +42,28 @@ test.describe('Forwards', () => {
     await forwards.submitModal();
 
     await forwards.waitForForwardInTable(data.name);
+  });
+
+  test('forward modal filters credential bindings by purpose', async ({ page }) => {
+    const data = forwardData();
+    // A binding is usable only when it is owned by this forward and allows the
+    // purpose. Author-side bindings come from config, so the API list is mocked.
+    // One binding per purpose gives each selector a positive control.
+    const discovery = bindingData({ forwardId: data.name, allowedPurposes: ['discovery'] });
+    const invocation = bindingData({ forwardId: data.name, allowedPurposes: ['invocation'] });
+    await page.route('**/api/v1/bindings', (route) =>
+      route.fulfill({ json: { data: [discovery, invocation] } }));
+
+    await forwards.goto();
+    await forwards.clickAddForward();
+    await forwards.fillForwardForm(data);
+
+    // Each selector offers only the binding for its own purpose, and excludes
+    // the binding for the other purpose.
+    await expect.poll(() => forwards.getDiscoveryBindingOptions()).toContain(discovery.id);
+    await expect.poll(() => forwards.getInvocationBindingOptions()).toContain(invocation.id);
+    expect(await forwards.getDiscoveryBindingOptions()).not.toContain(invocation.id);
+    expect(await forwards.getInvocationBindingOptions()).not.toContain(discovery.id);
   });
 
   test('delete a forward', async () => {

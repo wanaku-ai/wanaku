@@ -21,6 +21,18 @@ export class ForwardsPage extends BasePage {
     await this.page.locator(Carbon.textInput('forward-address')).fill(forward.address);
   }
 
+  async getDiscoveryBindingOptions(): Promise<string[]> {
+    return this.page.locator('#forward-discovery-binding option').allInnerTexts();
+  }
+
+  async getInvocationBindingOptions(): Promise<string[]> {
+    return this.page.locator('#forward-invocation-binding option').allInnerTexts();
+  }
+
+  async selectDiscoveryBinding(id: string) {
+    await this.page.locator('#forward-discovery-binding').selectOption(id);
+  }
+
   async clickDetailForward(name: string) {
     await this.rowWithText(name).getByRole('button', { name: 'Details' }).click();
     await this.detailModal().waitFor({ state: 'visible' });
