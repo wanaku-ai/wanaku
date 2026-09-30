@@ -27,40 +27,6 @@ pub(super) fn handle_tool_get(registry: &InMemoryRegistry, name: &str) -> Respon
     }
 }
 
-pub(super) fn handle_tool_update(
-    registry: &InMemoryRegistry,
-    path_name: &str,
-    body: &str,
-) -> Response<Vec<u8>> {
-    tracing::debug!(body = %body, name = %path_name, "tool update request body");
-    let mut tool: ToolEntry = match serde_json::from_str(body) {
-        Ok(t) => t,
-        Err(e) => {
-            warn!(error = %e, "invalid tool JSON");
-            return json_err(StatusCode::BAD_REQUEST, &format!("invalid tool JSON: {e}"));
-        }
-    };
-
-    let new_name = tool.name.trim().to_owned();
-    if !new_name.is_empty() && new_name != path_name {
-        registry.remove_tool(path_name);
-        tool.name = new_name;
-    } else {
-        tool.name = path_name.to_owned();
-    }
-
-    let name = tool.name.clone();
-    registry.register_tool(tool);
-    info!(tool = %name, "updated tool via management API");
-    match registry.get_tool(&name) {
-        Some(entry) => json_ok(&serde_json::json!(entry)),
-        None => json_err(
-            StatusCode::NOT_FOUND,
-            &format!("tool not found after update: {name}"),
-        ),
-    }
-}
-
 pub(super) fn handle_tool_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     if registry.remove_tool(name) {
         info!(tool = %name, "removed tool via management API");
@@ -1149,7 +1115,7 @@ mod tests {
         handle_namespace_get, handle_namespace_list, handle_namespace_update, handle_prompt_delete,
         handle_prompt_get, handle_prompt_list, handle_resource_delete, handle_resource_get,
         handle_resource_list, handle_resource_update, handle_statistics, handle_tool_delete,
-        handle_tool_get, handle_tool_list, handle_tool_update,
+        handle_tool_get, handle_tool_list,
     };
 
     fn test_broker() -> CredentialBroker {
@@ -1242,44 +1208,6 @@ mod tests {
     fn tool_delete_nonexistent_returns_404() {
         let registry = InMemoryRegistry::new();
         assert_eq!(handle_tool_delete(&registry, "ghost").status(), 404);
-    }
-
-    #[test]
-    fn tool_update_changes_description() {
-        let registry = InMemoryRegistry::new();
-        let mut tool = test_tool("upd");
-        tool.description = "old".to_owned();
-        registry.register_tool(tool);
-
-        let update_body = r#"{"name":"upd","description":"new","uri":"u2","type":"y","input_schema":{"type":"object"}}"#;
-        let resp = handle_tool_update(&registry, "upd", update_body);
-        assert_eq!(resp.status(), 200);
-
-        let data = data_field(&handle_tool_get(&registry, "upd"));
-        assert_eq!(
-            data.get("description").and_then(|v| v.as_str()),
-            Some("new")
-        );
-        assert_eq!(data.get("uri").and_then(|v| v.as_str()), Some("u2"));
-    }
-
-    #[test]
-    fn tool_update_rename_removes_old_entry() {
-        let registry = InMemoryRegistry::new();
-        registry.register_tool(test_tool("old-name"));
-
-        let update_body = r#"{"name":"new-name","description":"d","uri":"u","type":"x","input_schema":{"type":"object"}}"#;
-        let resp = handle_tool_update(&registry, "old-name", update_body);
-        assert_eq!(resp.status(), 200);
-
-        assert_eq!(handle_tool_get(&registry, "old-name").status(), 404);
-        assert_eq!(handle_tool_get(&registry, "new-name").status(), 200);
-    }
-
-    #[test]
-    fn tool_update_invalid_json_returns_400() {
-        let registry = InMemoryRegistry::new();
-        assert_eq!(handle_tool_update(&registry, "t", "???").status(), 400);
     }
 
     // ---- Resource handlers ----

@@ -3,7 +3,6 @@ import React, {useCallback, useEffect, useState} from "react";
 import {useTools} from "../../hooks/api/use-tools";
 import {ToolEntry} from "../../models";
 import {ToolsTable} from "./ToolsTable";
-import {ToolModal} from "./ToolModal"
 import {unwrapData} from "../../utils/api-response";
 import {useErrorNotification} from "../../hooks/error-notifications"
 import {ErrorNotification} from "../../components/ErrorNotification"
@@ -12,10 +11,8 @@ import {ErrorNotification} from "../../components/ErrorNotification"
 export const ToolsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ToolEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [openedTool, setOpenedTool] = useState<ToolEntry>()
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { errorMessage, setErrorMessage } = useErrorNotification()
-  const { listTools, updateTool, removeTool } = useTools();
+  const { listTools, removeTool } = useTools();
 
   const updateTools = useCallback(async () => {
     return listTools().then((result: any) => {
@@ -36,23 +33,6 @@ export const ToolsPage: React.FC = () => {
   }, [updateTools]);
 
   if (isLoading) return <PageSkeleton title="Tools" />;
-
-  function handleToolModalClose(): void {
-    setOpenedTool(undefined)
-    setIsEditModalOpen(false)
-  }
-
-  const handleUpdateTool = async(tool: ToolEntry) => {
-    try {
-      await updateTool(openedTool!.name!, tool)
-      setErrorMessage(null)
-      await updateTools();
-    } catch (error) {
-      setErrorMessage(`Error updating tool: ${error instanceof Error ? error.message : tool.name}`)
-    } finally {
-      handleToolModalClose()
-    }
-  }
 
   const handleDeleteTool = async (toolName?: string) => {
     try {
@@ -84,16 +64,6 @@ export const ToolsPage: React.FC = () => {
           <ToolsTable
             fetchedData={fetchedData}
             onDelete={handleDeleteTool}
-            onEdit={(tool: ToolEntry) => { setOpenedTool(tool); setIsEditModalOpen(true) }}
-          />
-        )}
-        {isEditModalOpen && openedTool && (
-          <ToolModal
-            tools={fetchedData}
-            tool={openedTool}
-            onRequestClose={handleToolModalClose}
-            onSubmit={handleUpdateTool}
-            onError={(msg) => setErrorMessage(msg)}
           />
         )}
       </div>

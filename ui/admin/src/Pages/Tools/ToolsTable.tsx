@@ -1,4 +1,4 @@
-import {Edit, TrashCan, View} from "@carbon/icons-react";
+import {TrashCan, View} from "@carbon/icons-react";
 import {
     Button,
     DataTable,
@@ -21,13 +21,11 @@ import {TableEmptyState} from "../EmptyTableState"
 interface ToolListProps {
   fetchedData: ToolEntry[];
   onDelete: (toolName?: string) => void;
-  onEdit: (tool: ToolEntry) => void
 }
 
 export const ToolsTable: FunctionComponent<ToolListProps> = ({
   fetchedData,
-  onDelete,
-  onEdit
+  onDelete
 }) => {
   const [schemaModalTool, setSchemaModalTool] = useState<ToolEntry | null>(null);
   const headers = [
@@ -73,13 +71,6 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({
         </TableCell>
         <TableCell>{getNamespacePathById(tool.namespace ?? undefined)}</TableCell>
         <TableCell>
-          <Button
-            kind="ghost"
-            renderIcon={Edit}
-            hasIconOnly
-            iconDescription="Edit"
-            onClick={() => onEdit(tool)}
-          />
           <Button
             kind="ghost"
             renderIcon={TrashCan}

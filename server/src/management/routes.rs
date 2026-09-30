@@ -2,7 +2,6 @@
 pub(super) enum ToolRoute {
     List,
     GetByName(String),
-    Update(String),
     Delete(String),
     NotFound,
 }
@@ -17,7 +16,6 @@ pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
     match (method, name) {
         ("GET", None) => ToolRoute::List,
         ("GET", Some(n)) => ToolRoute::GetByName(n.to_owned()),
-        ("PUT", Some(n)) => ToolRoute::Update(n.to_owned()),
         ("DELETE", Some(n)) => ToolRoute::Delete(n.to_owned()),
         _ => ToolRoute::NotFound,
     }
@@ -193,10 +191,10 @@ mod tests {
     }
 
     #[test]
-    fn route_update() {
+    fn route_update_not_supported() {
         assert_eq!(
             resolve_tool_route("PUT", "/api/v1/tools/my-tool"),
-            ToolRoute::Update("my-tool".to_owned())
+            ToolRoute::NotFound
         );
     }
 
