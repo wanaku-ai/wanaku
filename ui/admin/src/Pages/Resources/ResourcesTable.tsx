@@ -12,7 +12,7 @@ import {
   TableToolbar,
   TableToolbarContent
 } from "@carbon/react"
-import {Edit, TrashCan} from "@carbon/icons-react"
+import {TrashCan} from "@carbon/icons-react"
 import {ResourceEntry} from "../../models"
 import {getNamespacePathById} from "../../hooks/api/use-namespaces"
 import {useResources} from "../../hooks/api/use-resources"
@@ -25,13 +25,12 @@ export interface RefreshHandle {
 }
 
 interface ResourcesTableProps {
-  onEdit: (resource: ResourceEntry) => void
   onDelete: (resourceName: string) => void
   onError?: (message: string) => void
   ref?: RefObject<RefreshHandle>
 }
 
-export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete, onError, ref }) => {
+export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onDelete, onError, ref }) => {
 
   const [resources, setResources] = useState<ResourceEntry[]>([])
   const [isLoading, setLoading] = useState(true)
@@ -93,13 +92,6 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onEdit, onDelete
         <TableCell>{resource.description}</TableCell>
         <TableCell>{getNamespacePathById(resource.namespace ?? undefined)}</TableCell>
         <TableCell>
-          <Button
-            kind="ghost"
-            renderIcon={Edit}
-            hasIconOnly
-            iconDescription="Edit"
-            onClick={() => onEdit(resource)}
-          />
           <Button
             kind="ghost"
             renderIcon={TrashCan}

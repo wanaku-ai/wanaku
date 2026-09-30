@@ -48,7 +48,6 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `DELETE` | `/api/v1/tools/{name}` | Delete a tool. |
 | `GET` | `/api/v1/resources` | List resources. |
 | `GET` | `/api/v1/resources/{name}` | Get a resource. |
-| `PUT` | `/api/v1/resources/{name}` | Replace a resource entry with the JSON request body. |
 | `DELETE` | `/api/v1/resources/{name}` | Delete a resource. |
 | `GET` | `/api/v1/prompts` | List prompts. |
 | `GET` | `/api/v1/prompts/{name}` | Get a prompt. |
@@ -66,7 +65,7 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `GET` | `/api/v1/bindings` | List credential bindings. |
 | `GET` | `/api/v1/bindings/{id}` | Get a credential binding. |
 
-Wanaku discovers tools, resources, and prompts when you create or refresh a forward. The API does not have create routes for these entries. Tools are read-only. You cannot edit a tool through the API. The `PUT` route for resources lets you change existing resource metadata.
+Wanaku discovers tools, resources, and prompts when you create or refresh a forward. The API does not have create routes for these entries. Tools and resources are read-only. You cannot edit them through the API.
 
 ### Create a Namespace
 
