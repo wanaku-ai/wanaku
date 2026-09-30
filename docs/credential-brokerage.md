@@ -83,6 +83,9 @@ The `credentialBindings` map holds only the binding id, not the binding itself. 
 
 Tools, resources, and prompts carry no secret or binding reference of their own. They inherit the invocation binding through their `forwardId`. This keeps the credential surface in one place: change the binding on the forward, and every tool, resource, and prompt that forward exposes picks up the change on its next use.
 
+> [!NOTE]
+> The admin UI forward form shows a binding selector for each purpose. The selector lists only the bindings that this forward owns. A binding is owned by one forward, so its `forwardId` must equal the forward name. Type the exact forward name in the form. If no binding matches the forward name and the purpose, the selector shows an empty state. Author the binding in `wanaku.yaml` with a `forwardId` that equals the forward name.
+
 ## Configuring Credentials in wanaku.yaml
 
 You author forwards and their credential bindings in the `wanaku.yaml` configuration file. Wanaku reads the top-level `forwards` and `bindings` keys at startup. A binding is a separate top-level resource, so you declare it under `bindings` and then reference it by id from a forward's `credentialBindings` map.

@@ -33,6 +33,11 @@ export class ForwardsPage extends BasePage {
     await this.page.locator('#forward-discovery-binding').selectOption(id);
   }
 
+  async modalHasText(text: string): Promise<boolean> {
+    const content = await this.modal().innerText();
+    return content.includes(text);
+  }
+
   async clickDetailForward(name: string) {
     await this.rowWithText(name).getByRole('button', { name: 'Details' }).click();
     await this.detailModal().waitFor({ state: 'visible' });

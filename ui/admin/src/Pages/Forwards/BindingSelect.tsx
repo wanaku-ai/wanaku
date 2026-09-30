@@ -82,15 +82,23 @@ export const BindingSelect: React.FC<BindingSelectProps> = ({
     options.push({ id: value, label: loaded ? `${value} (unavailable)` : value });
   }
 
-  const disabled = loaded && available.length === 0 && !value;
+  // A binding is owned by exactly one forward: its forwardId must equal the
+  // forward name. When the list has loaded and no binding matches this forward
+  // and purpose, keep the control enabled but explain why it is empty, rather
+  // than disable it silently and look broken.
+  const trimmedName = forwardName.trim();
+  const showEmptyState =
+    loaded && trimmedName.length > 0 && available.length === 0 && !value;
+  const emptyStateText = `No credential binding is defined for a forward named "${trimmedName}". Author one in wanaku.yaml with forwardId: ${trimmedName}.`;
 
   return (
     <Select
       id={id}
       labelText={labelText}
       helperText={helperText}
+      warn={showEmptyState}
+      warnText={emptyStateText}
       value={value ?? NONE_VALUE}
-      disabled={disabled}
       onChange={(event) => {
         const next = event.target.value;
         onChange(next === NONE_VALUE ? undefined : next);
