@@ -5,11 +5,11 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_HEALTH_ENABLED: true
-      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: true
-      KC_HOSTNAME_DEBUG: true
-      KC_HOSTNAME_STRICT: false
-      KC_HTTP_ENABLED: true
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HOSTNAME_DEBUG: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: "xforwarded"
       WANAKU_MCPROUTER_SECRET: ${WANAKU_MCPROUTER_SECRET:-changeme}
       # the public accessible hostname
