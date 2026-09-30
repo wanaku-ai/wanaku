@@ -19,10 +19,12 @@ use tracing::info;
 use wanaku_infra::credentials::CredentialBroker;
 use wanaku_infra::persistence::FilePersistence;
 use wanaku_infra::registry::InMemoryRegistry;
-use wanaku_types::credentials::{EnvResolver, ResolverRegistry};
+use wanaku_types::credentials::{
+    CredentialBinding, EnvResolver, NormalizedOrigin, ResolverRegistry,
+};
 use wanaku_types::feature::Feature;
 use wanaku_types::governance::GovernanceConfig;
-use wanaku_types::registry::{ForwardEntry, ForwardRegistry};
+use wanaku_types::registry::{BindingRegistry, ForwardEntry, ForwardRegistry};
 
 #[expect(clippy::too_many_lines, reason = "server bootstrap")]
 fn main() {
@@ -369,6 +371,12 @@ fn load_core_config(
         }
     }
 
+    // Credential bindings are authored here, alongside the forwards that own
+    // them. A binding must be registered before discovery runs, because a
+    // forward that references a discovery binding fails closed when the binding
+    // is absent.
+    load_bindings(config, registry);
+
     if !forwards.is_empty() {
         let rt = match tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -390,6 +398,57 @@ fn load_core_config(
     }
 }
 
+/// Register the credential bindings declared under the top-level `bindings`
+/// key of the wanaku configuration.
+///
+/// Each entry deserializes into a [`CredentialBinding`] and is validated before
+/// registration. Malformed or invalid bindings are logged and skipped so a
+/// single bad entry does not stop the rest of the configuration from loading.
+fn load_bindings(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
+    let Some(binding_list) = config.get("bindings").and_then(|b| b.as_sequence()) else {
+        return;
+    };
+    for binding_value in binding_list {
+        match serde_yaml::from_value::<CredentialBinding>(binding_value.clone()) {
+            Ok(mut binding) => {
+                // The configured origin must be the exact normalized origin the
+                // broker compares against. Normalize it here so an operator who
+                // omits the explicit port (for example `https://api.example.com`
+                // instead of `https://api.example.com:443`) does not register a
+                // binding that logs success but silently fails closed on use.
+                match NormalizedOrigin::from_address(binding.origin.as_str()) {
+                    Ok(origin) => binding.origin = origin,
+                    Err(e) => {
+                        tracing::warn!(
+                            binding_id = %binding.id,
+                            error = %e,
+                            "skipping credential binding with an invalid origin"
+                        );
+                        continue;
+                    }
+                }
+                if let Err(e) = binding.validate() {
+                    tracing::warn!(
+                        binding_id = %binding.id,
+                        error = %e,
+                        "skipping invalid credential binding from config"
+                    );
+                    continue;
+                }
+                info!(
+                    binding_id = %binding.id,
+                    forward_id = %binding.forward_id,
+                    "registered credential binding from config"
+                );
+                registry.register_binding(binding);
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "failed to deserialize credential binding from config");
+            }
+        }
+    }
+}
+
 #[expect(
     clippy::print_stderr,
     clippy::exit,
@@ -402,8 +461,100 @@ fn fatal(err: &dyn std::fmt::Display) -> ! {
 
 #[cfg(test)]
 mod tests {
-    use super::{load_governance_config, load_wanaku_yaml};
+    use super::{load_bindings, load_governance_config, load_wanaku_yaml};
+    use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::governance::{AuditLevel, EnforcementMode, FailureBehavior, NoMatchBehavior};
+    use wanaku_types::registry::BindingRegistry;
+
+    #[test]
+    fn load_bindings_registers_valid_binding_and_normalizes_origin() {
+        // The origin omits the explicit port on purpose: the loader must
+        // normalize it to the exact form the broker compares against.
+        let config: serde_yaml::Value = serde_yaml::from_str(
+            r#"
+bindings:
+  - id: my-binding
+    forwardId: my-forward
+    origin: "https://api.example.com"
+    mechanism:
+      type: bearer
+    secretRefs:
+      - "env:API_TOKEN"
+    allowedPurposes:
+      - discovery
+"#,
+        )
+        .unwrap();
+        let registry = InMemoryRegistry::new();
+
+        load_bindings(&config, &registry);
+
+        let binding = registry.get_binding("my-binding").unwrap();
+        assert_eq!(binding.forward_id, "my-forward");
+        assert_eq!(binding.secret_refs[0].scheme(), "env");
+        assert_eq!(binding.origin.as_str(), "https://api.example.com:443");
+    }
+
+    #[test]
+    fn load_bindings_skips_binding_with_invalid_origin() {
+        let config: serde_yaml::Value = serde_yaml::from_str(
+            r#"
+bindings:
+  - id: bad-origin
+    forwardId: my-forward
+    origin: "not-a-url"
+    mechanism:
+      type: bearer
+    secretRefs:
+      - "env:API_TOKEN"
+    allowedPurposes:
+      - discovery
+"#,
+        )
+        .unwrap();
+        let registry = InMemoryRegistry::new();
+
+        load_bindings(&config, &registry);
+
+        assert!(registry.get_binding("bad-origin").is_none());
+        assert_eq!(registry.binding_count(), 0);
+    }
+
+    #[test]
+    fn load_bindings_skips_invalid_binding() {
+        // Basic auth requires two secret references; a single one is invalid.
+        let config: serde_yaml::Value = serde_yaml::from_str(
+            r#"
+bindings:
+  - id: bad-binding
+    forwardId: my-forward
+    origin: "https://api.example.com:443"
+    mechanism:
+      type: basic
+    secretRefs:
+      - "env:ONLY_ONE"
+    allowedPurposes:
+      - invocation
+"#,
+        )
+        .unwrap();
+        let registry = InMemoryRegistry::new();
+
+        load_bindings(&config, &registry);
+
+        assert!(registry.get_binding("bad-binding").is_none());
+        assert_eq!(registry.binding_count(), 0);
+    }
+
+    #[test]
+    fn load_bindings_is_noop_without_bindings_key() {
+        let config: serde_yaml::Value = serde_yaml::from_str("forwards: []").unwrap();
+        let registry = InMemoryRegistry::new();
+
+        load_bindings(&config, &registry);
+
+        assert_eq!(registry.binding_count(), 0);
+    }
 
     #[test]
     fn malformed_bootstrap_yaml_is_not_missing_configuration() {

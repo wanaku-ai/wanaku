@@ -32,26 +32,29 @@ A `CredentialBinding` is a top-level resource, owned by exactly one forward. It 
 | `cache` | object, optional | Cache rules for resolved credentials. See [Caching and Invalidation](#caching-and-invalidation). |
 | `revision` | integer | A monotonic counter. Any change to the binding must increment it. |
 
-Here is a binding that injects a Bearer token read from the `API_TOKEN` environment variable:
+You author bindings in the `wanaku.yaml` configuration file, under the top-level `bindings` key. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml). The following binding injects a Bearer token that is read from the `API_TOKEN` environment variable:
 
-```json
-{
-  "id": "b1",
-  "forwardId": "upstream-mcp",
-  "origin": "https://api.example.com:443",
-  "mechanism": { "type": "bearer" },
-  "secretRefs": ["env:API_TOKEN"],
-  "allowedPurposes": ["invocation"],
-  "restrictions": {
-    "namespaces": ["finance"]
-  },
-  "cache": { "maxTtlSeconds": 3600 },
-  "revision": 1
-}
+```yaml
+bindings:
+  - id: b1
+    forwardId: upstream-mcp
+    origin: "https://api.example.com:443"
+    mechanism:
+      type: bearer
+    secretRefs:
+      - "env:API_TOKEN"
+    allowedPurposes:
+      - invocation
+    restrictions:
+      namespaces:
+        - finance
+    cache:
+      maxTtlSeconds: 3600
+    revision: 1
 ```
 
 > [!NOTE]
-> The `restrictions` object serializes its inner fields in snake_case (`governed_items`, not `governedItems`), unlike the top-level binding fields, which use camelCase. Match the exact key when you author or read a binding.
+> The `restrictions` object uses snake_case keys (`governed_items`, not `governedItems`), unlike the top-level binding fields, which use camelCase. Use the exact key when you author or read a binding.
 
 ## Purposes
 
@@ -64,21 +67,79 @@ A binding declares which purposes it may serve through `allowedPurposes`. A bind
 
 ## Attaching a Binding to a Forward
 
-A forward references its bindings through the `credentialBindings` field: a map from purpose to binding id.
+A forward references its bindings through the `credentialBindings` field: a map from purpose to binding id. You configure the forward in the same `wanaku.yaml` file, under the top-level `forwards` key.
 
-```json
-{
-  "name": "upstream-mcp",
-  "address": "https://api.example.com/mcp",
-  "namespace": "finance",
-  "credentialBindings": {
-    "discovery": "b-discovery",
-    "invocation": "b1"
-  }
-}
+```yaml
+forwards:
+  - name: upstream-mcp
+    address: "https://api.example.com/mcp"
+    namespace: finance
+    credentialBindings:
+      discovery: b-discovery
+      invocation: b1
 ```
 
+The `credentialBindings` map holds only the binding id, not the binding itself. You must also declare each referenced binding under the `bindings` key. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml).
+
 Tools, resources, and prompts carry no secret or binding reference of their own. They inherit the invocation binding through their `forwardId`. This keeps the credential surface in one place: change the binding on the forward, and every tool, resource, and prompt that forward exposes picks up the change on its next use.
+
+## Configuring Credentials in wanaku.yaml
+
+You author forwards and their credential bindings in the `wanaku.yaml` configuration file. Wanaku reads the top-level `forwards` and `bindings` keys at startup. A binding is a separate top-level resource, so you declare it under `bindings` and then reference it by id from a forward's `credentialBindings` map.
+
+The following example configures one forward and the two bindings it uses. One binding serves discovery. The other binding serves invocation.
+
+```yaml
+forwards:
+  - name: upstream-mcp
+    address: "https://api.example.com/mcp"
+    namespace: finance
+    credentialBindings:
+      discovery: b-discovery
+      invocation: b1
+
+bindings:
+  - id: b-discovery
+    forwardId: upstream-mcp
+    origin: "https://api.example.com:443"
+    mechanism:
+      type: bearer
+    secretRefs:
+      - "env:DISCOVERY_TOKEN"
+    allowedPurposes:
+      - discovery
+    revision: 1
+
+  - id: b1
+    forwardId: upstream-mcp
+    origin: "https://api.example.com:443"
+    mechanism:
+      type: bearer
+    secretRefs:
+      - "env:API_TOKEN"
+    allowedPurposes:
+      - invocation
+    revision: 1
+```
+
+Wanaku applies these rules when it loads the configuration:
+
+- Wanaku registers every binding before it runs forward discovery. A forward that references a discovery binding needs the binding to exist first. A missing discovery binding makes the discovery call fail closed.
+- Wanaku validates each binding before it registers the binding. A binding that fails validation is logged and skipped. The rest of the configuration still loads. Bearer and named-header mechanisms require exactly one secret reference. The Basic mechanism requires exactly two secret references.
+- The `origin` value must be the exact normalized origin: scheme, host, and explicit port. Use `https://api.example.com:443`, not `https://api.example.com`. The broker compares the binding origin to the normalized forward address, and an unnormalized origin does not match.
+- The `forwardId` of a binding must equal the `name` of the forward that references it. The broker rejects a binding that a different forward tries to use.
+
+Start the server with your configuration file:
+
+```bash
+cargo run -- --wanaku-config wanaku.yaml
+```
+
+> [!NOTE]
+> The management API does not create bindings. The API for bindings is read-only. You author bindings in `wanaku.yaml`. Wanaku also restores bindings that were persisted in an earlier run from the registry snapshot.
+
+> [!WARNING]
+> Configuration is additive over the persisted snapshot. Wanaku restores the snapshot first, then applies the `bindings` from `wanaku.yaml` on top, matched by id. If you delete a binding from `wanaku.yaml` on a deployment that uses persistence, Wanaku still restores that binding from the snapshot on the next start. To remove a binding on a persistent deployment, you must also remove it from the registry snapshot. On a deployment without persistence, the configuration is the full source of truth.
 
 ## Injection Mechanisms
 
@@ -207,7 +268,7 @@ curl http://localhost:8080/api/v1/bindings/b1
 
 Wanaku returns `404 Not Found` when no binding with the given id exists.
 
-This release does not have create, update, or delete routes for bindings. Bindings are persisted as part of the registry snapshot. See [Management API](management-api.md) for the full route reference and response envelope.
+This release does not have create, update, or delete routes for bindings. You author bindings in the `wanaku.yaml` configuration file. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml). Wanaku also persists bindings as part of the registry snapshot and restores them at startup. See [Management API](management-api.md) for the full route reference and response envelope.
 
 ## Related Docs
 

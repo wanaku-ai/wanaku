@@ -444,6 +444,7 @@ plugins:
 Wanaku loads these top-level sections from `wanaku.yaml`:
 
 - `forwards` — core forward bootstrap configuration
+- `bindings` — credential bindings that forwards reference for brokered authentication. See [Credential Brokerage](./credential-brokerage.md#configuring-credentials-in-wanakuyaml)
 - `llm_connections` — named LLM connections (model/url/api_key) for evaluators; config-only, never exposed via the management API
 - `evaluators` — evaluator feature configuration
 - `action_policy` — declarative action-policy rules
