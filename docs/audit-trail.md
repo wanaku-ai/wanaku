@@ -54,6 +54,8 @@ You can use these environment variables to override the YAML values:
 
 With the default settings, Wanaku removes authorization data, cookies, API keys, client secrets, passwords, tokens, and credential-shaped string values before it stores an event. Wanaku applies the configured redaction rules to event fields, structured attributes, and captured payloads. Redaction occurs before retention and file persistence.
 
+Wanaku uses the same redaction engine for tool-call logs, retained interactions, and audit events. See [Redaction boundary](./redaction.md) for the full boundary and its limitations.
+
 ## Enable persistence
 
 Audit persistence uses the configured Wanaku file persistence directory. Wanaku writes `audit-events.json` in that directory. Wanaku loads the file at startup.

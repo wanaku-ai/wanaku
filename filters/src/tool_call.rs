@@ -96,10 +96,13 @@ impl ToolCallFilter {
             "tools/call"
         );
 
+        // #1964: never log argument values — a tools/call argument can carry an
+        // injected credential or PII. Log only the argument key names so the
+        // request shape stays debuggable without exposing secrets.
         tracing::debug!(
             tool = %tool_name,
-            arguments = ?parsed.arguments,
-            "parsed tools/call request body (x-request-id stripped)"
+            argument_keys = ?parsed.arguments.keys().collect::<Vec<_>>(),
+            "parsed tools/call request body (x-request-id stripped, argument values not logged)"
         );
 
         let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
@@ -191,6 +194,12 @@ impl ToolCallFilter {
 
         tracing::debug!("Invoking tool {tool_name} with a tracking id of {tracking_id}");
 
+        // #1964: capture the exact forwarded header values before they move into
+        // the MCP client. These are allow-listed request headers (for example,
+        // injected auth credentials). If the upstream echoes one in an error, the
+        // error path redacts it by exact match, even when it has no known shape.
+        let forwarded_values = forwarded_header_values(&forward_headers);
+
         match wanaku_infra::mcp_client::call_tool(&tool.uri, tool_name, arguments, forward_headers)
             .await
         {
@@ -213,15 +222,77 @@ impl ToolCallFilter {
                 )))
             }
             Err(e) => {
-                warn!(tool = %tool_name, error = %e, "MCP forward call failed");
+                let detail = redacted_forward_error(&e, &forwarded_values);
+                warn!(tool = %tool_name, error = %detail, "MCP forward call failed");
                 Ok(crate::response::json_rpc_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
-                    &format!("forwarded tool call failed: {e}"),
+                    &detail,
                 ))
             }
         }
     }
+}
+
+/// Collect the readable forwarded header values so the error path can redact them.
+///
+/// #1964: a non-UTF-8 or empty value cannot appear as readable text in an error
+/// string, so this skips those values.
+fn forwarded_header_values(forward_headers: &HashMap<HeaderName, HeaderValue>) -> Vec<String> {
+    forward_headers
+        .values()
+        .filter_map(|value| value.to_str().ok())
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+/// Minimum length for a whitespace-separated needle taken from a forwarded value.
+///
+/// #1964: a short segment (for example, the `Bearer` scheme keyword) is skipped,
+/// so the error redaction does not over-redact ordinary error text. A full
+/// forwarded value is always a needle, regardless of length.
+const MIN_ECHOED_SEGMENT_LEN: usize = 8;
+
+/// Build the exact strings to remove from a failed forwarded-call error.
+///
+/// #1964: an upstream error can echo a forwarded credential verbatim, or it can
+/// echo only the token part after the auth scheme (for example, `Bearer ` is
+/// stripped). This returns each full value and each long whitespace-separated
+/// segment, sorted from longest to shortest. The longest-first order stops a
+/// short value from mangling a longer value that contains it.
+fn redaction_needles(forwarded_values: &[String]) -> Vec<String> {
+    let mut needles: Vec<String> = Vec::new();
+    for value in forwarded_values {
+        needles.push(value.clone());
+        for segment in value.split_whitespace() {
+            if segment.len() >= MIN_ECHOED_SEGMENT_LEN {
+                needles.push(segment.to_owned());
+            }
+        }
+    }
+    needles.sort_by(|a, b| b.len().cmp(&a.len()).then_with(|| a.cmp(b)));
+    needles.dedup();
+    needles
+}
+
+/// Build the client-facing and log-facing detail for a failed forwarded call.
+///
+/// #1964: the upstream error string can echo injected credentials (forwarded
+/// auth headers, `x-mcp-header` arguments). First remove the forwarded header
+/// values and their token segments, so an opaque credential is redacted
+/// regardless of shape. Then apply the shared redactor as a backstop for any
+/// other credential-shaped text. A credential-shaped detail collapses to
+/// `[REDACTED]` in full; an ordinary error passes through unchanged.
+fn redacted_forward_error(error: &impl std::fmt::Display, forwarded_values: &[String]) -> String {
+    let mut detail = format!("forwarded tool call failed: {error}");
+    for needle in redaction_needles(forwarded_values) {
+        if detail.contains(needle.as_str()) {
+            detail = detail.replace(needle.as_str(), "[REDACTED]");
+        }
+    }
+    wanaku_types::audit_redaction::AuditRedactor::default().redact_string(&mut detail);
+    detail
 }
 
 fn inject_header_arguments(
@@ -566,5 +637,90 @@ mod tests {
         let result = extract_allowed_headers(&headers, &global, &[]);
 
         assert!(result.is_empty());
+    }
+
+    // #1964: a failed forwarded call must not echo injected credentials to the
+    // client response or the server log. The same redacted `detail` feeds both.
+    #[test]
+    fn redacted_forward_error_redacts_credential_shaped_detail() {
+        let sentinel = "wanaku-sentinel-secret-1964";
+        let upstream = format!("401 Unauthorized: upstream rejected Bearer {sentinel}");
+
+        let detail = redacted_forward_error(&upstream, &[]);
+
+        assert!(
+            !detail.contains(sentinel),
+            "redacted detail must not contain the forwarded credential: {detail}"
+        );
+        assert_eq!(detail, "[REDACTED]");
+    }
+
+    #[test]
+    fn redacted_forward_error_redacts_opaque_forwarded_value() {
+        // An opaque credential with no known shape must still be removed, because
+        // Wanaku knows the exact value it forwarded upstream.
+        let sentinel = "acme_live_9f3kwanakusentinel1964";
+        let upstream = format!("403 Forbidden: rejected header value {sentinel}");
+        let forwarded = vec![sentinel.to_owned()];
+
+        let detail = redacted_forward_error(&upstream, &forwarded);
+
+        assert!(
+            !detail.contains(sentinel),
+            "redacted detail must not contain the opaque forwarded value: {detail}"
+        );
+        assert_eq!(
+            detail,
+            "forwarded tool call failed: 403 Forbidden: rejected header value [REDACTED]"
+        );
+    }
+
+    #[test]
+    fn redacted_forward_error_preserves_ordinary_error() {
+        let upstream = "connection refused (os error 61)".to_owned();
+
+        let detail = redacted_forward_error(&upstream, &[]);
+
+        assert_eq!(
+            detail,
+            "forwarded tool call failed: connection refused (os error 61)"
+        );
+    }
+
+    #[test]
+    fn redacted_forward_error_redacts_scheme_stripped_echo() {
+        // #1964: the upstream echoes only the token part of the forwarded auth
+        // header, without the "Bearer " scheme. The opaque token has no known
+        // shape, so the token segment of the forwarded value must remove it.
+        let sentinel = "acme_live_9f3kwanakusentinel1964";
+        let forwarded = vec![format!("Bearer {sentinel}")];
+        let upstream = format!("401 Unauthorized: invalid token {sentinel}");
+
+        let detail = redacted_forward_error(&upstream, &forwarded);
+
+        assert!(
+            !detail.contains(sentinel),
+            "redacted detail must not contain the scheme-stripped token: {detail}"
+        );
+    }
+
+    #[test]
+    fn redacted_forward_error_redacts_substring_colliding_values() {
+        // #1964: one forwarded value is a prefix of another, and the upstream
+        // echoes both. The longest-first order must remove the longer value in
+        // full. A shortest-first order would replace the shared prefix and leave
+        // the trailing fragment of the longer secret in the detail.
+        let short = "wanakucommonprefix";
+        let leaked = "wanakusentinel1964";
+        let long = format!("{short}{leaked}");
+        let forwarded = vec![short.to_owned(), long.clone()];
+        let upstream = format!("rejected {long} and standalone {short}");
+
+        let detail = redacted_forward_error(&upstream, &forwarded);
+
+        assert!(
+            !detail.contains(leaked),
+            "redacted detail must not leave a fragment of the longer secret: {detail}"
+        );
     }
 }

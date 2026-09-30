@@ -6,8 +6,11 @@ use bytes::Bytes;
 use praxis_filter::{
     BodyAccess, BodyMode, FilterAction, FilterError, HttpFilter, HttpFilterContext,
 };
+use wanaku_types::audit_redaction::AuditRedactor;
 use wanaku_types::correlation::{self, REQUEST_ID_ARG};
 use wanaku_types::interactions::{InMemoryInteractionStore, Interaction, InteractionStore};
+
+use crate::config::InterceptConfig;
 
 struct InterceptState {
     path: String,
@@ -19,20 +22,62 @@ struct InterceptState {
 
 pub struct InterceptFilter {
     max_body_bytes: usize,
+    capture_payloads: bool,
+    redactor: AuditRedactor,
 }
 
 impl InterceptFilter {
-    #[expect(
-        clippy::cast_possible_truncation,
-        reason = "u64 config value fits in usize"
-    )]
     pub fn from_config(config: &serde_yaml::Value) -> Result<Box<dyn HttpFilter>, FilterError> {
-        let max_body_bytes = config
-            .get("max_body_bytes")
-            .and_then(serde_yaml::Value::as_u64)
-            .unwrap_or(4_194_304) as usize;
+        let mut cfg = InterceptConfig::parse(config);
+        cfg.apply_environment();
+        cfg.normalize();
+        Ok(Box::new(Self::new(cfg)))
+    }
 
-        Ok(Box::new(Self { max_body_bytes }))
+    fn new(cfg: InterceptConfig) -> Self {
+        let max_body_bytes = cfg.max_body_bytes;
+        let capture_payloads = cfg.capture_payloads;
+        // #1964: log the effective capture setting so an operator can confirm the
+        // privacy control. A mistyped `capture_payloads` key is ignored silently
+        // and falls back to the capture-on default.
+        tracing::info!(
+            capture_payloads,
+            max_body_bytes,
+            "intercept filter initialized"
+        );
+        Self {
+            max_body_bytes,
+            capture_payloads,
+            redactor: cfg.into_redactor(),
+        }
+    }
+
+    /// Prepare the captured bodies for retention.
+    ///
+    /// #1964: redact sensitive fields and credential-shaped values before the
+    /// bodies reach the interaction store. This uses the content redaction
+    /// variant, so conversation text in `messages[].content` survives even when
+    /// it contains common words such as "basic" or "bearer". Intent analysis
+    /// keeps working. When capture is disabled, both bodies are dropped to null.
+    fn redact_bodies(
+        &self,
+        request_body: &mut serde_json::Value,
+        response_body: &mut serde_json::Value,
+    ) {
+        if !self.capture_payloads {
+            *request_body = serde_json::Value::Null;
+            *response_body = serde_json::Value::Null;
+            return;
+        }
+        let request_meta = self.redactor.redact_content(request_body);
+        let response_meta = self.redactor.redact_content(response_body);
+        if request_meta.payload_truncated || response_meta.payload_truncated {
+            tracing::debug!(
+                request_truncated = request_meta.payload_truncated,
+                response_truncated = response_meta.payload_truncated,
+                "captured body exceeded payload_max_bytes and was replaced with a redaction marker"
+            );
+        }
     }
 }
 
@@ -208,9 +253,12 @@ impl HttpFilter for InterceptFilter {
             .map(std::convert::AsRef::as_ref)
             .unwrap_or_default();
 
-        let request_body = parse_body(&state.body);
-        let response_body = parse_body(response_bytes);
+        let mut request_body = parse_body(&state.body);
+        let mut response_body = parse_body(response_bytes);
 
+        // Extract envelope metadata from the raw bodies before redaction. The
+        // completion id and model are routing metadata, not secrets, and are
+        // retained even when payload capture is disabled.
         let completion_id = response_body
             .get("id")
             .and_then(serde_json::Value::as_str)
@@ -226,6 +274,8 @@ impl HttpFilter for InterceptFilter {
                     .and_then(serde_json::Value::as_str)
                     .map(String::from)
             });
+
+        self.redact_bodies(&mut request_body, &mut response_body);
 
         let epoch_ms = SystemTime::now()
             .duration_since(UNIX_EPOCH)
