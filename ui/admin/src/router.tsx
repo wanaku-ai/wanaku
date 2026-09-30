@@ -62,6 +62,10 @@ export function buildRouter(pluginPages: PluginPage[]) {
           lazy: async () => import("./Pages/Forwards"),
         },
         {
+          path: Links.Bindings,
+          lazy: async () => import("./Pages/Bindings"),
+        },
+        {
           path: Links.Evaluators,
           lazy: async () => import("./Pages/Evaluators"),
         },

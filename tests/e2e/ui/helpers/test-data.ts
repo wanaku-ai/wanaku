@@ -48,3 +48,23 @@ export function evaluatorData() {
     processor: { path: 'actions/dist/safety_review_action.wasm' },
   };
 }
+
+export function bindingData(overrides?: Partial<{
+  id: string;
+  forwardId: string;
+  origin: string;
+  mechanism: { type: string; header?: string };
+  allowedPurposes: string[];
+  secretRefs: string[];
+  revision: number;
+}>) {
+  return {
+    id: overrides?.id ?? `e2e-binding-${suffix()}`,
+    forwardId: overrides?.forwardId ?? `e2e-forward-${suffix()}`,
+    origin: overrides?.origin ?? 'https://api.example.com:443',
+    mechanism: overrides?.mechanism ?? { type: 'bearer' },
+    allowedPurposes: overrides?.allowedPurposes ?? ['invocation'],
+    secretRefs: overrides?.secretRefs ?? ['vault:secret/data/example-token'],
+    revision: overrides?.revision ?? 1,
+  };
+}
