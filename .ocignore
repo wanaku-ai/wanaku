@@ -17,6 +17,7 @@ target/
 *.md
 !README.md
 wanaku.yaml
+wanaku.local*.yaml
 
 .cargo/
 ui/admin/node_modules/

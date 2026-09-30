@@ -57,3 +57,4 @@ scripts
 
 ### JReleaser ###
 out/
+wanaku.local*.yaml
