@@ -210,6 +210,44 @@ The intercept feature records request/response interactions for conversation tra
 |---|---|---|
 | `WANAKU_INTERACTION_CAPACITY` | `1000` | Maximum number of interactions kept in the in-memory store |
 
+The intercept feature captures the LLM request body and response body. The feature redacts sensitive data from both bodies before it stores them. The feature preserves the conversation content that intent analysis needs. See [Redaction boundary](./redaction.md) for the redaction rules and limitations.
+
+Configure the redaction rules in the intercept filter node of the pipeline configuration:
+
+```yaml
+- name: wanaku_intercept
+  filter: wanaku_intercept
+  capture_payloads: true
+  payload_max_bytes: 4194304
+  include_default_redaction_rules: true
+  sensitive_fields:
+    - private_value
+  sensitive_json_pointers:
+    - /messages/0/content
+  credential_markers:
+    - "credential="
+  token_prefixes:
+    - custom_
+```
+
+`capture_payloads` controls request and response body capture. The default is `true`. Intent analysis needs the conversation content. Set this value to `false` to keep only the envelope (path, status, model, timing). This setting disables intent analysis for the affected interactions.
+
+`payload_max_bytes` sets the maximum serialized body size after redaction. The default is `4194304`. Wanaku replaces a body that exceeds this limit with a single redaction marker.
+
+`include_default_redaction_rules` controls the built-in redaction rules. The default is `true`. Set this value to `false` only when you must replace or disable the built-in rules.
+
+`sensitive_fields`, `sensitive_json_pointers`, `credential_markers`, and `token_prefixes` extend the built-in rules. These controls use the same behavior as the audit configuration. See [Governance audit trail](./audit-trail.md).
+
+You can use these environment variables to override the YAML values:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `WANAKU_INTERCEPT_CAPTURE_PAYLOADS` | `true` | Capture request and response bodies |
+| `WANAKU_INTERCEPT_MAX_BODY_BYTES` | `4194304` | Maximum buffered body size, in bytes |
+| `WANAKU_INTERCEPT_PAYLOAD_MAX_BYTES` | `4194304` | Maximum retained body size after redaction, in bytes |
+
+`WANAKU_INTERCEPT_CAPTURE_PAYLOADS` enables capture only for the values `1`, `true`, or `yes`. Any other value disables capture. When the variable is unset, the YAML value applies.
+
 ### Inference Proxy
 
 The inference proxy is a raw, transparent reverse proxy (port 8083) to an
@@ -528,4 +566,5 @@ The server does not reject unknown environment variable names. A misspelled name
 - [Authentication](./auth.md) — oauth2-proxy setup and Keycloak configuration
 - [Features](./features.md) — enable evaluators and create custom features
 - [Management API](./management-api.md) — API routes that respect configuration
+- [Redaction boundary](./redaction.md) — where Wanaku removes sensitive data
 - [FAQ](./faq.md) — troubleshooting common issues

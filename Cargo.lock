@@ -6672,6 +6672,7 @@ dependencies = [
  "bytes",
  "http 1.5.0",
  "praxis-proxy-filter",
+ "serde",
  "serde_json",
  "tracing",
  "wanaku-types",

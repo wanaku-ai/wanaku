@@ -1,5 +1,7 @@
 #![deny(unsafe_code)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
+pub mod config;
 pub mod filter;
 
 use http::Response;

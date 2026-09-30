@@ -63,6 +63,22 @@ impl AuditRedactor {
     }
 
     pub fn redact(&self, value: &mut Value) -> RedactionMetadata {
+        self.redact_inner(value, true)
+    }
+
+    /// Redact conversation content.
+    ///
+    /// This variant redacts sensitive field names, JSON Pointer paths, configured
+    /// markers and prefixes, and built-in credential token formats. This variant
+    /// does not apply the built-in `bearer ` and `basic ` auth-scheme markers.
+    /// A natural-language message can contain the words "basic" or "bearer". The
+    /// auth-scheme markers would replace the whole message and remove the context
+    /// that intent analysis needs. See issue #1964.
+    pub fn redact_content(&self, value: &mut Value) -> RedactionMetadata {
+        self.redact_inner(value, false)
+    }
+
+    fn redact_inner(&self, value: &mut Value, match_auth_schemes: bool) -> RedactionMetadata {
         let mut metadata = RedactionMetadata {
             payload_captured: true,
             ..RedactionMetadata::default()
@@ -78,6 +94,7 @@ impl AuditRedactor {
             fields: &self.rules.sensitive_fields,
             credential_markers: &self.rules.credential_markers,
             token_prefixes: &self.rules.token_prefixes,
+            match_auth_schemes,
         };
         redact_value(value, "", rules, &mut metadata.redacted_fields);
         let encoded_len = serde_json::to_vec(value).map_or(0, |bytes| bytes.len());
@@ -120,6 +137,7 @@ struct RedactionRules<'a> {
     fields: &'a [String],
     credential_markers: &'a [String],
     token_prefixes: &'a [String],
+    match_auth_schemes: bool,
 }
 
 fn redact_value(
@@ -173,7 +191,7 @@ fn sensitive_field(key: &str, rules: RedactionRules<'_>) -> bool {
 
 fn credential_shaped(value: &str, rules: RedactionRules<'_>) -> bool {
     let lower = value.to_ascii_lowercase();
-    (rules.include_defaults && default_credential_shaped(value, &lower))
+    (rules.include_defaults && default_credential_shaped(value, &lower, rules.match_auth_schemes))
         || rules
             .credential_markers
             .iter()
@@ -183,9 +201,10 @@ fn credential_shaped(value: &str, rules: RedactionRules<'_>) -> bool {
             .any(|token| custom_credential_token(token, rules.token_prefixes))
 }
 
-fn default_credential_shaped(value: &str, lower: &str) -> bool {
-    contains_auth_scheme(lower, BEARER_MARKER)
-        || contains_auth_scheme(lower, BASIC_MARKER)
+fn default_credential_shaped(value: &str, lower: &str, match_auth_schemes: bool) -> bool {
+    (match_auth_schemes
+        && (contains_auth_scheme(lower, BEARER_MARKER)
+            || contains_auth_scheme(lower, BASIC_MARKER)))
         || lower.contains(CLIENT_SECRET_MARKER)
         || value.split(token_separator).any(default_credential_token)
 }
@@ -293,6 +312,64 @@ mod tests {
         let metadata = AuditRedactor::default().redact_string(&mut explanation);
         assert_eq!(explanation, "risk-based policy blocked the request");
         assert!(metadata.redacted_fields.is_empty());
+    }
+
+    #[test]
+    fn redact_content_preserves_auth_scheme_words_in_prose() {
+        // #1964: "basic" and "bearer" are common words. The content variant must
+        // not remove a message that contains them.
+        for message in [
+            "give me a basic example of a for loop",
+            "the bearer of the news arrived",
+            "explain basic authentication concepts",
+        ] {
+            let mut value = Value::String(message.to_owned());
+            let metadata = AuditRedactor::default().redact_content(&mut value);
+            assert_eq!(value, Value::String(message.to_owned()));
+            assert!(metadata.redacted_fields.is_empty());
+        }
+    }
+
+    #[test]
+    fn redact_content_still_redacts_fields_pointers_and_token_shapes() {
+        let redactor = AuditRedactor::new(
+            AuditRedactionRules::default(),
+            vec!["/context/private".to_owned()],
+            16_384,
+        );
+        let mut value = serde_json::json!({
+            "api_key": "abc123",
+            "context": {"private": "hidden"},
+            "note": "my key is ghp_1234567890 keep the rest",
+            "content": "give me a basic example"
+        });
+
+        redactor.redact_content(&mut value);
+
+        assert_eq!(value["api_key"], REDACTED);
+        assert_eq!(value["context"]["private"], REDACTED);
+        assert_eq!(value["note"], REDACTED);
+        assert_eq!(value["content"], "give me a basic example");
+    }
+
+    #[test]
+    fn redact_content_truncates_large_payload() {
+        // #1964: the payload size bound is shared by both variants. A captured
+        // body over the limit is replaced with a single marker, not truncated.
+        let mut value = serde_json::json!({"content": "0123456789", "extra": "0123456789"});
+        let metadata = AuditRedactor::new(AuditRedactionRules::default(), Vec::new(), 8)
+            .redact_content(&mut value);
+        assert_eq!(value, REDACTED);
+        assert!(metadata.payload_truncated);
+    }
+
+    #[test]
+    fn redact_still_matches_auth_schemes_for_error_strings() {
+        // The default variant keeps the auth-scheme markers for short strings such
+        // as upstream error details, where "Bearer <token>" is always a credential.
+        let mut explanation = "blocked: Bearer secret-token".to_owned();
+        AuditRedactor::default().redact_string(&mut explanation);
+        assert_eq!(explanation, REDACTED);
     }
 
     #[test]
