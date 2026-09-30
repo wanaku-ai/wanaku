@@ -20,12 +20,31 @@ use super::secret::SecretMaterial;
 /// The scheme selects the resolver (e.g. `env`). The path is resolver-specific
 /// and is never derived from request data.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(try_from = "String", into = "String")]
 pub struct SecretRef {
     scheme: String,
     path: String,
 }
+
+// A SecretRef serializes as the opaque string "<scheme>:<path>" (see the serde
+// `into`/`try_from` above), so its OpenAPI schema must be a string. The derived
+// ToSchema would emit an object with `scheme`/`path` properties, which does not
+// match the wire format, so the schema is defined manually.
+#[cfg(feature = "openapi")]
+impl utoipa::PartialSchema for SecretRef {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        utoipa::openapi::ObjectBuilder::new()
+            .schema_type(utoipa::openapi::schema::Type::String)
+            .description(Some(
+                "An opaque secret reference of the form '<scheme>:<path>'.",
+            ))
+            .examples(["env:API_TOKEN"])
+            .into()
+    }
+}
+
+#[cfg(feature = "openapi")]
+impl utoipa::ToSchema for SecretRef {}
 
 /// Error parsing a [`SecretRef`].
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]

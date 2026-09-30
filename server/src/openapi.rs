@@ -674,6 +674,14 @@ mod tests {
             );
         }
 
+        // A SecretRef serializes as the opaque string "<scheme>:<path>", so its
+        // schema must be a string, not an object with scheme/path properties.
+        assert_eq!(
+            value.pointer("/components/schemas/SecretRef/type"),
+            Some(&serde_json::Value::String("string".to_owned())),
+            "SecretRef must be a string schema matching its wire format"
+        );
+
         // The binding schema must never expose resolved secret material. It
         // carries only opaque secret references (`secretRefs`).
         assert!(
