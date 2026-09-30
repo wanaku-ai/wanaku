@@ -278,6 +278,13 @@ export WANAKU_INFERENCE_UPSTREAM=127.0.0.1:11434
 The Admin UI's LLM Chat page calls this port directly with a key you supply in
 the browser. See [Management API](./management-api.md) for the endpoint shape.
 
+By default, the LLM Chat page keeps the API key in memory for the current
+session only. The page does not save the key to local storage. To keep the key
+across sessions, first enable local storage for the LLM settings. Then enable
+the API key storage option. The page writes the key to browser local storage. A
+script or a browser extension on the page can then read the key. Enable this
+option only on a trusted device.
+
 Because the proxy forwards the `Origin` header unchanged, the backend's own
 origin policy still applies. Ollama, for example, rejects browser-origin
 requests by default — set `OLLAMA_ORIGINS` on the Ollama side to allow the

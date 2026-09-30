@@ -1,6 +1,7 @@
 import React from "react"
 import {
   Form,
+  InlineNotification,
   PasswordInput,
   Stack,
   TextArea,
@@ -13,17 +14,19 @@ import {LLMModelComboBox} from "./LLMModelComboBox"
 interface LLMSetupProps {
   config: LlmConfig
   stored: boolean
+  apiKeyStored: boolean
   onConfigChange: (config: LlmConfig) => void
   onStoredChange: (store: boolean) => void
+  onApiKeyStoredChange: (store: boolean) => void
 }
 
-export const LLMSetup: React.FC<LLMSetupProps> = ({ config, stored, onConfigChange, onStoredChange }) => {
+export const LLMSetup: React.FC<LLMSetupProps> = ({ config, stored, apiKeyStored, onConfigChange, onStoredChange, onApiKeyStoredChange }) => {
   
   return (
     <Form>
       <Stack gap={5}>
         <Toggle
-          labelText="Store LLM settings in Local Storage (the API key is never saved)"
+          labelText="Store LLM settings in Local Storage"
           labelA="Off"
           labelB="On"
           toggled={stored}
@@ -53,6 +56,24 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, stored, onConfigChan
           }}
           size="md"
         />
+        <Toggle
+          labelText="Also remember the API key in Local Storage"
+          labelA="Off"
+          labelB="On"
+          toggled={apiKeyStored}
+          disabled={!stored}
+          onToggle={onApiKeyStoredChange}
+          id="enabledApiKeyStorage"
+        />
+        {apiKeyStored && (
+          <InlineNotification
+            kind="warning"
+            title="Security warning"
+            subtitle="The API key is saved in your browser Local Storage. Any script or browser extension that runs on this page can read it. Enable this only on a trusted device."
+            lowContrast
+            hideCloseButton
+          />
+        )}
         <TextArea
           id="extra-llm-input"
           labelText="Extra LLM Parameters"
