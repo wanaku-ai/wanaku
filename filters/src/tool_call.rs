@@ -184,21 +184,23 @@ impl ToolCallFilter {
                 },
                 json_rpc_id: &parsed.id,
             };
-            if let Err(action) =
-                crate::credentials::inject_forward_credentials(ctx, &request, &mut forward_headers)
-                    .await
+            let redactor = match crate::credentials::inject_forward_credentials(
+                ctx,
+                &request,
+                &mut forward_headers,
+            )
+            .await
             {
-                return Ok(action);
-            }
+                Ok(redactor) => redactor,
+                Err(action) => return Ok(action),
+            };
+            let exchange = crate::credentials::ForwardExchange {
+                headers: forward_headers,
+                redactor,
+            };
 
             return self
-                .handle_forwarded_call(
-                    &address,
-                    &tool_name,
-                    &parsed,
-                    forward_headers,
-                    &conversation_id,
-                )
+                .handle_forwarded_call(&address, &tool_name, &parsed, exchange, &conversation_id)
                 .await;
         }
 
@@ -222,9 +224,13 @@ impl ToolCallFilter {
         address: &str,
         tool_name: &str,
         parsed: &ParsedBody,
-        forward_headers: HashMap<HeaderName, HeaderValue>,
+        exchange: crate::credentials::ForwardExchange,
         tracking_id: &str,
     ) -> Result<FilterAction, FilterError> {
+        let crate::credentials::ForwardExchange {
+            headers: forward_headers,
+            redactor,
+        } = exchange;
         trace!(
             tool = %tool_name,
             uri = %address,
@@ -252,25 +258,20 @@ impl ToolCallFilter {
             .await
         {
             Ok(call_result) => {
-                let mcp_content: Vec<serde_json::Value> = call_result
-                    .content
-                    .iter()
-                    .map(|text| serde_json::json!({"type": "text", "text": text}))
-                    .collect();
-
-                let response = serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": parsed.id,
-                    "result": {"content": mcp_content, "isError": call_result.is_error}
-                });
-
+                let response =
+                    build_success_response(&parsed.id, &call_result, &redactor, &forwarded_values);
                 let response_body = Bytes::from(response.to_string());
                 Ok(FilterAction::Reject(crate::response::json_response(
                     response_body,
                 )))
             }
             Err(e) => {
+                // #1964: redact forwarded header values, their token segments, and
+                // audit-shaped text from the upstream error.
                 let detail = redacted_forward_error(&e, &forwarded_values);
+                // #1874: also strip any brokered secret the upstream echoed back,
+                // matched by the exact injected material as a backstop.
+                let detail = redactor.redact(&detail);
                 warn!(tool = %tool_name, error = %detail, "MCP forward call failed");
                 Ok(crate::response::json_rpc_error(
                     &parsed.id,
@@ -327,7 +328,20 @@ fn redaction_needles(forwarded_values: &[String]) -> Vec<String> {
 /// other credential-shaped text. A credential-shaped detail collapses to
 /// `[REDACTED]` in full; an ordinary error passes through unchanged.
 fn redacted_forward_error(error: &impl std::fmt::Display, forwarded_values: &[String]) -> String {
-    let mut detail = format!("forwarded tool call failed: {error}");
+    redact_forwarded_text(
+        &format!("forwarded tool call failed: {error}"),
+        forwarded_values,
+    )
+}
+
+/// Apply the #1964 forwarded-value and shape-based redaction to arbitrary text.
+///
+/// #1964: remove each forwarded header value and its token segments, then apply
+/// the shared `AuditRedactor` to collapse any remaining credential-shaped text.
+/// Shared by the transport-error path and the tool-error content path so both
+/// sanitize an echoed credential the same way.
+fn redact_forwarded_text(text: &str, forwarded_values: &[String]) -> String {
+    let mut detail = text.to_owned();
     for needle in redaction_needles(forwarded_values) {
         if detail.contains(needle.as_str()) {
             detail = detail.replace(needle.as_str(), "[REDACTED]");
@@ -335,6 +349,40 @@ fn redacted_forward_error(error: &impl std::fmt::Display, forwarded_values: &[St
     }
     wanaku_types::audit_redaction::AuditRedactor::default().redact_string(&mut detail);
     detail
+}
+
+/// Build the JSON-RPC success payload for a forwarded tool call, redacting any
+/// injected credential the upstream echoed back into its content.
+///
+/// #1874: always strip brokered secrets from the content. #1964: when the
+/// upstream reports a tool-level failure (`isError`), also strip forwarded header
+/// values and credential-shaped text, so a tool error that echoes a credential is
+/// sanitized the same way a transport error is.
+fn build_success_response(
+    id: &serde_json::Value,
+    call_result: &wanaku_infra::mcp_client::CallToolResponse,
+    redactor: &crate::credentials::CredentialRedactor,
+    forwarded_values: &[String],
+) -> serde_json::Value {
+    let mcp_content: Vec<serde_json::Value> = call_result
+        .content
+        .iter()
+        .map(|text| {
+            let redacted = redactor.redact(text);
+            let redacted = if call_result.is_error {
+                redact_forwarded_text(&redacted, forwarded_values)
+            } else {
+                redacted
+            };
+            serde_json::json!({"type": "text", "text": redacted})
+        })
+        .collect();
+
+    serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": id,
+        "result": {"content": mcp_content, "isError": call_result.is_error}
+    })
 }
 
 fn inject_header_arguments(
@@ -484,6 +532,98 @@ mod tests {
         });
         let result = response.get("result").expect("result missing");
         assert_eq!(result.get("isError"), Some(&serde_json::Value::Bool(true)));
+    }
+
+    #[test]
+    fn build_success_response_redacts_injected_credential() {
+        // The upstream echoes both the raw secret and the full header value.
+        let call_result = wanaku_infra::mcp_client::CallToolResponse {
+            content: vec![
+                "your token is s3cr3t".to_owned(),
+                "sent Authorization: Bearer s3cr3t".to_owned(),
+            ],
+            is_error: false,
+        };
+        let redactor = crate::credentials::CredentialRedactor::from_patterns(vec![
+            "s3cr3t".to_owned(),
+            "Bearer s3cr3t".to_owned(),
+        ]);
+
+        let response = build_success_response(&serde_json::json!(1), &call_result, &redactor, &[]);
+
+        let content = response
+            .pointer("/result/content")
+            .and_then(|c| c.as_array())
+            .expect("content array missing");
+        assert_eq!(content[0]["text"], "your token is <redacted>");
+        assert_eq!(content[1]["text"], "sent Authorization: <redacted>");
+    }
+
+    #[test]
+    fn build_success_response_is_noop_without_binding() {
+        let call_result = wanaku_infra::mcp_client::CallToolResponse {
+            content: vec!["plain output".to_owned()],
+            is_error: false,
+        };
+        let redactor = crate::credentials::CredentialRedactor::default();
+
+        let response = build_success_response(&serde_json::json!(1), &call_result, &redactor, &[]);
+
+        assert_eq!(
+            response.pointer("/result/content/0/text").unwrap(),
+            "plain output"
+        );
+    }
+
+    #[test]
+    fn build_success_response_redacts_forwarded_value_in_tool_error() {
+        // #1964: a tool-level failure (isError) arrives on the success path. Its
+        // content must still be stripped of forwarded header values and
+        // credential-shaped text, not only brokered secrets.
+        let call_result = wanaku_infra::mcp_client::CallToolResponse {
+            content: vec!["upstream rejected token opaque-fwd-token-xyz".to_owned()],
+            is_error: true,
+        };
+        // No brokered secret configured: the forwarded value must still be redacted.
+        let redactor = crate::credentials::CredentialRedactor::default();
+        let forwarded = vec!["opaque-fwd-token-xyz".to_owned()];
+
+        let response =
+            build_success_response(&serde_json::json!(1), &call_result, &redactor, &forwarded);
+
+        let text = response
+            .pointer("/result/content/0/text")
+            .and_then(|t| t.as_str())
+            .expect("content text missing");
+        assert!(
+            !text.contains("opaque-fwd-token-xyz"),
+            "forwarded value leaked: {text}"
+        );
+        assert!(
+            text.contains("[REDACTED]"),
+            "expected redaction placeholder: {text}"
+        );
+    }
+
+    #[test]
+    fn build_success_response_skips_forwarded_redaction_on_success() {
+        // A genuine success (isError false) must not run the #1964 forwarded-value
+        // redaction, so ordinary output that happens to contain a forwarded value
+        // stays intact for the agent that owns it.
+        let call_result = wanaku_infra::mcp_client::CallToolResponse {
+            content: vec!["result includes opaque-fwd-token-xyz".to_owned()],
+            is_error: false,
+        };
+        let redactor = crate::credentials::CredentialRedactor::default();
+        let forwarded = vec!["opaque-fwd-token-xyz".to_owned()];
+
+        let response =
+            build_success_response(&serde_json::json!(1), &call_result, &redactor, &forwarded);
+
+        assert_eq!(
+            response.pointer("/result/content/0/text").unwrap(),
+            "result includes opaque-fwd-token-xyz"
+        );
     }
 
     #[test]

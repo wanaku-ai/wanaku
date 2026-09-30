@@ -173,15 +173,23 @@ impl ResourceReadFilter {
                 },
                 json_rpc_id: &parsed.id,
             };
-            if let Err(action) =
-                crate::credentials::inject_forward_credentials(ctx, &request, &mut forward_headers)
-                    .await
+            let redactor = match crate::credentials::inject_forward_credentials(
+                ctx,
+                &request,
+                &mut forward_headers,
+            )
+            .await
             {
-                return Ok(action);
-            }
+                Ok(redactor) => redactor,
+                Err(action) => return Ok(action),
+            };
+            let exchange = crate::credentials::ForwardExchange {
+                headers: forward_headers,
+                redactor,
+            };
 
             return self
-                .handle_forwarded_read(&address, resource_uri, &parsed, forward_headers)
+                .handle_forwarded_read(&address, resource_uri, &parsed, exchange)
                 .await;
         }
 
@@ -196,40 +204,66 @@ impl ResourceReadFilter {
         ))
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "MCP forwarding handler with error paths"
+    )]
     async fn handle_forwarded_read(
         &self,
         forward_address: &str,
         resource_uri: &str,
         parsed: &ParsedBody,
-        forward_headers: HashMap<HeaderName, HeaderValue>,
+        exchange: crate::credentials::ForwardExchange,
     ) -> Result<FilterAction, FilterError> {
+        let crate::credentials::ForwardExchange {
+            headers: forward_headers,
+            redactor,
+        } = exchange;
         trace!(uri = %resource_uri, forward = %forward_address, "forwarding resources/read to remote MCP server");
 
-        match wanaku_infra::mcp_client::read_resource(forward_address, resource_uri, forward_headers)
-            .await
+        match wanaku_infra::mcp_client::read_resource(
+            forward_address,
+            resource_uri,
+            forward_headers,
+        )
+        .await
         {
             Ok(contents) => {
-                let response = serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": parsed.id,
-                    "result": {"contents": contents}
-                });
-
+                let response = build_read_response(&parsed.id, &contents, &redactor);
                 let response_body = Bytes::from(response.to_string());
                 Ok(FilterAction::Reject(crate::response::json_response(
                     response_body,
                 )))
             }
             Err(e) => {
-                warn!(uri = %resource_uri, error = %e, "MCP forward resource read failed");
+                // Redact any injected secret the upstream may have echoed into its
+                // error text before it reaches the logs or the agent.
+                let message = redactor.redact(&e.to_string());
+                warn!(uri = %resource_uri, error = %message, "MCP forward resource read failed");
                 Ok(crate::response::json_rpc_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
-                    &format!("forwarded resource read failed: {e}"),
+                    &format!("forwarded resource read failed: {message}"),
                 ))
             }
         }
     }
+}
+
+/// Build the JSON-RPC response for a forwarded resource read, redacting any
+/// injected credential the upstream echoed back into the resource contents.
+fn build_read_response(
+    id: &serde_json::Value,
+    contents: &[serde_json::Value],
+    redactor: &crate::credentials::CredentialRedactor,
+) -> serde_json::Value {
+    let redacted: Vec<serde_json::Value> =
+        contents.iter().map(|c| redactor.redact_json(c)).collect();
+    serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": id,
+        "result": {"contents": redacted}
+    })
 }
 
 #[cfg(test)]
@@ -260,6 +294,44 @@ mod tests {
         ));
         let parsed = parse_body(&body, serde_json::Value::from(1));
         assert_eq!(parsed.id, serde_json::Value::from(1));
+    }
+
+    #[test]
+    fn build_read_response_redacts_nested_credential() {
+        // The upstream echoes the secret deep inside the resource contents.
+        let contents = vec![serde_json::json!({
+            "uri": "file:///x",
+            "text": "token is s3cr3t",
+            "meta": {"echoed": "Authorization: Bearer s3cr3t"}
+        })];
+        let redactor = crate::credentials::CredentialRedactor::from_patterns(vec![
+            "s3cr3t".to_owned(),
+            "Bearer s3cr3t".to_owned(),
+        ]);
+
+        let response = build_read_response(&serde_json::json!(1), &contents, &redactor);
+
+        let entry = response.pointer("/result/contents/0").unwrap();
+        assert_eq!(entry.pointer("/text").unwrap(), "token is <redacted>");
+        assert_eq!(
+            entry.pointer("/meta/echoed").unwrap(),
+            "Authorization: <redacted>"
+        );
+        // Non-secret structure is preserved untouched.
+        assert_eq!(entry.pointer("/uri").unwrap(), "file:///x");
+    }
+
+    #[test]
+    fn build_read_response_is_noop_without_binding() {
+        let contents = vec![serde_json::json!({"text": "plain s3cr3t"})];
+        let redactor = crate::credentials::CredentialRedactor::default();
+
+        let response = build_read_response(&serde_json::json!(1), &contents, &redactor);
+
+        assert_eq!(
+            response.pointer("/result/contents/0/text").unwrap(),
+            "plain s3cr3t"
+        );
     }
 
     #[test]

@@ -8,7 +8,9 @@
 //!
 //! Secret values are never logged. Only header names and redacted audit metadata
 //! are emitted. Resolved values are carried as sensitive [`HeaderValue`]s so the
-//! transport layer redacts them.
+//! transport layer redacts them. Injection also returns a [`CredentialRedactor`]
+//! that carries the injected secret material so the caller can strip it from
+//! upstream responses and errors before they reach the agent or the logs.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -18,10 +20,28 @@ use praxis_filter::{FilterAction, HttpFilterContext};
 use tracing::{trace, warn};
 use wanaku_infra::credentials::CredentialBroker;
 use wanaku_infra::registry::InMemoryRegistry;
+
+// The redactor is shared with the forward discovery path, so it lives in
+// `wanaku-infra`. Re-export it here so filter code refers to it as
+// `crate::credentials::CredentialRedactor`.
+pub use wanaku_infra::credentials::CredentialRedactor;
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::UseScope;
 use wanaku_types::credentials::injection::detect_collisions;
 use wanaku_types::registry::{BindingRegistry, ForwardEntry};
+
+/// The transport inputs and output sanitizer for one forwarded MCP call.
+///
+/// Groups the outbound headers to send upstream with the [`CredentialRedactor`]
+/// that strips any injected secret from the upstream response and errors. Passing
+/// this as one value keeps the forwarding handlers under the argument-count
+/// threshold and mirrors the `HttpContext`/`McpContext` context-struct pattern.
+pub struct ForwardExchange {
+    /// Headers to send on the forwarded call (may include brokered credentials).
+    pub headers: HashMap<HeaderName, HeaderValue>,
+    /// Redactor for the upstream response content and error text.
+    pub redactor: CredentialRedactor,
+}
 
 /// The scope-bearing inputs for one forward credential brokerage request.
 ///
@@ -43,15 +63,17 @@ pub struct ForwardCredentialRequest<'a> {
 /// Resolve the credential binding for the request's forward and purpose, then
 /// merge the brokered headers into `forward_headers`.
 ///
-/// Returns `Ok(())` when there is nothing to inject (the forward has no binding
-/// for this purpose) or when injection succeeds. Returns `Err(FilterAction)`
-/// with a ready JSON-RPC error when the request must be denied. On any error
-/// path no credential header is added.
+/// Returns a [`CredentialRedactor`] on success. The redactor is empty (a no-op)
+/// when there is nothing to inject (the forward has no binding for this
+/// purpose); otherwise it carries the injected secret material so the caller can
+/// strip it from upstream responses and errors. Returns `Err(FilterAction)` with
+/// a ready JSON-RPC error when the request must be denied. On any error path no
+/// credential header is added.
 pub async fn inject_forward_credentials(
     ctx: &HttpFilterContext<'_>,
     request: &ForwardCredentialRequest<'_>,
     forward_headers: &mut HashMap<HeaderName, HeaderValue>,
-) -> Result<(), FilterAction> {
+) -> Result<CredentialRedactor, FilterAction> {
     // Extract the brokerage dependencies from the request extensions and defer
     // to the pure core so the fail-closed paths stay unit-testable without a
     // full filter context.
@@ -74,13 +96,14 @@ async fn inject_forward_credentials_inner(
     registry: Option<&InMemoryRegistry>,
     request: &ForwardCredentialRequest<'_>,
     forward_headers: &mut HashMap<HeaderName, HeaderValue>,
-) -> Result<(), FilterAction> {
+) -> Result<CredentialRedactor, FilterAction> {
     let forward = request.forward;
     let json_rpc_id = request.json_rpc_id;
 
     let Some(binding_id) = forward.binding_for(request.purpose) else {
-        // No credential binding configured for this purpose: forward unchanged.
-        return Ok(());
+        // No credential binding configured for this purpose: forward unchanged
+        // and nothing to redact.
+        return Ok(CredentialRedactor::default());
     };
 
     // Once a binding is configured the request must fail closed if any part of
@@ -165,7 +188,10 @@ async fn inject_forward_credentials_inner(
                 mechanism = %brokered.audit.mechanism,
                 "injected brokered credential headers"
             );
-            Ok(())
+            // Carry a redactor for both the raw secret material and the full
+            // injected header value so an upstream that echoes either form is
+            // stripped before it reaches the agent or the logs.
+            Ok(CredentialRedactor::from_brokered(&brokered))
         }
         Err(e) => {
             // Fail closed. The audit record is redacted (no secret material).
@@ -281,13 +307,38 @@ mod tests {
             inject_forward_credentials_inner(Some(&broker), Some(&registry), &req, &mut headers)
                 .await;
 
-        assert!(result.is_ok());
+        let redactor = result.expect("brokerage should succeed");
         let value = headers
             .get(&HeaderName::from_static("authorization"))
             .unwrap();
         assert_eq!(value.to_str().unwrap(), "Bearer s3cr3t");
         // The injected value must be marked sensitive so the transport redacts it.
         assert!(value.is_sensitive());
+        // The returned redactor must strip both the raw secret and the full
+        // injected header value from any upstream echo.
+        assert_eq!(
+            redactor.redact("leaked s3cr3t here"),
+            "leaked <redacted> here"
+        );
+        assert_eq!(
+            redactor.redact("Authorization: Bearer s3cr3t"),
+            "Authorization: <redacted>"
+        );
+    }
+
+    #[tokio::test]
+    async fn noop_binding_yields_empty_redactor() {
+        let forward = forward(None);
+        let id = serde_json::json!(1);
+        let req = request(&forward, ADDRESS, &id);
+        let mut headers = HashMap::new();
+
+        let redactor = inject_forward_credentials_inner(None, None, &req, &mut headers)
+            .await
+            .expect("no binding should succeed");
+
+        // With nothing injected the redactor must leave input untouched.
+        assert_eq!(redactor.redact("nothing to redact"), "nothing to redact");
     }
 
     #[tokio::test]
