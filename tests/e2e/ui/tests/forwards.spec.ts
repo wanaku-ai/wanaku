@@ -66,6 +66,27 @@ test.describe('Forwards', () => {
     expect(await forwards.getInvocationBindingOptions()).not.toContain(discovery.id);
   });
 
+  test('forward modal explains when no binding matches the forward', async ({ page }) => {
+    const data = forwardData();
+    // The only binding is owned by a different forward, so it never matches this
+    // forward name. The selector must show the empty state instead of a silently
+    // disabled control.
+    const other = bindingData({ forwardId: 'some-other-forward', allowedPurposes: ['discovery'] });
+    await page.route('**/api/v1/bindings', (route) =>
+      route.fulfill({ json: { data: [other] } }));
+
+    await forwards.goto();
+    await forwards.clickAddForward();
+    await forwards.fillForwardForm(data);
+
+    // The empty state (shown only after the bindings load) tells the operator to
+    // author a binding in wanaku.yaml with a matching forwardId.
+    await expect.poll(() => forwards.modalHasText(`forwardId: ${data.name}`)).toBe(true);
+    // The mocked binding is owned by a different forward, so once loaded it is
+    // never offered as an option.
+    expect(await forwards.getDiscoveryBindingOptions()).not.toContain(other.id);
+  });
+
   test('delete a forward', async () => {
     const data = forwardData();
     await api.addForward(data);
