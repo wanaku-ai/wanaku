@@ -99,6 +99,9 @@ jobs:
           yarn --cwd ui/admin install --frozen-lockfile
           yarn --cwd ui/admin build
 
+      - name: Build evaluator actions
+        uses: ./.github/actions/build-evaluator-actions
+
       - name: Test
         run: cargo test --workspace --locked --verbose
 
