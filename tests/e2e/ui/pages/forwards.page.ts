@@ -22,15 +22,35 @@ export class ForwardsPage extends BasePage {
   }
 
   async getDiscoveryBindingOptions(): Promise<string[]> {
-    return this.page.locator('#forward-discovery-binding option').allInnerTexts();
+    const select = this.page.locator('#forward-discovery-binding');
+    await select.click();
+    // Wait for the first listbox (the dropdown) to be visible
+    const listbox = this.page.getByRole('listbox').first();
+    await listbox.waitFor({ state: 'visible', timeout: 5000 });
+    // Get options only from this specific listbox
+    const options = await listbox.getByRole('option').allInnerTexts();
+    // Press Escape to close the dropdown
+    await this.page.keyboard.press('Escape');
+    return options;
   }
 
   async getInvocationBindingOptions(): Promise<string[]> {
-    return this.page.locator('#forward-invocation-binding option').allInnerTexts();
+    const select = this.page.locator('#forward-invocation-binding');
+    await select.click();
+    // Wait for the first listbox (the dropdown) to be visible
+    const listbox = this.page.getByRole('listbox').first();
+    await listbox.waitFor({ state: 'visible', timeout: 5000 });
+    // Get options only from this specific listbox
+    const options = await listbox.getByRole('option').allInnerTexts();
+    // Press Escape to close the dropdown
+    await this.page.keyboard.press('Escape');
+    return options;
   }
 
   async selectDiscoveryBinding(id: string) {
-    await this.page.locator('#forward-discovery-binding').selectOption(id);
+    const select = this.page.locator('#forward-discovery-binding');
+    await select.click();
+    await this.page.getByRole('option', { name: id }).click();
   }
 
   async modalHasText(text: string): Promise<boolean> {
