@@ -213,6 +213,12 @@ async fn inject_forward_credentials_inner(
         .await
     {
         Ok(brokered) => {
+            // Stage the headers in a local buffer and commit them to
+            // `forward_headers` only after the whole loop succeeds. A multi-header
+            // mechanism with an invalid later value must leave no earlier header
+            // injected when the request is denied, or the fail-closed contract
+            // breaks.
+            let mut staged = Vec::with_capacity(brokered.headers.len());
             for header in &brokered.headers {
                 // Never log the value. Build a sensitive HeaderValue so header
                 // debuggers redact the secret at the transport boundary.
@@ -236,7 +242,11 @@ async fn inject_forward_credentials_inner(
                     ));
                 };
                 value.set_sensitive(true);
-                forward_headers.insert(header.header_name().clone(), value);
+                staged.push((header.header_name().clone(), value));
+            }
+            // Every header is valid, so commit the batch.
+            for (name, value) in staged {
+                forward_headers.insert(name, value);
             }
             // The headers are built, so record the brokerage outcome now. Recording
             // after the header loop keeps a header-rejection denial from being
