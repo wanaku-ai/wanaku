@@ -1,4 +1,5 @@
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct PluginManifest {
     pub id: String,
     pub name: String,
@@ -13,6 +14,7 @@ pub struct PluginManifest {
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct PluginRequires {
     #[serde(rename = "hostApi", default)]
     pub host_api: String,
@@ -21,6 +23,7 @@ pub struct PluginRequires {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct ServiceRequirement {
     pub id: String,
     pub version: String,

@@ -1,14 +1,105 @@
+use std::collections::HashMap;
 use std::path::Path;
+use std::sync::{Arc, RwLock};
 
 use http::{Response, StatusCode};
 use tracing::warn;
 use wanaku_types::http_response::{json_err, json_ok};
 
+use crate::api::{ConfigurePluginRequest, InstallPluginRequest, InstallPluginResponse};
+use crate::installer::{InstallError, install_plugin_from_url};
 use crate::manifest::PluginManifest;
+use crate::persistence::{PluginConfigPersistence, PluginsConfigSnapshot};
 
-pub(crate) fn handle_list_plugins(manifests: &[PluginManifest]) -> Response<Vec<u8>> {
-    let data = serde_json::to_value(manifests).unwrap_or(serde_json::Value::Array(vec![]));
+pub(crate) fn handle_list_plugins(manifests: &RwLock<Vec<PluginManifest>>) -> Response<Vec<u8>> {
+    let list = manifests.read().map(|m| m.clone()).unwrap_or_default();
+    let data = serde_json::to_value(list).unwrap_or(serde_json::Value::Array(vec![]));
     json_ok(&data)
+}
+
+pub(crate) async fn handle_install_plugin(
+    client: &reqwest::Client,
+    plugins_path: Option<&Path>,
+    manifests: &RwLock<Vec<PluginManifest>>,
+    body: Option<&str>,
+) -> Response<Vec<u8>> {
+    let Some(plugins_dir) = plugins_path else {
+        return json_err(
+            StatusCode::BAD_REQUEST,
+            "plugins directory not configured on server (use --plugins-path)",
+        );
+    };
+
+    let Some(raw_body) = body else {
+        return json_err(StatusCode::BAD_REQUEST, "request body required");
+    };
+
+    let req: InstallPluginRequest = match serde_json::from_str(raw_body) {
+        Ok(r) => r,
+        Err(e) => return json_err(StatusCode::BAD_REQUEST, &format!("invalid request JSON: {e}")),
+    };
+
+    match install_plugin_from_url(client, plugins_dir, &req.id, &req.version, &req.url).await {
+        Ok(manifest) => {
+            if let Ok(mut guard) = manifests.write() {
+                guard.retain(|m| m.id != manifest.id);
+                guard.push(manifest.clone());
+            }
+            let val = serde_json::to_value(&InstallPluginResponse { manifest })
+                .unwrap_or(serde_json::Value::Null);
+            json_ok(&val)
+        }
+        Err(e) => {
+            warn!(plugin = %req.id, error = %e, "plugin installation failed");
+            let status = match e {
+                InstallError::PluginsPathNotConfigured | InstallError::InsecurePath(_) | InstallError::InvalidManifest | InstallError::IdMismatch(_, _) => {
+                    StatusCode::BAD_REQUEST
+                }
+                InstallError::DownloadFailed(_) => StatusCode::BAD_GATEWAY,
+                InstallError::InvalidArchive(_) | InstallError::ManifestError(_) | InstallError::Io(_) => {
+                    StatusCode::UNPROCESSABLE_ENTITY
+                }
+            };
+            json_err(status, &e.to_string())
+        }
+    }
+}
+
+pub(crate) fn handle_configure_plugin(
+    plugin_id: &str,
+    service_map: &RwLock<HashMap<(String, String), String>>,
+    persistence: Option<&Arc<dyn PluginConfigPersistence>>,
+    body: Option<&str>,
+) -> Response<Vec<u8>> {
+    let Some(raw_body) = body else {
+        return json_err(StatusCode::BAD_REQUEST, "request body required");
+    };
+
+    let req: ConfigurePluginRequest = match serde_json::from_str(raw_body) {
+        Ok(r) => r,
+        Err(e) => return json_err(StatusCode::BAD_REQUEST, &format!("invalid request JSON: {e}")),
+    };
+
+    // Update in-memory service map
+    if let Ok(mut guard) = service_map.write() {
+        // Remove existing mappings for this plugin
+        guard.retain(|(p_id, _), _| p_id != plugin_id);
+        for (svc_id, target) in &req.services {
+            guard.insert((plugin_id.to_owned(), svc_id.clone()), target.target.clone());
+        }
+    }
+
+    // Persist to default data directory
+    if let Some(persist) = persistence {
+        let mut snapshot: PluginsConfigSnapshot = persist.load().unwrap_or_default();
+        snapshot.insert(plugin_id.to_owned(), req.services);
+        if let Err(e) = persist.save(&snapshot) {
+            warn!(plugin = %plugin_id, error = %e, "failed to persist plugin configuration");
+            return json_err(StatusCode::INTERNAL_SERVER_ERROR, "failed to persist configuration");
+        }
+    }
+
+    json_ok(&serde_json::json!({"status": "ok"}))
 }
 
 #[expect(clippy::expect_used, reason = "valid static file response")]
@@ -19,10 +110,27 @@ pub(crate) fn handle_serve_file(
 ) -> Response<Vec<u8>> {
     let plugin_root = plugins_path.join(plugin_id);
 
-    let target = if file_path.is_empty() {
-        plugin_root.join("index.html")
+    // Locate effective root (either plugin_root itself or nested directory if plugin.json is nested)
+    let effective_root = if plugin_root.join("plugin.json").exists() {
+        plugin_root.clone()
+    } else if let Ok(sub_entries) = std::fs::read_dir(&plugin_root) {
+        let mut found = plugin_root.clone();
+        for sub_entry in sub_entries.flatten() {
+            let sub_path = sub_entry.path();
+            if sub_path.is_dir() && sub_path.join("plugin.json").exists() {
+                found = sub_path;
+                break;
+            }
+        }
+        found
     } else {
-        plugin_root.join(file_path)
+        plugin_root.clone()
+    };
+
+    let target = if file_path.is_empty() {
+        effective_root.join("index.html")
+    } else {
+        effective_root.join(file_path)
     };
 
     let Ok(canonical) = target.canonicalize() else {

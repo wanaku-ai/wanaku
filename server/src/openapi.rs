@@ -21,6 +21,10 @@ use wanaku_feature_evaluator::config::{
     EvaluatorDef, LlmDef, LlmOperation, NoulCriteria, NoulDef, ProcessorRef, SystemOneDef,
     SystemOneState, TriggerDef,
 };
+use wanaku_feature_plugins::api::{
+    ConfigurePluginRequest, InstallPluginRequest, InstallPluginResponse, PluginServiceTarget,
+};
+use wanaku_feature_plugins::manifest::{PluginManifest, PluginRequires, ServiceRequirement};
 use wanaku_types::revision::{ActivationStatus, RevisionMetadata, RevisionOrigin};
 
 use wanaku_infra::metrics::{
@@ -402,6 +406,35 @@ const fn get_action_policy_revision() {}
 )]
 const fn activate_action_policy_revision() {}
 
+// -- Plugins ------------------------------------------------------------------
+
+#[utoipa::path(get, path = "/api/v1/plugins", tag = "Plugins",
+    responses((status = 200, description = "List discovered plugins", body = WanakuResponse<Vec<PluginManifest>>))
+)]
+const fn list_plugins() {}
+
+#[utoipa::path(post, path = "/api/v1/plugins/install", tag = "Plugins",
+    request_body = InstallPluginRequest,
+    responses(
+        (status = 200, description = "Plugin successfully installed", body = WanakuResponse<InstallPluginResponse>),
+        (status = 400, description = "Invalid request or insecure archive", body = ManagementErrorResponse),
+        (status = 502, description = "Download failed", body = ManagementErrorResponse),
+        (status = 422, description = "Extraction or manifest error", body = ManagementErrorResponse),
+    )
+)]
+const fn install_plugin() {}
+
+#[utoipa::path(put, path = "/api/v1/plugins/{id}/config", tag = "Plugins",
+    params(("id" = String, Path, description = "Plugin ID")),
+    request_body = ConfigurePluginRequest,
+    responses(
+        (status = 200, description = "Configuration saved", body = WanakuResponse<serde_json::Value>),
+        (status = 400, description = "Invalid configuration", body = ManagementErrorResponse),
+        (status = 500, description = "Persistence failed", body = ManagementErrorResponse),
+    )
+)]
+const fn configure_plugin() {}
+
 // -- OpenAPI Aggregation ------------------------------------------------------
 
 struct OptionalActivationBodies;
@@ -482,6 +515,9 @@ impl utoipa::Modify for OptionalActivationBodies {
         get_active_action_policy_revision,
         get_action_policy_revision,
         activate_action_policy_revision,
+        list_plugins,
+        install_plugin,
+        configure_plugin,
     ),
     modifiers(&OptionalActivationBodies),
     components(schemas(
@@ -550,6 +586,13 @@ impl utoipa::Modify for OptionalActivationBodies {
         UpdateActionPolicyRequest,
         ActivatePolicyRevisionRequest,
         ActionPolicyRevisionResponse,
+        PluginManifest,
+        PluginRequires,
+        ServiceRequirement,
+        InstallPluginRequest,
+        InstallPluginResponse,
+        PluginServiceTarget,
+        ConfigurePluginRequest,
         ManagementErrorResponse,
     ))
 )]
@@ -588,6 +631,9 @@ mod tests {
             "/api/v1/action-policies/revisions/active",
             "/api/v1/action-policies/revisions/{id}",
             "/api/v1/action-policies/revisions/{id}/activate",
+            "/api/v1/plugins",
+            "/api/v1/plugins/install",
+            "/api/v1/plugins/{id}/config",
         ] {
             assert!(
                 paths.is_some_and(|paths| paths.contains_key(path)),
@@ -596,6 +642,9 @@ mod tests {
         }
 
         for schema in [
+            "PluginManifest",
+            "InstallPluginRequest",
+            "ConfigurePluginRequest",
             "EvaluatorDef",
             "EvaluatorStatus",
             "EvaluatorReadiness",

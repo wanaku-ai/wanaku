@@ -1,13 +1,16 @@
 #![deny(unsafe_code)]
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
+pub mod api;
 mod handlers;
+pub mod installer;
 pub mod manifest;
+pub mod persistence;
 mod routes;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use http::{Response, StatusCode};
 use praxis_filter::{FilterRegistry, PipelineExtension};
@@ -15,12 +18,14 @@ use wanaku_types::feature::{Feature, HttpContext};
 use wanaku_types::http_response::json_err;
 
 use crate::manifest::PluginManifest;
+use crate::persistence::{FilePluginConfigPersistence, PluginConfigPersistence};
 use crate::routes::{PluginRoute, resolve_plugin_route};
 
 pub struct PluginsFeature {
     plugins_path: Option<PathBuf>,
-    manifests: Vec<PluginManifest>,
+    manifests: RwLock<Vec<PluginManifest>>,
     service_map: RwLock<HashMap<(String, String), String>>,
+    persistence: Option<Arc<dyn PluginConfigPersistence>>,
     client: reqwest::Client,
 }
 
@@ -36,12 +41,44 @@ impl PluginsFeature {
             None => (None, Vec::new()),
         };
 
+        let persistence = FilePluginConfigPersistence::from_config();
+        let service_map = RwLock::new(HashMap::new());
+
+        // Load persisted service configs
+        if let Some(persist) = &persistence {
+            if let Ok(snapshot) = persist.load() {
+                if let Ok(mut guard) = service_map.write() {
+                    for (plugin_id, services) in snapshot {
+                        for (svc_id, target) in services {
+                            guard.insert((plugin_id.clone(), svc_id), target.target);
+                        }
+                    }
+                }
+            }
+        }
+
         Self {
             plugins_path: path,
-            manifests,
-            service_map: RwLock::new(HashMap::new()),
+            manifests: RwLock::new(manifests),
+            service_map,
+            persistence,
             client: reqwest::Client::new(),
         }
+    }
+
+    #[must_use]
+    pub fn with_persistence(mut self, persistence: Arc<dyn PluginConfigPersistence>) -> Self {
+        if let Ok(snapshot) = persistence.load() {
+            if let Ok(mut guard) = self.service_map.write() {
+                for (plugin_id, services) in snapshot {
+                    for (svc_id, target) in services {
+                        guard.insert((plugin_id.clone(), svc_id), target.target);
+                    }
+                }
+            }
+        }
+        self.persistence = Some(persistence);
+        self
     }
 }
 
@@ -72,8 +109,26 @@ fn discover_plugins(plugins_dir: &PathBuf) -> Vec<PluginManifest> {
             continue;
         }
 
-        let manifest_path = entry_path.join("plugin.json");
-        let Ok(content) = std::fs::read_to_string(&manifest_path) else {
+        // Support either entry_path/plugin.json or entry_path/<subdir>/plugin.json
+        let (manifest_path, content) = if let Ok(content) = std::fs::read_to_string(entry_path.join("plugin.json")) {
+            (entry_path.join("plugin.json"), content)
+        } else if let Ok(sub_entries) = std::fs::read_dir(&entry_path) {
+            let mut found = None;
+            for sub_entry in sub_entries.flatten() {
+                let sub_path = sub_entry.path();
+                if sub_path.is_dir() {
+                    let sub_manifest = sub_path.join("plugin.json");
+                    if let Ok(c) = std::fs::read_to_string(&sub_manifest) {
+                        found = Some((sub_manifest, c));
+                        break;
+                    }
+                }
+            }
+            match found {
+                Some(f) => f,
+                None => continue,
+            }
+        } else {
             continue;
         };
 
@@ -131,9 +186,24 @@ impl Feature for PluginsFeature {
             return None;
         }
         Some(match route {
-            PluginRoute::ListPlugins => routes::handle_list(&self.manifests),
+            PluginRoute::ListPlugins => handlers::handle_list_plugins(&self.manifests),
+            PluginRoute::InstallPlugin => {
+                handlers::handle_install_plugin(
+                    &self.client,
+                    self.plugins_path.as_deref(),
+                    &self.manifests,
+                    ctx.body,
+                )
+                .await
+            }
+            PluginRoute::ConfigurePlugin(plugin_id) => handlers::handle_configure_plugin(
+                &plugin_id,
+                &self.service_map,
+                self.persistence.as_ref(),
+                ctx.body,
+            ),
             PluginRoute::ServeFile(plugin_id, file_path) => match &self.plugins_path {
-                Some(p) => routes::handle_file(p, &plugin_id, &file_path),
+                Some(p) => handlers::handle_serve_file(p, &plugin_id, &file_path),
                 None => json_err(StatusCode::NOT_FOUND, "plugins directory not configured"),
             },
             PluginRoute::ProxyService(plugin_id, service_id, proxy_path) => {
@@ -144,7 +214,7 @@ impl Feature for PluginsFeature {
                     .and_then(|g| g.get(&(plugin_id.clone(), service_id.clone())).cloned());
                 match target {
                     Some(target_url) => {
-                        routes::handle_proxy(
+                        handlers::handle_proxy_service(
                             &self.client,
                             &target_url,
                             &proxy_path,

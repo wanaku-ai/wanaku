@@ -11,6 +11,7 @@ import type {
   ActivateRevisionRequest,
   BindEvaluatorNamespace200,
   BindNamespaceRequest,
+  ConfigurePluginRequest,
   CredentialBinding,
   ForwardEntry,
   GetActionPolicyRevision200,
@@ -20,6 +21,7 @@ import type {
   GetEvaluatorRevision200,
   GetEvaluatorStatus200,
   GetEvaluatorStatusParams,
+  InstallPluginRequest,
   ListActionPolicyRevisions200Item,
   ListAuditEventsParams,
   ListEvaluatorBindings200,
@@ -39,6 +41,9 @@ import type {
   WanakuResponseAuditEvent,
   WanakuResponseAuditHealth,
   WanakuResponseAuditPage,
+  WanakuResponseInstallPluginResponse,
+  WanakuResponseValue,
+  WanakuResponseVecPluginManifest,
 } from "../models";
 
 import { customFetch } from "../custom-fetch";
@@ -1240,6 +1245,126 @@ export const deleteNamespace = async (
     method: "DELETE",
   });
 };
+export type listPluginsResponse200 = {
+  data: WanakuResponseVecPluginManifest;
+  status: 200;
+};
+
+export type listPluginsResponseSuccess = listPluginsResponse200 & {
+  headers: Headers;
+};
+export type listPluginsResponse = listPluginsResponseSuccess;
+
+export const getListPluginsUrl = () => {
+  return `/api/v1/plugins`;
+};
+
+export const listPlugins = async (
+  options?: RequestInit,
+): Promise<listPluginsResponse> => {
+  return customFetch<listPluginsResponse>(getListPluginsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type installPluginResponse200 = {
+  data: WanakuResponseInstallPluginResponse;
+  status: 200;
+};
+
+export type installPluginResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type installPluginResponse422 = {
+  data: ManagementErrorResponse;
+  status: 422;
+};
+
+export type installPluginResponse502 = {
+  data: ManagementErrorResponse;
+  status: 502;
+};
+
+export type installPluginResponseSuccess = installPluginResponse200 & {
+  headers: Headers;
+};
+export type installPluginResponseError = (
+  | installPluginResponse400
+  | installPluginResponse422
+  | installPluginResponse502
+) & {
+  headers: Headers;
+};
+
+export type installPluginResponse =
+  | installPluginResponseSuccess
+  | installPluginResponseError;
+
+export const getInstallPluginUrl = () => {
+  return `/api/v1/plugins/install`;
+};
+
+export const installPlugin = async (
+  installPluginRequest: InstallPluginRequest,
+  options?: RequestInit,
+): Promise<installPluginResponse> => {
+  return customFetch<installPluginResponse>(getInstallPluginUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(installPluginRequest),
+  });
+};
+
+export type configurePluginResponse200 = {
+  data: WanakuResponseValue;
+  status: 200;
+};
+
+export type configurePluginResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type configurePluginResponse500 = {
+  data: ManagementErrorResponse;
+  status: 500;
+};
+
+export type configurePluginResponseSuccess = configurePluginResponse200 & {
+  headers: Headers;
+};
+export type configurePluginResponseError = (
+  | configurePluginResponse400
+  | configurePluginResponse500
+) & {
+  headers: Headers;
+};
+
+export type configurePluginResponse =
+  | configurePluginResponseSuccess
+  | configurePluginResponseError;
+
+export const getConfigurePluginUrl = (id: string) => {
+  return `/api/v1/plugins/${id}/config`;
+};
+
+export const configurePlugin = async (
+  id: string,
+  configurePluginRequest: ConfigurePluginRequest,
+  options?: RequestInit,
+): Promise<configurePluginResponse> => {
+  return customFetch<configurePluginResponse>(getConfigurePluginUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(configurePluginRequest),
+  });
+};
+
 
 export type listPromptsResponse200 = {
   data: PromptEntry[];

@@ -1230,6 +1230,147 @@
         }
       }
     },
+    "/api/v1/plugins": {
+      "get": {
+        "tags": [
+          "Plugins"
+        ],
+        "operationId": "list_plugins",
+        "responses": {
+          "200": {
+            "description": "List discovered plugins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Vec_PluginManifest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plugins/install": {
+      "post": {
+        "tags": [
+          "Plugins"
+        ],
+        "operationId": "install_plugin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstallPluginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Plugin successfully installed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_InstallPluginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or insecure archive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Extraction or manifest error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Download failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plugins/{id}/config": {
+      "put": {
+        "tags": [
+          "Plugins"
+        ],
+        "operationId": "configure_plugin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Plugin ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigurePluginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Value"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Persistence failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/prompts": {
       "get": {
         "tags": [
@@ -1871,6 +2012,23 @@
             "format": "int64",
             "description": "An explicit bounded maximum TTL, in seconds. When absent and the\nresolver supplies no expiry metadata, results are not cached.",
             "minimum": 0
+          }
+        }
+      },
+      "ConfigurePluginRequest": {
+        "type": "object",
+        "required": [
+          "services"
+        ],
+        "properties": {
+          "services": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PluginServiceTarget"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           }
         }
       },
@@ -2523,6 +2681,36 @@
         ],
         "description": "The supported outbound credential injection mechanisms."
       },
+      "InstallPluginRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "InstallPluginResponse": {
+        "type": "object",
+        "required": [
+          "manifest"
+        ],
+        "properties": {
+          "manifest": {
+            "$ref": "#/components/schemas/PluginManifest"
+          }
+        }
+      },
       "LlmDef": {
         "type": "object",
         "description": "LLM engine configuration.",
@@ -2854,6 +3042,69 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "PluginManifest": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "version",
+          "entrypoint"
+        ],
+        "properties": {
+          "entrypoint": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requires": {
+            "$ref": "#/components/schemas/PluginRequires"
+          },
+          "styles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "PluginRequires": {
+        "type": "object",
+        "properties": {
+          "hostApi": {
+            "type": "string"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceRequirement"
+            }
+          }
+        }
+      },
+      "PluginServiceTarget": {
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "properties": {
+          "target": {
+            "type": "string"
           }
         }
       },
@@ -3340,6 +3591,21 @@
           }
         },
         "additionalProperties": false
+      },
+      "ServiceRequirement": {
+        "type": "object",
+        "required": [
+          "id",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
       },
       "SystemOneDef": {
         "type": "object",
@@ -3878,6 +4144,28 @@
           }
         }
       },
+      "WanakuResponse_InstallPluginResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "manifest"
+            ],
+            "properties": {
+              "manifest": {
+                "$ref": "#/components/schemas/PluginManifest"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "WanakuResponse_NamespaceBinding": {
         "type": "object",
         "properties": {
@@ -3926,6 +4214,18 @@
           }
         }
       },
+      "WanakuResponse_Value": {
+        "type": "object",
+        "properties": {
+          "data": {},
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "WanakuResponse_Vec_EvaluatorDef": {
         "type": "object",
         "properties": {
@@ -3956,6 +4256,58 @@
                 }
               },
               "additionalProperties": false
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_Vec_PluginManifest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "version",
+                "entrypoint"
+              ],
+              "properties": {
+                "entrypoint": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "permissions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "requires": {
+                  "$ref": "#/components/schemas/PluginRequires"
+                },
+                "styles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "version": {
+                  "type": "string"
+                }
+              }
             }
           },
           "error": {
