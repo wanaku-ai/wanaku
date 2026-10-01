@@ -164,15 +164,15 @@ jobs:
         if: matrix.container && env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           image="${CONTAINER_REGISTRY}/${CONTAINER_GROUP}/wanaku-server"
-          cargo build-image --tag "$image:${VERSION}-early-access"
-          cargo build-image --tag "$image:early-access"
+          cargo build-image --push --tag "$image:${VERSION}-early-access"
+          cargo build-image --push --tag "$image:early-access"
 
       - name: Build and push headless container image
         if: matrix.container && env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
           image="${CONTAINER_REGISTRY}/${CONTAINER_GROUP}/wanaku-server-headless"
-          cargo build-image-headless --tag "$image:${VERSION}-early-access"
-          cargo build-image-headless --tag "$image:early-access"
+          cargo build-image-headless --push --tag "$image:${VERSION}-early-access"
+          cargo build-image-headless --push --tag "$image:early-access"
 
   create-manifests:
     name: Publish multi-architecture container manifests

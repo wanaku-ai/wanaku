@@ -25,7 +25,7 @@ FROM ui-builder-${VARIANT} AS ui-builder
 FROM registry.fedoraproject.org/fedora:44 AS builder
 ARG VARIANT=full
 
-RUN dnf install -y gcc gcc-c++ openssl-devel pkgconf-pkg-config cmake make curl \
+RUN dnf install -y gcc gcc-c++ openssl-devel pkgconf-pkg-config cmake make \
     && dnf clean all
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.96.0
