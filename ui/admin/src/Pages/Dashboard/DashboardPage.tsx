@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from "react";
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Button,
   Column,
@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableBody,
   TableCell,
-} from "@carbon/react";
+} from '@carbon/react';
 import {
   Activity,
   ArrowRight,
@@ -25,12 +25,12 @@ import {
   Tools,
   Settings,
   Flow,
-} from "@carbon/icons-react";
-import {useNavigate} from "react-router-dom";
-import {useStatistics} from "../../hooks/api/use-statistics";
-import {useMetrics} from "../../hooks/api/use-metrics";
-import {Links} from "../../router/links.models";
-import type {MetricsSnapshot, FilterSnapshot, EvaluatorSnapshot} from "../../models";
+} from '@carbon/icons-react';
+import { useNavigate } from 'react-router-dom';
+import { useStatistics } from '../../hooks/api/use-statistics';
+import { useMetrics } from '../../hooks/api/use-metrics';
+import { Links } from '../../router/links.models';
+import type { MetricsSnapshot, FilterSnapshot, EvaluatorSnapshot } from '../../models';
 interface SystemStatistics {
   toolsCount?: number;
   resourcesCount?: number;
@@ -38,29 +38,26 @@ interface SystemStatistics {
   forwardsCount?: number;
   dataStoresCount?: number;
 }
-import "./DashboardPage.scss";
-import {useErrorNotification} from "../../hooks/error-notifications"
-import {ErrorNotification} from "../../components/ErrorNotification"
+import './DashboardPage.scss';
+import { useErrorNotification } from '../../hooks/error-notifications';
+import { ErrorNotification } from '../../components/ErrorNotification';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [statistics, setStatistics] = useState<SystemStatistics | null>(null);
   const [metrics, setMetrics] = useState<MetricsSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { errorMessage, setErrorMessage } = useErrorNotification()
+  const { errorMessage, setErrorMessage } = useErrorNotification();
   const { getStatistics } = useStatistics();
   const { getMetrics } = useMetrics();
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [statsResult, metricsResult] = await Promise.all([
-        getStatistics(),
-        getMetrics(),
-      ]);
+      const [statsResult, metricsResult] = await Promise.all([getStatistics(), getMetrics()]);
 
       if (statsResult.status !== 200 || !statsResult.data) {
-        setErrorMessage("Failed to fetch statistics.");
+        setErrorMessage('Failed to fetch statistics.');
         setStatistics(null);
       } else {
         setStatistics(statsResult.data);
@@ -72,7 +69,7 @@ export const DashboardPage: React.FC = () => {
         setMetrics(null);
       }
     } catch {
-      setErrorMessage("Failed to fetch data. Please try again later.");
+      setErrorMessage('Failed to fetch data. Please try again later.');
       setStatistics(null);
       setMetrics(null);
     } finally {
@@ -93,21 +90,18 @@ export const DashboardPage: React.FC = () => {
     0,
   );
 
-  const totalFilterErrors = filterEntries.reduce(
-    (sum, [, f]) => sum + f.errors,
-    0,
-  );
+  const totalFilterErrors = filterEntries.reduce((sum, [, f]) => sum + f.errors, 0);
 
   const evaluatorEntries = metrics
     ? Object.entries(metrics.evaluators).sort(([a], [b]) => a.localeCompare(b))
     : [];
 
   const filterHeaders = [
-    { key: "name", header: "Filter" },
-    { key: "continue", header: "Continue" },
-    { key: "reject", header: "Reject" },
-    { key: "errors", header: "Errors" },
-    { key: "avgDuration", header: "Avg Duration (ms)" },
+    { key: 'name', header: 'Filter' },
+    { key: 'continue', header: 'Continue' },
+    { key: 'reject', header: 'Reject' },
+    { key: 'errors', header: 'Errors' },
+    { key: 'avgDuration', header: 'Avg Duration (ms)' },
   ];
 
   const filterRows = filterEntries.map(([name, f]: [string, FilterSnapshot]) => ({
@@ -120,15 +114,15 @@ export const DashboardPage: React.FC = () => {
   }));
 
   const evaluatorHeaders = [
-    { key: "name", header: "Evaluator" },
-    { key: "pass", header: "Pass" },
-    { key: "block", header: "Block" },
-    { key: "warn", header: "Warn" },
-    { key: "llmCalls", header: "LLM Calls" },
-    { key: "llmAvg", header: "LLM Avg (ms)" },
-    { key: "wasmRuns", header: "WASM Runs" },
-    { key: "schemaPass", header: "Schema ✓" },
-    { key: "schemaFail", header: "Schema ✗" },
+    { key: 'name', header: 'Evaluator' },
+    { key: 'pass', header: 'Pass' },
+    { key: 'block', header: 'Block' },
+    { key: 'warn', header: 'Warn' },
+    { key: 'llmCalls', header: 'LLM Calls' },
+    { key: 'llmAvg', header: 'LLM Avg (ms)' },
+    { key: 'wasmRuns', header: 'WASM Runs' },
+    { key: 'schemaPass', header: 'Schema ✓' },
+    { key: 'schemaFail', header: 'Schema ✗' },
   ];
 
   const evaluatorRows = evaluatorEntries.map(([name, e]: [string, EvaluatorSnapshot]) => ({
@@ -177,10 +171,7 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="dashboard-page">
       {errorMessage && (
-        <ErrorNotification
-          errorMessage={errorMessage}
-          onClose={() => setErrorMessage(null)}
-        />
+        <ErrorNotification errorMessage={errorMessage} onClose={() => setErrorMessage(null)} />
       )}
       <div className="dashboard-header">
         <div>
@@ -189,12 +180,7 @@ export const DashboardPage: React.FC = () => {
             Governed action proxy for AI agents — system overview and operational metrics.
           </p>
         </div>
-        <Button
-          kind="ghost"
-          size="md"
-          renderIcon={Renew}
-          onClick={fetchData}
-        >
+        <Button kind="ghost" size="md" renderIcon={Renew} onClick={fetchData}>
           Refresh
         </Button>
       </div>
@@ -297,13 +283,7 @@ export const DashboardPage: React.FC = () => {
           {filterEntries.length > 0 && (
             <section className="dashboard-section">
               <DataTable rows={filterRows} headers={filterHeaders}>
-                {({
-                  rows,
-                  headers,
-                  getTableProps,
-                  getHeaderProps,
-                  getRowProps,
-                }) => (
+                {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
                   <TableContainer title="Filter Performance">
                     <Table {...getTableProps()} size="md">
                       <TableHead>
@@ -334,13 +314,7 @@ export const DashboardPage: React.FC = () => {
           {evaluatorEntries.length > 0 && (
             <section className="dashboard-section">
               <DataTable rows={evaluatorRows} headers={evaluatorHeaders}>
-                {({
-                  rows,
-                  headers,
-                  getTableProps,
-                  getHeaderProps,
-                  getRowProps,
-                }) => (
+                {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
                   <TableContainer title="Evaluator Performance">
                     <Table {...getTableProps()} size="md">
                       <TableHead>

@@ -1,3 +1,3 @@
-import { BindingsPage } from "./BindingsPage";
+import { BindingsPage } from './BindingsPage';
 
 export const Component = BindingsPage;

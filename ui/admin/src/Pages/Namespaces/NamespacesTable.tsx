@@ -1,24 +1,24 @@
-import {Add, Edit, TrashCan} from "@carbon/icons-react";
+import { Add, Edit, TrashCan } from '@carbon/icons-react';
 import {
-    Button,
-    DataTable,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableExpandedRow,
-    TableExpandHeader,
-    TableExpandRow,
-    TableHead,
-    TableHeader,
-    TableRow,
-    TableToolbar,
-    TableToolbarContent,
-} from "@carbon/react";
-import React from "react";
-import {NamespaceEntry} from "../../models";
+  Button,
+  DataTable,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableExpandedRow,
+  TableExpandHeader,
+  TableExpandRow,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableToolbar,
+  TableToolbarContent,
+} from '@carbon/react';
+import React from 'react';
+import { NamespaceEntry } from '../../models';
 
-const PROTECTED_PATHS = ["default", "public", "wanaku-internal"];
+const PROTECTED_PATHS = ['default', 'public', 'wanaku-internal'];
 
 interface NamespaceTableProps {
   namespaces: NamespaceEntry[];
@@ -28,7 +28,7 @@ interface NamespaceTableProps {
 }
 
 function isProtected(namespace: NamespaceEntry): boolean {
-  return PROTECTED_PATHS.includes(namespace.name || "");
+  return PROTECTED_PATHS.includes(namespace.name || '');
 }
 
 function hasLabels(namespace: NamespaceEntry): boolean {
@@ -36,8 +36,8 @@ function hasLabels(namespace: NamespaceEntry): boolean {
 }
 
 function formatLabel(key: string, value: string): string {
-  const shortKey = key.replace("wanaku.io/", "");
-  if (shortKey.endsWith("-at") && /^\d+$/.test(value)) {
+  const shortKey = key.replace('wanaku.io/', '');
+  if (shortKey.endsWith('-at') && /^\d+$/.test(value)) {
     const epoch = Number(value);
     const date = epoch > 1e12 ? new Date(epoch) : new Date(epoch * 1000);
     return `${shortKey}: ${date.toLocaleString()}`;
@@ -52,25 +52,25 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
   onDelete,
 }) => {
   const headers = [
-    { key: "name", header: "Name" },
-    { key: "status", header: "Status" },
-    { key: "address", header: "Address" },
-    { key: "actions", header: "Actions" },
+    { key: 'name', header: 'Name' },
+    { key: 'status', header: 'Status' },
+    { key: 'address', header: 'Address' },
+    { key: 'actions', header: 'Actions' },
   ];
 
   function mcpAddress(name?: string): string {
     const host = window.location.hostname;
     const protocol = window.location.protocol;
     const base = `${protocol}//${host}:8081`;
-    return `${base}/${name || "default"}/mcp`;
+    return `${base}/${name || 'default'}/mcp`;
   }
 
   const rows = namespaces.map((namespace, index) => ({
     id: namespace.name || `namespace-${index}`,
-    name: namespace.name || "N/A",
-    status: namespace.name ? "Allocated" : "Available",
+    name: namespace.name || 'N/A',
+    status: namespace.name ? 'Allocated' : 'Available',
     address: mcpAddress(namespace.name),
-    actions: "",
+    actions: '',
   }));
 
   return (
@@ -112,8 +112,8 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
 
                 const cells = (
                   <React.Fragment>
-                    <TableCell>{namespace.name || "N/A"}</TableCell>
-                    <TableCell>{namespace.name ? "Allocated" : "Available"}</TableCell>
+                    <TableCell>{namespace.name || 'N/A'}</TableCell>
+                    <TableCell>{namespace.name ? 'Allocated' : 'Available'}</TableCell>
                     <TableCell>{mcpAddress(namespace.name)}</TableCell>
                     <TableCell>
                       <Button
@@ -143,10 +143,13 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
                         {cells}
                       </TableExpandRow>
                       {row.isExpanded && (
-                        <TableExpandedRow colSpan={headers.length + 3} {...getExpandedRowProps({ row })}>
+                        <TableExpandedRow
+                          colSpan={headers.length + 3}
+                          {...getExpandedRowProps({ row })}
+                        >
                           <div>
                             <strong>Labels:</strong>
-                            <ul style={{ margin: "0.5rem 0", paddingLeft: "1.5rem" }}>
+                            <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
                               {Object.entries(namespace.labels || {}).map(([key, value]) => (
                                 <li key={key}>{formatLabel(key, value)}</li>
                               ))}

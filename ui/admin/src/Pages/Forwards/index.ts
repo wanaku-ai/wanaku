@@ -1,1 +1,1 @@
-export { Component } from "./ForwardsPage";
+export { Component } from './ForwardsPage';

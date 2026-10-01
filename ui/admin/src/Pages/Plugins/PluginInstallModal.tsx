@@ -1,6 +1,6 @@
-import { Modal, TextInput } from "@carbon/react";
-import React, { useState } from "react";
-import type { InstallPluginRequest } from "../../models";
+import { Modal, TextInput } from '@carbon/react';
+import React, { useState } from 'react';
+import type { InstallPluginRequest } from '../../models';
 
 interface PluginInstallModalProps {
   onInstall: (req: InstallPluginRequest) => Promise<void>;
@@ -13,9 +13,9 @@ export const PluginInstallModal: React.FC<PluginInstallModalProps> = ({
   onRequestClose,
   isInstalling = false,
 }) => {
-  const [id, setId] = useState("");
-  const [version, setVersion] = useState("");
-  const [url, setUrl] = useState("");
+  const [id, setId] = useState('');
+  const [version, setVersion] = useState('');
+  const [url, setUrl] = useState('');
 
   const handleSubmit = async () => {
     if (!id.trim() || !version.trim() || !url.trim()) return;
@@ -32,13 +32,13 @@ export const PluginInstallModal: React.FC<PluginInstallModalProps> = ({
     <Modal
       open
       modalHeading="Install Plugin"
-      primaryButtonText={isInstalling ? "Installing..." : "Install"}
+      primaryButtonText={isInstalling ? 'Installing...' : 'Install'}
       primaryButtonDisabled={isInvalid || isInstalling}
       secondaryButtonText="Cancel"
       onRequestSubmit={handleSubmit}
       onRequestClose={onRequestClose}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <TextInput
           id="plugin-id"
           labelText="Plugin ID"

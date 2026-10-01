@@ -1,5 +1,5 @@
-import React from "react";
-import { SkeletonText } from "@carbon/react";
+import React from 'react';
+import { SkeletonText } from '@carbon/react';
 
 interface PageSkeletonProps {
   title: string;

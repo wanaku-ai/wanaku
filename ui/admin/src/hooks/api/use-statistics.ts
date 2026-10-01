@@ -1,15 +1,13 @@
-import {useCallback} from "react";
-import {getStatistics as apiGetStatistics, getStatisticsResponse} from "../../api/wanaku-router-api";
+import { useCallback } from 'react';
+import {
+  getStatistics as apiGetStatistics,
+  getStatisticsResponse,
+} from '../../api/wanaku-router-api';
 
 export const useStatistics = () => {
-  const getStatistics = useCallback(
-    (
-      options?: RequestInit,
-    ): Promise<getStatisticsResponse> => {
-      return apiGetStatistics(options);
-    },
-    [],
-  );
+  const getStatistics = useCallback((options?: RequestInit): Promise<getStatisticsResponse> => {
+    return apiGetStatistics(options);
+  }, []);
 
   return {
     getStatistics,

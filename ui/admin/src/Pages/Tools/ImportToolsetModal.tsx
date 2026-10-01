@@ -7,115 +7,112 @@ import {
   Stack,
   Switch,
   TextArea,
-  TextInput
-} from "@carbon/react"
-import React, {useState} from "react"
-import {ToolEntry} from "../../models"
-import {ToolParserError, Tools} from "./tools"
-import {ImportToolsetTable} from "./ImportToolsetTable"
-import {getErrorMessage} from "../../utils/error"
-
+  TextInput,
+} from '@carbon/react';
+import React, { useState } from 'react';
+import { ToolEntry } from '../../models';
+import { ToolParserError, Tools } from './tools';
+import { ImportToolsetTable } from './ImportToolsetTable';
+import { getErrorMessage } from '../../utils/error';
 
 interface ImportToolsetModalProps {
-  onSubmit: (tools: ToolEntry[]) => void
-  onCancel: () => void
+  onSubmit: (tools: ToolEntry[]) => void;
+  onCancel: () => void;
 }
 
 export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit, onCancel }) => {
+  const FINAL_STEP = 1;
+  const VIEW_MODE_TABLE = 'table';
+  const VIEW_MODE_JSON = 'json';
 
-  const FINAL_STEP = 1
-  const VIEW_MODE_TABLE = "table"
-  const VIEW_MODE_JSON = "json"
-
-  const [toolsetUrl, setToolsetUrl] = useState<string>()
-  const [invalidUrl, setInvalidUrl] = useState(false)
-  const [toolset, setToolset] = useState<ToolEntry[]>([])
-  const [toolsetJson, setToolsetJson] = useState<string>()
-  const [invalidJson, setInvalidJson] = useState(false)
-  const [invalidJsonText, setInvalidJsonText] = useState<string>()
-  const [step, setStep] = useState(0)
-  const [contentSwitcherEnabled, setContentSwitcherEnabled] = useState(true)
-  const [viewMode, setViewMode] = useState(VIEW_MODE_TABLE)
-  const [fetchError, setFetchError] = useState<string | null>(null)
-  const [selectedTools, setSelectedTools] = useState<ToolEntry[]>([])
-
+  const [toolsetUrl, setToolsetUrl] = useState<string>();
+  const [invalidUrl, setInvalidUrl] = useState(false);
+  const [toolset, setToolset] = useState<ToolEntry[]>([]);
+  const [toolsetJson, setToolsetJson] = useState<string>();
+  const [invalidJson, setInvalidJson] = useState(false);
+  const [invalidJsonText, setInvalidJsonText] = useState<string>();
+  const [step, setStep] = useState(0);
+  const [contentSwitcherEnabled, setContentSwitcherEnabled] = useState(true);
+  const [viewMode, setViewMode] = useState(VIEW_MODE_TABLE);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [selectedTools, setSelectedTools] = useState<ToolEntry[]>([]);
 
   function selectTools(tools: ToolEntry[]) {
-    setSelectedTools(tools)
-    setToolsetJson(tools.length > 0 ? Tools.stringify(tools) : undefined)
+    setSelectedTools(tools);
+    setToolsetJson(tools.length > 0 ? Tools.stringify(tools) : undefined);
   }
-  
+
   function primaryButtonText(): string {
-    return step === FINAL_STEP ? "Import" : "Next"
+    return step === FINAL_STEP ? 'Import' : 'Next';
   }
-  
+
   function primaryButtonDisabled(): boolean {
-    return step === FINAL_STEP && !toolsetJson
+    return step === FINAL_STEP && !toolsetJson;
   }
-  
+
   function isToolsetUrlEmpty(): boolean {
-    return !toolsetUrl
+    return !toolsetUrl;
   }
-  
+
   function isToolsetUrlValid(): boolean {
     try {
-      new URL(toolsetUrl!)
-      return true
+      new URL(toolsetUrl!);
+      return true;
     } catch (error) {
-      return false
+      return false;
     }
   }
-  
+
   async function fetchToolset() {
-    const response = await fetch(toolsetUrl!)
+    const response = await fetch(toolsetUrl!);
     if (response.ok) {
-      const tools = await response.json()
-      setToolset(tools)
-      selectTools(tools)
+      const tools = await response.json();
+      setToolset(tools);
+      selectTools(tools);
     } else {
-      throw new Error(`Error fetching toolset from ${toolsetUrl}: ${response.status}`)
+      throw new Error(`Error fetching toolset from ${toolsetUrl}: ${response.status}`);
     }
   }
-  
+
   async function handlePrimaryButton() {
     if (step === FINAL_STEP) {
-      handleSubmit()
+      handleSubmit();
     } else {
       if (isToolsetUrlEmpty()) {
         // skip fetching toolset, user can copy-paste in the next step
-        setStep(step + 1)
-        setViewMode(VIEW_MODE_JSON)
-        setContentSwitcherEnabled(false)
+        setStep(step + 1);
+        setViewMode(VIEW_MODE_JSON);
+        setContentSwitcherEnabled(false);
       } else if (isToolsetUrlValid()) {
         // try to fetch toolset and proceed to next step
         try {
-          setFetchError(null)
-          await fetchToolset()
-          setStep(step + 1)
+          setFetchError(null);
+          await fetchToolset();
+          setStep(step + 1);
         } catch (error) {
-          setFetchError(getErrorMessage(error))
+          setFetchError(getErrorMessage(error));
         }
       } else {
         // URL is invalid
-        setInvalidUrl(true)
+        setInvalidUrl(true);
       }
     }
   }
-  
+
   function handleSubmit() {
     try {
-      const tools: ToolEntry[] = Tools.parse(toolsetJson!)
-      onSubmit(tools)
+      const tools: ToolEntry[] = Tools.parse(toolsetJson!);
+      onSubmit(tools);
     } catch (error) {
       if (error instanceof SyntaxError || error instanceof ToolParserError) {
-        setInvalidJson(true)
-        setInvalidJsonText(error.message)
+        setInvalidJson(true);
+        setInvalidJsonText(error.message);
       } else {
-        console.error(error)
+        console.error(error);
       }
     }
   }
-  
+
   return (
     <Modal
       open={true}
@@ -144,39 +141,35 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
             invalid={invalidUrl}
             invalidText="Invalid URL"
             onChange={(event) => {
-              setToolsetUrl(event.target.value)
-              setInvalidUrl(false)
+              setToolsetUrl(event.target.value);
+              setInvalidUrl(false);
             }}
           />
         )}
         {step === 1 && (
           <>
             {contentSwitcherEnabled && (
-            <Grid>
-              <Column></Column>
-              <Column lg={{ span: 4, offset: 12 }} md={{ span: 4, offset: 4 }} sm={4}>
-                <ContentSwitcher
-                  onChange={({ name }) => { setViewMode(name as string) }}
-                  selectedIndex={viewMode === VIEW_MODE_TABLE ? 0 : 1}
-                >
-                  <Switch
-                    name={VIEW_MODE_TABLE}
-                    text="List view"
-                  />
-                  <Switch
-                    name={VIEW_MODE_JSON}
-                    text="Json"
-                  />
-                </ContentSwitcher>
-              </Column>
-            </Grid>
+              <Grid>
+                <Column></Column>
+                <Column lg={{ span: 4, offset: 12 }} md={{ span: 4, offset: 4 }} sm={4}>
+                  <ContentSwitcher
+                    onChange={({ name }) => {
+                      setViewMode(name as string);
+                    }}
+                    selectedIndex={viewMode === VIEW_MODE_TABLE ? 0 : 1}
+                  >
+                    <Switch name={VIEW_MODE_TABLE} text="List view" />
+                    <Switch name={VIEW_MODE_JSON} text="Json" />
+                  </ContentSwitcher>
+                </Column>
+              </Grid>
             )}
             {viewMode === VIEW_MODE_TABLE && (
               <ImportToolsetTable
                 tools={toolset}
                 selectedTools={selectedTools}
                 onSelectionChange={(tools: ToolEntry[]) => {
-                  selectTools(tools)
+                  selectTools(tools);
                 }}
               />
             )}
@@ -191,7 +184,7 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
                 invalid={invalidJson}
                 invalidText={invalidJsonText}
                 onChange={(event) => {
-                  setToolsetJson(event.target.value)
+                  setToolsetJson(event.target.value);
                 }}
               />
             )}
@@ -199,5 +192,5 @@ export const ImportToolsetModal: React.FC<ImportToolsetModalProps> = ({ onSubmit
         )}
       </Stack>
     </Modal>
-  )
-}
+  );
+};

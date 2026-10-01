@@ -45,7 +45,7 @@ export default defineConfig({
               },
           },
         hooks: {
-            afterAllFilesWrite: 'npx prettier --write',
+            afterAllFilesWrite: 'prettier --write --ignore-path /dev/null --no-config',
         },
     },
 });

@@ -1,10 +1,10 @@
-import {Modal, Stack, TextInput} from "@carbon/react";
-import React, {useState} from "react";
-import {NamespaceEntry} from "../../models";
+import { Modal, Stack, TextInput } from '@carbon/react';
+import React, { useState } from 'react';
+import { NamespaceEntry } from '../../models';
 
 interface NamespaceModalProps {
   openedNamespace?: NamespaceEntry;
-  namespaces: NamespaceEntry[]
+  namespaces: NamespaceEntry[];
   onSubmit: (namespace: NamespaceEntry) => void;
   onRequestClose: () => void;
 }
@@ -16,14 +16,14 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
   onRequestClose,
 }) => {
   const [name, setName] = useState(openedNamespace?.name);
-  const [invalidName, setInvalidName] = useState(false)
+  const [invalidName, setInvalidName] = useState(false);
 
   function otherNamespaces(): NamespaceEntry[] {
-    return namespaces.filter(namespace => namespace.name !== openedNamespace?.name)
+    return namespaces.filter((namespace) => namespace.name !== openedNamespace?.name);
   }
 
   function isDuplicate(name: string): boolean {
-    return otherNamespaces().some(namespace => namespace.name === name)
+    return otherNamespaces().some((namespace) => namespace.name === name);
   }
 
   function isDnsLabelValid(name: string): boolean {
@@ -32,7 +32,7 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
 
   const handleSubmit = () => {
     onSubmit({
-      name: name ?? "",
+      name: name ?? '',
       labels: openedNamespace?.labels,
     });
   };
@@ -40,8 +40,8 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
   return (
     <Modal
       open={true}
-      modalHeading={openedNamespace ? "Edit Namespace" : "Create Namespace"}
-      primaryButtonText={openedNamespace ? "Save" : "Create"}
+      modalHeading={openedNamespace ? 'Edit Namespace' : 'Create Namespace'}
+      primaryButtonText={openedNamespace ? 'Save' : 'Create'}
       primaryButtonDisabled={invalidName}
       secondaryButtonText="Cancel"
       onRequestSubmit={handleSubmit}
@@ -57,13 +57,13 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
           invalid={invalidName}
           invalidText={
             name && !isDnsLabelValid(name)
-              ? "Must contain only lowercase letters, numbers, and hyphens, and must start and end with a letter or number"
+              ? 'Must contain only lowercase letters, numbers, and hyphens, and must start and end with a letter or number'
               : `Namespace "${name}" already exists.`
           }
           onChange={(e) => {
-            const val = e.target.value
-            setName(val)
-            setInvalidName(!isDnsLabelValid(val) || isDuplicate(val))
+            const val = e.target.value;
+            setName(val);
+            setInvalidName(!isDnsLabelValid(val) || isDuplicate(val));
           }}
           disabled={!!openedNamespace}
         />

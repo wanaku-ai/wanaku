@@ -1,7 +1,7 @@
-import { Select, SelectItem } from "@carbon/react";
-import React, { useEffect, useState } from "react";
-import { useBindings } from "../../hooks/api/use-bindings";
-import type { CredentialBinding, CredentialPurpose } from "../../models";
+import { Select, SelectItem } from '@carbon/react';
+import React, { useEffect, useState } from 'react';
+import { useBindings } from '../../hooks/api/use-bindings';
+import type { CredentialBinding, CredentialPurpose } from '../../models';
 
 interface BindingSelectProps {
   id: string;
@@ -21,7 +21,7 @@ interface BindingOption {
   label: string;
 }
 
-const NONE_VALUE = "";
+const NONE_VALUE = '';
 
 /**
  * A read-from-config binding selector for a single purpose. Credential bindings
@@ -65,8 +65,7 @@ export const BindingSelect: React.FC<BindingSelectProps> = ({
 
   const available = bindings.filter(
     (binding) =>
-      binding.forwardId === forwardName &&
-      (binding.allowedPurposes ?? []).includes(purpose),
+      binding.forwardId === forwardName && (binding.allowedPurposes ?? []).includes(purpose),
   );
 
   const options: BindingOption[] = available.map((binding) => ({
@@ -87,8 +86,7 @@ export const BindingSelect: React.FC<BindingSelectProps> = ({
   // and purpose, keep the control enabled but explain why it is empty, rather
   // than disable it silently and look broken.
   const trimmedName = forwardName.trim();
-  const showEmptyState =
-    loaded && trimmedName.length > 0 && available.length === 0 && !value;
+  const showEmptyState = loaded && trimmedName.length > 0 && available.length === 0 && !value;
   const emptyStateText = `No credential binding is defined for a forward named "${trimmedName}". Author one in wanaku.yaml with forwardId: ${trimmedName}.`;
 
   return (

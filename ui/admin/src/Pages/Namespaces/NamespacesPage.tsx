@@ -1,25 +1,25 @@
-import {PageSkeleton} from "../../components/PageSkeleton";
-import React, {useCallback, useEffect, useState} from "react";
-import {NamespaceEntry} from "../../models";
-import {NamespaceTable} from "./NamespacesTable";
-import {NamespaceModal} from "./NamespaceModal";
-import {useNamespaces} from "../../hooks/api/use-namespaces";
-import {sortedNamespaces} from "./namespaces"
-import {useErrorNotification} from "../../hooks/error-notifications"
-import {ErrorNotification} from "../../components/ErrorNotification"
+import { PageSkeleton } from '../../components/PageSkeleton';
+import React, { useCallback, useEffect, useState } from 'react';
+import { NamespaceEntry } from '../../models';
+import { NamespaceTable } from './NamespacesTable';
+import { NamespaceModal } from './NamespaceModal';
+import { useNamespaces } from '../../hooks/api/use-namespaces';
+import { sortedNamespaces } from './namespaces';
+import { useErrorNotification } from '../../hooks/error-notifications';
+import { ErrorNotification } from '../../components/ErrorNotification';
 
 export const NamespacesPage: React.FC = () => {
   const [namespaces, setNamespaces] = useState<NamespaceEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [openedNamespace, setOpenedNamespace] = useState<NamespaceEntry>();
-  const { errorMessage, setErrorMessage } = useErrorNotification()
+  const { errorMessage, setErrorMessage } = useErrorNotification();
   const { listNamespaces, createNamespace, updateNamespace, removeNamespace } = useNamespaces();
 
   const refreshNamespaces = useCallback(async () => {
     return listNamespaces().then((result) => {
       if (result.status !== 200 || !Array.isArray(result.data)) {
-        setErrorMessage("Failed to fetch namespaces. Please try again later.");
+        setErrorMessage('Failed to fetch namespaces. Please try again later.');
         setNamespaces([]);
       } else {
         setNamespaces(sortedNamespaces(result.data));
@@ -55,7 +55,7 @@ export const NamespacesPage: React.FC = () => {
       await refreshNamespaces();
     } catch {
       setIsModalOpen(false);
-      setErrorMessage("Error creating namespace. The path may already be in use or is invalid.");
+      setErrorMessage('Error creating namespace. The path may already be in use or is invalid.');
     }
   };
 
@@ -65,7 +65,7 @@ export const NamespacesPage: React.FC = () => {
       setErrorMessage(null);
       await refreshNamespaces();
     } catch {
-      setErrorMessage("Error updating namespace.");
+      setErrorMessage('Error updating namespace.');
     } finally {
       handleModalClose();
     }
@@ -84,21 +84,21 @@ export const NamespacesPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <ErrorNotification
-          errorMessage={errorMessage}
-          onClose={() => setErrorMessage(null)}
-        />
+        <ErrorNotification errorMessage={errorMessage} onClose={() => setErrorMessage(null)} />
       )}
       <h1 className="title">Namespaces</h1>
       <p className="description">
-        Namespaces help organize and isolate tools and resources, preventing LLM context bloat.
-        Each namespace acts as a separate container accessible via its own MCP endpoint path.
+        Namespaces help organize and isolate tools and resources, preventing LLM context bloat. Each
+        namespace acts as a separate container accessible via its own MCP endpoint path.
       </p>
       <div id="page-content">
         <NamespaceTable
           namespaces={namespaces}
           onAdd={() => setIsModalOpen(true)}
-          onEdit={(namespace: NamespaceEntry) => { setOpenedNamespace(namespace); setIsModalOpen(true); }}
+          onEdit={(namespace: NamespaceEntry) => {
+            setOpenedNamespace(namespace);
+            setIsModalOpen(true);
+          }}
           onDelete={handleDelete}
         />
         {isModalOpen && (

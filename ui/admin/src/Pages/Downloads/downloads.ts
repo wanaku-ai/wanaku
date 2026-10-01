@@ -14,7 +14,7 @@
  */
 
 /** Distinguishes portable Java packages from platform-specific native binaries. */
-export type CliPackageKind = "native" | "java";
+export type CliPackageKind = 'native' | 'java';
 
 export interface CliDownload {
   /** Stable identifier, also used as the table row id and in tests. */
@@ -36,13 +36,13 @@ export interface CliDownload {
 }
 
 /** The GitHub repository that publishes the Wanaku CLI packages. */
-export const CLI_REPO = "wanaku-ai/wanaku-barn";
+export const CLI_REPO = 'wanaku-ai/wanaku-barn';
 
 /**
  * The version of the CLI packages. Keep this in sync with the Wanaku project
  * version (see the workspace `Cargo.toml` and `ui/admin/package.json`).
  */
-export const CLI_VERSION = "0.3.0";
+export const CLI_VERSION = '0.3.0';
 
 /**
  * The release channel the downloads point at.
@@ -54,16 +54,16 @@ export const CLI_VERSION = "0.3.0";
  *   published under the `v<version>` tag (for example `v0.3.0`), and its
  *   artifacts use the plain version (for example `wanaku-cli-0.3.0.zip`).
  */
-export type ReleaseChannel = "early-access" | "stable";
-export const CLI_RELEASE_CHANNEL: ReleaseChannel = "early-access";
+export type ReleaseChannel = 'early-access' | 'stable';
+export const CLI_RELEASE_CHANNEL: ReleaseChannel = 'early-access';
 
-const isEarlyAccess = CLI_RELEASE_CHANNEL === "early-access";
+const isEarlyAccess = CLI_RELEASE_CHANNEL === 'early-access';
 
 /**
  * Release tag the downloads point at. Derived from the selected channel so the
  * links stay correct for both early-access and stable releases.
  */
-export const CLI_RELEASE_TAG = isEarlyAccess ? "early-access" : `v${CLI_VERSION}`;
+export const CLI_RELEASE_TAG = isEarlyAccess ? 'early-access' : `v${CLI_VERSION}`;
 
 /** The artifact version used in the published file names for the channel. */
 const ARTIFACT_VERSION = isEarlyAccess ? `${CLI_VERSION}-SNAPSHOT` : CLI_VERSION;
@@ -82,23 +82,23 @@ const downloadUrl = (fileName: string): string =>
  */
 export const CLI_DOWNLOADS: CliDownload[] = [
   {
-    id: "java-universal",
-    name: "Wanaku CLI (Java)",
-    kind: "java",
-    runtime: "Java 21+",
-    platform: "Any (JVM)",
+    id: 'java-universal',
+    name: 'Wanaku CLI (Java)',
+    kind: 'java',
+    runtime: 'Java 21+',
+    platform: 'Any (JVM)',
     fileName: `wanaku-cli-${ARTIFACT_VERSION}.zip`,
     downloadUrl: downloadUrl(`wanaku-cli-${ARTIFACT_VERSION}.zip`),
-    notes: "Portable package. Requires a Java 21+ runtime installed on your machine.",
+    notes: 'Portable package. Requires a Java 21+ runtime installed on your machine.',
   },
   {
-    id: "native-linux-x86_64",
-    name: "Wanaku CLI (native)",
-    kind: "native",
-    runtime: "Native (no runtime required)",
-    platform: "Linux x86_64",
+    id: 'native-linux-x86_64',
+    name: 'Wanaku CLI (native)',
+    kind: 'native',
+    runtime: 'Native (no runtime required)',
+    platform: 'Linux x86_64',
     fileName: `wanaku-cli-${ARTIFACT_VERSION}-linux-x86_64.zip`,
     downloadUrl: downloadUrl(`wanaku-cli-${ARTIFACT_VERSION}-linux-x86_64.zip`),
-    notes: "Self-contained binary. Unzip, make it executable and move it into your PATH.",
+    notes: 'Self-contained binary. Unzip, make it executable and move it into your PATH.',
   },
 ];

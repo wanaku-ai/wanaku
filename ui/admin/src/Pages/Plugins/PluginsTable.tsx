@@ -10,11 +10,11 @@ import {
   TableRow,
   TableToolbar,
   TableToolbarContent,
-} from "@carbon/react";
-import { Settings, View } from "@carbon/icons-react";
-import React from "react";
-import type { PluginManifest } from "../../plugins/types";
-import { TableEmptyState } from "../EmptyTableState";
+} from '@carbon/react';
+import { Settings, View } from '@carbon/icons-react';
+import React from 'react';
+import type { PluginManifest } from '../../plugins/types';
+import { TableEmptyState } from '../EmptyTableState';
 
 interface PluginsTableProps {
   plugins: PluginManifest[];
@@ -30,11 +30,11 @@ export const PluginsTable: React.FC<PluginsTableProps> = ({
   onInstallClick,
 }) => {
   const headers = [
-    { key: "name", header: "Name" },
-    { key: "id", header: "ID" },
-    { key: "version", header: "Version" },
-    { key: "permissions", header: "Permissions" },
-    { key: "hostApi", header: "Host API" },
+    { key: 'name', header: 'Name' },
+    { key: 'id', header: 'ID' },
+    { key: 'version', header: 'Version' },
+    { key: 'permissions', header: 'Permissions' },
+    { key: 'hostApi', header: 'Host API' },
   ];
 
   function pluginsToRows() {
@@ -45,8 +45,8 @@ export const PluginsTable: React.FC<PluginsTableProps> = ({
       permissions:
         plugin.permissions && plugin.permissions.length > 0
           ? `${plugin.permissions.length} permissions`
-          : "—",
-      hostApi: plugin.requires?.hostApi || "—",
+          : '—',
+      hostApi: plugin.requires?.hostApi || '—',
     }));
   }
 
@@ -84,7 +84,7 @@ export const PluginsTable: React.FC<PluginsTableProps> = ({
                       <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
                     <TableCell>
-                      <div style={{ display: "flex", gap: "0.25rem" }}>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
                         <Button
                           kind="ghost"
                           renderIcon={View}

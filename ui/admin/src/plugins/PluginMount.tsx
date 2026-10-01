@@ -1,5 +1,5 @@
-import { useRef, useEffect } from "react";
-import type { Disposable } from "./types";
+import { useRef, useEffect } from 'react';
+import type { Disposable } from './types';
 
 interface PluginMountProps {
   mount: (container: HTMLElement) => void | Disposable;
@@ -16,7 +16,7 @@ export function PluginMount({ mount, pluginId }: PluginMountProps) {
 
     try {
       const result = mount(container);
-      if (result && typeof result.dispose === "function") {
+      if (result && typeof result.dispose === 'function') {
         disposableRef.current = result;
       }
     } catch (err) {

@@ -9,12 +9,12 @@ import {
   TableHeader,
   TableRow,
   Tag,
-} from "@carbon/react";
-import { View } from "@carbon/icons-react";
-import React from "react";
-import type { CredentialBinding } from "../../models";
-import { TableEmptyState } from "../EmptyTableState";
-import { formatMechanism } from "./bindings";
+} from '@carbon/react';
+import { View } from '@carbon/icons-react';
+import React from 'react';
+import type { CredentialBinding } from '../../models';
+import { TableEmptyState } from '../EmptyTableState';
+import { formatMechanism } from './bindings';
 
 interface BindingsTableProps {
   bindings: CredentialBinding[];
@@ -22,13 +22,13 @@ interface BindingsTableProps {
 }
 
 const headers = [
-  { key: "id", header: "ID" },
-  { key: "forwardId", header: "Forward" },
-  { key: "origin", header: "Origin" },
-  { key: "mechanism", header: "Mechanism" },
-  { key: "allowedPurposes", header: "Allowed Purposes" },
-  { key: "secretRefs", header: "Secret Refs" },
-  { key: "revision", header: "Revision" },
+  { key: 'id', header: 'ID' },
+  { key: 'forwardId', header: 'Forward' },
+  { key: 'origin', header: 'Origin' },
+  { key: 'mechanism', header: 'Mechanism' },
+  { key: 'allowedPurposes', header: 'Allowed Purposes' },
+  { key: 'secretRefs', header: 'Secret Refs' },
+  { key: 'revision', header: 'Revision' },
 ];
 
 export const BindingsTable: React.FC<BindingsTableProps> = ({ bindings, onViewDetails }) => {
@@ -39,15 +39,21 @@ export const BindingsTable: React.FC<BindingsTableProps> = ({ bindings, onViewDe
     forwardId: binding.forwardId,
     origin: binding.origin,
     mechanism: formatMechanism(binding.mechanism),
-    allowedPurposes: (binding.allowedPurposes ?? []).join(", "),
-    secretRefs: (binding.secretRefs ?? []).join(", "),
-    revision: binding.revision ?? "—",
+    allowedPurposes: (binding.allowedPurposes ?? []).join(', '),
+    secretRefs: (binding.secretRefs ?? []).join(', '),
+    revision: binding.revision ?? '—',
   }));
 
   return (
     <div data-testid="bindings-table">
       <DataTable rows={rows} headers={headers}>
-        {({ rows: tableRows, headers: tableHeaders, getTableProps, getHeaderProps, getRowProps }) => (
+        {({
+          rows: tableRows,
+          headers: tableHeaders,
+          getTableProps,
+          getHeaderProps,
+          getRowProps,
+        }) => (
           <TableContainer>
             <Table {...getTableProps()} aria-label="Credential bindings">
               <TableHead>
@@ -67,20 +73,24 @@ export const BindingsTable: React.FC<BindingsTableProps> = ({ bindings, onViewDe
                   return (
                     <TableRow {...getRowProps({ row })} key={row.id}>
                       {row.cells.map((cell) => {
-                        if (cell.info.header === "allowedPurposes") {
+                        if (cell.info.header === 'allowedPurposes') {
                           return (
                             <TableCell key={cell.id}>
                               {(binding.allowedPurposes ?? []).map((purpose, index) => (
-                                <Tag key={`${purpose}-${index}`} type="blue" size="sm">{purpose}</Tag>
+                                <Tag key={`${purpose}-${index}`} type="blue" size="sm">
+                                  {purpose}
+                                </Tag>
                               ))}
                             </TableCell>
                           );
                         }
-                        if (cell.info.header === "secretRefs") {
+                        if (cell.info.header === 'secretRefs') {
                           return (
                             <TableCell key={cell.id}>
                               {(binding.secretRefs ?? []).map((ref, index) => (
-                                <Tag key={`${ref}-${index}`} type="gray" size="sm">{ref}</Tag>
+                                <Tag key={`${ref}-${index}`} type="gray" size="sm">
+                                  {ref}
+                                </Tag>
                               ))}
                             </TableCell>
                           );

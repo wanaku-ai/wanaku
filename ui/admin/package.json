@@ -8,6 +8,8 @@
     "build": "orval --config ./orval.config.ts && tsc -b && vite build",
     "generate-api": "cargo run --example wanaku-openapi --manifest-path ../../server/Cargo.toml --no-default-features > openapi.json && orval --config ./orval.config.ts",
     "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx}\"",
     "preview": "vite preview"
   },
   "resolutions": {

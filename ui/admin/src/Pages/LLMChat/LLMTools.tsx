@@ -1,105 +1,104 @@
-import {
-  Checkbox,
-  CheckboxGroup,
-  InlineLoading,
-  Stack
-} from "@carbon/react"
-import React, {useEffect, useState} from "react"
-import {useNamespaces} from "../../hooks/api/use-namespaces"
-import {useTools} from "../../hooks/api/use-tools"
-import {getErrorMessage} from "../../utils/error"
-import {NamespaceEntry, ToolEntry} from "../../models"
-import {NamespaceSelect} from "../Namespaces/NamespaceSelect"
-
+import { Checkbox, CheckboxGroup, InlineLoading, Stack } from '@carbon/react';
+import React, { useEffect, useState } from 'react';
+import { useNamespaces } from '../../hooks/api/use-namespaces';
+import { useTools } from '../../hooks/api/use-tools';
+import { getErrorMessage } from '../../utils/error';
+import { NamespaceEntry, ToolEntry } from '../../models';
+import { NamespaceSelect } from '../Namespaces/NamespaceSelect';
 
 interface LLMToolsProps {
-  selectedNamespace: NamespaceEntry
-  selectedTools: ToolEntry[]
-  onSelectionChange: (namespace: NamespaceEntry, tools: ToolEntry[]) => void
-  onError?: (message: string) => void
+  selectedNamespace: NamespaceEntry;
+  selectedTools: ToolEntry[];
+  onSelectionChange: (namespace: NamespaceEntry, tools: ToolEntry[]) => void;
+  onError?: (message: string) => void;
 }
 
 export const LLMTools: React.FC<LLMToolsProps> = ({
-    selectedNamespace, selectedTools, onSelectionChange, onError }) => {
-  
-  const [tools, setTools] = useState<ToolEntry[]>([])
-  
+  selectedNamespace,
+  selectedTools,
+  onSelectionChange,
+  onError,
+}) => {
+  const [tools, setTools] = useState<ToolEntry[]>([]);
+
   // namespace used for filtering tools
-  const [namespace, setNamespace] = useState<NamespaceEntry>(selectedNamespace)
-  
-  const [isLoading, setLoading] = useState(true)
-  const { listTools } = useTools()
-  const { listNamespaces } = useNamespaces()
-  
-  
+  const [namespace, setNamespace] = useState<NamespaceEntry>(selectedNamespace);
+
+  const [isLoading, setLoading] = useState(true);
+  const { listTools } = useTools();
+  const { listNamespaces } = useNamespaces();
+
   useEffect(() => {
     (async () => {
       try {
-        const [fetchedTools, namespaces] = await Promise.all([fetchTools(), fetchNamespaces()])
-        setTools(fetchedTools)
+        const [fetchedTools, namespaces] = await Promise.all([fetchTools(), fetchNamespaces()]);
+        setTools(fetchedTools);
         // Keep the filtering namespace in sync with the selected one, falling
         // back to "default" if the selected namespace no longer exists.
-        setNamespace(resolveNamespace(namespaces))
+        setNamespace(resolveNamespace(namespaces));
       } catch (error) {
-        onError?.(getErrorMessage(error))
-        setTools([])
+        onError?.(getErrorMessage(error));
+        setTools([]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    })()
-  }, [listTools, listNamespaces, selectedNamespace])
+    })();
+  }, [listTools, listNamespaces, selectedNamespace]);
 
   async function fetchTools(): Promise<ToolEntry[]> {
-    const response = await listTools()
+    const response = await listTools();
     if (response.status !== 200 || !Array.isArray(response.data)) {
-      throw new Error("Error while fetching tools: " + response.status)
+      throw new Error('Error while fetching tools: ' + response.status);
     }
-    return response.data
+    return response.data;
   }
 
   async function fetchNamespaces(): Promise<NamespaceEntry[]> {
-    const response = await listNamespaces()
+    const response = await listNamespaces();
     if (response.status !== 200 || !Array.isArray(response.data)) {
-      throw new Error("Error while fetching namespaces: " + response.status)
+      throw new Error('Error while fetching namespaces: ' + response.status);
     }
-    return response.data
+    return response.data;
   }
 
   /* Resolve the selected namespace against the available ones. Falls back to
      "default" if the selected namespace no longer exists. */
   function resolveNamespace(namespaces: NamespaceEntry[]): NamespaceEntry {
-    if (!namespaces.find(namespace => namespace.name === selectedNamespace.name)) {
-      return { name: "default" }
+    if (!namespaces.find((namespace) => namespace.name === selectedNamespace.name)) {
+      return { name: 'default' };
     }
-    return selectedNamespace
+    return selectedNamespace;
   }
 
   function filteredTools(): ToolEntry[] {
     if (!namespace) {
-      return tools
+      return tools;
     }
-    if (namespace.name === "default") {
-      return tools.filter(tool => !tool.namespace || tool.namespace === "default")
+    if (namespace.name === 'default') {
+      return tools.filter((tool) => !tool.namespace || tool.namespace === 'default');
     }
-    const nsKey = namespace.name
-    return tools.filter(tool => tool.namespace === nsKey).sort((a, b) => a.name!.localeCompare(b.name!))
+    const nsKey = namespace.name;
+    return tools
+      .filter((tool) => tool.namespace === nsKey)
+      .sort((a, b) => a.name!.localeCompare(b.name!));
   }
 
   function isAllSelected() {
-    const selectedToolNames = selectedTools.map(tool => tool.name)
-    return selectedTools.length > 0 && filteredTools().every((tool) => selectedToolNames.includes(tool.name))
+    const selectedToolNames = selectedTools.map((tool) => tool.name);
+    return (
+      selectedTools.length > 0 &&
+      filteredTools().every((tool) => selectedToolNames.includes(tool.name))
+    );
   }
 
   function isSomeSelected() {
-    return selectedTools.length > 0 && selectedTools.length < filteredTools().length
+    return selectedTools.length > 0 && selectedTools.length < filteredTools().length;
   }
 
   return (
     <Stack gap={5}>
-      {isLoading &&
-        <InlineLoading description="Loading tools..." />
-      }
-      {!isLoading &&
+      {isLoading && <InlineLoading description="Loading tools..." />}
+      {!isLoading && (
         <NamespaceSelect
           id="namespace"
           labelText="Select tools"
@@ -107,14 +106,12 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
           onChange={(namespace: NamespaceEntry) => {
             // Update the local filtering namespace immediately so the tools
             // list reflects the new selection without needing a page refresh.
-            setNamespace(namespace)
-            onSelectionChange(namespace, [])
+            setNamespace(namespace);
+            onSelectionChange(namespace, []);
           }}
         />
-      }
-      {!isLoading && filteredTools().length == 0 &&
-        <div>No tools available</div>
-      }
+      )}
+      {!isLoading && filteredTools().length == 0 && <div>No tools available</div>}
       {!isLoading && filteredTools().length > 0 && (
         <CheckboxGroup legendText="">
           <Checkbox
@@ -123,8 +120,8 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
             checked={isAllSelected()}
             indeterminate={isSomeSelected()}
             onChange={(_, { checked }) => {
-              const selection = checked ? [...filteredTools()] : []
-              onSelectionChange(namespace, selection)
+              const selection = checked ? [...filteredTools()] : [];
+              onSelectionChange(namespace, selection);
             }}
           />
           {filteredTools().map((tool) => (
@@ -133,17 +130,17 @@ export const LLMTools: React.FC<LLMToolsProps> = ({
               key={tool.name}
               labelText={tool.name!}
               helperText={tool.description}
-              checked={selectedTools.map(tool => tool.name).includes(tool.name)}
+              checked={selectedTools.map((tool) => tool.name).includes(tool.name)}
               onChange={(_, { checked }) => {
                 const selection = checked
                   ? [...selectedTools, tool]
-                  : selectedTools.filter(item => item.name != tool.name)
-                onSelectionChange(namespace, selection)
+                  : selectedTools.filter((item) => item.name != tool.name);
+                onSelectionChange(namespace, selection);
               }}
             />
           ))}
         </CheckboxGroup>
       )}
     </Stack>
-  )
-}
+  );
+};

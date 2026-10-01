@@ -1,4 +1,4 @@
-import { CredentialBinding, InjectionMechanism } from "../../models";
+import { CredentialBinding, InjectionMechanism } from '../../models';
 
 export function sortedBindings(bindings: readonly CredentialBinding[]): CredentialBinding[] {
   const result = [...bindings];
@@ -11,15 +11,15 @@ export function sortedBindings(bindings: readonly CredentialBinding[]): Credenti
 }
 
 export function formatMechanism(mechanism: InjectionMechanism | undefined): string {
-  if (!mechanism) return "Unknown";
+  if (!mechanism) return 'Unknown';
   switch (mechanism.type) {
-    case "bearer":
-      return "Bearer token";
-    case "named_header":
-      return mechanism.header ? `Named header (${mechanism.header})` : "Named header";
-    case "basic":
-      return "Basic auth";
+    case 'bearer':
+      return 'Bearer token';
+    case 'named_header':
+      return mechanism.header ? `Named header (${mechanism.header})` : 'Named header';
+    case 'basic':
+      return 'Basic auth';
     default:
-      return "Unknown";
+      return 'Unknown';
   }
 }

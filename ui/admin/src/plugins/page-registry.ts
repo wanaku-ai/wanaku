@@ -1,4 +1,4 @@
-import type { Disposable } from "./types";
+import type { Disposable } from './types';
 
 interface PageEntry {
   route: string;
@@ -9,9 +9,17 @@ interface PageEntry {
 export class PageRegistry {
   private pages = new Map<string, PageEntry>();
 
-  register(route: string, mount: (el: HTMLElement) => void | Disposable, pluginId: string): Disposable {
+  register(
+    route: string,
+    mount: (el: HTMLElement) => void | Disposable,
+    pluginId: string,
+  ): Disposable {
     this.pages.set(route, { route, mount, pluginId });
-    return { dispose: () => { this.pages.delete(route); } };
+    return {
+      dispose: () => {
+        this.pages.delete(route);
+      },
+    };
   }
 
   getPages(): PageEntry[] {

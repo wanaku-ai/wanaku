@@ -29,7 +29,14 @@ export interface PluginHost {
 }
 
 export interface NavigationAPI {
-  add(entry: { id: string; label: string; route: string; icon?: string; section?: string; order?: number }): Disposable;
+  add(entry: {
+    id: string;
+    label: string;
+    route: string;
+    icon?: string;
+    section?: string;
+    order?: number;
+  }): Disposable;
 }
 
 export interface PageAPI {
@@ -44,5 +51,9 @@ export interface HttpAPI {
 }
 
 export interface NotificationAPI {
-  show(message: { title?: string; text: string; kind?: "info" | "success" | "warning" | "error" }): void;
+  show(message: {
+    title?: string;
+    text: string;
+    kind?: 'info' | 'success' | 'warning' | 'error';
+  }): void;
 }

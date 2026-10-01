@@ -1,6 +1,6 @@
-import { ComposedModal, ModalBody, ModalHeader, Tag } from "@carbon/react";
-import type { AuditEvent } from "../../models";
-import { formatAuditDate, getDecisionTagType } from "./audit-utils";
+import { ComposedModal, ModalBody, ModalHeader, Tag } from '@carbon/react';
+import type { AuditEvent } from '../../models';
+import { formatAuditDate, getDecisionTagType } from './audit-utils';
 
 interface AuditDetailModalProps {
   event: AuditEvent;
@@ -13,8 +13,8 @@ interface DetailFieldProps {
 }
 
 const displayValue = (value: unknown): string => {
-  if (value === undefined || value === null || value === "") return "—";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (value === undefined || value === null || value === '') return '—';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   return String(value);
 };
 
@@ -33,14 +33,25 @@ const JsonBlock = ({ label, value }: DetailFieldProps) => (
 );
 
 export const AuditDetailModal = ({ event, onRequestClose }: AuditDetailModalProps) => (
-  <ComposedModal open size="lg" onClose={onRequestClose} selectorPrimaryFocus=".cds--modal-close" data-testid="audit-event-detail">
+  <ComposedModal
+    open
+    size="lg"
+    onClose={onRequestClose}
+    selectorPrimaryFocus=".cds--modal-close"
+    data-testid="audit-event-detail"
+  >
     <ModalHeader title="Audit event details" label={event.event_id} closeModal={onRequestClose} />
     <ModalBody>
       <section className="audit-detail__section" aria-labelledby="audit-decision-heading">
         <h3 id="audit-decision-heading">Decision</h3>
         <dl className="audit-detail__grid">
           <DetailField label="Category" value={event.category} />
-          <div className="audit-detail__field"><dt>Decision</dt><dd><Tag type={getDecisionTagType(event.decision)}>{event.decision}</Tag></dd></div>
+          <div className="audit-detail__field">
+            <dt>Decision</dt>
+            <dd>
+              <Tag type={getDecisionTagType(event.decision)}>{event.decision}</Tag>
+            </dd>
+          </div>
           <DetailField label="Reason code" value={event.reason_code} />
           <DetailField label="Explanation" value={event.explanation} />
         </dl>
@@ -89,7 +100,7 @@ export const AuditDetailModal = ({ event, onRequestClose }: AuditDetailModalProp
           <DetailField label="Dropped events" value={event.dropped_events} />
           <DetailField label="Payload captured" value={event.redaction.payload_captured} />
           <DetailField label="Payload truncated" value={event.redaction.payload_truncated} />
-          <DetailField label="Redacted fields" value={event.redaction.redacted_fields.join(", ")} />
+          <DetailField label="Redacted fields" value={event.redaction.redacted_fields.join(', ')} />
         </dl>
       </section>
       <JsonBlock label="Attributes" value={event.attributes} />

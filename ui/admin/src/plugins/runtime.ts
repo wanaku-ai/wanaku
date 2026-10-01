@@ -1,14 +1,28 @@
-import type { PluginManifest, PluginModule } from "./types";
-import { createPluginHost } from "./plugin-host";
-import type { PageRegistry } from "./page-registry";
-import { getUrl } from "../custom-fetch";
+import type { PluginManifest, PluginModule } from './types';
+import { createPluginHost } from './plugin-host';
+import type { PageRegistry } from './page-registry';
+import { getUrl } from '../custom-fetch';
 
 interface NavigationStore {
-  add(item: { id: string; label: string; route: string; icon?: string; section?: string; order?: number }, source: string): { dispose(): void };
+  add(
+    item: {
+      id: string;
+      label: string;
+      route: string;
+      icon?: string;
+      section?: string;
+      order?: number;
+    },
+    source: string,
+  ): { dispose(): void };
 }
 
 interface NotificationStore {
-  show(msg: { title?: string; text: string; kind?: "info" | "success" | "warning" | "error" }): void;
+  show(msg: {
+    title?: string;
+    text: string;
+    kind?: 'info' | 'success' | 'warning' | 'error';
+  }): void;
 }
 
 export async function discoverAndActivatePlugins(
@@ -18,28 +32,28 @@ export async function discoverAndActivatePlugins(
 ): Promise<void> {
   let manifests: PluginManifest[];
   try {
-    const response = await fetch(getUrl("/api/v1/plugins"));
+    const response = await fetch(getUrl('/api/v1/plugins'));
     if (!response.ok) {
-      console.warn("Plugin discovery failed:", response.status);
+      console.warn('Plugin discovery failed:', response.status);
       return;
     }
     const result = await response.json();
     manifests = result.data ?? [];
   } catch (err) {
-    console.warn("Plugin discovery error:", err);
+    console.warn('Plugin discovery error:', err);
     return;
   }
 
   for (const manifest of manifests) {
     try {
       if (!manifest.id || !manifest.entrypoint) {
-        console.warn("Skipping plugin with missing id or entrypoint");
+        console.warn('Skipping plugin with missing id or entrypoint');
         continue;
       }
 
       for (const css of manifest.styles ?? []) {
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
         link.href = `/plugins/${manifest.id}/${css}`;
         document.head.appendChild(link);
       }
@@ -49,7 +63,7 @@ export async function discoverAndActivatePlugins(
 
       const host = createPluginHost(manifest.id, navigationStore, notificationStore, pageRegistry);
 
-      if (typeof mod.activate === "function") {
+      if (typeof mod.activate === 'function') {
         await mod.activate(host);
         console.info(`Plugin "${manifest.id}" activated`);
       } else {

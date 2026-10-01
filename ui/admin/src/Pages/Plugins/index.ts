@@ -1,1 +1,1 @@
-export { Component } from "./PluginsPage";
+export { Component } from './PluginsPage';

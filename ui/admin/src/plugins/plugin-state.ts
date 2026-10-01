@@ -1,5 +1,5 @@
-import type { NavItem } from "../contexts/NavigationContext";
-import { CORE_NAV_ITEMS } from "../navigation/core-nav-items";
+import type { NavItem } from '../contexts/NavigationContext';
+import { CORE_NAV_ITEMS } from '../navigation/core-nav-items';
 
 let _navItems: NavItem[] = [...CORE_NAV_ITEMS];
 

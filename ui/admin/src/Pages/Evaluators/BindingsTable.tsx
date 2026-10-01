@@ -10,10 +10,10 @@ import {
   TableRow,
   TableToolbar,
   TableToolbarContent,
-} from "@carbon/react";
-import { Add, TrashCan } from "@carbon/icons-react";
-import React from "react";
-import { TableEmptyState } from "../EmptyTableState";
+} from '@carbon/react';
+import { Add, TrashCan } from '@carbon/icons-react';
+import React from 'react';
+import { TableEmptyState } from '../EmptyTableState';
 
 export interface BindingEntry {
   namespace: string;
@@ -34,8 +34,8 @@ export const BindingsTable: React.FC<BindingsTableProps> = ({
   disabled,
 }) => {
   const headers = [
-    { key: "namespace", header: "Namespace" },
-    { key: "conversationId", header: "Conversation ID" },
+    { key: 'namespace', header: 'Namespace' },
+    { key: 'conversationId', header: 'Conversation ID' },
   ];
 
   const bindingsByNamespace = new Map(bindings.map((b) => [b.namespace, b]));
