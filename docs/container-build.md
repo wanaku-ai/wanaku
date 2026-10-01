@@ -21,26 +21,30 @@ Install the tool that matches your target environment.
 Build the full image (includes the embedded admin UI).
 
 ```bash
-cargo build-image
+cargo build-image          # build only
+cargo build-image --push   # build and push to the registry
 ```
 
 The tag is always suffixed with the host architecture, for example:
 - `quay.io/wanaku/wanaku-server:latest-x86_64` on an x86_64 machine
 - `quay.io/wanaku/wanaku-server:latest-aarch64` on a Linux ARM64 machine
 
-The image is pushed to the registry after the build. Exception: the `minikube` target
-loads the image into the cluster daemon directly with the plain tag, and does not push.
+Pass `--push` to push the image to the registry after the build. Without `--push`,
+the image is built locally and the command exits. Exception: the `minikube` target
+loads the image into the cluster daemon directly with the plain tag, and does not push
+regardless of `--push`.
 
 ### `cargo build-image-headless`
 
 Build the headless image (no embedded admin UI).
 
 ```bash
-cargo build-image-headless
+cargo build-image-headless          # build only
+cargo build-image-headless --push   # build and push to the registry
 ```
 
 This is a shorthand for `cargo build-image --variant headless`. The same arch-suffix
-behaviour applies.
+and `--push` behaviour applies.
 
 ### `cargo build-image-manifest`
 
@@ -61,7 +65,7 @@ in the registry. It assembles them into a manifest list at `<tag>` using
 Use `--tag` to set a custom image tag. Defaults to `quay.io/wanaku/wanaku-server:latest`.
 
 ```bash
-cargo build-image --tag registry.example.com/myorg/wanaku-server:v1.2.3
+cargo build-image --push --tag registry.example.com/myorg/wanaku-server:v1.2.3
 # pushes: registry.example.com/myorg/wanaku-server:v1.2.3-x86_64  (on x86_64)
 ```
 
@@ -78,11 +82,11 @@ Each machine builds only its own native architecture.
 
 ```bash
 # On an x86_64 machine:
-cargo build-image --tag quay.io/wanaku/wanaku-server:myrelease
+cargo build-image --push --tag quay.io/wanaku/wanaku-server:myrelease
 # pushes: quay.io/wanaku/wanaku-server:myrelease-x86_64
 
 # On an aarch64 machine:
-cargo build-image --tag quay.io/wanaku/wanaku-server:myrelease
+cargo build-image --push --tag quay.io/wanaku/wanaku-server:myrelease
 # pushes: quay.io/wanaku/wanaku-server:myrelease-aarch64
 ```
 
@@ -97,7 +101,7 @@ cargo build-image-manifest --tag quay.io/wanaku/wanaku-server:myrelease
 The headless variant follows the same pattern:
 
 ```bash
-cargo build-image-headless --tag quay.io/wanaku/wanaku-server-headless:myrelease
+cargo build-image-headless --push --tag quay.io/wanaku/wanaku-server-headless:myrelease
 cargo build-image-manifest --variant headless --tag quay.io/wanaku/wanaku-server-headless:myrelease
 ```
 
@@ -139,10 +143,12 @@ Runs the following command using `docker` (or `podman` if docker is not on `PATH
 
 ```
 docker build -f Containerfile --build-arg VARIANT=full -t <tag>-<arch> .
-docker push <tag>-<arch>
+docker push <tag>-<arch>   # only when --push is given
 ```
 
-After the push, the command prints the next steps for multi-arch manifest assembly.
+When `--push` is given, the command pushes the image and prints the next steps for
+multi-arch manifest assembly. Without `--push`, the build stops after the local image
+is created.
 
 ### `minikube`
 
@@ -212,9 +218,9 @@ You must be logged in and have the internal registry exposed.
 oc patch configs.imageregistry.operator.openshift.io/cluster \
   --patch '{"spec":{"defaultRoute":true}}' --type=merge
 
-# Log in and build
+# Log in, build, and push
 oc login <cluster-url>
-cargo build-image --target openshift
+cargo build-image --target openshift --push
 ```
 
 The xtask prints the image reference at the end:
@@ -226,7 +232,7 @@ Registry reference : default-route-openshift-image-registry.apps.example.com/myp
 To push a specific version tag:
 
 ```bash
-cargo build-image --target openshift --tag quay.io/wanaku/wanaku-server:v0.3.0
+cargo build-image --target openshift --push --tag quay.io/wanaku/wanaku-server:v0.3.0
 # pushes as: <registry>/<namespace>/wanaku-server:v0.3.0-<arch>
 ```
 
@@ -242,10 +248,10 @@ Both commands are also available as Make targets. Use the `TARGET` variable to s
 the environment.
 
 ```bash
-make build-image                        # docker, full variant
+make build-image                        # docker, full variant (build only)
 make build-image TARGET=minikube        # minikube, full variant
-make build-image TARGET=openshift       # openshift, full variant
+make build-image TARGET=openshift       # openshift, full variant (build only)
 
-make build-image-headless               # docker, headless variant
+make build-image-headless               # docker, headless variant (build only)
 make build-image-headless TARGET=minikube
 ```

@@ -3,11 +3,14 @@
 //! Invoke via Cargo aliases (`.cargo/config.toml`):
 //!
 //! ```
-//! cargo build-image                          # build for native arch, push <tag>-<arch>
+//! cargo build-image                          # build for native arch (no push)
+//! cargo build-image --push                   # build and push <tag>-<arch>
 //! cargo build-image --variant headless       # headless variant
+//! cargo build-image --variant headless --push
 //! cargo build-image --target minikube        # load into Minikube daemon (plain tag, no push)
-//! cargo build-image --target openshift       # build locally, push to OCP registry
+//! cargo build-image --target openshift --push  # build locally, push to OCP registry
 //! cargo build-image-headless                 # shorthand for --variant headless
+//! cargo build-image-headless --push
 //! cargo build-image-manifest                 # assemble multi-arch manifest list
 //! ```
 
@@ -70,6 +73,12 @@ pub struct BuildImageArgs {
     /// Container build target environment.
     #[arg(long, value_enum, default_value_t = Target::Docker)]
     target: Target,
+
+    /// Push the image to the registry after a successful build.
+    /// Without this flag the image is only built locally.
+    /// Has no effect for the minikube target (always loads into the cluster daemon).
+    #[arg(long)]
+    push: bool,
 }
 
 #[derive(Debug, Parser)]
@@ -128,9 +137,9 @@ pub enum ManifestTarget {
 
 fn build_image(args: &BuildImageArgs) -> anyhow::Result<()> {
     match args.target {
-        Target::Docker => build_docker(&args.variant, &args.tag),
+        Target::Docker => build_docker(&args.variant, &args.tag, args.push),
         Target::Minikube => build_minikube(&args.variant, &args.tag),
-        Target::Openshift => build_openshift(&args.variant, &args.tag),
+        Target::Openshift => build_openshift(&args.variant, &args.tag, args.push),
     }
 }
 
@@ -148,7 +157,7 @@ fn build_image_manifest(args: &BuildImageManifestArgs) -> anyhow::Result<()> {
 // Always builds for the current native architecture and pushes with an
 // arch suffix, e.g. <tag>-x86_64 or <tag>-aarch64.
 
-fn build_docker(variant: &Variant, tag: &str) -> anyhow::Result<()> {
+fn build_docker(variant: &Variant, tag: &str, push: bool) -> anyhow::Result<()> {
     let tool = resolve_docker_tool()?;
     let arch = native_arch()?;
     let arch_tag = format!("{tag}-{arch}");
@@ -178,19 +187,24 @@ fn build_docker(variant: &Variant, tag: &str) -> anyhow::Result<()> {
         );
     }
 
-    println!("\nPushing {arch_tag}...");
-    let status = Command::new(&tool)
-        .args(["push", &arch_tag])
-        .status()
-        .with_context(|| format!("failed to spawn `{tool} push`"))?;
-    if !status.success() {
-        bail!(
-            "{tool} push failed with exit code {}",
-            status.code().unwrap_or(-1)
-        );
+    if push {
+        println!("\nPushing {arch_tag}...");
+        let status = Command::new(&tool)
+            .args(["push", &arch_tag])
+            .status()
+            .with_context(|| format!("failed to spawn `{tool} push`"))?;
+        if !status.success() {
+            bail!(
+                "{tool} push failed with exit code {}",
+                status.code().unwrap_or(-1)
+            );
+        }
+        print_manifest_next_steps(tag, &arch);
+    } else {
+        println!("\nImage built: {arch_tag}");
+        println!("Run with --push to push to the registry.");
     }
 
-    print_manifest_next_steps(tag, &arch);
     Ok(())
 }
 
@@ -309,7 +323,7 @@ fn parse_env_lines(output: &str) -> HashMap<String, String> {
     clippy::too_many_lines,
     reason = "sequential cluster setup steps are inherently linear"
 )]
-fn build_openshift(variant: &Variant, tag: &str) -> anyhow::Result<()> {
+fn build_openshift(variant: &Variant, tag: &str, push: bool) -> anyhow::Result<()> {
     require_tool(
         "oc",
         "https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html",
@@ -332,25 +346,27 @@ fn build_openshift(variant: &Variant, tag: &str) -> anyhow::Result<()> {
     println!("Registry image ref : {arch_image_ref}");
     println!("Local tag          : {arch_tag}");
 
-    // Log in to the OpenShift internal registry.
-    println!("\nLogging {tool} into {registry_host} as {oc_user}...");
-    let status = Command::new(&tool)
-        .args([
-            "login",
-            "--tls-verify=false",
-            "-u",
-            &oc_user,
-            "-p",
-            &token,
-            &registry_host,
-        ])
-        .status()
-        .with_context(|| format!("failed to spawn `{tool} login`"))?;
-    if !status.success() {
-        bail!(
-            "`{tool} login` to {registry_host} failed with exit code {}",
-            status.code().unwrap_or(-1)
-        );
+    // Log in to the OpenShift internal registry (only needed when pushing).
+    if push {
+        println!("\nLogging {tool} into {registry_host} as {oc_user}...");
+        let status = Command::new(&tool)
+            .args([
+                "login",
+                "--tls-verify=false",
+                "-u",
+                &oc_user,
+                "-p",
+                &token,
+                &registry_host,
+            ])
+            .status()
+            .with_context(|| format!("failed to spawn `{tool} login`"))?;
+        if !status.success() {
+            bail!(
+                "`{tool} login` to {registry_host} failed with exit code {}",
+                status.code().unwrap_or(-1)
+            );
+        }
     }
 
     println!(
@@ -379,21 +395,26 @@ fn build_openshift(variant: &Variant, tag: &str) -> anyhow::Result<()> {
         );
     }
 
-    println!("\nPushing {arch_image_ref}...");
-    let status = Command::new(&tool)
-        .args(["push", "--tls-verify=false", &arch_image_ref])
-        .status()
-        .with_context(|| format!("failed to spawn `{tool} push`"))?;
-    if !status.success() {
-        bail!(
-            "{tool} push failed with exit code {}",
-            status.code().unwrap_or(-1)
-        );
+    if push {
+        println!("\nPushing {arch_image_ref}...");
+        let status = Command::new(&tool)
+            .args(["push", "--tls-verify=false", &arch_image_ref])
+            .status()
+            .with_context(|| format!("failed to spawn `{tool} push`"))?;
+        if !status.success() {
+            bail!(
+                "{tool} push failed with exit code {}",
+                status.code().unwrap_or(-1)
+            );
+        }
+        println!("\nImage pushed successfully.");
+        println!("  Registry reference : {arch_image_ref}");
+        print_manifest_next_steps(&image_ref, &arch);
+    } else {
+        println!("\nImage built: {arch_image_ref}");
+        println!("Run with --push to push to the registry.");
     }
 
-    println!("\nImage pushed successfully.");
-    println!("  Registry reference : {arch_image_ref}");
-    print_manifest_next_steps(&image_ref, &arch);
     Ok(())
 }
 

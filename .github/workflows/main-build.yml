@@ -68,13 +68,13 @@ jobs:
       - name: Build and push container image
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
-          cargo build-image \
+          cargo build-image --push \
             --tag ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server:${{ env.IMAGE_TAG }}
 
       - name: Build and push headless container image
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         run: |
-          cargo build-image-headless \
+          cargo build-image-headless --push \
             --tag ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_GROUP }}/wanaku-server-headless:${{ env.IMAGE_TAG }}
 
   createManifests:
