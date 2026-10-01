@@ -5,7 +5,7 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
-import type { WanakuResponseValueError } from './wanakuResponseValueError';
+import type { WanakuResponseValueError } from "./wanakuResponseValueError";
 
 export interface WanakuResponseValue {
   data?: unknown;

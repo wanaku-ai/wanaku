@@ -91,7 +91,13 @@ pub(crate) fn handle_configure_plugin(
 
     // Persist to default data directory
     if let Some(persist) = persistence {
-        let mut snapshot: PluginsConfigSnapshot = persist.load().unwrap_or_default();
+        let mut snapshot: PluginsConfigSnapshot = match persist.load() {
+            Ok(s) => s,
+            Err(e) => {
+                warn!(plugin = %plugin_id, error = %e, "failed to load existing plugin configuration for update");
+                return json_err(StatusCode::INTERNAL_SERVER_ERROR, "failed to read configuration before updating");
+            }
+        };
         snapshot.insert(plugin_id.to_owned(), req.services);
         if let Err(e) = persist.save(&snapshot) {
             warn!(plugin = %plugin_id, error = %e, "failed to persist plugin configuration");

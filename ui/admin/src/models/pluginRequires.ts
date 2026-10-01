@@ -5,7 +5,7 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
-import type { ServiceRequirement } from './serviceRequirement';
+import type { ServiceRequirement } from "./serviceRequirement";
 
 export interface PluginRequires {
   hostApi?: string;

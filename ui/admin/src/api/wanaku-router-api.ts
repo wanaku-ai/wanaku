@@ -1245,6 +1245,7 @@ export const deleteNamespace = async (
     method: "DELETE",
   });
 };
+
 export type listPluginsResponse200 = {
   data: WanakuResponseVecPluginManifest;
   status: 200;
@@ -1364,7 +1365,6 @@ export const configurePlugin = async (
     body: JSON.stringify(configurePluginRequest),
   });
 };
-
 
 export type listPromptsResponse200 = {
   data: PromptEntry[];

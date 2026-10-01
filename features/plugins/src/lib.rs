@@ -240,42 +240,52 @@ impl Feature for PluginsFeature {
         reason = "YAML config parsing with nested plugin/service structure"
     )]
     fn load_yaml_config(&self, root: &serde_yaml::Value) {
-        let Some(plugins_val) = root.get("plugins") else {
-            return;
-        };
-        let Some(plugins_seq) = plugins_val.as_sequence() else {
-            return;
-        };
+        if let Some(plugins_val) = root.get("plugins") {
+            if let Some(plugins_seq) = plugins_val.as_sequence() {
+                for plugin_val in plugins_seq {
+                    let Some(id) = plugin_val.get("id").and_then(|v| v.as_str()) else {
+                        continue;
+                    };
+                    let Some(services_val) = plugin_val.get("services") else {
+                        continue;
+                    };
+                    let Some(services_map) = services_val.as_mapping() else {
+                        continue;
+                    };
 
-        for plugin_val in plugins_seq {
-            let Some(id) = plugin_val.get("id").and_then(|v| v.as_str()) else {
-                continue;
-            };
-            let Some(services_val) = plugin_val.get("services") else {
-                continue;
-            };
-            let Some(services_map) = services_val.as_mapping() else {
-                continue;
-            };
+                    for (svc_key, svc_val) in services_map {
+                        let Some(svc_id) = svc_key.as_str() else {
+                            continue;
+                        };
+                        let Some(target) = svc_val.get("target").and_then(|v| v.as_str()) else {
+                            continue;
+                        };
 
-            for (svc_key, svc_val) in services_map {
-                let Some(svc_id) = svc_key.as_str() else {
-                    continue;
-                };
-                let Some(target) = svc_val.get("target").and_then(|v| v.as_str()) else {
-                    continue;
-                };
+                        if let Ok(mut guard) = self.service_map.write() {
+                            guard.insert((id.to_owned(), svc_id.to_owned()), target.to_owned());
+                        }
 
-                if let Ok(mut guard) = self.service_map.write() {
-                    guard.insert((id.to_owned(), svc_id.to_owned()), target.to_owned());
+                        tracing::info!(
+                            plugin = %id,
+                            service = %svc_id,
+                            target = %target,
+                            "registered plugin service from config"
+                        );
+                    }
                 }
+            }
+        }
 
-                tracing::info!(
-                    plugin = %id,
-                    service = %svc_id,
-                    target = %target,
-                    "registered plugin service from config"
-                );
+        // Apply persisted service configuration overrides on top of YAML defaults
+        if let Some(persist) = &self.persistence {
+            if let Ok(snapshot) = persist.load() {
+                if let Ok(mut guard) = self.service_map.write() {
+                    for (plugin_id, services) in snapshot {
+                        for (svc_id, target) in services {
+                            guard.insert((plugin_id.clone(), svc_id), target.target);
+                        }
+                    }
+                }
             }
         }
     }
