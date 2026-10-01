@@ -1,1 +1,1 @@
-export { Component } from "./ToolCallsPage";
+export { Component } from './ToolCallsPage';

@@ -1,10 +1,10 @@
-import {createHashRouter} from "react-router-dom";
-import App from "./App";
-import {ErrorPage} from "./Pages/Error";
-import {Links} from "./router/links.models";
-import { PluginMount } from "./plugins/PluginMount";
-import ErrorBoundary from "./components/ErrorBoundary";
-import type { Disposable } from "./plugins/types";
+import { createHashRouter } from 'react-router-dom';
+import App from './App';
+import { ErrorPage } from './Pages/Error';
+import { Links } from './router/links.models';
+import { PluginMount } from './plugins/PluginMount';
+import ErrorBoundary from './components/ErrorBoundary';
+import type { Disposable } from './plugins/types';
 
 interface PluginPage {
   route: string;
@@ -14,7 +14,7 @@ interface PluginPage {
 
 export function buildRouter(pluginPages: PluginPage[]) {
   const pluginRoutes = pluginPages.map(({ route, mount, pluginId }) => ({
-    path: route.replace(/^\//, ""),
+    path: route.replace(/^\//, ''),
     element: (
       <ErrorBoundary key={route}>
         <PluginMount mount={mount} pluginId={pluginId} />
@@ -30,60 +30,60 @@ export function buildRouter(pluginPages: PluginPage[]) {
       children: [
         {
           index: true,
-          lazy: async () => import("./Pages/Dashboard"),
+          lazy: async () => import('./Pages/Dashboard'),
         },
         {
           path: Links.Tools,
-          lazy: async () => import("./Pages/Tools"),
+          lazy: async () => import('./Pages/Tools'),
         },
         {
           path: Links.Resources,
-          lazy: async () => import("./Pages/Resources"),
+          lazy: async () => import('./Pages/Resources'),
         },
         {
           path: Links.Prompts,
-          lazy: async () => import("./Pages/Prompts"),
+          lazy: async () => import('./Pages/Prompts'),
         },
         {
           path: Links.LLMChat,
-          lazy: async () => import("./Pages/LLMChat"),
+          lazy: async () => import('./Pages/LLMChat'),
         },
         {
           path: Links.ToolCalls,
-          lazy: async () => import("./Pages/ToolCalls"),
+          lazy: async () => import('./Pages/ToolCalls'),
         },
 
         {
           path: Links.Namespaces,
-          lazy: async () => import("./Pages/Namespaces"),
+          lazy: async () => import('./Pages/Namespaces'),
         },
         {
           path: Links.Forwards,
-          lazy: async () => import("./Pages/Forwards"),
+          lazy: async () => import('./Pages/Forwards'),
         },
         {
           path: Links.Bindings,
-          lazy: async () => import("./Pages/Bindings"),
+          lazy: async () => import('./Pages/Bindings'),
         },
         {
           path: Links.Evaluators,
-          lazy: async () => import("./Pages/Evaluators"),
+          lazy: async () => import('./Pages/Evaluators'),
         },
         {
           path: Links.ActionPolicies,
-          lazy: async () => import("./Pages/ActionPolicies"),
+          lazy: async () => import('./Pages/ActionPolicies'),
         },
         {
           path: Links.Audit,
-          lazy: async () => import("./Pages/Audit"),
+          lazy: async () => import('./Pages/Audit'),
         },
         {
           path: Links.Plugins,
-          lazy: async () => import("./Pages/Plugins"),
+          lazy: async () => import('./Pages/Plugins'),
         },
         {
           path: Links.Downloads,
-          lazy: async () => import("./Pages/Downloads"),
+          lazy: async () => import('./Pages/Downloads'),
         },
         ...pluginRoutes,
       ],

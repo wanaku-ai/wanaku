@@ -1,0 +1,7 @@
+# Orval-generated API client and models
+src/api/
+src/models/
+
+# Build output and dependencies
+dist/
+node_modules/

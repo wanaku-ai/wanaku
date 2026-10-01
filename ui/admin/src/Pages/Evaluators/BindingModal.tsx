@@ -1,36 +1,33 @@
-import { Modal, Stack, TextInput } from "@carbon/react";
-import React, { useState } from "react";
-import {NamespaceSelect} from "../Namespaces/NamespaceSelect"
-import {NamespaceEntry} from "../../models"
-import {isValidConversationId, isValidConversationIdFragment} from "../../utils/conversation"
-import {DEFAULT_NAMESPACE} from "../../hooks/api/use-namespaces"
+import { Modal, Stack, TextInput } from '@carbon/react';
+import React, { useState } from 'react';
+import { NamespaceSelect } from '../Namespaces/NamespaceSelect';
+import { NamespaceEntry } from '../../models';
+import { isValidConversationId, isValidConversationIdFragment } from '../../utils/conversation';
+import { DEFAULT_NAMESPACE } from '../../hooks/api/use-namespaces';
 
 interface BindingModalProps {
   onRequestClose: () => void;
   onSubmit: (namespace: NamespaceEntry, conversationId: string) => void;
 }
 
-export const BindingModal: React.FC<BindingModalProps> = ({
-  onRequestClose,
-  onSubmit,
-}) => {
+export const BindingModal: React.FC<BindingModalProps> = ({ onRequestClose, onSubmit }) => {
   const [namespace, setNamespace] = useState<NamespaceEntry>(DEFAULT_NAMESPACE);
-  const [conversationId, setConversationId] = useState("");
-  const [conversationIdInvalid, setConversationIdInvalid] = useState(false)
+  const [conversationId, setConversationId] = useState('');
+  const [conversationIdInvalid, setConversationIdInvalid] = useState(false);
 
   const handleSubmit = () => {
     onSubmit(namespace!, conversationId);
   };
-  
+
   function validateConversationIdOnChange(id: string) {
-    const valid = isValidConversationIdFragment(id)
-    setConversationIdInvalid(!valid)
+    const valid = isValidConversationIdFragment(id);
+    setConversationIdInvalid(!valid);
   }
-  
+
   function validateConversationIdOnPaste(id: string) {
-    id = id.trim()
-    const valid = id.length >= 0 && isValidConversationId(id)
-    setConversationIdInvalid(!valid)
+    id = id.trim();
+    const valid = id.length >= 0 && isValidConversationId(id);
+    setConversationIdInvalid(!valid);
   }
 
   return (
@@ -59,13 +56,13 @@ export const BindingModal: React.FC<BindingModalProps> = ({
           invalidText="This is not valid conversation ID"
           value={conversationId}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            const conversationId = e.target.value
-            setConversationId(conversationId)
-            validateConversationIdOnChange(conversationId)
+            const conversationId = e.target.value;
+            setConversationId(conversationId);
+            validateConversationIdOnChange(conversationId);
           }}
-          onPaste={event => {
-            const conversationId = event.clipboardData.getData('text')
-            validateConversationIdOnPaste(conversationId)
+          onPaste={(event) => {
+            const conversationId = event.clipboardData.getData('text');
+            validateConversationIdOnPaste(conversationId);
           }}
           required
         />

@@ -1,3 +1,3 @@
-import { AuditPage } from "./AuditPage";
+import { AuditPage } from './AuditPage';
 
 export const Component = AuditPage;

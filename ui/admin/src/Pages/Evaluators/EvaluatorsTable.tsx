@@ -10,12 +10,12 @@ import {
   TableRow,
   TableToolbar,
   TableToolbarContent,
-} from "@carbon/react";
-import { Add, Edit, TrashCan } from "@carbon/icons-react";
-import React from "react";
-import { EvaluatorDef } from "../../hooks/api/use-evaluators";
-import type { LlmDef, SystemOneDef } from "../../models";
-import { TableEmptyState } from "../EmptyTableState";
+} from '@carbon/react';
+import { Add, Edit, TrashCan } from '@carbon/icons-react';
+import React from 'react';
+import { EvaluatorDef } from '../../hooks/api/use-evaluators';
+import type { LlmDef, SystemOneDef } from '../../models';
+import { TableEmptyState } from '../EmptyTableState';
 
 interface EvaluatorsTableProps {
   evaluators: EvaluatorDef[];
@@ -33,19 +33,19 @@ export const EvaluatorsTable: React.FC<EvaluatorsTableProps> = ({
   disabled,
 }) => {
   const headers = [
-    { key: "name", header: "Name" },
-    { key: "method", header: "Trigger Method" },
-    { key: "namespace", header: "Namespace" },
-    { key: "engine", header: "Engine" },
-    { key: "operation", header: "Operation / Primitive" },
-    { key: "connection", header: "Connection" },
+    { key: 'name', header: 'Name' },
+    { key: 'method', header: 'Trigger Method' },
+    { key: 'namespace', header: 'Namespace' },
+    { key: 'engine', header: 'Engine' },
+    { key: 'operation', header: 'Operation / Primitive' },
+    { key: 'connection', header: 'Connection' },
   ];
 
   const getLlmConfiguration = (evaluator: EvaluatorDef): LlmDef | undefined =>
-    evaluator.engine?.type === "llm" ? evaluator.engine : undefined;
+    evaluator.engine?.type === 'llm' ? evaluator.engine : undefined;
 
   const getSystemOneConfiguration = (evaluator: EvaluatorDef): SystemOneDef | undefined =>
-    evaluator.engine?.type === "typesafe-system-one" ? evaluator.engine : undefined;
+    evaluator.engine?.type === 'typesafe-system-one' ? evaluator.engine : undefined;
 
   function evaluatorsToRows() {
     return evaluators.map((ev) => {
@@ -55,17 +55,19 @@ export const EvaluatorsTable: React.FC<EvaluatorsTableProps> = ({
         id: ev.name,
         name: ev.name,
         method: ev.trigger.method,
-        namespace: ev.trigger.namespace || "—",
+        namespace: ev.trigger.namespace || '—',
         engine:
-          ev.engine?.type === "llm"
-            ? "LLM"
-            : ev.engine?.type === "typesafe-system-one"
-              ? "TypeSafe System One"
-              : ev.engine?.type === "passthrough"
-                ? "Passthrough"
-                : "—",
-        operation: llmConfiguration?.operation || (systemOneConfiguration ? `Noul: ${systemOneConfiguration.noul.id}` : "—"),
-        connection: llmConfiguration?.connection || systemOneConfiguration?.connection || "—",
+          ev.engine?.type === 'llm'
+            ? 'LLM'
+            : ev.engine?.type === 'typesafe-system-one'
+              ? 'TypeSafe System One'
+              : ev.engine?.type === 'passthrough'
+                ? 'Passthrough'
+                : '—',
+        operation:
+          llmConfiguration?.operation ||
+          (systemOneConfiguration ? `Noul: ${systemOneConfiguration.noul.id}` : '—'),
+        connection: llmConfiguration?.connection || systemOneConfiguration?.connection || '—',
       };
     });
   }

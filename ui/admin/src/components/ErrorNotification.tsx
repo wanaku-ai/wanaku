@@ -1,12 +1,10 @@
-import React from "react"
-import {InlineNotification} from "@carbon/react"
-
+import React from 'react';
+import { InlineNotification } from '@carbon/react';
 
 interface ErrorNotificationProps {
-  errorMessage: string
-  onClose: () => void
+  errorMessage: string;
+  onClose: () => void;
 }
-
 
 export const ErrorNotification: React.FC<ErrorNotificationProps> = ({ errorMessage, onClose }) => {
   return (
@@ -18,5 +16,5 @@ export const ErrorNotification: React.FC<ErrorNotificationProps> = ({ errorMessa
       lowContrast
       hideCloseButton={false}
     />
-  )
-}
+  );
+};

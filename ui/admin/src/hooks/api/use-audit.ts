@@ -1,13 +1,13 @@
-import { useCallback } from "react";
+import { useCallback } from 'react';
 import {
   getAuditEvent as getAuditEventRequest,
   getAuditHealth as getAuditHealthRequest,
   getAuditSchema as getAuditSchemaRequest,
   listAuditEvents as listAuditEventsRequest,
-} from "../../api/wanaku-router-api";
-import type { AuditEvent, AuditHealth, AuditPage, ListAuditEventsParams } from "../../models";
+} from '../../api/wanaku-router-api';
+import type { AuditEvent, AuditHealth, AuditPage, ListAuditEventsParams } from '../../models';
 
-export type { AuditEvent, AuditHealth, AuditPage, ListAuditEventsParams } from "../../models";
+export type { AuditEvent, AuditHealth, AuditPage, ListAuditEventsParams } from '../../models';
 
 export interface AuditSchema {
   schema_version: string;
@@ -23,7 +23,10 @@ const asAuditResponse = <T>(response: unknown): AuditResponse<T> => response as 
 
 export const useAudit = () => {
   const listEvents = useCallback(
-    async (params?: ListAuditEventsParams, options?: RequestInit): Promise<AuditResponse<AuditPage>> =>
+    async (
+      params?: ListAuditEventsParams,
+      options?: RequestInit,
+    ): Promise<AuditResponse<AuditPage>> =>
       asAuditResponse<AuditPage>(await listAuditEventsRequest(params, options)),
     [],
   );

@@ -1,1 +1,1 @@
-export { Component } from "./EvaluatorsPage";
+export { Component } from './EvaluatorsPage';

@@ -1,11 +1,11 @@
-import {Modal, TextInput,} from "@carbon/react";
-import React, {useState} from "react";
-import {CredentialPurpose, ForwardEntry} from "../../models";
-import {NamespaceSelect} from "../Namespaces/NamespaceSelect.tsx";
-import {BindingSelect} from "./BindingSelect.tsx";
+import { Modal, TextInput } from '@carbon/react';
+import React, { useState } from 'react';
+import { CredentialPurpose, ForwardEntry } from '../../models';
+import { NamespaceSelect } from '../Namespaces/NamespaceSelect.tsx';
+import { BindingSelect } from './BindingSelect.tsx';
 
 interface ForwardModalProps {
-  forward?: ForwardEntry
+  forward?: ForwardEntry;
   onRequestClose: () => void;
   onSubmit: (newForward: ForwardEntry) => void;
 }
@@ -15,23 +15,25 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
   onRequestClose,
   onSubmit,
 }) => {
-  const [name, setName] = useState(forward?.name || "")
-  const [address, setAddress] = useState(forward?.address || "")
-  const [selectedNamespace, setSelectedNamespace] = useState<string | null | undefined>(forward?.namespace)
+  const [name, setName] = useState(forward?.name || '');
+  const [address, setAddress] = useState(forward?.address || '');
+  const [selectedNamespace, setSelectedNamespace] = useState<string | null | undefined>(
+    forward?.namespace,
+  );
   const [discoveryBinding, setDiscoveryBinding] = useState<string | undefined>(
     forward?.credentialBindings?.[CredentialPurpose.discovery],
-  )
+  );
   const [invocationBinding, setInvocationBinding] = useState<string | undefined>(
     forward?.credentialBindings?.[CredentialPurpose.invocation],
-  )
+  );
 
   const handleSubmit = () => {
-    const credentialBindings: Record<string, string> = {}
+    const credentialBindings: Record<string, string> = {};
     if (discoveryBinding) {
-      credentialBindings[CredentialPurpose.discovery] = discoveryBinding
+      credentialBindings[CredentialPurpose.discovery] = discoveryBinding;
     }
     if (invocationBinding) {
-      credentialBindings[CredentialPurpose.invocation] = invocationBinding
+      credentialBindings[CredentialPurpose.invocation] = invocationBinding;
     }
 
     // Preserve operator-authored labels on edit. Discovery-computed fields
@@ -53,8 +55,8 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
   return (
     <Modal
       open={true}
-      modalHeading={forward ? "Edit forward" : "Add a Forward"}
-      primaryButtonText={forward ? "Save" : "Add"}
+      modalHeading={forward ? 'Edit forward' : 'Add a Forward'}
+      primaryButtonText={forward ? 'Save' : 'Add'}
       secondaryButtonText="Cancel"
       onRequestClose={onRequestClose}
       onRequestSubmit={handleSubmit}
@@ -81,7 +83,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
         labelText="Select a Namespace"
         helperText="Choose a Namespace from the list (optional)"
         value={selectedNamespace ?? undefined}
-        onChange={namespace => setSelectedNamespace(namespace.name)}
+        onChange={(namespace) => setSelectedNamespace(namespace.name)}
       />
       <BindingSelect
         id="forward-discovery-binding"

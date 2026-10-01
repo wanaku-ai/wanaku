@@ -1,16 +1,16 @@
-import { InlineNotification } from "@carbon/react";
-import { PageSkeleton } from "../../components/PageSkeleton";
-import React, { useCallback, useEffect, useState } from "react";
-import type { PluginManifest } from "../../plugins/types";
-import type { InstallPluginRequest } from "../../models";
-import { usePlugins } from "../../hooks/api/use-plugins";
-import { PluginsTable } from "./PluginsTable";
-import { PluginDetailModal } from "./PluginDetailModal";
-import { PluginInstallModal } from "./PluginInstallModal";
-import { PluginConfigModal } from "./PluginConfigModal";
-import { ErrorNotification } from "../../components/ErrorNotification";
-import { useErrorNotification } from "../../hooks/error-notifications";
-import { unwrapData } from "../../utils/api-response";
+import { InlineNotification } from '@carbon/react';
+import { PageSkeleton } from '../../components/PageSkeleton';
+import React, { useCallback, useEffect, useState } from 'react';
+import type { PluginManifest } from '../../plugins/types';
+import type { InstallPluginRequest } from '../../models';
+import { usePlugins } from '../../hooks/api/use-plugins';
+import { PluginsTable } from './PluginsTable';
+import { PluginDetailModal } from './PluginDetailModal';
+import { PluginInstallModal } from './PluginInstallModal';
+import { PluginConfigModal } from './PluginConfigModal';
+import { ErrorNotification } from '../../components/ErrorNotification';
+import { useErrorNotification } from '../../hooks/error-notifications';
+import { unwrapData } from '../../utils/api-response';
 
 const PluginsPage: React.FC = () => {
   const [plugins, setPlugins] = useState<PluginManifest[]>([]);
@@ -35,7 +35,7 @@ const PluginsPage: React.FC = () => {
         setPlugins([]);
       }
     } catch {
-      setErrorMessage("Failed to load plugins");
+      setErrorMessage('Failed to load plugins');
       setPlugins([]);
     }
   }, [listPlugins, setErrorMessage]);
@@ -63,7 +63,10 @@ const PluginsPage: React.FC = () => {
       if (response.status === 200 && response.data) {
         setIsInstallOpen(false);
         await fetchPlugins();
-        const payload = response.data as unknown as { manifest?: PluginManifest; data?: { manifest?: PluginManifest } };
+        const payload = response.data as unknown as {
+          manifest?: PluginManifest;
+          data?: { manifest?: PluginManifest };
+        };
         const installedManifest = payload?.manifest || payload?.data?.manifest;
         if (installedManifest && (installedManifest.requires?.services?.length ?? 0) > 0) {
           setConfigPlugin(installedManifest);
@@ -72,11 +75,11 @@ const PluginsPage: React.FC = () => {
         }
       } else {
         const errPayload = response.data as unknown as { error?: string };
-        const err = errPayload?.error || "Failed to install plugin";
-        setErrorMessage(typeof err === "string" ? err : JSON.stringify(err));
+        const err = errPayload?.error || 'Failed to install plugin';
+        setErrorMessage(typeof err === 'string' ? err : JSON.stringify(err));
       }
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : "Failed to install plugin");
+      setErrorMessage(e instanceof Error ? e.message : 'Failed to install plugin');
     } finally {
       setIsInstalling(false);
     }
@@ -84,7 +87,7 @@ const PluginsPage: React.FC = () => {
 
   const handleSaveConfig = async (
     pluginId: string,
-    services: Record<string, { target: string }>
+    services: Record<string, { target: string }>,
   ) => {
     setIsSavingConfig(true);
     try {
@@ -94,11 +97,11 @@ const PluginsPage: React.FC = () => {
         setRestartNotice(true);
       } else {
         const errPayload = response.data as unknown as { error?: string };
-        const err = errPayload?.error || "Failed to save configuration";
-        setErrorMessage(typeof err === "string" ? err : JSON.stringify(err));
+        const err = errPayload?.error || 'Failed to save configuration';
+        setErrorMessage(typeof err === 'string' ? err : JSON.stringify(err));
       }
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : "Failed to save configuration");
+      setErrorMessage(e instanceof Error ? e.message : 'Failed to save configuration');
     } finally {
       setIsSavingConfig(false);
     }
@@ -109,10 +112,7 @@ const PluginsPage: React.FC = () => {
   return (
     <div>
       {errorMessage && (
-        <ErrorNotification
-          errorMessage={errorMessage}
-          onClose={() => setErrorMessage(null)}
-        />
+        <ErrorNotification errorMessage={errorMessage} onClose={() => setErrorMessage(null)} />
       )}
 
       {restartNotice && (
@@ -121,7 +121,7 @@ const PluginsPage: React.FC = () => {
           title="Server restart required"
           subtitle="Plugin configuration has been updated. A server restart is required for changes to become active."
           onCloseButtonClick={() => setRestartNotice(false)}
-          style={{ marginBottom: "1rem" }}
+          style={{ marginBottom: '1rem' }}
         />
       )}
 

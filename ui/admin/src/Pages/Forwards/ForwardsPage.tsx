@@ -1,128 +1,132 @@
-import {useEffect, useState} from "react"
-import {addForward, updateForward, listForwards, refreshForward, removeForward} from "../../hooks/api/use-forwards"
-import {ForwardEntry} from "../../models"
-import {ForwardDetailModal} from "./ForwardDetailModal.tsx"
-import {ForwardModal} from "./ForwardModal.tsx"
-import {ForwardsTable} from "./ForwardsTable.tsx"
-import {useErrorNotification} from "../../hooks/error-notifications"
-import {ErrorNotification} from "../../components/ErrorNotification"
+import { useEffect, useState } from 'react';
+import {
+  addForward,
+  updateForward,
+  listForwards,
+  refreshForward,
+  removeForward,
+} from '../../hooks/api/use-forwards';
+import { ForwardEntry } from '../../models';
+import { ForwardDetailModal } from './ForwardDetailModal.tsx';
+import { ForwardModal } from './ForwardModal.tsx';
+import { ForwardsTable } from './ForwardsTable.tsx';
+import { useErrorNotification } from '../../hooks/error-notifications';
+import { ErrorNotification } from '../../components/ErrorNotification';
 
 const ForwardsPage = () => {
-
-  const [forwards, setForwards] = useState<ForwardEntry[]>([])
-  const [isModalOpen, setModalOpen] = useState(false)
-  const [openedForward, setOpenedForward] = useState<ForwardEntry>()
-  const [detailForward, setDetailForward] = useState<ForwardEntry>()
-  const { errorMessage, setErrorMessage } = useErrorNotification()
+  const [forwards, setForwards] = useState<ForwardEntry[]>([]);
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [openedForward, setOpenedForward] = useState<ForwardEntry>();
+  const [detailForward, setDetailForward] = useState<ForwardEntry>();
+  const { errorMessage, setErrorMessage } = useErrorNotification();
 
   function fetchForwards() {
     listForwards().then((response) => {
       if (response.data) {
-        setForwards(response.data as ForwardEntry[])
+        setForwards(response.data as ForwardEntry[]);
       }
-    })
+    });
   }
 
   useEffect(() => {
-    fetchForwards()
-  }, [])
+    fetchForwards();
+  }, []);
 
   function refreshAfterSubmit() {
-    closeModal()
-    fetchForwards()
+    closeModal();
+    fetchForwards();
   }
 
   function closeModal() {
-    setOpenedForward(undefined)
-    setModalOpen(false)
+    setOpenedForward(undefined);
+    setModalOpen(false);
   }
 
   function handleDetailButton(forward: ForwardEntry) {
-    setDetailForward(forward)
+    setDetailForward(forward);
   }
 
   function handleAddButton() {
-    setModalOpen(true)
+    setModalOpen(true);
   }
 
   function handleEditButton(forward: ForwardEntry) {
-    setOpenedForward(forward)
-    setModalOpen(true)
+    setOpenedForward(forward);
+    setModalOpen(true);
   }
 
   function handleSubmit(forward: ForwardEntry) {
     if (openedForward) {
-      handleUpdateForward(forward)
+      handleUpdateForward(forward);
     } else {
-      handleAddForward(forward)
+      handleAddForward(forward);
     }
   }
 
-  async function handleAddForward(newForward: ForwardEntry){
+  async function handleAddForward(newForward: ForwardEntry) {
     try {
-      const response = await addForward(newForward)
+      const response = await addForward(newForward);
       if (response.status !== 200) {
-        const errorData = response.data as unknown as { error?: { message?: string } } | null
-        setErrorMessage(errorData?.error?.message || "Failed to add forward")
+        const errorData = response.data as unknown as { error?: { message?: string } } | null;
+        setErrorMessage(errorData?.error?.message || 'Failed to add forward');
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred")
+      setErrorMessage(error instanceof Error ? error.message : 'An error occurred');
     } finally {
-      refreshAfterSubmit()
+      refreshAfterSubmit();
     }
   }
 
   async function handleUpdateForward(forward: ForwardEntry) {
     try {
-      const response = await updateForward(forward)
+      const response = await updateForward(forward);
       if (response.status !== 200) {
-        const errorData = response.data as unknown as { error?: { message?: string } } | null
-        setErrorMessage(errorData?.error?.message || "Failed to update forward")
+        const errorData = response.data as unknown as { error?: { message?: string } } | null;
+        setErrorMessage(errorData?.error?.message || 'Failed to update forward');
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred")
+      setErrorMessage(error instanceof Error ? error.message : 'An error occurred');
     } finally {
-      refreshAfterSubmit()
+      refreshAfterSubmit();
     }
   }
 
   async function handleDeleteForward(forward: ForwardEntry) {
     try {
-      const response = await removeForward(forward)
-        if (response.status === 200) {
-          fetchForwards()
-        } else {
-          setErrorMessage("Failed to delete forward")
-        }
+      const response = await removeForward(forward);
+      if (response.status === 200) {
+        fetchForwards();
+      } else {
+        setErrorMessage('Failed to delete forward');
+      }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred while deleting forward")
+      setErrorMessage(
+        error instanceof Error ? error.message : 'An error occurred while deleting forward',
+      );
     }
   }
 
   async function handleRefreshForward(forward: ForwardEntry) {
     try {
-      const response = await refreshForward(forward)
+      const response = await refreshForward(forward);
       if (response.status === 200) {
-        fetchForwards()
+        fetchForwards();
       } else {
-        setErrorMessage("Failed to refresh forward")
+        setErrorMessage('Failed to refresh forward');
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "An error occurred while refreshing forward")
+      setErrorMessage(
+        error instanceof Error ? error.message : 'An error occurred while refreshing forward',
+      );
     }
   }
 
   return (
     <div>
       <h1 className="title">Forwards</h1>
-      <p className="description">
-        A list of forwards registered in the system.
-      </p>
+      <p className="description">A list of forwards registered in the system.</p>
       {errorMessage && (
-        <ErrorNotification
-          errorMessage={errorMessage}
-          onClose={() => setErrorMessage(null)}
-        />
+        <ErrorNotification errorMessage={errorMessage} onClose={() => setErrorMessage(null)} />
       )}
       <div id="page-content">
         {forwards && (
@@ -143,14 +147,10 @@ const ForwardsPage = () => {
         />
       )}
       {isModalOpen && (
-        <ForwardModal
-          forward={openedForward}
-          onRequestClose={closeModal}
-          onSubmit={handleSubmit}
-        />
+        <ForwardModal forward={openedForward} onRequestClose={closeModal} onSubmit={handleSubmit} />
       )}
     </div>
-  )
-}
+  );
+};
 
-export const Component = ForwardsPage
+export const Component = ForwardsPage;

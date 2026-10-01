@@ -1,6 +1,6 @@
-import { Modal, TextInput } from "@carbon/react";
-import React, { useState } from "react";
-import type { PluginManifest } from "../../plugins/types";
+import { Modal, TextInput } from '@carbon/react';
+import React, { useState } from 'react';
+import type { PluginManifest } from '../../plugins/types';
 
 interface PluginConfigModalProps {
   plugin: PluginManifest;
@@ -19,7 +19,7 @@ export const PluginConfigModal: React.FC<PluginConfigModalProps> = ({
   const [serviceTargets, setServiceTargets] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     for (const svc of serviceRequirements) {
-      initial[svc.id] = "";
+      initial[svc.id] = '';
     }
     return initial;
   });
@@ -45,18 +45,18 @@ export const PluginConfigModal: React.FC<PluginConfigModalProps> = ({
     <Modal
       open
       modalHeading={`Configure Services: ${plugin.name}`}
-      primaryButtonText={isSaving ? "Saving..." : "Save Configuration"}
+      primaryButtonText={isSaving ? 'Saving...' : 'Save Configuration'}
       primaryButtonDisabled={isSaving}
       secondaryButtonText="Cancel"
       onRequestSubmit={handleSubmit}
       onRequestClose={onRequestClose}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <p style={{ marginBottom: "0.5rem" }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <p style={{ marginBottom: '0.5rem' }}>
           Configure target URLs for backend services required by this plugin:
         </p>
         {serviceRequirements.length === 0 ? (
-          <p style={{ fontStyle: "italic", color: "var(--cds-text-secondary, #525252)" }}>
+          <p style={{ fontStyle: 'italic', color: 'var(--cds-text-secondary, #525252)' }}>
             This plugin does not declare any service requirements.
           </p>
         ) : (
@@ -66,7 +66,7 @@ export const PluginConfigModal: React.FC<PluginConfigModalProps> = ({
               id={`service-target-${svc.id}`}
               labelText={`Service: ${svc.id} (v${svc.version})`}
               placeholder="e.g. http://localhost:8080"
-              value={serviceTargets[svc.id] || ""}
+              value={serviceTargets[svc.id] || ''}
               onChange={(e) => handleTargetChange(svc.id, e.target.value)}
             />
           ))

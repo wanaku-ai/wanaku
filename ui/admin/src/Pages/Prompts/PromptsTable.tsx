@@ -1,21 +1,21 @@
-import {TrashCan} from "@carbon/icons-react";
+import { TrashCan } from '@carbon/icons-react';
 import {
-    Button,
-    DataTable,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableHeader,
-    TableRow,
-    TableToolbar,
-    TableToolbarContent,
-} from "@carbon/react";
-import {FunctionComponent} from "react";
-import {PromptEntry} from "../../models";
-import {getNamespacePathById} from "../../hooks/api/use-namespaces"
-import {TableEmptyState} from "../EmptyTableState"
+  Button,
+  DataTable,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableToolbar,
+  TableToolbarContent,
+} from '@carbon/react';
+import { FunctionComponent } from 'react';
+import { PromptEntry } from '../../models';
+import { getNamespacePathById } from '../../hooks/api/use-namespaces';
+import { TableEmptyState } from '../EmptyTableState';
 
 interface PromptsListProps {
   fetchedData: PromptEntry[];
@@ -23,27 +23,24 @@ interface PromptsListProps {
 }
 
 const formatMessages = (messages?: any[]) => {
-  if (!messages || messages.length === 0) return "No messages";
+  if (!messages || messages.length === 0) return 'No messages';
   return `${messages.length} message(s)`;
 };
 
 const formatArguments = (args?: any[]) => {
-  if (!args || args.length === 0) return "No arguments";
-  return args.map(arg => `${arg.name}${arg.required ? '*' : ''}`).join(", ");
+  if (!args || args.length === 0) return 'No arguments';
+  return args.map((arg) => `${arg.name}${arg.required ? '*' : ''}`).join(', ');
 };
 
-export const PromptsTable: FunctionComponent<PromptsListProps> = ({
-  fetchedData,
-  onDelete,
-}) => {
+export const PromptsTable: FunctionComponent<PromptsListProps> = ({ fetchedData, onDelete }) => {
   const headers = [
-    {key: "name", header: "Name"},
-    {key: "description", header: "Description"},
-    {key: "messages", header: "Messages"},
-    {key: "arguments", header: "Arguments"},
-    {key: "toolReferences", header: "Tool References"},
-    {key: "namespace", header: "Namespace"},
-    {key: "actions", header: "Actions"},
+    { key: 'name', header: 'Name' },
+    { key: 'description', header: 'Description' },
+    { key: 'messages', header: 'Messages' },
+    { key: 'arguments', header: 'Arguments' },
+    { key: 'toolReferences', header: 'Tool References' },
+    { key: 'namespace', header: 'Namespace' },
+    { key: 'actions', header: 'Actions' },
   ];
 
   function promptsToRows() {
@@ -53,14 +50,14 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({
       description: prompt.description,
       messages: formatMessages(prompt.messages),
       arguments: formatArguments(prompt.arguments),
-      toolReferences: "N/A", // toolReferences not in API schema
+      toolReferences: 'N/A', // toolReferences not in API schema
       namespace: getNamespacePathById(prompt.namespace ?? undefined),
     }));
   }
-  
+
   return (
     <DataTable headers={headers} rows={promptsToRows()}>
-      {({headers, rows, getTableProps, getHeaderProps, getRowProps}) => {
+      {({ headers, rows, getTableProps, getHeaderProps, getRowProps }) => {
         return (
           <TableContainer>
             <TableToolbar>
@@ -70,9 +67,7 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({
               <TableHead>
                 <TableRow>
                   {headers.map((header) => (
-                    <TableHeader {...getHeaderProps({header})}>
-                      {header.header}
-                    </TableHeader>
+                    <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
                   ))}
                 </TableRow>
               </TableHead>
@@ -80,16 +75,16 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({
                 {rows.map((row) => {
                   const prompt = fetchedData.find((item) => item.name === row.id);
                   return (
-                    <TableRow {...getRowProps({row})}>
+                    <TableRow {...getRowProps({ row })}>
                       {row.cells.map((cell) => {
-                        if (cell.info.header === "arguments") {
+                        if (cell.info.header === 'arguments') {
                           return (
-                            <TableCell key={cell.id} style={{ fontSize: "14px" }}>
+                            <TableCell key={cell.id} style={{ fontSize: '14px' }}>
                               {cell.value}
                             </TableCell>
                           );
                         }
-                        if (cell.info.header === "actions") {
+                        if (cell.info.header === 'actions') {
                           return (
                             <TableCell key={cell.id}>
                               <Button
@@ -117,7 +112,8 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({
               </TableBody>
             </Table>
           </TableContainer>
-      )}}
+        );
+      }}
     </DataTable>
   );
 };

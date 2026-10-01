@@ -1,5 +1,5 @@
-import { Component, ReactNode } from "react";
-import { InlineNotification, Button } from "@carbon/react";
+import { Component, ReactNode } from 'react';
+import { InlineNotification, Button } from '@carbon/react';
 
 interface Props {
   children: ReactNode;
@@ -21,24 +21,24 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("Uncaught error in page component:", error, info);
+    console.error('Uncaught error in page component:', error, info);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: "2rem" }}>
+        <div style={{ padding: '2rem' }}>
           <InlineNotification
             kind="error"
             title="Something went wrong"
-            subtitle={this.state.error?.message || "An unexpected error occurred"}
+            subtitle={this.state.error?.message || 'An unexpected error occurred'}
             hideCloseButton
           />
           <Button
             kind="primary"
-            style={{ marginTop: "1rem" }}
+            style={{ marginTop: '1rem' }}
             onClick={() => {
-              window.location.hash = "#/";
+              window.location.hash = '#/';
               this.setState({ hasError: false, error: null });
             }}
           >

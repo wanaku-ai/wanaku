@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback } from 'react';
 import {
   bindEvaluatorNamespace,
   listEvaluatorBindings,
@@ -15,10 +15,10 @@ import {
   type unbindEvaluatorNamespaceResponseSuccess,
   type updateEvaluatorsResponse,
   type updateEvaluatorsResponseSuccess,
-} from "../../api/wanaku-router-api";
-import type { EvaluatorDef } from "../../models";
+} from '../../api/wanaku-router-api';
+import type { EvaluatorDef } from '../../models';
 
-export type { EvaluatorDef } from "../../models";
+export type { EvaluatorDef } from '../../models';
 
 export type EvaluatorsResponse = listEvaluatorsResponse;
 export type BindingsResponse = listEvaluatorBindingsResponse;
@@ -32,16 +32,24 @@ export const useEvaluators = () => {
   );
 
   const updateEvaluators = useCallback(
-    async (evaluators: EvaluatorDef[], options?: RequestInit): Promise<updateEvaluatorsResponseSuccess> => {
-      const response: updateEvaluatorsResponse = await updateEvaluatorsRequest({ evaluators }, options);
-      if (response.status !== 200) throw new Error(`Failed to update evaluators (${response.status})`);
+    async (
+      evaluators: EvaluatorDef[],
+      options?: RequestInit,
+    ): Promise<updateEvaluatorsResponseSuccess> => {
+      const response: updateEvaluatorsResponse = await updateEvaluatorsRequest(
+        { evaluators },
+        options,
+      );
+      if (response.status !== 200)
+        throw new Error(`Failed to update evaluators (${response.status})`);
       return response;
     },
     [],
   );
 
   const listLlmConnections = useCallback(
-    (options?: RequestInit): Promise<LlmConnectionsResponse> => listEvaluatorLlmConnections(options),
+    (options?: RequestInit): Promise<LlmConnectionsResponse> =>
+      listEvaluatorLlmConnections(options),
     [],
   );
 
@@ -68,8 +76,14 @@ export const useEvaluators = () => {
   );
 
   const unbindNamespace = useCallback(
-    async (namespace: string, options?: RequestInit): Promise<unbindEvaluatorNamespaceResponseSuccess> => {
-      const response: unbindEvaluatorNamespaceResponse = await unbindEvaluatorNamespace(namespace, options);
+    async (
+      namespace: string,
+      options?: RequestInit,
+    ): Promise<unbindEvaluatorNamespaceResponseSuccess> => {
+      const response: unbindEvaluatorNamespaceResponse = await unbindEvaluatorNamespace(
+        namespace,
+        options,
+      );
       return response;
     },
     [],

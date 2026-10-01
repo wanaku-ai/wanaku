@@ -1,20 +1,20 @@
 export const enum Links {
   Home = '/', // Dashboard
   Tools = '/tools',
-  Resources = "/resources",
-  Prompts = "/prompts",
-  LLMChat = "/llmchat",
-  ToolCalls = "/tool-calls",
+  Resources = '/resources',
+  Prompts = '/prompts',
+  LLMChat = '/llmchat',
+  ToolCalls = '/tool-calls',
 
-  Namespaces = "/namespaces",
-  Forwards = "/forwards",
-  Bindings = "/bindings",
-  Evaluators = "/evaluators",
-  Audit = "/audit",
-  ActionPolicies = "/action-policies",
-  Plugins = "/plugins-admin",
-  Downloads = "/downloads",
-  Logout = "/logout"
+  Namespaces = '/namespaces',
+  Forwards = '/forwards',
+  Bindings = '/bindings',
+  Evaluators = '/evaluators',
+  Audit = '/audit',
+  ActionPolicies = '/action-policies',
+  Plugins = '/plugins-admin',
+  Downloads = '/downloads',
+  Logout = '/logout',
 }
 
 export const enum ExternalLinks {

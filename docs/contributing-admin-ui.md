@@ -125,6 +125,32 @@ Now you can iterate on the UI (`yarn run build`) without rebuilding the server.
 
 ## Code Conventions
 
+### Source Formatting
+
+Prettier 3.5.3 formats the handwritten JavaScript and TypeScript files in `ui/admin/src/`.
+The settings are in `ui/admin/.prettierrc.json`.
+The generated files in `src/api/` and `src/models/` are excluded by `.prettierignore`.
+Orval formats these generated files with the pinned Prettier version and its default settings.
+
+Run these commands from `ui/admin`.
+
+Format the source files:
+
+```bash
+yarn run format
+```
+
+Check the source files before you submit a pull request:
+
+```bash
+yarn run format:check
+```
+
+The formatting check runs in CI for pull requests.
+It fails if a source file does not match the Prettier settings.
+Run `yarn run format` to correct the format.
+ESLint checks code quality with `yarn run lint`.
+
 ### Carbon Components Only
 
 Never use raw HTML elements for interactive UI. Use `@carbon/react` components:

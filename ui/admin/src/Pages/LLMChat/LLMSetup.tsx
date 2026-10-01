@@ -1,27 +1,25 @@
-import React from "react"
-import {
-  Form,
-  InlineNotification,
-  PasswordInput,
-  Stack,
-  TextArea,
-  Toggle
-} from "@carbon/react"
-import {LlmConfig} from "./config"
-import {LLMModelComboBox} from "./LLMModelComboBox"
-
+import React from 'react';
+import { Form, InlineNotification, PasswordInput, Stack, TextArea, Toggle } from '@carbon/react';
+import { LlmConfig } from './config';
+import { LLMModelComboBox } from './LLMModelComboBox';
 
 interface LLMSetupProps {
-  config: LlmConfig
-  stored: boolean
-  apiKeyStored: boolean
-  onConfigChange: (config: LlmConfig) => void
-  onStoredChange: (store: boolean) => void
-  onApiKeyStoredChange: (store: boolean) => void
+  config: LlmConfig;
+  stored: boolean;
+  apiKeyStored: boolean;
+  onConfigChange: (config: LlmConfig) => void;
+  onStoredChange: (store: boolean) => void;
+  onApiKeyStoredChange: (store: boolean) => void;
 }
 
-export const LLMSetup: React.FC<LLMSetupProps> = ({ config, stored, apiKeyStored, onConfigChange, onStoredChange, onApiKeyStoredChange }) => {
-  
+export const LLMSetup: React.FC<LLMSetupProps> = ({
+  config,
+  stored,
+  apiKeyStored,
+  onConfigChange,
+  onStoredChange,
+  onApiKeyStoredChange,
+}) => {
   return (
     <Form>
       <Stack gap={5}>
@@ -38,9 +36,9 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, stored, apiKeyStored
           apiKey={config.apiKey}
           value={config.selectedModel}
           onChange={(selectedModel: string) => {
-            const newConfig = structuredClone(config)
-            newConfig.selectedModel = selectedModel
-            onConfigChange(newConfig)
+            const newConfig = structuredClone(config);
+            newConfig.selectedModel = selectedModel;
+            onConfigChange(newConfig);
           }}
         />
         <PasswordInput
@@ -49,10 +47,10 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, stored, apiKeyStored
           placeholder="Type your API key here..."
           value={config.apiKey}
           onChange={(event) => {
-            const apiKey = event.target.value
-            const newConfig = structuredClone(config)
-            newConfig.apiKey = apiKey
-            onConfigChange(newConfig)
+            const apiKey = event.target.value;
+            const newConfig = structuredClone(config);
+            newConfig.apiKey = apiKey;
+            onConfigChange(newConfig);
           }}
           size="md"
         />
@@ -80,14 +78,14 @@ export const LLMSetup: React.FC<LLMSetupProps> = ({ config, stored, apiKeyStored
           placeholder='Json format, e.g. {"max_tokens":400,"temperature":0.7,"tool_choice":"auto"}'
           value={config.extraLlmParams}
           onChange={(event) => {
-            const extraLlmParams = event.target.value
-            const newConfig = structuredClone(config)
-            newConfig.extraLlmParams = extraLlmParams
-            onConfigChange(newConfig)
+            const extraLlmParams = event.target.value;
+            const newConfig = structuredClone(config);
+            newConfig.extraLlmParams = extraLlmParams;
+            onConfigChange(newConfig);
           }}
           rows={4}
         />
       </Stack>
     </Form>
-  )
-}
+  );
+};

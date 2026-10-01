@@ -1,84 +1,82 @@
 const getBody = <T>(c: Response | Request): Promise<T> => {
-    const contentType = c.headers.get('content-type');
+  const contentType = c.headers.get('content-type');
 
-    if (contentType && contentType.includes('application/json')) {
-      return c.json();
+  if (contentType && contentType.includes('application/json')) {
+    return c.json();
+  }
+
+  return c.text() as Promise<T>;
+};
+
+// NOTE: Update just base url
+export const getUrl = (contextUrl: string): string => {
+  const baseUrl = VITE_API_URL || window.location.origin;
+  const url = new URL(contextUrl, baseUrl);
+  const pathname = url.pathname;
+  const search = url.search;
+
+  const requestUrl = new URL(`${baseUrl}${pathname}${search}`);
+
+  return requestUrl.toString();
+};
+
+export const getInferenceUrl = (contextUrl: string): string => {
+  const baseUrl =
+    VITE_INFERENCE_URL || `${window.location.protocol}//${window.location.hostname}:8083`;
+  const url = new URL(contextUrl, baseUrl);
+  const pathname = url.pathname;
+  const search = url.search;
+
+  const requestUrl = new URL(`${baseUrl}${pathname}${search}`);
+
+  return requestUrl.toString();
+};
+
+// NOTE: Add headers
+const getHeaders = (headers?: HeadersInit): HeadersInit => {
+  return {
+    ...headers,
+  };
+};
+
+const REDIRECT_TS_KEY = 'wanaku_auth_redirect_ts';
+const REDIRECT_LOOP_MS = 10_000;
+
+export const customFetch = async <T>(url: string, options: RequestInit): Promise<T> => {
+  const requestUrl = getUrl(url);
+  const requestHeaders = getHeaders(options.headers);
+
+  const requestInit: RequestInit = {
+    ...options,
+    headers: requestHeaders,
+    redirect: 'manual',
+  };
+
+  const request = new Request(requestUrl, requestInit);
+  const response = await fetch(request);
+
+  if (response.type === 'opaqueredirect' || response.status === 401) {
+    const lastRedirect = Number(sessionStorage.getItem(REDIRECT_TS_KEY) || '0');
+    if (Date.now() - lastRedirect < REDIRECT_LOOP_MS) {
+      throw new Error('Authentication redirect loop detected — check OIDC configuration');
     }
+    sessionStorage.setItem(REDIRECT_TS_KEY, String(Date.now()));
+    window.location.reload();
+    throw new Error('Redirecting to login');
+  }
 
-    return c.text() as Promise<T>;
-  };
+  if (response.ok) {
+    sessionStorage.removeItem(REDIRECT_TS_KEY);
+  }
 
-  // NOTE: Update just base url
-  export const getUrl = (contextUrl: string): string => {
-    const baseUrl = VITE_API_URL || window.location.origin;
-    const url = new URL(contextUrl, baseUrl);
-    const pathname = url.pathname;
-    const search = url.search;
+  const body = await getBody<Record<string, unknown>>(response);
 
-    const requestUrl = new URL(`${baseUrl}${pathname}${search}`);
+  if (!response.ok) {
+    const message = (body?.error as string) || `Request failed with status ${response.status}`;
+    throw new Error(message);
+  }
 
-    return requestUrl.toString();
-  };
+  const data = body?.data !== undefined ? body.data : body;
 
-  export const getInferenceUrl = (contextUrl: string): string => {
-    const baseUrl = VITE_INFERENCE_URL || `${window.location.protocol}//${window.location.hostname}:8083`;
-    const url = new URL(contextUrl, baseUrl);
-    const pathname = url.pathname;
-    const search = url.search;
-
-    const requestUrl = new URL(`${baseUrl}${pathname}${search}`);
-
-    return requestUrl.toString();
-  };
-
-  // NOTE: Add headers
-  const getHeaders = (headers?: HeadersInit): HeadersInit => {
-    return {
-      ...headers
-    };
-  };
-
-  const REDIRECT_TS_KEY = 'wanaku_auth_redirect_ts';
-  const REDIRECT_LOOP_MS = 10_000;
-
-  export const customFetch = async <T>(
-    url: string,
-    options: RequestInit,
-  ): Promise<T> => {
-    const requestUrl = getUrl(url);
-    const requestHeaders = getHeaders(options.headers);
-
-    const requestInit: RequestInit = {
-      ...options,
-      headers: requestHeaders,
-      redirect: 'manual',
-    };
-
-    const request = new Request(requestUrl, requestInit);
-    const response = await fetch(request);
-
-    if (response.type === 'opaqueredirect' || response.status === 401) {
-      const lastRedirect = Number(sessionStorage.getItem(REDIRECT_TS_KEY) || '0');
-      if (Date.now() - lastRedirect < REDIRECT_LOOP_MS) {
-        throw new Error('Authentication redirect loop detected — check OIDC configuration');
-      }
-      sessionStorage.setItem(REDIRECT_TS_KEY, String(Date.now()));
-      window.location.reload();
-      throw new Error('Redirecting to login');
-    }
-
-    if (response.ok) {
-      sessionStorage.removeItem(REDIRECT_TS_KEY);
-    }
-
-    const body = await getBody<Record<string, unknown>>(response);
-
-    if (!response.ok) {
-      const message = (body?.error as string) || `Request failed with status ${response.status}`;
-      throw new Error(message);
-    }
-
-    const data = body?.data !== undefined ? body.data : body;
-
-    return { status: response.status, data, headers: response.headers } as T;
-  };
+  return { status: response.status, data, headers: response.headers } as T;
+};

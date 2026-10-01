@@ -10,9 +10,9 @@ export interface Property {
 }
 
 export function formatInputSchema(inputSchema?: InputSchema): string {
-  return (inputSchema) ? (JSON.stringify(inputSchema, null, 1)) : ""
+  return inputSchema ? JSON.stringify(inputSchema, null, 1) : '';
 }
 
 export function parseInputSchema(inputSchema: string): InputSchema {
-    return inputSchema === "" ? { type: "object" } : JSON.parse(inputSchema)
+  return inputSchema === '' ? { type: 'object' } : JSON.parse(inputSchema);
 }

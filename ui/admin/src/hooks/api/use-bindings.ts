@@ -1,5 +1,5 @@
-import { useCallback } from "react";
-import { listBindings as listBindingsRequest } from "../../api/wanaku-router-api";
+import { useCallback } from 'react';
+import { listBindings as listBindingsRequest } from '../../api/wanaku-router-api';
 
 /**
  * Credential bindings are operator-managed and the management API only
@@ -7,10 +7,7 @@ import { listBindings as listBindingsRequest } from "../../api/wanaku-router-api
  * create/update/delete methods.
  */
 export const useBindings = () => {
-  const listBindings = useCallback(
-    (options?: RequestInit) => listBindingsRequest(options),
-    [],
-  );
+  const listBindings = useCallback((options?: RequestInit) => listBindingsRequest(options), []);
 
   return { listBindings };
 };

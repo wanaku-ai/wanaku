@@ -1,7 +1,8 @@
-import React, {RefObject, useEffect, useImperativeHandle, useState} from "react"
+import React, { RefObject, useEffect, useImperativeHandle, useState } from 'react';
 import {
   Button,
-  DataTable, DataTableSkeleton,
+  DataTable,
+  DataTableSkeleton,
   Table,
   TableBody,
   TableCell,
@@ -10,65 +11,67 @@ import {
   TableHeader,
   TableRow,
   TableToolbar,
-  TableToolbarContent
-} from "@carbon/react"
-import {TrashCan} from "@carbon/icons-react"
-import {ResourceEntry} from "../../models"
-import {getNamespacePathById} from "../../hooks/api/use-namespaces"
-import {useResources} from "../../hooks/api/use-resources"
-import {TableEmptyState} from "../EmptyTableState"
-import {getErrorMessage} from "../../utils/error"
-
+  TableToolbarContent,
+} from '@carbon/react';
+import { TrashCan } from '@carbon/icons-react';
+import { ResourceEntry } from '../../models';
+import { getNamespacePathById } from '../../hooks/api/use-namespaces';
+import { useResources } from '../../hooks/api/use-resources';
+import { TableEmptyState } from '../EmptyTableState';
+import { getErrorMessage } from '../../utils/error';
 
 export interface RefreshHandle {
-  refresh: () => void
+  refresh: () => void;
 }
 
 interface ResourcesTableProps {
-  onDelete: (resourceName: string) => void
-  onError?: (message: string) => void
-  ref?: RefObject<RefreshHandle>
+  onDelete: (resourceName: string) => void;
+  onError?: (message: string) => void;
+  ref?: RefObject<RefreshHandle>;
 }
 
 export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onDelete, onError, ref }) => {
-
-  const [resources, setResources] = useState<ResourceEntry[]>([])
-  const [isLoading, setLoading] = useState(true)
-  const { listResources } = useResources()
+  const [resources, setResources] = useState<ResourceEntry[]>([]);
+  const [isLoading, setLoading] = useState(true);
+  const { listResources } = useResources();
 
   useEffect(() => {
     (async () => {
-      await fetchResources()
-    })()
-  }, [listResources])
+      await fetchResources();
+    })();
+  }, [listResources]);
 
-  useImperativeHandle(ref, (): RefreshHandle => ({
-    async refresh() {
-      await fetchResources()
-    }
-  }), [])
+  useImperativeHandle(
+    ref,
+    (): RefreshHandle => ({
+      async refresh() {
+        await fetchResources();
+      },
+    }),
+    [],
+  );
 
   async function fetchResources() {
     try {
-      const result = await listResources()
-      const resources = result.data as ResourceEntry[]
-      setResources(resources)
+      const result = await listResources();
+      const resources = result.data as ResourceEntry[];
+      setResources(resources);
     } catch (error) {
-      onError?.(getErrorMessage(error))
+      onError?.(getErrorMessage(error));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   const headers = [
-    {key: "name", header: "Name"},
-    {key: "location", header: "Location"},
-    {key: "type", header: "Type"},
-    {key: "mimeType", header: "MIME Type"},
-    {key: "description", header: "Description"},
-    {key: "namespace", header: "Namespace"},
-    {key: "actions", header: "Actions"}
-  ]
+    { key: 'name', header: 'Name' },
+    { key: 'location', header: 'Location' },
+    { key: 'type', header: 'Type' },
+    { key: 'mimeType', header: 'MIME Type' },
+    { key: 'description', header: 'Description' },
+    { key: 'namespace', header: 'Namespace' },
+    { key: 'actions', header: 'Actions' },
+  ];
 
   function resourcesToRows() {
     return resources.map((resource: ResourceEntry, index: number) => ({
@@ -78,8 +81,8 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onDelete, onErro
       type: resource.type,
       mimeType: resource.mimeType,
       description: resource.description,
-      namespace: resource.namespace
-    }))
+      namespace: resource.namespace,
+    }));
   }
 
   function tableCells(resource: ResourceEntry) {
@@ -101,56 +104,44 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onDelete, onErro
           />
         </TableCell>
       </React.Fragment>
-    )
+    );
   }
 
-  return isLoading
-    ? (<DataTableSkeleton />)
-    : (<DataTable headers={headers} rows={resourcesToRows()}>
-        {({
-            headers,
-            rows,
-            getTableProps,
-            getHeaderProps,
-            getRowProps,
-            getToolbarProps
-          }) => (
-          <TableContainer>
-            <TableToolbar {...getToolbarProps()}>
-              <TableToolbarContent />
-            </TableToolbar>
-            <Table {...getTableProps()}>
-              <TableHead>
-                <TableRow>
-                  {headers.map((header) => (
-                    <TableHeader {...getHeaderProps({header})}>
-                      {header.header}
-                    </TableHeader>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row) => {
-                  const resource = resources.find((item) => (item.name || item.id) === row.id)
-                  if (resource) {
-                    return (
-                      <TableRow {...getRowProps({row})}>
-                        {tableCells(resource)}
-                      </TableRow>
-                    )
-                  }
-                })}
-                {resources.length == 0 && (
-                  <TableEmptyState
-                    colSpan={headers.length}
-                    title="No resources discovered yet"
-                    body="Register a forwarded MCP server to auto-discover resources"
-                  />
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </DataTable>
-  )
-}
+  return isLoading ? (
+    <DataTableSkeleton />
+  ) : (
+    <DataTable headers={headers} rows={resourcesToRows()}>
+      {({ headers, rows, getTableProps, getHeaderProps, getRowProps, getToolbarProps }) => (
+        <TableContainer>
+          <TableToolbar {...getToolbarProps()}>
+            <TableToolbarContent />
+          </TableToolbar>
+          <Table {...getTableProps()}>
+            <TableHead>
+              <TableRow>
+                {headers.map((header) => (
+                  <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((row) => {
+                const resource = resources.find((item) => (item.name || item.id) === row.id);
+                if (resource) {
+                  return <TableRow {...getRowProps({ row })}>{tableCells(resource)}</TableRow>;
+                }
+              })}
+              {resources.length == 0 && (
+                <TableEmptyState
+                  colSpan={headers.length}
+                  title="No resources discovered yet"
+                  body="Register a forwarded MCP server to auto-discover resources"
+                />
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </DataTable>
+  );
+};

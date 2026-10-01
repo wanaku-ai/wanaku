@@ -1,29 +1,38 @@
-import React, {useState} from "react"
-import {PromptEntry} from "../../models"
-import {InlineNotification, Modal, Stack, Tab, TabList, TabPanel, TabPanels, Tabs, TextArea, TextInput} from "@carbon/react"
-import {NamespaceSelect} from "../Namespaces/NamespaceSelect"
-
+import React, { useState } from 'react';
+import { PromptEntry } from '../../models';
+import {
+  InlineNotification,
+  Modal,
+  Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  TextArea,
+  TextInput,
+} from '@carbon/react';
+import { NamespaceSelect } from '../Namespaces/NamespaceSelect';
 
 interface PromptModalProps {
-  onSubmit: (newPrompt: PromptEntry) => void
-  onRequestClose: () => void
+  onSubmit: (newPrompt: PromptEntry) => void;
+  onRequestClose: () => void;
 }
 
 export const PromptModal: React.FC<PromptModalProps> = ({ onSubmit, onRequestClose }) => {
-
-  const [promptName, setPromptName] = useState("")
-  const [description, setDescription] = useState("")
-  const [messagesJson, setMessagesJson] = useState("")
-  const [argumentsJson, setArgumentsJson] = useState("")
-  const [toolReferences, setToolReferences] = useState("")
-  const [selectedNamespace, setSelectedNamespace] = useState("")
-  const [jsonError, setJsonError] = useState<string | null>(null)
+  const [promptName, setPromptName] = useState('');
+  const [description, setDescription] = useState('');
+  const [messagesJson, setMessagesJson] = useState('');
+  const [argumentsJson, setArgumentsJson] = useState('');
+  const [toolReferences, setToolReferences] = useState('');
+  const [selectedNamespace, setSelectedNamespace] = useState('');
+  const [jsonError, setJsonError] = useState<string | null>(null);
 
   const handleSubmit = () => {
-    setJsonError(null)
+    setJsonError(null);
     try {
-      const messages = messagesJson ? JSON.parse(messagesJson) : []
-      const args = argumentsJson ? JSON.parse(argumentsJson) : []
+      const messages = messagesJson ? JSON.parse(messagesJson) : [];
+      const args = argumentsJson ? JSON.parse(argumentsJson) : [];
       // toolReferences not in API schema - omitted
 
       onSubmit({
@@ -31,13 +40,13 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onSubmit, onRequestClo
         description,
         messages,
         arguments: args,
-        namespace: selectedNamespace
-      })
+        namespace: selectedNamespace,
+      });
     } catch {
-      setJsonError("Invalid JSON in messages or arguments fields")
+      setJsonError('Invalid JSON in messages or arguments fields');
     }
-  }
-  
+  };
+
   return (
     <Modal
       open={true}
@@ -95,7 +104,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onSubmit, onRequestClo
                   id="namespace"
                   labelText="Select a Namespace"
                   value={selectedNamespace}
-                  onChange={namespace => setSelectedNamespace(namespace.name)}
+                  onChange={(namespace) => setSelectedNamespace(namespace.name)}
                 />
               </Stack>
             </TabPanel>
@@ -122,5 +131,5 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onSubmit, onRequestClo
         </div>
       </Tabs>
     </Modal>
-  )
-}
+  );
+};
