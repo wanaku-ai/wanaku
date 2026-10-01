@@ -1,11 +1,8 @@
-use http::Response;
-
-use crate::handlers;
-use crate::manifest::PluginManifest;
-
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum PluginRoute {
     ListPlugins,
+    InstallPlugin,
+    ConfigurePlugin(String),
     ServeFile(String, String),
     ProxyService(String, String, String),
     NotFound,
@@ -23,6 +20,16 @@ pub(crate) fn resolve_plugin_route(method: &str, path: &str) -> PluginRoute {
     if let Some(suffix) = path.strip_prefix("/api/v1/plugins") {
         return match (method, suffix) {
             ("GET", "" | "/") => PluginRoute::ListPlugins,
+            ("POST", "/install" | "/install/") => PluginRoute::InstallPlugin,
+            ("PUT", rest) => {
+                let rest = rest.strip_prefix('/').unwrap_or(rest);
+                if let Some(plugin_id) = rest.strip_suffix("/config").or_else(|| rest.strip_suffix("/config/")) {
+                    if is_valid_segment(plugin_id) {
+                        return PluginRoute::ConfigurePlugin(plugin_id.to_owned());
+                    }
+                }
+                PluginRoute::NotFound
+            }
             _ => PluginRoute::NotFound,
         };
     }
@@ -60,33 +67,6 @@ pub(crate) fn resolve_plugin_route(method: &str, path: &str) -> PluginRoute {
     PluginRoute::NotFound
 }
 
-pub(crate) fn handle_list(manifests: &[PluginManifest]) -> Response<Vec<u8>> {
-    handlers::handle_list_plugins(manifests)
-}
-
-pub(crate) fn handle_file(
-    plugins_path: &std::path::Path,
-    plugin_id: &str,
-    file_path: &str,
-) -> Response<Vec<u8>> {
-    handlers::handle_serve_file(plugins_path, plugin_id, file_path)
-}
-
-#[expect(
-    clippy::too_many_arguments,
-    reason = "proxy handler requires full HTTP context"
-)]
-pub(crate) async fn handle_proxy(
-    client: &reqwest::Client,
-    target_url: &str,
-    path: &str,
-    query: Option<&str>,
-    method: &str,
-    body: Option<&str>,
-    headers: &http::HeaderMap,
-) -> Response<Vec<u8>> {
-    handlers::handle_proxy_service(client, target_url, path, query, method, body, headers).await
-}
 
 #[cfg(test)]
 mod tests {
@@ -111,8 +91,24 @@ mod tests {
     #[test]
     fn list_plugins_wrong_method() {
         assert_eq!(
-            resolve_plugin_route("POST", "/api/v1/plugins"),
+            resolve_plugin_route("DELETE", "/api/v1/plugins"),
             PluginRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn install_plugin_route() {
+        assert_eq!(
+            resolve_plugin_route("POST", "/api/v1/plugins/install"),
+            PluginRoute::InstallPlugin
+        );
+    }
+
+    #[test]
+    fn configure_plugin_route() {
+        assert_eq!(
+            resolve_plugin_route("PUT", "/api/v1/plugins/my-plugin/config"),
+            PluginRoute::ConfigurePlugin("my-plugin".to_owned())
         );
     }
 

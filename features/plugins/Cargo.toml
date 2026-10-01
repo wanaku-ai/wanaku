@@ -11,6 +11,9 @@ name = "wanaku_feature_plugins"
 [lints]
 workspace = true
 
+[features]
+openapi = ["dep:utoipa", "wanaku-types/openapi"]
+
 [dependencies]
 async-trait = { workspace = true }
 http = { workspace = true }
@@ -19,5 +22,13 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
+thiserror = { workspace = true }
 tracing = { workspace = true }
+utoipa = { version = "5.5", optional = true }
+wanaku-infra = { workspace = true }
 wanaku-types = { workspace = true }
+zip = { version = "2.2", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true }

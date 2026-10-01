@@ -11,7 +11,7 @@ import {
   TableToolbar,
   TableToolbarContent,
 } from "@carbon/react";
-import { View } from "@carbon/icons-react";
+import { Settings, View } from "@carbon/icons-react";
 import React from "react";
 import type { PluginManifest } from "../../plugins/types";
 import { TableEmptyState } from "../EmptyTableState";
@@ -19,9 +19,16 @@ import { TableEmptyState } from "../EmptyTableState";
 interface PluginsTableProps {
   plugins: PluginManifest[];
   onView: (plugin: PluginManifest) => void;
+  onConfigure?: (plugin: PluginManifest) => void;
+  onInstallClick?: () => void;
 }
 
-export const PluginsTable: React.FC<PluginsTableProps> = ({ plugins, onView }) => {
+export const PluginsTable: React.FC<PluginsTableProps> = ({
+  plugins,
+  onView,
+  onConfigure,
+  onInstallClick,
+}) => {
   const headers = [
     { key: "name", header: "Name" },
     { key: "id", header: "ID" },
@@ -48,7 +55,13 @@ export const PluginsTable: React.FC<PluginsTableProps> = ({ plugins, onView }) =
       {({ rows, headers, getToolbarProps, getTableProps, getHeaderProps, getRowProps }) => (
         <TableContainer>
           <TableToolbar {...getToolbarProps()}>
-            <TableToolbarContent />
+            <TableToolbarContent>
+              {onInstallClick && (
+                <Button onClick={onInstallClick} size="md" kind="primary">
+                  Install Plugin
+                </Button>
+              )}
+            </TableToolbarContent>
           </TableToolbar>
           <Table {...getTableProps()}>
             <TableHead>
@@ -71,13 +84,24 @@ export const PluginsTable: React.FC<PluginsTableProps> = ({ plugins, onView }) =
                       <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
                     <TableCell>
-                      <Button
-                        kind="ghost"
-                        renderIcon={View}
-                        iconDescription="View"
-                        hasIconOnly
-                        onClick={() => onView(plugin)}
-                      />
+                      <div style={{ display: "flex", gap: "0.25rem" }}>
+                        <Button
+                          kind="ghost"
+                          renderIcon={View}
+                          iconDescription="View"
+                          hasIconOnly
+                          onClick={() => onView(plugin)}
+                        />
+                        {onConfigure && (
+                          <Button
+                            kind="ghost"
+                            renderIcon={Settings}
+                            iconDescription="Configure"
+                            hasIconOnly
+                            onClick={() => onConfigure(plugin)}
+                          />
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
