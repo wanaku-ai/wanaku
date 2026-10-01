@@ -5,7 +5,7 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
-import type { PluginManifest } from './pluginManifest';
+import type { PluginManifest } from "./pluginManifest";
 
 export interface InstallPluginResponse {
   manifest: PluginManifest;

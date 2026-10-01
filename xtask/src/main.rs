@@ -156,7 +156,6 @@ fn build_image_manifest(args: &BuildImageManifestArgs) -> anyhow::Result<()> {
 //
 // Always builds for the current native architecture and pushes with an
 // arch suffix, e.g. <tag>-x86_64 or <tag>-aarch64.
-
 fn build_docker(variant: &Variant, tag: &str, push: bool) -> anyhow::Result<()> {
     let tool = resolve_docker_tool()?;
     let arch = native_arch()?;
@@ -429,6 +428,10 @@ fn manifest_docker(tag: &str) -> anyhow::Result<()> {
 }
 
 /// Assemble a multi-arch manifest for the OpenShift internal registry.
+#[expect(
+    clippy::too_many_lines,
+    reason = "openshift manifest setup and push logic"
+)]
 fn manifest_openshift(variant: &Variant, tag: &str) -> anyhow::Result<()> {
     require_tool(
         "oc",
@@ -505,6 +508,10 @@ fn native_arch() -> anyhow::Result<String> {
 ///
 /// Mirrors `build-manifests.sh`: remove any stale local manifest, create the manifest
 /// list, then push it.
+#[expect(
+    clippy::too_many_lines,
+    reason = "multi-arch manifest assembly and push steps"
+)]
 fn assemble_manifest(tag: &str, tool: &str) -> anyhow::Result<()> {
     let aarch64_tag = format!("{tag}-aarch64");
     let x86_64_tag = format!("{tag}-x86_64");

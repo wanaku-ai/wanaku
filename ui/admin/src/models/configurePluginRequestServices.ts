@@ -5,6 +5,8 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
-import type { PluginServiceTarget } from './pluginServiceTarget';
+import type { PluginServiceTarget } from "./pluginServiceTarget";
 
-export type ConfigurePluginRequestServices = {[key: string]: PluginServiceTarget};
+export type ConfigurePluginRequestServices = {
+  [key: string]: PluginServiceTarget;
+};

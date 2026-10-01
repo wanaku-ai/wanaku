@@ -5,8 +5,8 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
-import type { WanakuResponseVecPluginManifestDataItem } from './wanakuResponseVecPluginManifestDataItem';
-import type { WanakuResponseVecPluginManifestError } from './wanakuResponseVecPluginManifestError';
+import type { WanakuResponseVecPluginManifestDataItem } from "./wanakuResponseVecPluginManifestDataItem";
+import type { WanakuResponseVecPluginManifestError } from "./wanakuResponseVecPluginManifestError";
 
 export interface WanakuResponseVecPluginManifest {
   data?: WanakuResponseVecPluginManifestDataItem[];
