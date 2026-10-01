@@ -1,4 +1,8 @@
-const suffix = () => Date.now().toString(36);
+let _counter = 0;
+const suffix = () => {
+  _counter++;
+  return `${Date.now().toString(36)}-${_counter}`;
+};
 
 export function toolData(overrides?: Partial<{ name: string; description: string; uri: string; type: string; inputSchema: object }>) {
   return {
