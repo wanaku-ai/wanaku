@@ -14,7 +14,7 @@ export const PluginCatalogInfoModal = ({ plugin, onRequestClose }: PluginCatalog
     modalHeading={`${plugin.name} v${plugin.version}`}
     onRequestClose={onRequestClose}
   >
-    <dl>
+    <dl tabIndex={-1} data-modal-primary-focus>
       <dt>ID</dt>
       <dd>{plugin.id}</dd>
       <dt>Description</dt>

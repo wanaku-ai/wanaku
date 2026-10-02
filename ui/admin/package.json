@@ -14,10 +14,11 @@
   },
   "resolutions": {
     "jsonpath-plus": "10.4.0",
-    "fast-uri": "3.1.2",
-    "hono": "4.12.22",
-    "postcss": "8.5.15",
-    "ip-address": "10.2.0"
+    "fast-uri": "3.1.8",
+    "hono": "4.13.7",
+    "postcss": "8.5.23",
+    "ip-address": "10.7.1",
+    "js-yaml": "4.3.2"
   },
   "dependencies": {
     "@carbon/icons-react": "^11.76.0",
@@ -29,7 +30,7 @@
     "react-dom": "^19.2.4",
     "react-is": "^19.2.4",
     "react-markdown": "^10.1.0",
-    "react-router-dom": "^6.30.3",
+    "react-router-dom": "^7.18.0",
     "sass": "^1.98.0"
   },
   "devDependencies": {
@@ -38,17 +39,20 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.7.0",
-    "baseline-browser-mapping": "^2.10.27",
+    "baseline-browser-mapping": "^2.11.0",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.26",
     "globals": "^15.15.0",
-    "orval": "^7.21.0",
+    "orval": "^8.22.0",
     "prettier": "3.5.3",
     "sass-embedded": "^1.98.0",
     "typescript": "~5.7.3",
     "typescript-eslint": "^8.57.1",
-    "vite": "^6.4.1"
+    "vite": "^6.4.3"
   },
-  "packageManager": "yarn@1.22.22"
+  "packageManager": "yarn@1.22.22",
+  "engines": {
+    "node": ">=22.18.0"
+  }
 }
