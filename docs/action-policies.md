@@ -1,6 +1,6 @@
 # Action Policies
 
-Action policies give Wanaku a deterministic authorization layer for MCP actions. They complement the evaluator. Use action policies for rules that depend on known names, labels, URIs, and structured request values. Use evaluators for contextual or semantic decisions.
+Action policies give Wanaku a deterministic authorization layer for MCP and A2A actions. They complement the MCP evaluator. Use action policies for rules that depend on known names, labels, URIs, and structured request values. Use evaluators for contextual or semantic MCP decisions. See [A2A Proxy](./a2a.md) for the initial A2A scope and configuration.
 
 The [Governance Posture](./governance-posture.md) model defines the behavior for unmatched actions, policy failures, audit-only evaluation, and disabled scopes. The action-policy filter resolves the global posture and namespace override before it evaluates a request.
 
@@ -66,8 +66,8 @@ A rule can use these selectors:
 | Selector | Value |
 | --- | --- |
 | `namespace` | The Wanaku namespace. |
-| `operation` | `tools/call`, `resources/read`, or `prompts/get`. |
-| `target_type` | `tool`, `resource`, or `prompt`. |
+| `operation` | MCP: `tools/call`, `resources/read`, or `prompts/get`. A2A: the canonical method specified in [A2A Proxy](./a2a.md). |
+| `target_type` | `tool`, `resource`, `prompt`, or `agent`. |
 | `target_name` | An `exact` or `glob` match expression. |
 | `labels` | Required registry label key-value pairs. |
 | `uri` | An `exact` or `prefix` match expression for a resource URI. |
@@ -102,7 +102,7 @@ A URI selector applies only to a resource read. Tool registry transport URIs are
 
 ## Match structured request values
 
-Each predicate reads the MCP `params` object with an RFC 6901 JSON Pointer. JSON types remain distinct. The string `"1"` does not equal the number `1`.
+Each predicate reads the JSON-RPC `params` object with an RFC 6901 JSON Pointer. JSON types remain distinct. The string `"1"` does not equal the number `1`.
 
 | Operator | Operand | Match condition |
 | --- | --- | --- |
@@ -142,15 +142,15 @@ Wanaku evaluates all rules. The declaration order does not change the result.
 
 1. If any matching rule has `effect: deny`, Wanaku denies the action.
 2. If no deny matches and an allow matches, Wanaku records an explicit allow and continues the pipeline.
-3. If no rule matches, Wanaku continues the pipeline. The baseline behavior belongs to [#1872](https://github.com/wanaku-ai/wanaku/issues/1872).
+3. If no rule matches, Wanaku applies the effective governance posture. The default enforce posture denies the action.
 
 A static allow does not skip the evaluator or another downstream filter. A static deny returns a JSON-RPC error before the evaluator and upstream action handler run.
 
 The caller receives one deterministic safe denial reason. Wanaku selects the matching deny rule with the lexicographically lowest rule ID. A configured `reason_code` and `message` take precedence. Otherwise, Wanaku uses `action_policy_denied` and `The requested action is not allowed.` The decision model retains all matching rule IDs and configured reason codes for authorized internal consumers.
 
-An unconfigured policy continues governed requests. If no active last-known-good policy exists, an invalid configured policy rejects governed requests with `action_policy_invalid`. If an active policy exists, an invalid update or startup policy does not replace it. Wanaku continues to enforce the active last-known-good policy. These are temporary failure semantics. [#1872](https://github.com/wanaku-ai/wanaku/issues/1872) owns the final baseline and failure modes.
+An unconfigured policy uses the effective no-match behavior. If no active last-known-good policy exists, an invalid configured policy uses the effective failure behavior. If an active policy exists, an invalid update or startup policy does not replace it. Wanaku continues to enforce the active last-known-good policy. See [Governance Posture](./governance-posture.md) for enforce, audit, and disabled modes.
 
-Wanaku governs `tools/call`, `resources/read`, and `prompts/get`. Wanaku does not filter `tools/list`, `resources/list`, or `prompts/list`. Discovery does not grant authorization.
+For MCP, Wanaku governs `tools/call`, `resources/read`, and `prompts/get`. Wanaku does not filter `tools/list`, `resources/list`, or `prompts/list`. For A2A, the configured pipeline governs `SendMessage`, `GetTask`, and `CancelTask`. Discovery does not grant authorization.
 
 ## Pipeline position
 

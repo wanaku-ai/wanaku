@@ -3,6 +3,7 @@
 
 //! Transport-neutral action-policy schema and matcher compilation.
 
+pub mod a2a;
 pub mod api;
 mod engine;
 pub mod filter;
@@ -83,6 +84,10 @@ impl Feature for ActionPolicyFeature {
         praxis_filter::register_filters!(
             @register registry,
             http "wanaku_action_policy" => crate::filter::ActionPolicyFilter::from_config
+        );
+        praxis_filter::register_filters!(
+            @register registry,
+            http "wanaku_a2a" => crate::a2a::A2aFilter::from_config
         );
     }
 

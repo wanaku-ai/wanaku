@@ -1,5 +1,7 @@
 # Configuration
 
+For the optional A2A proxy pipeline, see [A2A Proxy](./a2a.md). A2A requires an explicit pipeline configuration and an upstream agent.
+
 ## Audit configuration
 
 Use the `audit` section to configure audit retention, optional payload capture, payload size, and redaction rules. Payload capture is disabled by default. The default retention limit is 10,000 events. See [Governance audit trail](audit-trail.md) for the configuration fields, environment overrides, persistence behavior, and management API.

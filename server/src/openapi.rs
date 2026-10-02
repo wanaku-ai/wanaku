@@ -619,6 +619,15 @@ mod tests {
     use super::*;
 
     #[test]
+    fn action_policy_accepts_agent_targets() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        assert_eq!(
+            value.pointer("/components/schemas/TargetType/enum"),
+            Some(&serde_json::json!(["tool", "resource", "prompt", "agent"]))
+        );
+    }
+
+    #[test]
     fn includes_evaluator_and_action_policy_contracts() {
         let document = ApiDoc::openapi();
         let value = serde_json::to_value(document).unwrap_or_default();
