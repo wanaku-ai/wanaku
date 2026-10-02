@@ -14,7 +14,7 @@ import { TableEmptyState } from '../EmptyTableState';
 
 interface PluginCatalogTableProps {
   plugins: PluginCatalogEntry[];
-  onInfo: (plugin: PluginCatalogEntry) => void;
+  onInfo: (plugin: PluginCatalogEntry, button: HTMLButtonElement) => void;
   onInstall: (plugin: PluginCatalogEntry) => void;
   installingId: string | null;
 }
@@ -59,13 +59,19 @@ export const PluginCatalogTable = ({
               return (
                 <TableRow {...getRowProps({ row })} key={row.id}>
                   {row.cells.map((cell) => (
-                    <TableCell key={cell.id}>{cell.value}</TableCell>
+                    <TableCell key={cell.id}>
+                      {cell.info.header === 'description' ? (
+                        <span className="plugin-catalog__description">{cell.value}</span>
+                      ) : (
+                        cell.value
+                      )}
+                    </TableCell>
                   ))}
                   <TableCell>
                     <Button
                       kind="ghost"
                       size="sm"
-                      onClick={() => onInfo(plugin)}
+                      onClick={(event) => onInfo(plugin, event.currentTarget)}
                       aria-label={`Info for ${plugin.name}`}
                     >
                       Info

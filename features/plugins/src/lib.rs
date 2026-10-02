@@ -28,7 +28,7 @@ pub struct PluginsFeature {
     service_map: RwLock<HashMap<(String, String), String>>,
     persistence: Option<Arc<dyn PluginConfigPersistence>>,
     client: reqwest::Client,
-    catalog_url: String,
+    catalog_source: catalog::CatalogSource,
 }
 
 impl PluginsFeature {
@@ -65,8 +65,7 @@ impl PluginsFeature {
             service_map,
             persistence,
             client: reqwest::Client::new(),
-            catalog_url: std::env::var(catalog::CATALOG_URL_ENV)
-                .unwrap_or_else(|_| catalog::DEFAULT_CATALOG_URL.to_owned()),
+            catalog_source: catalog::CatalogSource::from_config(),
         }
     }
 
@@ -190,7 +189,9 @@ impl Feature for PluginsFeature {
             return None;
         }
         Some(match route {
-            PluginRoute::Catalog => catalog::handle_catalog(&self.client, &self.catalog_url).await,
+            PluginRoute::Catalog => {
+                catalog::handle_catalog(&self.client, &self.catalog_source).await
+            }
             PluginRoute::ListPlugins => handlers::handle_list_plugins(&self.manifests),
             PluginRoute::InstallPlugin => {
                 handlers::handle_install_plugin(

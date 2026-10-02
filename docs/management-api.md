@@ -206,9 +206,11 @@ Open **Plugin Catalog** in the admin UI to browse available plugins. Select **In
 
 `GET /api/v1/plugins/catalog` returns available plugins in the standard `data` response field. Each entry contains `id`, `name`, `version`, `description`, `publisher`, `license`, `dependencies`, `requires`, `metadata`, and `url`. The `url` field identifies the installation archive. The `requires.services` field lists the backend services that the plugin needs.
 
-The default source is the Wanaku Barn GitHub releases API. The server reads `plugin.json` from each release asset with a name that contains `-plugin-` and ends with `.zip`. It uses the version in the manifest. It uses the release description and author when the manifest has no description or publisher. Fields without source values are empty.
+The default source is the embedded `features/plugins/plugin-catalog.json` file. The server uses the plugin description and publisher from each catalog entry. It does not read GitHub release notes or plugin archives during catalog requests.
 
-The endpoint returns HTTP 502 if the source is unavailable or invalid. A request has a 30-second limit. Each download has a 15-second limit and a 16 MiB size limit. A plugin manifest has a 64 KiB size limit.
+`WANAKU_PLUGIN_CATALOG_PATH` selects a local JSON file. `WANAKU_PLUGIN_CATALOG_URL` selects a remote JSON file. A local path takes precedence. A custom source replaces the complete default catalog. See [Plugin Catalog](plugin-catalog.md) for the source format and publication instructions.
+
+The endpoint returns HTTP 502 if the selected source is unavailable or invalid. It does not use a fallback source. A request has a 30-second limit. A remote download has a 15-second limit. Catalog JSON has a 1 MiB size limit.
 
 
 | Method | Path | Purpose |
