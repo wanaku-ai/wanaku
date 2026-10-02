@@ -8,6 +8,7 @@ export const enum Links {
 
   Namespaces = '/namespaces',
   Forwards = '/forwards',
+  A2aAgents = '/a2a-agents',
   Bindings = '/bindings',
   Evaluators = '/evaluators',
   Audit = '/audit',

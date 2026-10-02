@@ -62,10 +62,33 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `POST` | `/api/v1/forwards` | Create a forward and run upstream discovery. |
 | `DELETE` | `/api/v1/forwards/{name}` | Delete a forward and its discovered entries. |
 | `POST` | `/api/v1/forwards/{name}/refreshes` | Run upstream discovery again. |
+| `GET` | `/api/v1/agents` | List A2A agents. Use the optional `namespace` query parameter to select one namespace. |
+| `GET` | `/api/v1/agents/{namespace}/{name}` | Get a registered A2A agent and its proxy endpoint. |
+| `POST` | `/api/v1/agents` | Register an A2A agent. |
+| `PUT` | `/api/v1/agents/{namespace}/{name}` | Replace an A2A agent's editable configuration. |
+| `DELETE` | `/api/v1/agents/{namespace}/{name}` | Delete an A2A agent and remove its proxy route. |
 | `GET` | `/api/v1/bindings` | List credential bindings. |
 | `GET` | `/api/v1/bindings/{id}` | Get a credential binding. |
 
 Wanaku discovers tools, resources, and prompts when you create or refresh a forward. The API does not have create routes for these entries. Tools and resources are read-only. You cannot edit them through the API.
+
+### Register an A2A agent
+
+Register an upstream agent with its JSON-RPC address:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/agents \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"assistant","namespace":"default","description":"Team assistant","address":"http://localhost:9000/"}'
+```
+
+The name and namespace identify the agent. Both values must use valid identifiers. Wanaku registers a missing namespace when you create an agent. The address must be an HTTP or HTTPS URL. URL credentials and fragments are not permitted. Set `cardAddress` when the Agent Card uses a different discovery URL.
+
+Agent responses contain `name`, `namespace`, `description`, `address`, optional `cardAddress`, and `proxyUrl`. The proxy URL comes from the configured public A2A origin. It is not an editable agent field.
+
+Creating an existing agent returns `409`. Getting, updating, or deleting an unknown agent returns `404`. Invalid configuration returns `400`. An invalid update does not change the existing entry. An update does not change the namespace and name in the route.
+
+Agent changes use the configured registry persistence backend. They affect subsequent proxy requests without a restart. See [A2A Proxy](./a2a.md) for the admin UI, listener configuration, policy, and supported protocol operations.
 
 ### Create a Namespace
 

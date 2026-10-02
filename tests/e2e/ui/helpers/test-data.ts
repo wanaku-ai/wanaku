@@ -72,3 +72,15 @@ export function bindingData(overrides?: Partial<{
     revision: overrides?.revision ?? 1,
   };
 }
+
+export function agentData(overrides?: Partial<{
+  name: string; description: string; namespace: string; address: string; cardAddress: string;
+}>) {
+  return {
+    name: overrides?.name ?? `e2e-agent-${suffix()}`,
+    description: overrides?.description ?? 'E2E A2A agent',
+    namespace: overrides?.namespace ?? 'default',
+    address: overrides?.address ?? 'http://localhost:19999/',
+    ...(overrides?.cardAddress ? { cardAddress: overrides.cardAddress } : {}),
+  };
+}

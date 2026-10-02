@@ -78,10 +78,10 @@ class FallbackBackend(Backend):
                     'error': {'code': -32001, 'message': 'Task belongs to another backend'}})
 
 
-def request(url, body=None, raw=None, headers=None):
+def request(url, body=None, raw=None, headers=None, method=None):
     data = raw if raw is not None else (json.dumps(body).encode() if body is not None else None)
     req = urllib.request.Request(url, data=data,
-                                 headers={'Content-Type': 'application/json', **(headers or {})})
+                                 headers={'Content-Type': 'application/json', **(headers or {})}, method=method)
     try:
         response = urllib.request.urlopen(req, timeout=5)
     except urllib.error.HTTPError as error:

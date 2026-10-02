@@ -10,6 +10,8 @@ use serde_json::Value;
 #[serde(deny_unknown_fields)]
 struct Config {
     public_url: String,
+    #[serde(default)]
+    managed: bool,
     #[serde(default = "default_agent")]
     agent: String,
     #[serde(default = "default_namespace")]
@@ -45,14 +47,22 @@ impl A2aFilter {
         }
         ctx.extra_request_headers
             .push(("Accept-Encoding".into(), "identity".to_owned()));
+        if self.config.managed
+            && let Err(action) = self.select_agent(ctx)
+        {
+            return action;
+        }
         if ctx.request.method == http::Method::GET
-            && ctx.request.uri.path() == "/.well-known/agent-card.json"
+            && (ctx.request.uri.path() == "/.well-known/agent-card.json"
+                || ctx.get_metadata("wanaku.a2a.discovery") == Some("true"))
         {
             ctx.set_metadata("wanaku.a2a.discovery", "true");
             ctx.set_metadata("wanaku.a2a.validated", "true");
             return FilterAction::Continue;
         }
-        if ctx.request.method != http::Method::POST || ctx.request.uri.path() != "/" {
+        if ctx.request.method != http::Method::POST
+            || (ctx.request.uri.path() != "/" && !self.config.managed)
+        {
             return rpc_error(&Value::Null, -32600, "Use POST / for A2A JSON-RPC.");
         }
         let action = self.handle_rpc_request(ctx, body);
@@ -60,6 +70,37 @@ impl A2aFilter {
             ctx.set_metadata("wanaku.a2a.validated", "true");
         }
         action
+    }
+
+    fn select_agent(&self, ctx: &mut HttpFilterContext<'_>) -> Result<(), FilterAction> {
+        let Some((namespace, name, card)) = managed_route(ctx.request.uri.path()) else {
+            return Err(route_error(404, "A2A agent route not found"));
+        };
+        if (card && ctx.request.method != http::Method::GET)
+            || (!card && ctx.request.method != http::Method::POST)
+        {
+            return Err(route_error(405, "unsupported A2A HTTP method"));
+        }
+        let Some(endpoint) = ctx
+            .extensions
+            .get::<wanaku_infra::registry::InMemoryRegistry>()
+            .and_then(|registry| registry.agent_endpoint(namespace, name, card))
+        else {
+            return Err(route_error(404, "A2A agent not found"));
+        };
+        let public_url = format!(
+            "{}/a2a/{namespace}/{name}",
+            self.config.public_url.trim_end_matches('/')
+        );
+        ctx.set_metadata(wanaku_types::NAMESPACE_METADATA_KEY, namespace);
+        ctx.set_metadata("wanaku.a2a.agent", name);
+        ctx.set_metadata("wanaku.a2a.public_url", public_url);
+        if card {
+            ctx.set_metadata("wanaku.a2a.discovery", "true");
+        }
+        ctx.upstream = Some(endpoint.upstream);
+        ctx.rewritten_path = Some(endpoint.path);
+        Ok(())
     }
 
     fn handle_rpc_request(
@@ -91,13 +132,18 @@ impl A2aFilter {
             return rpc_error(&id, -32602, "Streaming is not supported.");
         }
         ctx.set_metadata(wanaku_filters::MCP_ID_KEY, id.to_string());
-        ctx.set_metadata(wanaku_types::NAMESPACE_METADATA_KEY, &self.config.namespace);
-        ctx.set_metadata("wanaku.a2a.agent", &self.config.agent);
+        if !self.config.managed {
+            ctx.set_metadata(wanaku_types::NAMESPACE_METADATA_KEY, &self.config.namespace);
+            ctx.set_metadata("wanaku.a2a.agent", &self.config.agent);
+        }
         FilterAction::Continue
     }
 
     pub fn from_config(config: &serde_yaml::Value) -> Result<Box<dyn HttpFilter>, FilterError> {
-        let config: Config = praxis_filter::parse_filter_config("wanaku_a2a", config)?;
+        let mut config: Config = praxis_filter::parse_filter_config("wanaku_a2a", config)?;
+        if config.managed {
+            config.public_url = wanaku_types::config::ENV.a2a_public_url.clone();
+        }
         let url: http::Uri = config
             .public_url
             .parse()
@@ -114,6 +160,29 @@ impl A2aFilter {
         }
         Ok(Box::new(Self { config }))
     }
+}
+
+fn managed_route(path: &str) -> Option<(&str, &str, bool)> {
+    let suffix = path.strip_prefix("/a2a/")?;
+    let (namespace, suffix) = suffix.split_once('/')?;
+    let (name, card) = match suffix.strip_suffix("/.well-known/agent-card.json") {
+        Some(name) => (name, true),
+        None => (suffix, false),
+    };
+    if wanaku_types::registry::validate_namespace_name(namespace).is_err()
+        || wanaku_types::registry::validate_namespace_name(name).is_err()
+    {
+        return None;
+    }
+    Some((namespace, name, card))
+}
+
+fn route_error(status: u16, message: &str) -> FilterAction {
+    let mut response = wanaku_filters::response::json_response(Bytes::from(
+        serde_json::json!({"error": message}).to_string(),
+    ));
+    response.status = status;
+    FilterAction::Reject(response)
 }
 
 pub(crate) fn is_supported_method(method: &str) -> bool {
@@ -311,14 +380,12 @@ impl HttpFilter for A2aFilter {
                 .is_some_and(|response| response.status.is_success());
         if let Some(response) = ctx.response_header.as_mut() {
             validate_response_headers(&response.headers)?;
-            if discovery {
-                if response.status.is_redirection() {
-                    return Err("upstream agent card redirects are not supported".into());
-                }
-                if rewrite {
-                    response.headers.remove(http::header::CONTENT_LENGTH);
-                    response.headers.remove(http::header::ETAG);
-                }
+            if response.status.is_redirection() {
+                return Err("A2A upstream redirects are not supported".into());
+            }
+            if rewrite {
+                response.headers.remove(http::header::CONTENT_LENGTH);
+                response.headers.remove(http::header::ETAG);
             }
         }
         if rewrite {
@@ -352,7 +419,11 @@ impl HttpFilter for A2aFilter {
         }
         let mut card: Value = serde_json::from_slice(&state.0)
             .map_err(|error| FilterError::from(error.to_string()))?;
-        rewrite_card(&mut card, &self.config.public_url)?;
+        rewrite_card(
+            &mut card,
+            ctx.get_metadata("wanaku.a2a.public_url")
+                .unwrap_or(&self.config.public_url),
+        )?;
         *body = Some(Bytes::from(card.to_string()));
         Ok(FilterAction::Continue)
     }
@@ -361,6 +432,95 @@ impl HttpFilter for A2aFilter {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn test_filter(managed: bool) -> A2aFilter {
+        A2aFilter {
+            config: Config {
+                public_url: "https://proxy.example/".to_owned(),
+                managed,
+                agent: default_agent(),
+                namespace: default_namespace(),
+                max_body_bytes: default_limit(),
+            },
+        }
+    }
+
+    #[tokio::test]
+    async fn rpc_redirects_are_rejected_before_a_client_can_follow_them() {
+        let registry = praxis_filter::FilterRegistry::with_builtins();
+        let pipeline = praxis_filter::FilterPipeline::build(&mut [], &registry).expect("pipeline");
+        let request = praxis_filter::Request {
+            method: http::Method::POST,
+            uri: http::Uri::from_static("/"),
+            headers: http::HeaderMap::new(),
+        };
+        let mut protocol = praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+        let mut response = praxis_filter::Response {
+            status: http::StatusCode::TEMPORARY_REDIRECT,
+            headers: http::HeaderMap::new(),
+        };
+        response.headers.insert(
+            http::header::LOCATION,
+            http::HeaderValue::from_static("https://backend.example/rpc"),
+        );
+        let mut ctx = protocol.build_filter_context(&pipeline, &request, Some(&mut response));
+        assert!(test_filter(false).on_response(&mut ctx).await.is_err());
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "managed selection and live update fixtures use real protocol contexts"
+    )]
+    async fn managed_routes_select_the_current_agent_with_namespace_isolation() {
+        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let default: wanaku_types::agents::AgentEntry =
+            serde_json::from_str(r#"{"name":"worker","address":"http://default.example/rpc"}"#)
+                .expect("default agent");
+        assert!(registry.save_agent(default, false).expect("create default"));
+        let mut blue: wanaku_types::agents::AgentEntry = serde_json::from_str(r#"{"name":"worker","namespace":"blue","address":"http://blue.example/rpc","cardAddress":"https://cards.example/blue.json"}"#).expect("blue agent");
+        assert!(
+            registry
+                .save_agent(blue.clone(), false)
+                .expect("create blue")
+        );
+        let filters = praxis_filter::FilterRegistry::with_builtins();
+        let pipeline = praxis_filter::FilterPipeline::build(&mut [], &filters).expect("pipeline");
+        let request = praxis_filter::Request {
+            method: http::Method::POST,
+            uri: http::Uri::from_static("/a2a/blue/worker"),
+            headers: http::HeaderMap::new(),
+        };
+        let mut protocol = praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+        let mut ctx = protocol.build_filter_context(&pipeline, &request, None);
+        ctx.extensions.insert(registry.clone());
+        let filter = test_filter(true);
+        assert!(filter.select_agent(&mut ctx).is_ok());
+        assert_eq!(
+            &*ctx.upstream.as_ref().expect("upstream").address,
+            "blue.example:80"
+        );
+        assert_eq!(ctx.rewritten_path.as_deref(), Some("/rpc"));
+        assert_eq!(
+            ctx.get_metadata(wanaku_types::NAMESPACE_METADATA_KEY),
+            Some("blue")
+        );
+        assert_eq!(
+            ctx.get_metadata("wanaku.a2a.public_url"),
+            Some("https://proxy.example/a2a/blue/worker")
+        );
+        blue.address = "http://updated.example/new-rpc".to_owned();
+        assert!(registry.save_agent(blue, true).expect("update"));
+        assert!(filter.select_agent(&mut ctx).is_ok());
+        assert_eq!(
+            &*ctx.upstream.as_ref().expect("updated upstream").address,
+            "updated.example:80"
+        );
+        assert_eq!(ctx.rewritten_path.as_deref(), Some("/new-rpc"));
+        assert!(registry.remove_agent("blue", "worker"));
+        assert!(filter.select_agent(&mut ctx).is_err());
+        assert!(registry.get_agent("default", "worker").is_some());
+    }
 
     #[tokio::test]
     #[expect(
@@ -390,6 +550,7 @@ mod tests {
         ctx.current_filter_id = Some(0);
         let filter = A2aFilter {
             config: Config {
+                managed: false,
                 public_url: "https://proxy.example/".to_owned(),
                 agent: default_agent(),
                 namespace: default_namespace(),

@@ -25,6 +25,7 @@ export const CORE_NAV_ITEMS: NavItem[] = [
 
   { id: 'namespaces', label: 'Namespaces', route: Links.Namespaces, source: 'core', order: 60 },
   { id: 'forwards', label: 'Forwards', route: Links.Forwards, source: 'core', order: 70 },
+  { id: 'a2a-agents', label: 'A2A agents', route: Links.A2aAgents, source: 'core', order: 71 },
   { id: 'evaluators', label: 'Evaluators', route: Links.Evaluators, source: 'core', order: 80 },
   {
     id: 'bindings',

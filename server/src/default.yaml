@@ -6,7 +6,27 @@ listeners:
     address: "0.0.0.0:8083"
     filter_chains: [inference_proxy]
 
+  - name: a2a
+    address: "0.0.0.0:8084"
+    filter_chains: [a2a_proxy]
+
 filter_chains:
+  - name: a2a_proxy
+    filters:
+      - filter: cors
+        allow_origins: ["*"]
+        allow_methods: ["GET", "POST", "OPTIONS"]
+        allow_headers: ["Content-Type", "Accept", "Authorization", "A2A-Version"]
+      - filter: a2a
+        on_invalid: continue
+        method_aliases:
+          message/send: SendMessage
+          tasks/get: GetTask
+          tasks/cancel: CancelTask
+      - filter: wanaku_a2a
+        managed: true
+        public_url: "http://127.0.0.1:8084/"
+      - filter: wanaku_action_policy
   - name: mcp_router
     filters:
       - filter: cors

@@ -94,7 +94,7 @@ See the [Plugin Development Guide](./plugin-development-guide.md) for details.
 
 ### A2A proxy support
 
-The action-policy feature registers the `wanaku_a2a` filter. A custom pipeline combines this filter with the Praxis `a2a` filter and the shared `wanaku_action_policy` filter. The embedded default pipeline does not enable A2A. See [A2A Proxy](./a2a.md) for configuration and supported operations.
+The action-policy feature registers the `wanaku_a2a` filter. The managed A2A pipeline selects a registered agent, extracts protocol metadata with the Praxis `a2a` filter, and applies the shared `wanaku_action_policy` filter. Operators manage agents through the management API and the **A2A agents** page. See [A2A Proxy](./a2a.md) for configuration and supported operations.
 
 ## Creating a Custom Feature
 

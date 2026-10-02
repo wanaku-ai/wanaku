@@ -14,6 +14,7 @@ use wanaku_types::registry::{
 
 #[derive(Clone)]
 pub struct InMemoryRegistry {
+    agents: Arc<DashMap<String, crate::agents::RegisteredAgent>>,
     tools: Arc<DashMap<String, ToolEntry>>,
     resources: Arc<DashMap<String, ResourceEntry>>,
     prompts: Arc<DashMap<String, PromptEntry>>,
@@ -39,6 +40,7 @@ impl InMemoryRegistry {
         );
 
         Self {
+            agents: Arc::new(DashMap::new()),
             tools: Arc::new(DashMap::new()),
             resources: Arc::new(DashMap::new()),
             prompts: Arc::new(DashMap::new()),
@@ -49,6 +51,77 @@ impl InMemoryRegistry {
             persistence_lock: Arc::new(Mutex::new(())),
             inject_request_id: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    pub fn list_agents(&self) -> Vec<wanaku_types::agents::AgentEntry> {
+        self.agents
+            .iter()
+            .map(|agent| agent.entry.clone())
+            .collect()
+    }
+
+    pub fn get_agent(
+        &self,
+        namespace: &str,
+        name: &str,
+    ) -> Option<wanaku_types::agents::AgentEntry> {
+        self.agents
+            .get(&format!("{namespace}/{name}"))
+            .map(|agent| agent.entry.clone())
+    }
+
+    pub fn agent_endpoint(
+        &self,
+        namespace: &str,
+        name: &str,
+        card: bool,
+    ) -> Option<crate::agents::AgentEndpoint> {
+        self.agents
+            .get(&format!("{namespace}/{name}"))
+            .map(|agent| {
+                if card {
+                    agent.card.clone()
+                } else {
+                    agent.rpc.clone()
+                }
+            })
+    }
+
+    pub fn save_agent(
+        &self,
+        entry: wanaku_types::agents::AgentEntry,
+        update: bool,
+    ) -> Result<bool, String> {
+        let agent = crate::agents::RegisteredAgent::new(entry)?;
+        let namespace = agent.entry.namespace.clone();
+        let key = format!("{namespace}/{}", agent.entry.name);
+        match self.agents.entry(key) {
+            dashmap::mapref::entry::Entry::Occupied(mut occupied) if update => {
+                occupied.insert(agent);
+            }
+            dashmap::mapref::entry::Entry::Vacant(vacant) if !update => {
+                vacant.insert(agent);
+            }
+            _ => return Ok(false),
+        }
+        self.namespaces
+            .entry(namespace.clone())
+            .or_insert_with(|| NamespaceEntry {
+                name: namespace,
+                labels: HashMap::new(),
+                auth_required: None,
+                audience: None,
+            });
+        self.persist();
+        Ok(true)
+    }
+
+    pub fn remove_agent(&self, namespace: &str, name: &str) -> bool {
+        let removed = self.agents.remove(&format!("{namespace}/{name}")).is_some();
+        if removed {
+            self.persist();
+        }
+        removed
     }
 
     pub fn enable_request_id_injection(&self) {
@@ -83,6 +156,26 @@ impl InMemoryRegistry {
             }
         };
 
+        for agent in snapshot.agents {
+            match crate::agents::RegisteredAgent::new(agent) {
+                Ok(agent) => {
+                    let namespace = agent.entry.namespace.clone();
+                    self.namespaces
+                        .entry(namespace.clone())
+                        .or_insert_with(|| NamespaceEntry {
+                            name: namespace,
+                            labels: HashMap::new(),
+                            auth_required: None,
+                            audience: None,
+                        });
+                    self.agents.insert(
+                        format!("{}/{}", agent.entry.namespace, agent.entry.name),
+                        agent,
+                    );
+                }
+                Err(error) => tracing::warn!(%error, "invalid persisted agent skipped"),
+            }
+        }
         for mut tool in snapshot.tools {
             if tool.namespace.is_none() {
                 tool.namespace = Some(DEFAULT_NAMESPACE.to_owned());
@@ -117,6 +210,7 @@ impl InMemoryRegistry {
 
     fn snapshot(&self) -> RegistrySnapshot {
         RegistrySnapshot {
+            agents: self.list_agents(),
             tools: self.list_tools(),
             resources: self.list_resources(),
             prompts: self.list_prompts(),
@@ -666,6 +760,13 @@ impl NamespaceRegistry for InMemoryRegistry {
     }
 
     fn remove_namespace(&self, name: &str) -> bool {
+        if self
+            .agents
+            .iter()
+            .any(|agent| agent.entry.namespace == name)
+        {
+            return false;
+        }
         let removed = self.namespaces.remove(name).is_some();
         if removed {
             self.persist();
@@ -1178,6 +1279,7 @@ mod tests {
                 .lock()
                 .map_err(|error| PersistenceError::Coordination(error.to_string()))?
                 .push(RegistrySnapshot {
+                    agents: snapshot.agents.clone(),
                     tools: snapshot.tools.clone(),
                     resources: snapshot.resources.clone(),
                     prompts: snapshot.prompts.clone(),
@@ -1283,5 +1385,82 @@ mod tests {
                 last_error: None,
             }
         );
+    }
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "namespace isolation and persistence recovery fixtures"
+    )]
+    fn agents_are_isolated_updated_live_and_recovered_from_snapshots() {
+        struct Backend(Mutex<String>);
+        impl PersistenceBackend for Backend {
+            fn load(&self) -> Result<RegistrySnapshot, PersistenceError> {
+                let value = self.0.lock().expect("test backend");
+                if value.is_empty() {
+                    Ok(RegistrySnapshot::default())
+                } else {
+                    Ok(serde_json::from_str(&value)?)
+                }
+            }
+            fn save(&self, snapshot: &RegistrySnapshot) -> Result<(), PersistenceError> {
+                *self.0.lock().expect("test backend") = serde_json::to_string(snapshot)?;
+                Ok(())
+            }
+        }
+        let backend = Arc::new(Backend(Mutex::new(String::new())));
+        let registry = InMemoryRegistry::with_persistence(backend.clone());
+        let mut agent: wanaku_types::agents::AgentEntry =
+            serde_json::from_str(r#"{"name":"worker","address":"http://first.example/rpc"}"#)
+                .expect("agent");
+        assert!(registry.save_agent(agent.clone(), false).expect("create"));
+        assert!(
+            !registry
+                .save_agent(agent.clone(), false)
+                .expect("duplicate")
+        );
+        agent.namespace = "blue".to_owned();
+        assert!(
+            registry
+                .save_agent(agent.clone(), false)
+                .expect("other namespace")
+        );
+        agent.address = "https://second.example/rpc".to_owned();
+        assert!(registry.save_agent(agent.clone(), true).expect("update"));
+        assert_eq!(
+            &*registry
+                .agent_endpoint("blue", "worker", false)
+                .expect("endpoint")
+                .upstream
+                .address,
+            "second.example:443"
+        );
+        assert_eq!(
+            registry
+                .get_agent("default", "worker")
+                .expect("isolated agent")
+                .address,
+            "http://first.example/rpc"
+        );
+        agent.address = "file:///tmp/invalid".to_owned();
+        assert!(registry.save_agent(agent, true).is_err());
+        assert_eq!(
+            registry
+                .get_agent("blue", "worker")
+                .expect("preserved agent")
+                .address,
+            "https://second.example/rpc"
+        );
+        registry
+            .flush_persistence(Duration::from_secs(2))
+            .expect("persisted");
+        let recovered = InMemoryRegistry::with_persistence(backend);
+        recovered.load_persisted();
+        assert_eq!(recovered.list_agents().len(), 2);
+        assert!(recovered.get_namespace("blue").is_some());
+        assert!(recovered.remove_agent("blue", "worker"));
+        assert!(recovered.agent_endpoint("blue", "worker", false).is_none());
+        assert!(recovered.get_agent("default", "worker").is_some());
+        let old: RegistrySnapshot = serde_json::from_str("{}").expect("old snapshot");
+        assert!(old.agents.is_empty());
     }
 }
