@@ -266,7 +266,7 @@ jobs:
             jreleaser/discussions.tpl > "$RUNNER_TEMP/discussion.md"
           gh discussion create \
             --category Announcements \
-            --title "Wanaku ${RELEASE_VERSION} is available" \
+            --title "Wanaku ${RELEASE_VERSION} early access build is available" \
             --body-file "$RUNNER_TEMP/discussion.md"
 
       - name: Upload JReleaser output
