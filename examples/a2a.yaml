@@ -1,0 +1,44 @@
+# Opt-in A2A listener. Set the upstream endpoint, Host and public_url before use.
+listeners:
+  - name: a2a
+    address: "127.0.0.1:8084"
+    filter_chains: [a2a_proxy]
+
+filter_chains:
+  - name: a2a_proxy
+    filters:
+      - filter: cors
+        allow_origins: ["*"]
+        allow_methods: ["GET", "POST", "OPTIONS"]
+        allow_headers: ["Content-Type", "Accept", "Authorization", "A2A-Version"]
+      - filter: a2a
+        on_invalid: continue
+        method_aliases:
+          message/send: SendMessage
+          tasks/get: GetTask
+          tasks/cancel: CancelTask
+        task_routing:
+          enabled: true
+          store: local
+          ttl_seconds: 3600
+          terminal_ttl_seconds: 300
+      - filter: wanaku_a2a
+        public_url: "http://127.0.0.1:8084/"
+        agent: a2a
+        namespace: default
+      - filter: wanaku_action_policy
+      - filter: headers
+        request_set:
+          - name: Host
+            value: "127.0.0.1:9000"
+      - filter: router
+        routes:
+          - path_prefix: "/"
+            cluster: a2a-agent
+      - filter: load_balancer
+        clusters:
+          - name: a2a-agent
+            endpoints: ["127.0.0.1:9000"]
+
+insecure_options:
+  allow_private_endpoints: true

@@ -12,4 +12,5 @@ export const TargetType = {
   tool: "tool",
   resource: "resource",
   prompt: "prompt",
+  agent: "agent",
 } as const;

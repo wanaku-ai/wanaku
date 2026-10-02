@@ -6623,6 +6623,7 @@ dependencies = [
  "bytes",
  "http 1.5.0",
  "praxis-proxy-filter",
+ "praxis-proxy-protocol",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
@@ -6770,6 +6771,8 @@ version = "0.3.0"
 dependencies = [
  "dashmap",
  "http 1.5.0",
+ "praxis-proxy-core",
+ "praxis-proxy-tls",
  "reqwest 0.12.28",
  "rmcp",
  "serde",

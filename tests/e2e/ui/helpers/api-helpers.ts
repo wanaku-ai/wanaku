@@ -1,3 +1,4 @@
+import type { AgentEntry } from '../../../../ui/admin/src/models/agentEntry';
 import { APIRequestContext, APIResponse, expect } from '@playwright/test';
 
 export class ApiHelper {
@@ -80,4 +81,17 @@ export class ApiHelper {
   async deleteNamespace(name: string) {
     return this.request.delete(`${this.baseUrl}/api/v1/namespaces/${name}`);
   }
+  async addAgent(agent: AgentEntry) {
+    const response = await this.request.post(`${this.baseUrl}/api/v1/agents`, { data: agent });
+    return this.assertOk(response, `addAgent(${agent.name})`);
+  }
+
+  async getAgent(namespace: string, name: string) {
+    return this.request.get(`${this.baseUrl}/api/v1/agents/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`);
+  }
+
+  async deleteAgent(namespace: string, name: string) {
+    return this.request.delete(`${this.baseUrl}/api/v1/agents/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`);
+  }
+
 }

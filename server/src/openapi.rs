@@ -62,6 +62,54 @@ struct ManagementErrorResponse {
 )]
 const fn healthz() {}
 
+use wanaku_types::agents::{AgentEntry, AgentView};
+
+#[utoipa::path(get, path = "/api/v1/agents", tag = "Agents",
+    params(("namespace" = Option<String>, Query)),
+    responses((status = 200, description = "Agent operation completed", body = WanakuResponse<Vec<AgentView>>),
+        (status = 400, description = "Invalid agent", body = ManagementErrorResponse),
+        (status = 404, description = "Agent not found", body = ManagementErrorResponse),
+        (status = 409, description = "Agent already exists", body = ManagementErrorResponse))
+)]
+const fn list_agents() {}
+
+#[utoipa::path(get, path = "/api/v1/agents/{namespace}/{name}", tag = "Agents",
+    params(("namespace" = String, Path), ("name" = String, Path)),
+    responses((status = 200, description = "Agent operation completed", body = WanakuResponse<AgentView>),
+        (status = 400, description = "Invalid agent", body = ManagementErrorResponse),
+        (status = 404, description = "Agent not found", body = ManagementErrorResponse),
+        (status = 409, description = "Agent already exists", body = ManagementErrorResponse))
+)]
+const fn get_agent() {}
+
+#[utoipa::path(post, path = "/api/v1/agents", tag = "Agents",
+    request_body = AgentEntry,
+    responses((status = 200, description = "Agent operation completed", body = WanakuResponse<AgentView>),
+        (status = 400, description = "Invalid agent", body = ManagementErrorResponse),
+        (status = 404, description = "Agent not found", body = ManagementErrorResponse),
+        (status = 409, description = "Agent already exists", body = ManagementErrorResponse))
+)]
+const fn create_agent() {}
+
+#[utoipa::path(put, path = "/api/v1/agents/{namespace}/{name}", tag = "Agents",
+    params(("namespace" = String, Path), ("name" = String, Path)),
+    request_body = AgentEntry,
+    responses((status = 200, description = "Agent operation completed", body = WanakuResponse<AgentView>),
+        (status = 400, description = "Invalid agent", body = ManagementErrorResponse),
+        (status = 404, description = "Agent not found", body = ManagementErrorResponse),
+        (status = 409, description = "Agent already exists", body = ManagementErrorResponse))
+)]
+const fn update_agent() {}
+
+#[utoipa::path(delete, path = "/api/v1/agents/{namespace}/{name}", tag = "Agents",
+    params(("namespace" = String, Path), ("name" = String, Path)),
+    responses((status = 200, description = "Agent operation completed", body = WanakuResponse<serde_json::Value>),
+        (status = 400, description = "Invalid agent", body = ManagementErrorResponse),
+        (status = 404, description = "Agent not found", body = ManagementErrorResponse),
+        (status = 409, description = "Agent already exists", body = ManagementErrorResponse))
+)]
+const fn delete_agent() {}
+
 // -- Tools --------------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/tools", tag = "Tools",
@@ -479,6 +527,7 @@ impl utoipa::Modify for OptionalActivationBodies {
         description = "Wanaku MCP proxy management API"
     ),
     paths(
+        list_agents, get_agent, create_agent, update_agent, delete_agent,
         healthz,
         list_tools,
         get_tool,
@@ -531,6 +580,7 @@ impl utoipa::Modify for OptionalActivationBodies {
     ),
     modifiers(&OptionalActivationBodies),
     components(schemas(
+        AgentEntry, AgentView,
         ToolEntry,
         ResourceEntry,
         PromptEntry,
@@ -617,6 +667,38 @@ pub fn openapi_json() -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn agents_have_crud_contracts_and_proxy_views() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        for path in ["/api/v1/agents", "/api/v1/agents/{namespace}/{name}"] {
+            assert!(value["paths"].get(path).is_some());
+        }
+        assert!(
+            value
+                .pointer("/components/schemas/AgentView/properties/proxyUrl")
+                .is_some()
+        );
+        assert!(
+            value
+                .pointer("/components/schemas/AgentEntry/properties/proxyUrl")
+                .is_none()
+        );
+        assert!(
+            value
+                .pointer("/components/schemas/AgentEntry/properties/cardAddress")
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn action_policy_accepts_agent_targets() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        assert_eq!(
+            value.pointer("/components/schemas/TargetType/enum"),
+            Some(&serde_json::json!(["tool", "resource", "prompt", "agent"]))
+        );
+    }
 
     #[test]
     fn includes_evaluator_and_action_policy_contracts() {

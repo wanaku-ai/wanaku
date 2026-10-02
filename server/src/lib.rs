@@ -142,7 +142,7 @@ fn try_apply_inference_path_prefix(
 }
 
 fn apply_cors_config(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) {
-    for chain_name in ["mcp_router", "inference_proxy"] {
+    for chain_name in ["mcp_router", "inference_proxy", "a2a_proxy"] {
         apply_cors_to_chain(yaml, chain_name, &env.cors_origin);
     }
 }
@@ -183,6 +183,26 @@ fn try_apply_cors_to_chain(
     Ok(())
 }
 
+fn apply_a2a_config(yaml: &mut Value, env: &wanaku_types::config::WanakuEnv) {
+    if let Some(listener) = yaml
+        .get_mut("listeners")
+        .and_then(Value::as_sequence_mut)
+        .and_then(|listeners| find_named_entry_mut(listeners, "name", "a2a"))
+    {
+        listener["address"] = Value::String(env.a2a_listen.clone());
+    }
+    if let Some(filter) = yaml
+        .get_mut("filter_chains")
+        .and_then(Value::as_sequence_mut)
+        .and_then(|chains| find_named_entry_mut(chains, "name", "a2a_proxy"))
+        .and_then(|chain| chain.get_mut("filters"))
+        .and_then(Value::as_sequence_mut)
+        .and_then(|filters| find_named_entry_mut(filters, "filter", "wanaku_a2a"))
+    {
+        filter["public_url"] = Value::String(env.a2a_public_url.clone());
+    }
+}
+
 /// Load configuration, falling back to the built-in default.
 ///
 /// # Errors
@@ -195,6 +215,7 @@ pub fn load_config(
 
     let config = match serde_yaml::from_str::<Value>(DEFAULT_CONFIG) {
         Ok(mut yaml) => {
+            apply_a2a_config(&mut yaml, env);
             apply_inference_config(&mut yaml, env);
             apply_inference_host_header(&mut yaml, env);
             apply_inference_path_prefix(&mut yaml, env);
@@ -232,6 +253,10 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
     praxis_filter::register_filters!(
         @register registry,
         http "mcp" => praxis_ai_filters::McpFilter::from_config
+    );
+    praxis_filter::register_filters!(
+        @register registry,
+        http "a2a" => praxis_ai_filters::A2aFilter::from_config
     );
     praxis_filter::register_filters!(
         @register registry,
@@ -286,6 +311,8 @@ mod tests {
 
     fn env_with_path(upstream: &str, tls_sni: Option<&str>, path_prefix: &str) -> WanakuEnv {
         WanakuEnv {
+            a2a_listen: "0.0.0.0:8084".to_owned(),
+            a2a_public_url: "http://127.0.0.1:8084/".to_owned(),
             mgmt_listen: "0.0.0.0:8080".to_owned(),
             inference_upstream: upstream.to_owned(),
             inference_path_prefix: path_prefix.to_owned(),

@@ -1,5 +1,7 @@
 # Configuration
 
+For registered A2A agents, the managed listener, and static proxy configuration, see [A2A Proxy](./a2a.md).
+
 ## Audit configuration
 
 Use the `audit` section to configure audit retention, optional payload capture, payload size, and redaction rules. Payload capture is disabled by default. The default retention limit is 10,000 events. See [Governance audit trail](audit-trail.md) for the configuration fields, environment overrides, persistence behavior, and management API.
@@ -19,6 +21,8 @@ These control core server behavior:
 | Variable | Default | Purpose |
 |---|---|---|
 | `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Management API listen address (host:port) |
+| `WANAKU_A2A_LISTEN` | `0.0.0.0:8084` | Registered A2A agents listen address in the embedded pipeline. |
+| `WANAKU_A2A_PUBLIC_URL` | `http://127.0.0.1:8084/` | Public HTTP or HTTPS origin for registered agent proxy URLs and Agent Cards. |
 | `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Upstream for the inference-proxy pipeline (port 8083), an OpenAI-compatible passthrough. Clients call this port directly and supply their own bearer token. |
 | `WANAKU_PERSIST_BACKEND` | `file` | File-based registry persistence. Set to `"none"` to disable persistence. |
 | `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | Directory where Wanaku reads and writes `registry.json` |

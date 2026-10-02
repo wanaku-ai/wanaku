@@ -62,6 +62,10 @@ pub struct PersistEnv {
 pub struct WanakuEnv {
     /// Management API listen address.
     pub mgmt_listen: String,
+    /// A2A listener address.
+    pub a2a_listen: String,
+    /// Public origin used for managed A2A URLs.
+    pub a2a_public_url: String,
     /// Inference upstream `host:port` for the proxy load-balancer endpoint.
     pub inference_upstream: String,
     /// Path prefix extracted from the upstream URL (e.g. `/api` from
@@ -105,6 +109,10 @@ impl WanakuEnv {
         );
 
         Self {
+            a2a_listen: std::env::var("WANAKU_A2A_LISTEN")
+                .unwrap_or_else(|_| "0.0.0.0:8084".to_owned()),
+            a2a_public_url: std::env::var("WANAKU_A2A_PUBLIC_URL")
+                .unwrap_or_else(|_| "http://127.0.0.1:8084/".to_owned()),
             mgmt_listen: std::env::var(WANAKU_MGMT_LISTEN)
                 .unwrap_or_else(|_| "0.0.0.0:8080".to_owned()),
             inference_upstream: parsed.host_port,

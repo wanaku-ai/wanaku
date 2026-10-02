@@ -36,7 +36,7 @@ impl ActionPolicyFilter {
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
     ) -> Result<FilterAction, FilterError> {
-        let Some(method) = ctx.get_metadata(wanaku_filters::MCP_METHOD_KEY) else {
+        let Some(method) = governed_method(ctx) else {
             return Ok(FilterAction::Continue);
         };
         if !is_governed_method(method) {
@@ -128,7 +128,8 @@ fn evaluate_snapshot(
         ctx,
         RequestEvaluation {
             method: ctx
-                .get_metadata(wanaku_filters::MCP_METHOD_KEY)
+                .get_metadata("a2a.method")
+                .or_else(|| ctx.get_metadata(wanaku_filters::MCP_METHOD_KEY))
                 .unwrap_or_default(),
             namespace: ctx
                 .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
@@ -138,12 +139,19 @@ fn evaluate_snapshot(
             posture,
             registry,
             id,
+            agent: ctx.get_metadata("wanaku.a2a.agent"),
         },
     )
 }
 
+fn governed_method<'a>(ctx: &'a HttpFilterContext<'_>) -> Option<&'a str> {
+    ctx.get_metadata("a2a.method")
+        .or_else(|| ctx.get_metadata(wanaku_filters::MCP_METHOD_KEY))
+}
+
 fn is_governed_method(method: &str) -> bool {
     matches!(method, TOOLS_CALL | RESOURCES_READ | PROMPTS_GET)
+        || crate::a2a::is_supported_method(method)
 }
 
 #[derive(Clone, Copy)]
@@ -155,6 +163,7 @@ struct RequestEvaluation<'a> {
     posture: &'a GovernancePosture,
     registry: &'a InMemoryRegistry,
     id: &'a serde_json::Value,
+    agent: Option<&'a str>,
 }
 
 struct DecisionAuditContext<'a> {
@@ -169,7 +178,9 @@ impl<'a> DecisionAuditContext<'a> {
         Some(Self {
             store: ctx.extensions.get::<InMemoryAuditStore>()?,
             request_id: ctx.request_id(),
-            target: ctx.get_metadata(wanaku_filters::MCP_NAME_KEY),
+            target: ctx
+                .get_metadata("wanaku.a2a.agent")
+                .or_else(|| ctx.get_metadata(wanaku_filters::MCP_NAME_KEY)),
             policy_revision: ctx
                 .extensions
                 .get::<ActionPolicyState>()
@@ -204,6 +215,7 @@ fn evaluate_request_impl(
         posture,
         registry,
         id,
+        agent,
     } = input;
     let Ok(view) = McpRequestView::parse(body) else {
         record_malformed_decision(audit_ctx, body, namespace, method);
@@ -212,6 +224,10 @@ fn evaluate_request_impl(
     let Ok(context) = action_context(method, namespace, &view, registry) else {
         record_malformed_decision(audit_ctx, body, namespace, method);
         return policy_error(id, INVALID_ACTION_REASON_CODE, INVALID_ACTION_MESSAGE);
+    };
+    let context = match agent {
+        Some(agent) if crate::a2a::is_supported_method(method) => context.with_target_name(agent),
+        _ => context,
     };
     let decision = PolicyEngine::evaluate(PolicyState::Available(policy), &context);
     if let Some(audit) = audit_ctx {
@@ -393,7 +409,7 @@ fn record_simple_decision(
     reason_code: &str,
     explanation: &str,
 ) {
-    let Some(method) = ctx.get_metadata(wanaku_filters::MCP_METHOD_KEY) else {
+    let Some(method) = governed_method(ctx) else {
         return;
     };
     let Some(audit) = DecisionAuditContext::from_http(ctx) else {
@@ -429,7 +445,30 @@ fn record_event(
         body.map(bytes::Bytes::as_ref),
         audit.request_id,
     );
+    if crate::a2a::is_supported_method(&event.operation) {
+        event.protocol = "a2a".to_owned();
+        add_a2a_task_context(&mut event, body);
+    }
     audit.store.record(event);
+}
+
+fn add_a2a_task_context(event: &mut AuditEvent, body: Option<&Bytes>) {
+    if let Some(payload) =
+        body.and_then(|body| serde_json::from_slice::<serde_json::Value>(body).ok())
+    {
+        for (key, pointer) in [
+            ("task_id", "/params/id"),
+            ("context_id", "/params/contextId"),
+            ("message_task_id", "/params/message/taskId"),
+            ("message_context_id", "/params/message/contextId"),
+        ] {
+            if let Some(value) = payload.pointer(pointer).and_then(serde_json::Value::as_str) {
+                event
+                    .attributes
+                    .insert(key.to_owned(), serde_json::json!(value));
+            }
+        }
+    }
 }
 
 fn no_match_audit_decision(posture: &GovernancePosture) -> AuditDecision {
@@ -445,6 +484,7 @@ fn target_type(method: &str) -> Option<&'static str> {
         TOOLS_CALL => Some("tool"),
         RESOURCES_READ => Some("resource"),
         PROMPTS_GET => Some("prompt"),
+        method if crate::a2a::is_supported_method(method) => Some("agent"),
         _ => None,
     }
 }
@@ -482,6 +522,12 @@ fn action_context(
         TOOLS_CALL => tool_context(namespace, view, registry, input),
         RESOURCES_READ => resource_context(namespace, view, registry, input),
         PROMPTS_GET => prompt_context(namespace, view, input),
+        method if crate::a2a::is_supported_method(method) => Ok(ActionContext::new(
+            namespace,
+            method,
+            TargetType::Agent,
+            input,
+        )),
         _ => Err(RequestViewError::UnexpectedMethod {
             expected: "governed MCP method",
             actual: method.to_owned(),
@@ -687,6 +733,7 @@ mod tests {
                 posture: &posture,
                 registry: &registry,
                 id: &id,
+                agent: None,
             });
             assert_denied(action, reason);
         }
@@ -714,6 +761,7 @@ mod tests {
                 posture: &posture,
                 registry: &registry,
                 id: &id,
+                agent: None,
             }),
             FilterAction::Continue
         ));
@@ -728,6 +776,7 @@ mod tests {
                 posture: &posture,
                 registry: &registry,
                 id: &id,
+                agent: None,
             }),
             FilterAction::Continue
         ));
@@ -771,6 +820,7 @@ mod tests {
                 posture: &posture,
                 registry: &registry,
                 id: &id,
+                agent: None,
             },
         );
         assert!(matches!(allow_action, FilterAction::Continue));
@@ -808,6 +858,7 @@ mod tests {
                 posture: &posture,
                 registry: &registry,
                 id: &id,
+                agent: None,
             },
         );
         assert_denied(deny_action, DEFAULT_DENY_REASON_CODE);
@@ -900,6 +951,7 @@ mod tests {
                 posture: &posture,
                 registry: &registry,
                 id: &id,
+                agent: None,
             }),
             DEFAULT_DENY_REASON_CODE,
         );
@@ -924,6 +976,7 @@ mod tests {
                 posture: &posture,
                 registry: &registry,
                 id: &id,
+                agent: None,
             }),
             FilterAction::Continue
         ));
@@ -946,6 +999,7 @@ mod tests {
             posture: &posture,
             registry: &registry,
             id: &id,
+            agent: None,
         });
         assert_denied(action, INVALID_ACTION_REASON_CODE);
     }
@@ -1025,6 +1079,7 @@ mod tests {
                     posture: &posture,
                     registry: &registry,
                     id: &id,
+                    agent: None,
                 }
             ),
             FilterAction::Continue
@@ -1041,5 +1096,114 @@ mod tests {
         for method in ["tools/list", "resources/list", "prompts/list", "initialize"] {
             assert!(!is_governed_method(method));
         }
+    }
+
+    #[test]
+    fn a2a_agent_rules_apply_without_an_audit_store_or_actor() {
+        let registry = InMemoryRegistry::new();
+        let policy = compile_policy(&serde_json::json!({
+            "id": "deny-agent", "effect": "deny", "reason_code": "agent_denied",
+            "selectors": {"target_type": "agent", "target_name": {"matcher": "exact", "value": "worker"}, "operation": "SendMessage"},
+            "predicates": [{"operator": "equals", "pointer": "/message/messageId", "value": "blocked"}]
+        }));
+        let posture = GovernancePosture::default();
+        let id = serde_json::json!(7);
+        let body = request(
+            "message/send",
+            &serde_json::json!({"message": {"messageId": "blocked"}}),
+        );
+        let view = McpRequestView::parse(Some(&body)).expect("valid request");
+        let context = action_context("SendMessage", DEFAULT_NAMESPACE, &view, &registry)
+            .expect("valid action");
+        assert!(context.actor().is_none());
+        assert_denied(
+            evaluate_request(RequestEvaluation {
+                method: "SendMessage",
+                namespace: DEFAULT_NAMESPACE,
+                body: Some(&body),
+                policy: &policy,
+                posture: &posture,
+                registry: &registry,
+                id: &id,
+                agent: Some("worker"),
+            }),
+            "agent_denied",
+        );
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "A2A posture and correlated audit fixtures"
+    )]
+    fn a2a_decisions_use_posture_and_emit_protocol_specific_audit() {
+        let registry = InMemoryRegistry::new();
+        let store = InMemoryAuditStore::new(10);
+        let policy = compile_policy(&serde_json::json!({
+            "id": "deny-task", "effect": "deny", "selectors": {"target_type": "agent", "operation": "GetTask"}
+        }));
+        let body = request("tasks/get", &serde_json::json!({"id": "t1"}));
+        let id = serde_json::json!(7);
+        let audit = DecisionAuditContext {
+            store: &store,
+            request_id: Some("http-request"),
+            target: Some("worker"),
+            policy_revision: None,
+        };
+        let audit_posture = GovernancePosture {
+            mode: EnforcementMode::Audit,
+            ..GovernancePosture::default()
+        };
+        let input = RequestEvaluation {
+            method: "GetTask",
+            namespace: DEFAULT_NAMESPACE,
+            body: Some(&body),
+            policy: &policy,
+            posture: &audit_posture,
+            registry: &registry,
+            id: &id,
+            agent: Some("worker"),
+        };
+        assert!(matches!(
+            evaluate_request_impl(Some(&audit), input),
+            FilterAction::Continue
+        ));
+        let events = store.query(&AuditQuery::default()).events;
+        assert_eq!(events[0].protocol, "a2a");
+        assert_eq!(events[0].target_type.as_deref(), Some("agent"));
+        assert_eq!(events[0].target.as_deref(), Some("worker"));
+        assert_eq!(events[0].decision, AuditDecision::Block);
+        assert_eq!(events[0].attributes["task_id"], "t1");
+        assert_eq!(events[0].correlation_id, "http-request");
+        assert_eq!(events[0].attributes["enforcement_action"], "continue");
+
+        let enforce = GovernancePosture::default();
+        assert_denied(
+            evaluate_request(RequestEvaluation {
+                posture: &enforce,
+                ..input
+            }),
+            DEFAULT_DENY_REASON_CODE,
+        );
+        assert_denied(
+            evaluate_request(RequestEvaluation {
+                method: "CancelTask",
+                posture: &enforce,
+                ..input
+            }),
+            NO_MATCH_REASON_CODE,
+        );
+        let allow_unmatched = GovernancePosture {
+            no_match: NoMatchBehavior::Allow,
+            ..enforce
+        };
+        assert!(matches!(
+            evaluate_request(RequestEvaluation {
+                method: "CancelTask",
+                posture: &allow_unmatched,
+                ..input
+            }),
+            FilterAction::Continue
+        ));
     }
 }
