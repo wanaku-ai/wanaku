@@ -1,6 +1,7 @@
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum PluginRoute {
     ListPlugins,
+    Catalog,
     InstallPlugin,
     ConfigurePlugin(String),
     ServeFile(String, String),
@@ -8,7 +9,7 @@ pub(crate) enum PluginRoute {
     NotFound,
 }
 
-fn is_valid_segment(s: &str) -> bool {
+pub(crate) fn is_valid_segment(s: &str) -> bool {
     !s.is_empty() && s != "." && s != ".." && !s.contains('/') && !s.contains('\\')
 }
 
@@ -19,6 +20,7 @@ fn is_valid_segment(s: &str) -> bool {
 pub(crate) fn resolve_plugin_route(method: &str, path: &str) -> PluginRoute {
     if let Some(suffix) = path.strip_prefix("/api/v1/plugins") {
         return match (method, suffix) {
+            ("GET", "/catalog" | "/catalog/") => PluginRoute::Catalog,
             ("GET", "" | "/") => PluginRoute::ListPlugins,
             ("POST", "/install" | "/install/") => PluginRoute::InstallPlugin,
             ("PUT", rest) => {
@@ -94,6 +96,14 @@ mod tests {
             resolve_plugin_route("DELETE", "/api/v1/plugins"),
             PluginRoute::NotFound
         );
+    }
+
+    #[test]
+    fn catalog_route() {
+        for path in ["/api/v1/plugins/catalog", "/api/v1/plugins/catalog/"] {
+            assert_eq!(resolve_plugin_route("GET", path), PluginRoute::Catalog);
+            assert_eq!(resolve_plugin_route("POST", path), PluginRoute::NotFound);
+        }
     }
 
     #[test]

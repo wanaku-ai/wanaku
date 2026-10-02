@@ -1,4 +1,4 @@
-import { Modal, TextInput } from '@carbon/react';
+import { InlineNotification, Modal, TextInput } from '@carbon/react';
 import React, { useState } from 'react';
 import type { PluginManifest } from '../../plugins/types';
 
@@ -7,6 +7,7 @@ interface PluginConfigModalProps {
   onSave: (pluginId: string, services: Record<string, { target: string }>) => Promise<void>;
   onRequestClose: () => void;
   isSaving?: boolean;
+  errorMessage?: string | null;
 }
 
 export const PluginConfigModal: React.FC<PluginConfigModalProps> = ({
@@ -14,6 +15,7 @@ export const PluginConfigModal: React.FC<PluginConfigModalProps> = ({
   onSave,
   onRequestClose,
   isSaving = false,
+  errorMessage,
 }) => {
   const serviceRequirements = plugin.requires?.services || [];
   const [serviceTargets, setServiceTargets] = useState<Record<string, string>>(() => {
@@ -51,6 +53,14 @@ export const PluginConfigModal: React.FC<PluginConfigModalProps> = ({
       onRequestSubmit={handleSubmit}
       onRequestClose={onRequestClose}
     >
+      {errorMessage && (
+        <InlineNotification
+          kind="error"
+          title="Failed to save configuration"
+          subtitle={errorMessage}
+          hideCloseButton
+        />
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <p style={{ marginBottom: '0.5rem' }}>
           Configure target URLs for backend services required by this plugin:

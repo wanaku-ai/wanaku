@@ -1,0 +1,25 @@
+@use '@carbon/react/scss/spacing';
+
+.plugin-catalog {
+  .cds--inline-notification {
+    margin-bottom: spacing.$spacing-05;
+  }
+  .cds--data-table-container {
+    overflow-x: auto;
+  }
+  dl {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: spacing.$spacing-05;
+  }
+  pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  dt {
+    font-weight: 600;
+  }
+  dd {
+    overflow-wrap: anywhere;
+  }
+}

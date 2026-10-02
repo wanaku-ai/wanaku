@@ -44,6 +44,14 @@ export const CORE_NAV_ITEMS: NavItem[] = [
     order: 89,
   },
   {
+    id: 'plugin-catalog',
+    label: 'Plugin Catalog',
+    route: Links.PluginCatalog,
+    source: 'core',
+    section: 'Admin',
+    order: 91,
+  },
+  {
     id: 'plugins',
     label: 'Installed Plugins',
     route: Links.Plugins,

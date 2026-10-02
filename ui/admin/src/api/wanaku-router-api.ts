@@ -21,12 +21,15 @@ import type {
   GetEvaluatorRevision200,
   GetEvaluatorStatus200,
   GetEvaluatorStatusParams,
+  InstallPlugin200,
   InstallPluginRequest,
   ListActionPolicyRevisions200Item,
   ListAuditEventsParams,
   ListEvaluatorBindings200,
   ListEvaluatorRevisions200Item,
   ListEvaluators200Item,
+  ListPluginCatalog200Item,
+  ListPlugins200Item,
   ManagementErrorResponse,
   MetricsSnapshot,
   NamespaceEntry,
@@ -41,9 +44,6 @@ import type {
   WanakuResponseAuditEvent,
   WanakuResponseAuditHealth,
   WanakuResponseAuditPage,
-  WanakuResponseInstallPluginResponse,
-  WanakuResponseValue,
-  WanakuResponseVecPluginManifest,
 } from "../models";
 
 import { customFetch } from "../custom-fetch";
@@ -1247,7 +1247,7 @@ export const deleteNamespace = async (
 };
 
 export type listPluginsResponse200 = {
-  data: WanakuResponseVecPluginManifest;
+  data: ListPlugins200Item[];
   status: 200;
 };
 
@@ -1269,8 +1269,42 @@ export const listPlugins = async (
   });
 };
 
+export type listPluginCatalogResponse200 = {
+  data: ListPluginCatalog200Item[];
+  status: 200;
+};
+
+export type listPluginCatalogResponse502 = {
+  data: ManagementErrorResponse;
+  status: 502;
+};
+
+export type listPluginCatalogResponseSuccess = listPluginCatalogResponse200 & {
+  headers: Headers;
+};
+export type listPluginCatalogResponseError = listPluginCatalogResponse502 & {
+  headers: Headers;
+};
+
+export type listPluginCatalogResponse =
+  | listPluginCatalogResponseSuccess
+  | listPluginCatalogResponseError;
+
+export const getListPluginCatalogUrl = () => {
+  return `/api/v1/plugins/catalog`;
+};
+
+export const listPluginCatalog = async (
+  options?: RequestInit,
+): Promise<listPluginCatalogResponse> => {
+  return customFetch<listPluginCatalogResponse>(getListPluginCatalogUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
 export type installPluginResponse200 = {
-  data: WanakuResponseInstallPluginResponse;
+  data: InstallPlugin200;
   status: 200;
 };
 
@@ -1321,7 +1355,7 @@ export const installPlugin = async (
 };
 
 export type configurePluginResponse200 = {
-  data: WanakuResponseValue;
+  data: unknown;
   status: 200;
 };
 

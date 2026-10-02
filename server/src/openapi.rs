@@ -22,7 +22,8 @@ use wanaku_feature_evaluator::config::{
     SystemOneState, TriggerDef,
 };
 use wanaku_feature_plugins::api::{
-    ConfigurePluginRequest, InstallPluginRequest, InstallPluginResponse, PluginServiceTarget,
+    ConfigurePluginRequest, InstallPluginRequest, InstallPluginResponse, PluginCatalogEntry,
+    PluginServiceTarget,
 };
 use wanaku_feature_plugins::manifest::{PluginManifest, PluginRequires, ServiceRequirement};
 use wanaku_types::revision::{ActivationStatus, RevisionMetadata, RevisionOrigin};
@@ -413,6 +414,14 @@ const fn activate_action_policy_revision() {}
 )]
 const fn list_plugins() {}
 
+#[utoipa::path(get, path = "/api/v1/plugins/catalog", tag = "Plugins",
+    responses(
+        (status = 200, description = "Available plugins", body = WanakuResponse<Vec<PluginCatalogEntry>>),
+        (status = 502, description = "Catalog unavailable or invalid", body = ManagementErrorResponse),
+    )
+)]
+const fn list_plugin_catalog() {}
+
 #[utoipa::path(post, path = "/api/v1/plugins/install", tag = "Plugins",
     request_body = InstallPluginRequest,
     responses(
@@ -516,6 +525,7 @@ impl utoipa::Modify for OptionalActivationBodies {
         get_action_policy_revision,
         activate_action_policy_revision,
         list_plugins,
+        list_plugin_catalog,
         install_plugin,
         configure_plugin,
     ),
@@ -587,6 +597,7 @@ impl utoipa::Modify for OptionalActivationBodies {
         ActivatePolicyRevisionRequest,
         ActionPolicyRevisionResponse,
         PluginManifest,
+        PluginCatalogEntry,
         PluginRequires,
         ServiceRequirement,
         InstallPluginRequest,
@@ -632,6 +643,7 @@ mod tests {
             "/api/v1/action-policies/revisions/{id}",
             "/api/v1/action-policies/revisions/{id}/activate",
             "/api/v1/plugins",
+            "/api/v1/plugins/catalog",
             "/api/v1/plugins/install",
             "/api/v1/plugins/{id}/config",
         ] {
@@ -643,6 +655,7 @@ mod tests {
 
         for schema in [
             "PluginManifest",
+            "PluginCatalogEntry",
             "InstallPluginRequest",
             "ConfigurePluginRequest",
             "EvaluatorDef",
