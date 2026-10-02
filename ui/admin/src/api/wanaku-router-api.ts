@@ -9,6 +9,7 @@ import type {
   ActivateActionPolicyRevision200,
   ActivateEvaluatorRevision200,
   ActivateRevisionRequest,
+  AgentEntry,
   BindEvaluatorNamespace200,
   BindNamespaceRequest,
   ConfigurePluginRequest,
@@ -24,6 +25,7 @@ import type {
   InstallPlugin200,
   InstallPluginRequest,
   ListActionPolicyRevisions200Item,
+  ListAgentsParams,
   ListAuditEventsParams,
   ListEvaluatorBindings200,
   ListEvaluatorRevisions200Item,
@@ -41,9 +43,12 @@ import type {
   UpdateActionPolicyRequest,
   UpdateEvaluators200,
   UpdateEvaluatorsRequest,
+  WanakuResponseAgentView,
   WanakuResponseAuditEvent,
   WanakuResponseAuditHealth,
   WanakuResponseAuditPage,
+  WanakuResponseValue,
+  WanakuResponseVecAgentView,
 } from "../models";
 
 import { customFetch } from "../custom-fetch";
@@ -353,6 +358,317 @@ export const activateActionPolicyRevision = async (
       body: JSON.stringify(activateRevisionRequest),
     },
   );
+};
+
+export type listAgentsResponse200 = {
+  data: WanakuResponseVecAgentView;
+  status: 200;
+};
+
+export type listAgentsResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type listAgentsResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type listAgentsResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type listAgentsResponseSuccess = listAgentsResponse200 & {
+  headers: Headers;
+};
+export type listAgentsResponseError = (
+  | listAgentsResponse400
+  | listAgentsResponse404
+  | listAgentsResponse409
+) & {
+  headers: Headers;
+};
+
+export type listAgentsResponse =
+  | listAgentsResponseSuccess
+  | listAgentsResponseError;
+
+export const getListAgentsUrl = (params?: ListAgentsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/agents?${stringifiedParams}`
+    : `/api/v1/agents`;
+};
+
+export const listAgents = async (
+  params?: ListAgentsParams,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<listAgentsResponse> => {
+  return customFetch<listAgentsResponse>(getListAgentsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type createAgentResponse200 = {
+  data: WanakuResponseAgentView;
+  status: 200;
+};
+
+export type createAgentResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type createAgentResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type createAgentResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type createAgentResponseSuccess = createAgentResponse200 & {
+  headers: Headers;
+};
+export type createAgentResponseError = (
+  | createAgentResponse400
+  | createAgentResponse404
+  | createAgentResponse409
+) & {
+  headers: Headers;
+};
+
+export type createAgentResponse =
+  | createAgentResponseSuccess
+  | createAgentResponseError;
+
+export const getCreateAgentUrl = () => {
+  return `/api/v1/agents`;
+};
+
+export const createAgent = async (
+  agentEntry: AgentEntry,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<createAgentResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit["headers"]>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<
+      string | readonly string[] | undefined
+    >(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<createAgentResponse>(getCreateAgentUrl(), {
+    ...options,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getHeaders(options?.headers),
+    },
+    body: JSON.stringify(agentEntry),
+  });
+};
+
+export type getAgentResponse200 = {
+  data: WanakuResponseAgentView;
+  status: 200;
+};
+
+export type getAgentResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type getAgentResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type getAgentResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type getAgentResponseSuccess = getAgentResponse200 & {
+  headers: Headers;
+};
+export type getAgentResponseError = (
+  | getAgentResponse400
+  | getAgentResponse404
+  | getAgentResponse409
+) & {
+  headers: Headers;
+};
+
+export type getAgentResponse = getAgentResponseSuccess | getAgentResponseError;
+
+export const getGetAgentUrl = (namespace: string, name: string) => {
+  return `/api/v1/agents/${namespace}/${name}`;
+};
+
+export const getAgent = async (
+  namespace: string,
+  name: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<getAgentResponse> => {
+  return customFetch<getAgentResponse>(getGetAgentUrl(namespace, name), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type updateAgentResponse200 = {
+  data: WanakuResponseAgentView;
+  status: 200;
+};
+
+export type updateAgentResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type updateAgentResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type updateAgentResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type updateAgentResponseSuccess = updateAgentResponse200 & {
+  headers: Headers;
+};
+export type updateAgentResponseError = (
+  | updateAgentResponse400
+  | updateAgentResponse404
+  | updateAgentResponse409
+) & {
+  headers: Headers;
+};
+
+export type updateAgentResponse =
+  | updateAgentResponseSuccess
+  | updateAgentResponseError;
+
+export const getUpdateAgentUrl = (namespace: string, name: string) => {
+  return `/api/v1/agents/${namespace}/${name}`;
+};
+
+export const updateAgent = async (
+  namespace: string,
+  name: string,
+  agentEntry: AgentEntry,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<updateAgentResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit["headers"]>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<
+      string | readonly string[] | undefined
+    >(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<updateAgentResponse>(getUpdateAgentUrl(namespace, name), {
+    ...options,
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getHeaders(options?.headers),
+    },
+    body: JSON.stringify(agentEntry),
+  });
+};
+
+export type deleteAgentResponse200 = {
+  data: WanakuResponseValue;
+  status: 200;
+};
+
+export type deleteAgentResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type deleteAgentResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type deleteAgentResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type deleteAgentResponseSuccess = deleteAgentResponse200 & {
+  headers: Headers;
+};
+export type deleteAgentResponseError = (
+  | deleteAgentResponse400
+  | deleteAgentResponse404
+  | deleteAgentResponse409
+) & {
+  headers: Headers;
+};
+
+export type deleteAgentResponse =
+  | deleteAgentResponseSuccess
+  | deleteAgentResponseError;
+
+export const getDeleteAgentUrl = (namespace: string, name: string) => {
+  return `/api/v1/agents/${namespace}/${name}`;
+};
+
+export const deleteAgent = async (
+  namespace: string,
+  name: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<deleteAgentResponse> => {
+  return customFetch<deleteAgentResponse>(getDeleteAgentUrl(namespace, name), {
+    ...options,
+    method: "DELETE",
+  });
 };
 
 export type listAuditEventsResponse200 = {

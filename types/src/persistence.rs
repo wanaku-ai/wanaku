@@ -6,6 +6,8 @@ use crate::registry::{ForwardEntry, NamespaceEntry, PromptEntry, ResourceEntry, 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RegistrySnapshot {
     #[serde(default)]
+    pub agents: Vec<crate::agents::AgentEntry>,
+    #[serde(default)]
     pub tools: Vec<ToolEntry>,
     #[serde(default)]
     pub resources: Vec<ResourceEntry>,

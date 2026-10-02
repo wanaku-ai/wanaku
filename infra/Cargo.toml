@@ -15,6 +15,8 @@ workspace = true
 openapi = ["dep:utoipa", "wanaku-types/openapi"]
 
 [dependencies]
+praxis-core = { workspace = true }
+praxis-tls = { version = "0.5.6", package = "praxis-proxy-tls" }
 dashmap = { workspace = true }
 http = { workspace = true }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }

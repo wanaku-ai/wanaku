@@ -62,6 +62,10 @@ export function buildRouter(pluginPages: PluginPage[]) {
           lazy: async () => import('./Pages/Forwards'),
         },
         {
+          path: Links.A2aAgents,
+          lazy: async () => import('./Pages/A2aAgents'),
+        },
+        {
           path: Links.Bindings,
           lazy: async () => import('./Pages/Bindings'),
         },

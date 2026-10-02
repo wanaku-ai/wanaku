@@ -187,6 +187,16 @@ pub(super) fn handle_namespace_delete(
     registry: &InMemoryRegistry,
     name: &str,
 ) -> Response<Vec<u8>> {
+    if registry
+        .list_agents()
+        .iter()
+        .any(|agent| agent.namespace == name)
+    {
+        return json_err(
+            StatusCode::CONFLICT,
+            "namespace contains A2A agents; remove the agents first",
+        );
+    }
     if registry.remove_namespace(name) {
         info!(namespace = %name, "removed namespace via management API");
         json_ok(&serde_json::json!({"removed": name}))
@@ -1070,8 +1080,8 @@ mod tests {
         handle_forward_list, handle_info, handle_namespace_create, handle_namespace_delete,
         handle_namespace_get, handle_namespace_list, handle_namespace_update, handle_prompt_delete,
         handle_prompt_get, handle_prompt_list, handle_resource_delete, handle_resource_get,
-        handle_resource_list, handle_statistics, handle_tool_delete,
-        handle_tool_get, handle_tool_list,
+        handle_resource_list, handle_statistics, handle_tool_delete, handle_tool_get,
+        handle_tool_list,
     };
 
     fn test_broker() -> CredentialBroker {

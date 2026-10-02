@@ -1,3 +1,4 @@
+mod agents;
 mod handlers;
 #[cfg(test)]
 mod interaction_tests;
@@ -31,8 +32,8 @@ use self::handlers::{
     handle_forward_get, handle_forward_list, handle_forward_refresh, handle_info,
     handle_namespace_create, handle_namespace_delete, handle_namespace_get, handle_namespace_list,
     handle_namespace_update, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
-    handle_resource_delete, handle_resource_get, handle_resource_list,
-    handle_statistics, handle_tool_delete, handle_tool_get, handle_tool_list,
+    handle_resource_delete, handle_resource_get, handle_resource_list, handle_statistics,
+    handle_tool_delete, handle_tool_get, handle_tool_list,
 };
 #[cfg(feature = "ui")]
 use self::response::redirect_response;
@@ -132,6 +133,9 @@ pub(crate) async fn dispatch(
     audit_sink: Option<&dyn CredentialAuditSink>,
     features: &[Box<dyn Feature>],
 ) -> Response<Vec<u8>> {
+    if let Some(response) = agents::dispatch(ctx, registry) {
+        return response;
+    }
     if ctx.path == "/healthz" || ctx.path == "/health" {
         return json_ok(&serde_json::json!({"status": "ok"}));
     }

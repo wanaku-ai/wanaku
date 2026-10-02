@@ -1,6 +1,7 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 pub mod credentials;
+pub mod agents;
 pub mod llm;
 pub mod mcp_client;
 pub mod metrics;
