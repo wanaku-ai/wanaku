@@ -13,6 +13,7 @@ export const enum Links {
   Audit = '/audit',
   ActionPolicies = '/action-policies',
   Plugins = '/plugins-admin',
+  PluginCatalog = '/plugin-catalog',
   Downloads = '/downloads',
   Logout = '/logout',
 }

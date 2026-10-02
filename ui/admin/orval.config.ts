@@ -11,7 +11,7 @@ export default defineConfig({
                     for (const pathItem of Object.values(spec.paths ?? {})) {
                         for (const operation of Object.values(pathItem ?? {})) {
                             if (!operation || typeof operation !== 'object' || !('tags' in operation)) continue;
-                            if (!operation.tags?.some(tag => tag === 'Evaluators' || tag === 'Action Policies')) continue;
+                            if (!operation.tags?.some(tag => tag === 'Evaluators' || tag === 'Action Policies' || tag === 'Plugins')) continue;
 
                             if (operation.operationId?.startsWith('activate_') && operation.requestBody) {
                                 operation.requestBody.required = false;

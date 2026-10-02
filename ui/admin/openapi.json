@@ -1250,6 +1250,36 @@
         }
       }
     },
+    "/api/v1/plugins/catalog": {
+      "get": {
+        "tags": [
+          "Plugins"
+        ],
+        "operationId": "list_plugin_catalog",
+        "responses": {
+          "200": {
+            "description": "Available plugins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Vec_PluginCatalogEntry"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Catalog unavailable or invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/plugins/install": {
       "post": {
         "tags": [
@@ -3045,6 +3075,55 @@
           }
         }
       },
+      "PluginCatalogEntry": {
+        "type": "object",
+        "description": "Metadata for an available plugin and its installation archive.",
+        "required": [
+          "id",
+          "name",
+          "version",
+          "url"
+        ],
+        "properties": {
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceRequirement"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "publisher": {
+            "type": "string"
+          },
+          "requires": {
+            "$ref": "#/components/schemas/PluginRequires"
+          },
+          "url": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
       "PluginManifest": {
         "type": "object",
         "required": [
@@ -4256,6 +4335,69 @@
                 }
               },
               "additionalProperties": false
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_Vec_PluginCatalogEntry": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Metadata for an available plugin and its installation archive.",
+              "required": [
+                "id",
+                "name",
+                "version",
+                "url"
+              ],
+              "properties": {
+                "dependencies": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceRequirement"
+                  }
+                },
+                "description": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "license": {
+                  "type": "string"
+                },
+                "metadata": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "propertyNames": {
+                    "type": "string"
+                  }
+                },
+                "name": {
+                  "type": "string"
+                },
+                "publisher": {
+                  "type": "string"
+                },
+                "requires": {
+                  "$ref": "#/components/schemas/PluginRequires"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                }
+              }
             }
           },
           "error": {

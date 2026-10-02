@@ -202,6 +202,15 @@ MCP clients use this document to find the authorization server. An external auth
 
 ### Web UI Plugins
 
+Open **Plugin Catalog** in the admin UI to browse available plugins. Select **Info** to view the metadata and required services. Select **Install** to download and install the archive. Set the service URLs in the configuration dialog when the plugin requires backend services. Restart the server after installation to load the plugin. The UI shows **Not specified** or **None** when the source has no value for a field.
+
+`GET /api/v1/plugins/catalog` returns available plugins in the standard `data` response field. Each entry contains `id`, `name`, `version`, `description`, `publisher`, `license`, `dependencies`, `requires`, `metadata`, and `url`. The `url` field identifies the installation archive. The `requires.services` field lists the backend services that the plugin needs.
+
+The default source is the Wanaku Barn GitHub releases API. The server reads `plugin.json` from each release asset with a name that contains `-plugin-` and ends with `.zip`. It uses the version in the manifest. It uses the release description and author when the manifest has no description or publisher. Fields without source values are empty.
+
+The endpoint returns HTTP 502 if the source is unavailable or invalid. A request has a 30-second limit. Each download has a 15-second limit and a 16 MiB size limit. A plugin manifest has a 64 KiB size limit.
+
+
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/v1/plugins` | List discovered UI plugin manifests. |

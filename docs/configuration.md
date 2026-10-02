@@ -598,3 +598,28 @@ The server does not reject unknown environment variable names. A misspelled name
 Evaluator execution uses the global and namespace [governance posture](governance-posture.md). The default failure behavior is `deny`. The evaluator `on_error` field is not accepted.
 
 Invalid evaluator configuration stops startup by default. Set the top-level `evaluator_startup_failure: deny` option to start with an invalid runtime that blocks evaluation in enforce mode. Valid management updates can replace this invalid runtime. Audit and disabled modes retain their configured behavior.
+
+### Plugin catalog
+
+Set `WANAKU_PLUGIN_CATALOG_URL` to change the plugin catalog source. The default is `https://api.github.com/repos/wanaku-ai/wanaku-barn/releases`.
+
+A custom source can return a JSON array of catalog entries. Each entry must have `id`, `name`, `version`, and an HTTP or HTTPS `url`. Optional fields are `description`, `publisher`, `license`, `dependencies`, `requires`, and `metadata`. Each dependency contains `id` and `version`. The `requires` field has the same format as a plugin manifest. The `metadata` field is a JSON object.
+
+```json
+[
+  {
+    "id": "my-plugin",
+    "name": "My Plugin",
+    "version": "1.0.0",
+    "description": "Tools for the admin UI",
+    "publisher": "Example",
+    "license": "Apache-2.0",
+    "dependencies": [],
+    "requires": {"services": [{"id": "my-api", "version": "1.0"}]},
+    "metadata": {"category": "tools"},
+    "url": "https://example.com/my-plugin-1.0.0.zip"
+  }
+]
+```
+
+The server reads the source when the admin UI requests the catalog. A catalog request does not install a plugin.

@@ -30,6 +30,7 @@ pub async fn install_plugin_from_url(
     _version: &str,
     url: &str,
 ) -> Result<PluginManifest, InstallError> {
+    validate_plugin_id(plugin_id)?;
     let response = client
         .get(url)
         .send()
@@ -56,6 +57,7 @@ pub fn extract_plugin_archive(
     plugins_path: &Path,
     plugin_id: &str,
 ) -> Result<PluginManifest, InstallError> {
+    validate_plugin_id(plugin_id)?;
     let reader = std::io::Cursor::new(archive_bytes);
     let mut zip = zip::ZipArchive::new(reader)
         .map_err(|e| InstallError::InvalidArchive(e.to_string()))?;
@@ -157,6 +159,14 @@ pub fn extract_plugin_archive(
     Ok(manifest)
 }
 
+fn validate_plugin_id(plugin_id: &str) -> Result<(), InstallError> {
+    if crate::routes::is_valid_segment(plugin_id) {
+        Ok(())
+    } else {
+        Err(InstallError::InsecurePath(plugin_id.to_owned()))
+    }
+}
+
 fn has_parent_components(path: &Path) -> bool {
     path.components().any(|c| matches!(c, Component::ParentDir | Component::RootDir | Component::Prefix(_)))
 }
@@ -166,6 +176,20 @@ mod tests {
     use super::*;
     use std::io::Write;
     use zip::write::SimpleFileOptions;
+
+    #[test]
+    fn extract_rejects_unsafe_plugin_ids_before_writing() {
+        let directory = tempfile::tempdir().unwrap();
+        for id in [
+            "", ".", "..", "../outside", "/tmp/outside", "nested/plugin", "nested\\plugin",
+        ] {
+            assert!(matches!(
+                extract_plugin_archive(&[], directory.path(), id),
+                Err(InstallError::InsecurePath(_))
+            ));
+        }
+        assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 0);
+    }
 
     fn create_test_zip(entries: &[(&str, &[u8])]) -> Vec<u8> {
         let mut buf = Vec::new();
