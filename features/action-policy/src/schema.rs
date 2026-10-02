@@ -69,6 +69,7 @@ pub enum TargetType {
     Tool,
     Resource,
     Prompt,
+    Agent,
 }
 
 /// A named matcher and its literal pattern.

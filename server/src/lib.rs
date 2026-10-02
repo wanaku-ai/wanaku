@@ -235,6 +235,10 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
     );
     praxis_filter::register_filters!(
         @register registry,
+        http "a2a" => praxis_ai_filters::A2aFilter::from_config
+    );
+    praxis_filter::register_filters!(
+        @register registry,
         http "wanaku_mcp_id" => wanaku_filters::McpIdFilter::from_config
     );
     praxis_filter::register_filters!(

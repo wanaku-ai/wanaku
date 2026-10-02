@@ -296,6 +296,12 @@ pub trait Feature: Send + Sync {
 
 See [Features](./features.md) for how to create your own.
 
+### A2A proxy
+
+An optional custom pipeline proxies A2A JSON-RPC requests to a configured upstream agent. The Praxis `a2a` filter extracts protocol metadata and tracks task and context routing. The `wanaku_a2a` filter limits the supported operations. The shared `wanaku_action_policy` filter applies governance posture, policy decisions, and audit records before dispatch.
+
+The upstream agent owns task execution and state. Wanaku does not translate A2A requests into MCP calls. The initial implementation does not support streaming, push notifications, trusted actor identity, or approval workflows. See [A2A Proxy](./a2a.md) for configuration and follow-up work.
+
 ## Management API
 
 The management API runs on port 8080 and uses Pingora's `ServeHttp` trait (not axum).

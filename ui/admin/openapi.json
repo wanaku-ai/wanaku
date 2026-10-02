@@ -3719,7 +3719,8 @@
         "enum": [
           "tool",
           "resource",
-          "prompt"
+          "prompt",
+          "agent"
         ]
       },
       "ToolEntry": {

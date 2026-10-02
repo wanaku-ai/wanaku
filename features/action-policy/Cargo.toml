@@ -30,4 +30,5 @@ wanaku-infra = { workspace = true }
 wanaku-types = { workspace = true }
 
 [dev-dependencies]
+praxis-protocol = { workspace = true }
 tokio = { workspace = true }

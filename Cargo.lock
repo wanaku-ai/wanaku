@@ -6623,6 +6623,7 @@ dependencies = [
  "bytes",
  "http 1.5.0",
  "praxis-proxy-filter",
+ "praxis-proxy-protocol",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
