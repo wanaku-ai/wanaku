@@ -24,4 +24,3 @@ clean-ui:
 
 clean: clean-ui
 	cargo clean
-	rm -rf ui/admin/dist ui/admin/node_modules
