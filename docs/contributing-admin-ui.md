@@ -12,9 +12,9 @@ The UI is not a separate deployment. The management API server provides the comp
 - **Build tool:** Vite 6
 - **Component library:** IBM Carbon Design System (`@carbon/react`)
 - **Icons:** `@carbon/icons-react`
-- **Routing:** `react-router-dom` v6, hash-based (`createHashRouter`)
+- **Routing:** `react-router-dom` v7, hash-based (`createHashRouter`)
 - **Styling:** SCSS with Carbon theme tokens (`$g10` light / `$g100` dark)
-- **API client:** Orval-generated from Rust server's OpenAPI spec (`openapi.json`)
+- **API client:** Orval 8, generated from the Rust server OpenAPI spec (`openapi.json`)
 - **Package manager:** Yarn (classic, not Berry)
 
 ## Project Structure
@@ -60,6 +60,8 @@ ui/admin/
 ## Development Workflow
 
 ### 1. Install Dependencies
+
+Use Node.js 22.18.0 or later. Orval 8 requires this version.
 
 ```bash
 cd ui/admin
