@@ -19,6 +19,9 @@ build-image:
 build-image-headless:
 	cargo build-image-headless --target $(TARGET)
 
-clean:
+clean-ui:
+	rm -rf ui/admin/dist ui/admin/node_modules
+
+clean: clean-ui
 	cargo clean
 	rm -rf ui/admin/dist ui/admin/node_modules
