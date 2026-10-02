@@ -601,25 +601,12 @@ Invalid evaluator configuration stops startup by default. Set the top-level `eva
 
 ### Plugin catalog
 
-Set `WANAKU_PLUGIN_CATALOG_URL` to change the plugin catalog source. The default is `https://api.github.com/repos/wanaku-ai/wanaku-barn/releases`.
+The default catalog is the JSON file embedded from `features/plugins/plugin-catalog.json`. It contains the curated Wanaku Barn entry.
 
-A custom source can return a JSON array of catalog entries. Each entry must have `id`, `name`, `version`, and an HTTP or HTTPS `url`. Optional fields are `description`, `publisher`, `license`, `dependencies`, `requires`, and `metadata`. Each dependency contains `id` and `version`. The `requires` field has the same format as a plugin manifest. The `metadata` field is a JSON object.
+Set `WANAKU_PLUGIN_CATALOG_PATH` to load a local JSON file. Set `WANAKU_PLUGIN_CATALOG_URL` to load a JSON file from an HTTP or HTTPS URL. A local path takes precedence over a URL. Each custom source replaces the complete embedded catalog. Custom sources can contain plugins from multiple publishers and archive hosts.
 
-```json
-[
-  {
-    "id": "my-plugin",
-    "name": "My Plugin",
-    "version": "1.0.0",
-    "description": "Tools for the admin UI",
-    "publisher": "Example",
-    "license": "Apache-2.0",
-    "dependencies": [],
-    "requires": {"services": [{"id": "my-api", "version": "1.0"}]},
-    "metadata": {"category": "tools"},
-    "url": "https://example.com/my-plugin-1.0.0.zip"
-  }
-]
-```
+The server selects the source at startup. It reads a local file or remote URL on each catalog request. An update to a local file or remote document does not require a server restart. An update to the embedded catalog requires a new build.
 
-The server reads the source when the admin UI requests the catalog. A catalog request does not install a plugin.
+A catalog must contain a JSON array of plugin entries. The size limit is 1 MiB. The server returns HTTP 502 if the selected source is unavailable or invalid. It does not fall back to the embedded catalog. See [Plugin Catalog](plugin-catalog.md) for the entry format and publication instructions.
+
+A catalog request reads only catalog JSON. It does not download plugin archives or install plugins.

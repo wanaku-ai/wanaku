@@ -1,5 +1,5 @@
 import { Button, DataTableSkeleton, InlineNotification } from '@carbon/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginCatalogEntry, PluginManifest } from '../../models';
 import { usePluginCatalog } from '../../hooks/api/use-plugin-catalog';
 import { usePlugins } from '../../hooks/api/use-plugins';
@@ -18,6 +18,7 @@ export const PluginCatalogPage = () => {
   const { installPlugin, configurePlugin } = usePlugins();
   const [catalog, setCatalog] = useState<CatalogState>({ status: 'loading' });
   const [selectedPlugin, setSelectedPlugin] = useState<PluginCatalogEntry | null>(null);
+  const infoButtonRef = useRef<HTMLButtonElement | null>(null);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [configPlugin, setConfigPlugin] = useState<PluginManifest | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -81,7 +82,9 @@ export const PluginCatalogPage = () => {
   return (
     <div className="plugin-catalog">
       <h1 className="title">Plugin Catalog</h1>
-      <p className="description">Browse available plugins and install them on this server.</p>
+      <p className="description">
+        Browse plugins from the configured catalog and install them on this server.
+      </p>
       {actionError && (
         <InlineNotification
           kind="error"
@@ -118,7 +121,10 @@ export const PluginCatalogPage = () => {
         {catalog.status === 'success' && (
           <PluginCatalogTable
             plugins={catalog.plugins}
-            onInfo={setSelectedPlugin}
+            onInfo={(plugin, button) => {
+              infoButtonRef.current = button;
+              setSelectedPlugin(plugin);
+            }}
             onInstall={handleInstall}
             installingId={installingId}
           />
@@ -127,7 +133,10 @@ export const PluginCatalogPage = () => {
       {selectedPlugin && (
         <PluginCatalogInfoModal
           plugin={selectedPlugin}
-          onRequestClose={() => setSelectedPlugin(null)}
+          onRequestClose={() => {
+            setSelectedPlugin(null);
+            requestAnimationFrame(() => infoButtonRef.current?.focus());
+          }}
         />
       )}
       {configPlugin && (

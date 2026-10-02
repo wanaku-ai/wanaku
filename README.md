@@ -68,6 +68,7 @@ Contributors working on the project may want to refer to the development documen
 - [Management API](docs/management-api.md) - API reference
 - [Admin UI](docs/contributing-admin-ui.md) - Admin dashboard development
 - [Features / Plugins](docs/features.md) - Feature crate system
+- [Plugin Catalog](docs/plugin-catalog.md) - Publish and configure available UI plugins
 - [Plugin Development](docs/plugin-development-guide.md) - Guide for writing new feature crates
 - [Evaluator Engine](docs/evaluator-engine.md) - WASM-based evaluator
 - [Action Policies](docs/action-policies.md) - Deterministic MCP action rules

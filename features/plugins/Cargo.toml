@@ -23,7 +23,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["fs", "io-util", "time"] }
 tracing = { workspace = true }
 utoipa = { version = "5.5", optional = true }
 wanaku-infra = { workspace = true }

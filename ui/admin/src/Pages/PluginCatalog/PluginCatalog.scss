@@ -7,6 +7,14 @@
   .cds--data-table-container {
     overflow-x: auto;
   }
+  &__description {
+    display: -webkit-box;
+    max-inline-size: min(32rem, 40vw);
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
   dl {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);

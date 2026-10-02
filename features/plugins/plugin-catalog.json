@@ -1,0 +1,17 @@
+[
+  {
+    "id": "wanaku-barn",
+    "name": "Wanaku Barn",
+    "version": "0.3.0",
+    "description": "Manage service catalogs, templates, and data stores with the Wanaku Barn UI.",
+    "publisher": "Wanaku",
+    "license": "Apache-2.0",
+    "dependencies": [],
+    "requires": {
+      "hostApi": ">=1.0 <2.0",
+      "services": [{"id": "wanaku-barn-api", "version": "1.0"}]
+    },
+    "metadata": {"homepage": "https://github.com/wanaku-ai/wanaku-barn"},
+    "url": "https://github.com/wanaku-ai/wanaku-barn/releases/download/early-access/wanaku-barn-plugin-0.3.0-SNAPSHOT.zip"
+  }
+]
