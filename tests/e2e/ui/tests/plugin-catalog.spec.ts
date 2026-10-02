@@ -45,8 +45,10 @@ test.describe("Plugin Catalog", () => {
     await expect(catalog.modal()).toContainText("Test tools");
     await expect(catalog.modal()).toContainText("base-plugin v1.0");
     await expect(catalog.modal()).toContainText("backend v2.0");
+    await expect(catalog.modal().locator("dl")).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(catalog.modal()).not.toBeVisible();
+    await expect(catalog.infoButton(plugin.name)).toBeFocused();
   });
 
   test("installs catalog coordinates then configures required services", async ({
@@ -136,7 +138,9 @@ test.describe("Plugin Catalog", () => {
     await expect(
       catalog.modal().getByText(description, { exact: true }),
     ).toBeVisible();
+    await expect(catalog.modal().locator("dl")).toBeFocused();
     await page.keyboard.press("Escape");
+    await expect(catalog.modal()).not.toBeVisible();
     await expect(catalog.infoButton(plugin.name)).toBeFocused();
   });
 
@@ -171,7 +175,10 @@ test.describe("Plugin Catalog", () => {
     await catalog.infoButton(communityPlugin.name).click();
     await expect(catalog.modal()).toContainText(communityPlugin.publisher);
     await expect(catalog.modal()).toContainText(communityPlugin.url);
+    await expect(catalog.modal().locator("dl")).toBeFocused();
     await page.keyboard.press("Escape");
+    await expect(catalog.modal()).not.toBeVisible();
+    await expect(catalog.infoButton(communityPlugin.name)).toBeFocused();
     await catalog.installButton(communityPlugin.name).click();
     await expect(page.getByText("Server restart required")).toBeVisible();
     expect(installedCoordinates).toEqual({
