@@ -3744,7 +3744,7 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
- "utoipa",
+ "utoipa 5.5.0",
  "yaml_serde",
 ]
 
@@ -6544,7 +6544,19 @@ dependencies = [
  "indexmap 2.14.0",
  "serde",
  "serde_json",
- "utoipa-gen",
+ "utoipa-gen 5.5.0",
+]
+
+[[package]]
+name = "utoipa"
+version = "6.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8765fe27aeff71012a3f90fa474cf1df863a7d0dd81ed25de4e63fff2544994f"
+dependencies = [
+ "indexmap 2.14.0",
+ "serde",
+ "serde_json",
+ "utoipa-gen 6.0.1",
 ]
 
 [[package]]
@@ -6556,6 +6568,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "utoipa-gen"
+version = "6.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d935f1c83fdf8b88f09bbe050d0cea78ea4afee6d7b0317403228c1200b2c8ab"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.3",
 ]
 
 [[package]]
@@ -6628,7 +6651,7 @@ dependencies = [
  "thiserror 2.0.20",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 6.0.0",
  "wanaku-filters",
  "wanaku-infra",
  "wanaku-types",
@@ -6669,7 +6692,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 6.0.0",
  "wanaku-feature-evaluator",
  "wanaku-filters",
  "wanaku-infra",
@@ -6740,7 +6763,7 @@ dependencies = [
  "thiserror 2.0.20",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 6.0.0",
  "wanaku-infra",
  "wanaku-types",
  "yaml_serde",
@@ -6778,7 +6801,7 @@ dependencies = [
  "time",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 6.0.0",
  "wanaku-types",
  "wiremock",
 ]
@@ -6803,7 +6826,7 @@ dependencies = [
  "tikv-jemallocator",
  "tokio",
  "tracing",
- "utoipa",
+ "utoipa 6.0.0",
  "wanaku-feature-action-policy",
  "wanaku-feature-audit",
  "wanaku-feature-evaluator",
@@ -6831,7 +6854,7 @@ dependencies = [
  "thiserror 2.0.20",
  "time",
  "tracing",
- "utoipa",
+ "utoipa 6.0.0",
  "yaml_serde",
  "zeroize",
 ]

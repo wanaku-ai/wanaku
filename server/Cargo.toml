@@ -31,7 +31,7 @@ clap = { workspace = true }
 http = { workspace = true }
 pingora-core = { version = "0.9.0", package = "quixotic-plecostomus-core" }
 rust-embed = { version = "8", optional = true }
-utoipa = "5.5"
+utoipa = "6.0"
 praxis-ai-filters = { workspace = true }
 praxis-core = { workspace = true }
 praxis-filter = { workspace = true }
