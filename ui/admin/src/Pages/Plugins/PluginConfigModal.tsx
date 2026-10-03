@@ -10,6 +10,21 @@ interface PluginConfigModalProps {
   errorMessage?: string | null;
 }
 
+const INVALID_URL_TEXT = 'Must be a valid HTTP or HTTPS address, e.g. http://localhost:8080';
+
+function isHttpUrlValid(url: string): boolean {
+  try {
+    return /^https?:\/\//.test(url) && new URL(url).hostname !== '';
+  } catch {
+    return false;
+  }
+}
+
+function isTargetInvalid(target: string): boolean {
+  const trimmed = target.trim();
+  return trimmed !== '' && !isHttpUrlValid(trimmed);
+}
+
 export const PluginConfigModal: React.FC<PluginConfigModalProps> = ({
   plugin,
   onSave,
@@ -33,7 +48,12 @@ export const PluginConfigModal: React.FC<PluginConfigModalProps> = ({
     }));
   };
 
+  const hasInvalidTarget = Object.values(serviceTargets).some(isTargetInvalid);
+
   const handleSubmit = async () => {
+    if (hasInvalidTarget) {
+      return;
+    }
     const formatted: Record<string, { target: string }> = {};
     for (const [svcId, target] of Object.entries(serviceTargets)) {
       if (target.trim()) {
@@ -48,7 +68,7 @@ export const PluginConfigModal: React.FC<PluginConfigModalProps> = ({
       open
       modalHeading={`Configure Services: ${plugin.name}`}
       primaryButtonText={isSaving ? 'Saving...' : 'Save Configuration'}
-      primaryButtonDisabled={isSaving}
+      primaryButtonDisabled={isSaving || hasInvalidTarget}
       secondaryButtonText="Cancel"
       onRequestSubmit={handleSubmit}
       onRequestClose={onRequestClose}
@@ -77,6 +97,8 @@ export const PluginConfigModal: React.FC<PluginConfigModalProps> = ({
               labelText={`Service: ${svc.id} (v${svc.version})`}
               placeholder="e.g. http://localhost:8080"
               value={serviceTargets[svc.id] || ''}
+              invalid={isTargetInvalid(serviceTargets[svc.id] || '')}
+              invalidText={INVALID_URL_TEXT}
               onChange={(e) => handleTargetChange(svc.id, e.target.value)}
             />
           ))

@@ -85,6 +85,61 @@ test.describe("Plugin Catalog", () => {
     await expect(page.getByText("Server restart required")).toBeVisible();
   });
 
+  test("rejects service targets that are not HTTP or HTTPS addresses", async ({
+    page,
+  }) => {
+    let configSaved = false;
+    await page.route("**/api/v1/plugins/install", (route) =>
+      route.fulfill({
+        json: {
+          data: { manifest: { ...plugin, entrypoint: "index.js" } },
+          error: null,
+        },
+      }),
+    );
+    await page.route(`**/api/v1/plugins/${plugin.id}/config`, async (route) => {
+      configSaved = true;
+      await route.fulfill({ json: { data: {}, error: null } });
+    });
+    await catalog.goto();
+    await catalog.installButton(plugin.name).click();
+    const target = page.getByLabel("Service: backend (v2.0)");
+    const saveButton = catalog
+      .modal()
+      .getByRole("button", { name: "Save Configuration" });
+    const invalidText =
+      "Must be a valid HTTP or HTTPS address, e.g. http://localhost:8080";
+
+    await expect(saveButton).toBeEnabled();
+    await expect(catalog.modal().getByText(invalidText)).not.toBeVisible();
+
+    for (const value of [
+      "not a url",
+      "ftp://localhost:21",
+      "http:localhost",
+      "http://localhost:99999",
+    ]) {
+      await target.fill(value);
+      await expect(catalog.modal().getByText(invalidText)).toBeVisible();
+      await expect(saveButton).toBeDisabled();
+    }
+
+    for (const value of [
+      "https://backend.example.com:8443",
+      "http://[::1]:8080",
+      "https://backend.example.com/api?health=1",
+    ]) {
+      await target.fill(value);
+      await expect(catalog.modal().getByText(invalidText)).not.toBeVisible();
+      await expect(saveButton).toBeEnabled();
+    }
+
+    await target.fill("");
+    await expect(catalog.modal().getByText(invalidText)).not.toBeVisible();
+    await expect(saveButton).toBeEnabled();
+    expect(configSaved).toBe(false);
+  });
+
   test("installs plugins without service requirements", async ({ page }) => {
     await page.route("**/api/v1/plugins/install", (route) =>
       route.fulfill({
