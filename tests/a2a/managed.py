@@ -126,7 +126,7 @@ action_policy:
                     return sum(len(backend.calls) for backend in handlers)
 
                 def rpc(namespace='default', name='smoke-agent', message_id='allowed-message'):
-                    return request(f'{proxy}/a2a/{namespace}/{name}', {
+                    return request(f'{proxy}/{namespace}/a2a/{name}', {
                         'jsonrpc': '2.0', 'id': message_id, 'method': 'message/send',
                         'params': {'message': {'kind': 'message', 'role': 'user',
                             'messageId': message_id,
@@ -139,13 +139,22 @@ action_policy:
                              'address': f'http://localhost:{servers[0].server_port}/'}
                     status, result = request(api, entry)
                     check(status in (200, 201), 'creates managed A2A agent', result)
-                    expected_proxy = f'{proxy}/a2a/default/smoke-agent'
+                    expected_proxy = f'{proxy}/default/a2a/smoke-agent'
                     status, result = request(api + '/default/smoke-agent')
                     check(status == 200 and result['data']['proxyUrl'] == expected_proxy,
                           'management returns agent proxy URL', result)
                     status, card = request(expected_proxy + '/.well-known/agent-card.json')
                     check(status == 200 and card['url'] == expected_proxy,
                           'managed discovery rewrites full proxy URL', card)
+                    before = count()
+                    for suffix, payload in [
+                            ('', {'jsonrpc': '2.0', 'id': 'legacy',
+                                  'method': 'tasks/get', 'params': {'id': 'task'}}),
+                            ('/.well-known/agent-card.json', None)]:
+                        status, result = request(
+                            f'{proxy}/a2a/default/smoke-agent{suffix}', payload)
+                        check(status == 404 and count() == before,
+                              'legacy protocol-first route rejects without dispatch', result)
                     status, result = rpc()
                     check(status == 200 and result.get('result', {}).get('backend') == 'first',
                           'registered agent forwards to configured backend', result)
