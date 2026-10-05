@@ -158,10 +158,55 @@ pub fn resolve_pipelines(
         }
 
         pipeline.apply_insecure_options(&config.insecure_options);
+        pipeline.set_allow_private_upstreams(config.insecure_options.allow_private_upstreams);
 
         info!(listener = %listener.name, "built wanaku pipeline");
         pipelines.insert(listener.name.clone(), Arc::new(pipeline));
     }
 
     Ok(ListenerPipelines::new(pipelines))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wanaku_types::credentials::ResolverRegistry;
+
+    #[test]
+    fn resolved_pipelines_apply_private_upstream_option() {
+        let filter_registry = FilterRegistry::with_builtins();
+        let health_registry = praxis_core::health::build_health_registry(&[]);
+        let kv_stores = praxis_core::kv::KvStoreRegistry::new();
+        let registry = InMemoryRegistry::new();
+        let governance = GovernanceConfig::default();
+        let broker = Arc::new(CredentialBroker::new(ResolverRegistry::new()));
+
+        for allow_private_upstreams in [false, true] {
+            let config: Config = serde_yaml::from_str(
+                &format!(
+                    "insecure_options:\n  allow_private_upstreams: {allow_private_upstreams}\nlisteners:\n  - name: a2a\n    address: '127.0.0.1:8084'\n  - name: mcp\n    address: '127.0.0.1:8081'\n"
+                ),
+            )
+            .expect("valid pipeline configuration");
+            let deps = PipelineDeps::new(
+                &filter_registry,
+                &health_registry,
+                &kv_stores,
+                &registry,
+                &governance,
+                &broker,
+                &[],
+            );
+            let pipelines = resolve_pipelines(&config, &deps).expect("pipelines resolve");
+
+            for listener in ["a2a", "mcp"] {
+                let pipeline = pipelines.get(listener).expect("listener pipeline").load();
+                assert_eq!(
+                    pipeline.allow_private_upstreams(),
+                    allow_private_upstreams,
+                    "private upstream option for {listener}"
+                );
+            }
+        }
+    }
 }
