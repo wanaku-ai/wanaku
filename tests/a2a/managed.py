@@ -70,6 +70,8 @@ def main():
                 pipeline = pipeline.replace(f'0.0.0.0:{original}', f'127.0.0.1:{actual}')
             pipeline = pipeline.replace('http://127.0.0.1:8084/', proxy + '/')
             pipeline = pipeline.replace('  skip_pipeline_validation: true\n', '')
+            if '  allow_private_upstreams: true' not in pipeline:
+                pipeline += '  allow_private_upstreams: true\n'
             (directory / 'pipeline.yaml').write_text(pipeline)
             (directory / 'wanaku.yaml').write_text('''governance:
   default:
@@ -134,7 +136,7 @@ action_policy:
                     process = start()
                     entry = {'name': 'smoke-agent', 'namespace': 'default',
                              'description': 'Managed smoke',
-                             'address': f'http://127.0.0.1:{servers[0].server_port}/'}
+                             'address': f'http://localhost:{servers[0].server_port}/'}
                     status, result = request(api, entry)
                     check(status in (200, 201), 'creates managed A2A agent', result)
                     expected_proxy = f'{proxy}/a2a/default/smoke-agent'
