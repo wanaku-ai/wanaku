@@ -89,7 +89,7 @@ impl A2aFilter {
             return Err(route_error(404, "A2A agent not found"));
         };
         let public_url = format!(
-            "{}/a2a/{namespace}/{name}",
+            "{}/{namespace}/a2a/{name}",
             self.config.public_url.trim_end_matches('/')
         );
         ctx.set_metadata(wanaku_types::NAMESPACE_METADATA_KEY, namespace);
@@ -163,8 +163,9 @@ impl A2aFilter {
 }
 
 fn managed_route(path: &str) -> Option<(&str, &str, bool)> {
-    let suffix = path.strip_prefix("/a2a/")?;
+    let suffix = path.strip_prefix('/')?;
     let (namespace, suffix) = suffix.split_once('/')?;
+    let suffix = suffix.strip_prefix("a2a/")?;
     let (name, card) = match suffix.strip_suffix("/.well-known/agent-card.json") {
         Some(name) => (name, true),
         None => (suffix, false),
@@ -433,6 +434,27 @@ impl HttpFilter for A2aFilter {
 mod tests {
     use super::*;
 
+    #[test]
+    fn managed_route_requires_namespace_first_and_exact_agent_path() {
+        assert_eq!(
+            managed_route("/blue/a2a/worker"),
+            Some(("blue", "worker", false))
+        );
+        assert_eq!(
+            managed_route("/blue/a2a/worker/.well-known/agent-card.json"),
+            Some(("blue", "worker", true))
+        );
+        for path in [
+            "/a2a/blue/worker",
+            "/a2a/blue/worker/.well-known/agent-card.json",
+            "/blue/a2a/worker/extra",
+            "/blue/a2a/",
+            "/blue/mcp/worker",
+        ] {
+            assert_eq!(managed_route(path), None, "{path}");
+        }
+    }
+
     fn test_filter(managed: bool) -> A2aFilter {
         A2aFilter {
             config: Config {
@@ -488,7 +510,7 @@ mod tests {
         let pipeline = praxis_filter::FilterPipeline::build(&mut [], &filters).expect("pipeline");
         let request = praxis_filter::Request {
             method: http::Method::POST,
-            uri: http::Uri::from_static("/a2a/blue/worker"),
+            uri: http::Uri::from_static("/blue/a2a/worker"),
             headers: http::HeaderMap::new(),
         };
         let mut protocol = praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
@@ -507,7 +529,7 @@ mod tests {
         );
         assert_eq!(
             ctx.get_metadata("wanaku.a2a.public_url"),
-            Some("https://proxy.example/a2a/blue/worker")
+            Some("https://proxy.example/blue/a2a/worker")
         );
         blue.address = "http://updated.example/new-rpc".to_owned();
         assert!(registry.save_agent(blue, true).expect("update"));

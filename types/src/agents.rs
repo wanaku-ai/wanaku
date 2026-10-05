@@ -49,7 +49,7 @@ impl AgentEntry {
 
     pub fn view(self, public_origin: &str) -> AgentView {
         let proxy_url = format!(
-            "{}/a2a/{}/{}",
+            "{}/{}/a2a/{}",
             public_origin.trim_end_matches('/'),
             self.namespace,
             self.name
@@ -131,7 +131,7 @@ mod tests {
         assert!(entry.validate().is_ok());
         assert_eq!(
             entry.view("https://proxy.example/").proxy_url,
-            "https://proxy.example/a2a/default/worker"
+            "https://proxy.example/default/a2a/worker"
         );
     }
 }

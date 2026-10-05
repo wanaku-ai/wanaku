@@ -38,7 +38,7 @@ test.describe('A2A agents', () => {
     await agents.submitModal();
     await agents.waitForAgent(data.name);
     await agents.openDetails(data.name);
-    await expect(agents.modal()).toContainText(`/a2a/${data.namespace}/${data.name}`);
+    await expect(agents.modal()).toContainText(`/${data.namespace}/a2a/${data.name}`);
     await agents.closeDetails();
     const response = await api.getAgent(data.namespace, data.name);
     expect(response.ok()).toBeTruthy();

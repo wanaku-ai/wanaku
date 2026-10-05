@@ -20,7 +20,7 @@ Agent entries use the same persistence backend as the other registry entries. A 
 
 ## Supported operations
 
-The initial binding is A2A 0.3 JSON-RPC over HTTP. For a registered agent, use `POST /a2a/{namespace}/{name}` for protocol requests. Use `GET /a2a/{namespace}/{name}/.well-known/agent-card.json` for discovery.
+The initial binding is A2A 0.3 JSON-RPC over HTTP. For a registered agent, use `POST /{namespace}/a2a/{name}` for protocol requests. Use `GET /{namespace}/a2a/{name}/.well-known/agent-card.json` for discovery. The namespace is the first path segment, as it is for `/{namespace}/mcp`. The agent name selects one registered agent in that namespace.
 
 | Wire method | Canonical policy operation | Behavior |
 | --- | --- | --- |
