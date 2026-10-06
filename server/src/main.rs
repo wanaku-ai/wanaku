@@ -34,6 +34,16 @@ fn main() {
 
     let _tracing_guard = praxis_core::logging::init_tracing(&config).unwrap_or_else(|e| fatal(&e));
 
+    // Praxis enables no built-in rustls provider. Install its OpenSSL-backed
+    // provider before anything builds a TLS configuration.
+    praxis_tls::provider::install();
+    if !praxis_tls::provider::installed() {
+        fatal(&format!(
+            "failed to install the {} crypto provider",
+            praxis_tls::provider::name()
+        ));
+    }
+
     let metrics_store = wanaku_infra::metrics::MetricsStore::new();
 
     let wanaku_registry = match FilePersistence::from_config() {
