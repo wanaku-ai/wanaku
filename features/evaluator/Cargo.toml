@@ -22,7 +22,7 @@ form_urlencoded = "1"
 async-trait = { workspace = true }
 bytes = { workspace = true }
 http = { workspace = true }
-jsonschema = { version = "0.57", default-features = false }
+jsonschema = { version = "0.58", default-features = false }
 praxis-filter = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
