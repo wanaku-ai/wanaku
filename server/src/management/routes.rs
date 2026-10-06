@@ -1,8 +1,18 @@
+/// Resolves `{name}/enable` and `{name}/disable` to the name and the new state.
+fn resolve_set_enabled(path: &str) -> Option<(String, bool)> {
+    let (name, enabled) = match path.strip_suffix("/enable") {
+        Some(name) => (name, true),
+        None => (path.strip_suffix("/disable")?, false),
+    };
+    (!name.is_empty()).then(|| (name.to_owned(), enabled))
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum ToolRoute {
     List,
     GetByName(String),
     Delete(String),
+    SetEnabled(String, bool),
     NotFound,
 }
 
@@ -17,6 +27,10 @@ pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
         ("GET", None) => ToolRoute::List,
         ("GET", Some(n)) => ToolRoute::GetByName(n.to_owned()),
         ("DELETE", Some(n)) => ToolRoute::Delete(n.to_owned()),
+        ("PUT", Some(n)) => match resolve_set_enabled(n) {
+            Some((name, enabled)) => ToolRoute::SetEnabled(name, enabled),
+            None => ToolRoute::NotFound,
+        },
         _ => ToolRoute::NotFound,
     }
 }
@@ -26,6 +40,7 @@ pub(super) enum ResourceRoute {
     List,
     GetByName(String),
     Delete(String),
+    SetEnabled(String, bool),
     NotFound,
 }
 
@@ -40,6 +55,10 @@ pub(super) fn resolve_resource_route(method: &str, path: &str) -> ResourceRoute 
         ("GET", None) => ResourceRoute::List,
         ("GET", Some(n)) => ResourceRoute::GetByName(n.to_owned()),
         ("DELETE", Some(n)) => ResourceRoute::Delete(n.to_owned()),
+        ("PUT", Some(n)) => match resolve_set_enabled(n) {
+            Some((name, enabled)) => ResourceRoute::SetEnabled(name, enabled),
+            None => ResourceRoute::NotFound,
+        },
         _ => ResourceRoute::NotFound,
     }
 }
@@ -49,6 +68,7 @@ pub(super) enum PromptRoute {
     List,
     GetByName(String),
     Delete(String),
+    SetEnabled(String, bool),
     NotFound,
 }
 
@@ -63,6 +83,10 @@ pub(super) fn resolve_prompt_route(method: &str, path: &str) -> PromptRoute {
         ("GET", None) => PromptRoute::List,
         ("GET", Some(n)) => PromptRoute::GetByName(n.to_owned()),
         ("DELETE", Some(n)) => PromptRoute::Delete(n.to_owned()),
+        ("PUT", Some(n)) => match resolve_set_enabled(n) {
+            Some((name, enabled)) => PromptRoute::SetEnabled(name, enabled),
+            None => PromptRoute::NotFound,
+        },
         _ => PromptRoute::NotFound,
     }
 }
@@ -209,6 +233,34 @@ mod tests {
         assert_eq!(
             resolve_tool_route("GET", "/api/v1/other"),
             ToolRoute::NotFound
+        );
+    }
+
+    #[test]
+    fn route_enable_and_disable() {
+        assert_eq!(
+            resolve_tool_route("PUT", "/api/v1/tools/my-tool/enable"),
+            ToolRoute::SetEnabled("my-tool".to_owned(), true)
+        );
+        assert_eq!(
+            resolve_tool_route("PUT", "/api/v1/tools/my-tool/disable"),
+            ToolRoute::SetEnabled("my-tool".to_owned(), false)
+        );
+        assert_eq!(
+            resolve_tool_route("PUT", "/api/v1/tools/enable"),
+            ToolRoute::NotFound
+        );
+        assert_eq!(
+            resolve_tool_route("POST", "/api/v1/tools/my-tool/enable"),
+            ToolRoute::NotFound
+        );
+        assert_eq!(
+            resolve_resource_route("PUT", "/api/v1/resources/my-res/disable"),
+            ResourceRoute::SetEnabled("my-res".to_owned(), false)
+        );
+        assert_eq!(
+            resolve_prompt_route("PUT", "/api/v1/prompts/my-prompt/enable"),
+            PromptRoute::SetEnabled("my-prompt".to_owned(), true)
         );
     }
 

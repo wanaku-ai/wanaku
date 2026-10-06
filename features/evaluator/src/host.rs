@@ -202,6 +202,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         }
     }
 

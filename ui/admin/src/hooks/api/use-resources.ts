@@ -2,8 +2,8 @@ import { useCallback } from 'react';
 import {
   listResources as apiListResources,
   listResourcesResponse,
-  deleteResource,
-  deleteResourceResponse,
+  disableResource,
+  enableResource,
 } from '../../api/wanaku-router-api';
 
 export const useResources = () => {
@@ -15,17 +15,17 @@ export const useResources = () => {
   }, []);
 
   /**
-   * Remove a resource.
+   * Enable or disable a resource. MCP clients cannot list or use a disabled resource.
    */
-  const removeResource = useCallback(
-    (name: string, options?: RequestInit): Promise<deleteResourceResponse> => {
-      return deleteResource(name, options);
+  const setResourceEnabled = useCallback(
+    (name: string, enabled: boolean, options?: RequestInit) => {
+      return enabled ? enableResource(name, options) : disableResource(name, options);
     },
     [],
   );
 
   return {
     listResources,
-    removeResource,
+    setResourceEnabled,
   };
 };

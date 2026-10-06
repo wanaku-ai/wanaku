@@ -7,14 +7,16 @@ import { useErrorNotification } from '../../hooks/error-notifications';
 
 export const ResourcesPage: React.FC = () => {
   const { errorMessage, setErrorMessage } = useErrorNotification();
-  const { removeResource } = useResources();
+  const { setResourceEnabled } = useResources();
   const resourceTableRef = useRef<RefreshHandle>({ refresh: () => {} });
 
-  async function handleDeleteResource(resourceName: string) {
+  async function handleSetResourceEnabled(resourceName: string, enabled: boolean) {
     try {
-      await removeResource(resourceName);
+      await setResourceEnabled(resourceName, enabled);
     } catch (error) {
-      setErrorMessage(`Error deleting resource: ${getErrorMessage(error)}`);
+      setErrorMessage(
+        `Error ${enabled ? 'enabling' : 'disabling'} resource: ${getErrorMessage(error)}`,
+      );
     } finally {
       refreshResources();
     }
@@ -37,7 +39,7 @@ export const ResourcesPage: React.FC = () => {
       </p>
       <div id="page-content">
         <ResourcesTable
-          onDelete={handleDeleteResource}
+          onSetEnabled={handleSetResourceEnabled}
           onError={(msg) => setErrorMessage(msg)}
           ref={resourceTableRef}
         />

@@ -46,12 +46,18 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `GET` | `/api/v1/tools` | List tools. |
 | `GET` | `/api/v1/tools/{name}` | Get a tool. |
 | `DELETE` | `/api/v1/tools/{name}` | Delete a tool. |
+| `PUT` | `/api/v1/tools/{name}/enable` | Enable a tool. |
+| `PUT` | `/api/v1/tools/{name}/disable` | Disable a tool. |
 | `GET` | `/api/v1/resources` | List resources. |
 | `GET` | `/api/v1/resources/{name}` | Get a resource. |
 | `DELETE` | `/api/v1/resources/{name}` | Delete a resource. |
+| `PUT` | `/api/v1/resources/{name}/enable` | Enable a resource. |
+| `PUT` | `/api/v1/resources/{name}/disable` | Disable a resource. |
 | `GET` | `/api/v1/prompts` | List prompts. |
 | `GET` | `/api/v1/prompts/{name}` | Get a prompt. |
 | `DELETE` | `/api/v1/prompts/{name}` | Delete a prompt. |
+| `PUT` | `/api/v1/prompts/{name}/enable` | Enable a prompt. |
+| `PUT` | `/api/v1/prompts/{name}/disable` | Disable a prompt. |
 | `GET` | `/api/v1/namespaces` | List namespaces. |
 | `GET` | `/api/v1/namespaces/{name}` | Get a namespace. |
 | `POST` | `/api/v1/namespaces` | Create a namespace from the JSON request body. |
@@ -72,6 +78,30 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 
 Wanaku discovers tools, resources, and prompts when you create or refresh a forward. The API does not have create routes for these entries. Tools and resources are read-only. You cannot edit them through the API.
 
+### Enable and Disable Tools, Resources, and Prompts
+
+Each tool, resource, and prompt has an `enabled` field. The default value is `true`.
+
+A disabled entry stays in the management API. `GET /api/v1/tools` and the other list routes return it with `"enabled": false`. MCP clients cannot see or use a disabled entry. `tools/list`, `resources/list`, and `prompts/list` do not include it. `tools/call`, `resources/read`, and `prompts/get` reject it.
+
+Wanaku keeps the state when it discovers the entries of a forward again. A forward refresh or a reconnect does not enable a disabled entry.
+
+Do not delete a tool, resource, or prompt. The next discovery adds it again. Disable the entry instead:
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/tools/get_weather/disable
+```
+
+To enable the entry again:
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/tools/get_weather/enable
+```
+
+The response contains the updated entry. If the entry does not exist, the server returns `404`.
+
+The Admin UI shows an Enable/Disable toggle for each tool, resource, and prompt. The Admin UI does not show a Delete button for these entries.
+
 ### Register an A2A agent
 
 Register an upstream agent with its JSON-RPC address:
@@ -89,6 +119,7 @@ Agent responses contain `name`, `namespace`, `description`, `address`, optional 
 Creating an existing agent returns `409`. Getting, updating, or deleting an unknown agent returns `404`. Invalid configuration returns `400`. An invalid update does not change the existing entry. An update does not change the namespace and name in the route.
 
 Agent changes use the configured registry persistence backend. They affect subsequent proxy requests without a restart. See [A2A Proxy](./a2a.md) for the admin UI, listener configuration, policy, and supported protocol operations.
+
 
 ### Create a Namespace
 

@@ -135,6 +135,24 @@ const fn get_tool() {}
 )]
 const fn delete_tool() {}
 
+#[utoipa::path(put, path = "/api/v1/tools/{name}/enable", tag = "Tools",
+    params(("name" = String, Path, description = "Tool name")),
+    responses(
+        (status = 200, description = "Tool enabled. MCP clients can list and use it.", body = ToolEntry),
+        (status = 404, description = "Tool not found"),
+    )
+)]
+const fn enable_tool() {}
+
+#[utoipa::path(put, path = "/api/v1/tools/{name}/disable", tag = "Tools",
+    params(("name" = String, Path, description = "Tool name")),
+    responses(
+        (status = 200, description = "Tool disabled. MCP clients cannot list or use it.", body = ToolEntry),
+        (status = 404, description = "Tool not found"),
+    )
+)]
+const fn disable_tool() {}
+
 // -- Resources ----------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/resources", tag = "Resources",
@@ -160,6 +178,24 @@ const fn get_resource() {}
 )]
 const fn delete_resource() {}
 
+#[utoipa::path(put, path = "/api/v1/resources/{name}/enable", tag = "Resources",
+    params(("name" = String, Path, description = "Resource name")),
+    responses(
+        (status = 200, description = "Resource enabled. MCP clients can list and use it.", body = ResourceEntry),
+        (status = 404, description = "Resource not found"),
+    )
+)]
+const fn enable_resource() {}
+
+#[utoipa::path(put, path = "/api/v1/resources/{name}/disable", tag = "Resources",
+    params(("name" = String, Path, description = "Resource name")),
+    responses(
+        (status = 200, description = "Resource disabled. MCP clients cannot list or use it.", body = ResourceEntry),
+        (status = 404, description = "Resource not found"),
+    )
+)]
+const fn disable_resource() {}
+
 // -- Prompts ------------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/prompts", tag = "Prompts",
@@ -184,6 +220,24 @@ const fn get_prompt() {}
     )
 )]
 const fn delete_prompt() {}
+
+#[utoipa::path(put, path = "/api/v1/prompts/{name}/enable", tag = "Prompts",
+    params(("name" = String, Path, description = "Prompt name")),
+    responses(
+        (status = 200, description = "Prompt enabled. MCP clients can list and use it.", body = PromptEntry),
+        (status = 404, description = "Prompt not found"),
+    )
+)]
+const fn enable_prompt() {}
+
+#[utoipa::path(put, path = "/api/v1/prompts/{name}/disable", tag = "Prompts",
+    params(("name" = String, Path, description = "Prompt name")),
+    responses(
+        (status = 200, description = "Prompt disabled. MCP clients cannot list or use it.", body = PromptEntry),
+        (status = 404, description = "Prompt not found"),
+    )
+)]
+const fn disable_prompt() {}
 
 // -- Namespaces ---------------------------------------------------------------
 
@@ -532,12 +586,18 @@ impl utoipa::Modify for OptionalActivationBodies {
         list_tools,
         get_tool,
         delete_tool,
+        enable_tool,
+        disable_tool,
         list_resources,
         get_resource,
         delete_resource,
+        enable_resource,
+        disable_resource,
         list_prompts,
         get_prompt,
         delete_prompt,
+        enable_prompt,
+        disable_prompt,
         list_namespaces,
         get_namespace,
         create_namespace,
@@ -759,6 +819,25 @@ mod tests {
             assert!(
                 schemas.is_some_and(|schemas| schemas.contains_key(schema)),
                 "missing {schema}"
+            );
+        }
+    }
+
+    #[test]
+    fn includes_enable_and_disable_contracts() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        for kind in ["tools", "resources", "prompts"] {
+            for action in ["enable", "disable"] {
+                let pointer = format!("/paths/~1api~1v1~1{kind}~1{{name}}~1{action}/put");
+                assert!(value.pointer(&pointer).is_some(), "missing {pointer}");
+            }
+        }
+        for schema in ["ToolEntry", "ResourceEntry", "PromptEntry"] {
+            assert!(
+                value
+                    .pointer(&format!("/components/schemas/{schema}/properties/enabled"))
+                    .is_some(),
+                "{schema} must expose enabled"
             );
         }
     }

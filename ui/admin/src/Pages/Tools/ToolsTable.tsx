@@ -1,4 +1,4 @@
-import { TrashCan, View } from '@carbon/icons-react';
+import { View } from '@carbon/icons-react';
 import {
   Button,
   DataTable,
@@ -17,13 +17,14 @@ import { ToolEntry } from '../../models';
 import { getNamespacePathById } from '../../hooks/api/use-namespaces';
 import { InputSchemaModal } from './InputSchemaModal';
 import { TableEmptyState } from '../EmptyTableState';
+import { EnabledToggle } from '../../components/EnabledToggle';
 
 interface ToolListProps {
   fetchedData: ToolEntry[];
-  onDelete: (toolName?: string) => void;
+  onSetEnabled: (toolName: string, enabled: boolean) => void;
 }
 
-export const ToolsTable: FunctionComponent<ToolListProps> = ({ fetchedData, onDelete }) => {
+export const ToolsTable: FunctionComponent<ToolListProps> = ({ fetchedData, onSetEnabled }) => {
   const [schemaModalTool, setSchemaModalTool] = useState<ToolEntry | null>(null);
   const headers = [
     { key: 'name', header: 'Name' },
@@ -32,7 +33,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({ fetchedData, onDe
     { key: 'uri', header: 'URI' },
     { key: 'input-schema', header: 'Input Schema' },
     { key: 'namespace', header: 'Namespace' },
-    { key: 'actions', header: 'Actions' },
+    { key: 'enabled', header: 'Enabled' },
   ];
 
   function toolsToRows() {
@@ -69,12 +70,10 @@ export const ToolsTable: FunctionComponent<ToolListProps> = ({ fetchedData, onDe
         </TableCell>
         <TableCell>{getNamespacePathById(tool.namespace ?? undefined)}</TableCell>
         <TableCell>
-          <Button
-            kind="ghost"
-            renderIcon={TrashCan}
-            iconDescription="Delete"
-            hasIconOnly
-            onClick={() => onDelete(tool.name)}
+          <EnabledToggle
+            name={tool.name}
+            enabled={tool.enabled !== false}
+            onSetEnabled={onSetEnabled}
           />
         </TableCell>
       </React.Fragment>

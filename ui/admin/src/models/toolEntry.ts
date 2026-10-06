@@ -10,6 +10,12 @@ import type { ToolEntryLabels } from "./toolEntryLabels";
 export interface ToolEntry {
   description: string;
   /**
+   * Whether MCP clients can list and invoke this entry. The management API
+   * lists disabled entries; MCP calls do not. Forward-sourced entries are
+   * disabled instead of deleted, because the next discovery restores them.
+   */
+  enabled?: boolean;
+  /**
    * Stable identity of the forward that owns this discovered tool.
    *
    * The forward name is immutable and serves as the `forwardId`. Routing

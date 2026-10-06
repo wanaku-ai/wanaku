@@ -11,7 +11,7 @@ export const PromptsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<PromptEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { errorMessage, setErrorMessage } = useErrorNotification();
-  const { listPrompts, removePrompt } = usePrompts();
+  const { listPrompts, setPromptEnabled } = usePrompts();
 
   const updatePrompts = useCallback(async () => {
     return listPrompts().then((result: any) => {
@@ -33,12 +33,12 @@ export const PromptsPage: React.FC = () => {
 
   if (isLoading) return <PageSkeleton title="Prompts" />;
 
-  const handleDeletePrompt = async (promptName?: string) => {
+  const handleSetPromptEnabled = async (promptName: string, enabled: boolean) => {
     try {
-      await removePrompt(promptName!);
+      await setPromptEnabled(promptName, enabled);
       await updatePrompts();
     } catch {
-      setErrorMessage(`Failed to delete prompt: ${promptName}`);
+      setErrorMessage(`Failed to ${enabled ? 'enable' : 'disable'} prompt: ${promptName}`);
     }
   };
 
@@ -55,7 +55,9 @@ export const PromptsPage: React.FC = () => {
         servers from the Forwards page.
       </p>
       <div id="page-content">
-        {fetchedData && <PromptsTable fetchedData={fetchedData} onDelete={handleDeletePrompt} />}
+        {fetchedData && (
+          <PromptsTable fetchedData={fetchedData} onSetEnabled={handleSetPromptEnabled} />
+        )}
       </div>
     </div>
   );

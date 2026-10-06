@@ -16,15 +16,15 @@ export class PromptsPage extends BasePage {
     await this.page.locator(Carbon.textInput('prompt-description')).fill(prompt.description);
   }
 
-  async clickDeletePrompt(name: string) {
-    await this.rowWithText(name).getByRole('button', { name: 'Delete' }).click();
-  }
-
   async waitForPromptInTable(name: string) {
     await expect(this.rowWithText(name)).toBeVisible({ timeout: 5_000 });
   }
 
-  async waitForPromptRemoved(name: string) {
-    await expect(this.rowWithText(name)).toBeHidden({ timeout: 5_000 });
+  enabledSwitch(name: string) {
+    return this.rowWithText(name).getByRole('switch');
+  }
+
+  async clickEnabledToggle(name: string) {
+    await this.rowWithText(name).locator(Carbon.toggleAppearance).click();
   }
 }

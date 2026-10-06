@@ -11,7 +11,7 @@ export const ToolsPage: React.FC = () => {
   const [fetchedData, setFetchedData] = useState<ToolEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { errorMessage, setErrorMessage } = useErrorNotification();
-  const { listTools, removeTool } = useTools();
+  const { listTools, setToolEnabled } = useTools();
 
   const updateTools = useCallback(async () => {
     return listTools().then((result: any) => {
@@ -33,13 +33,12 @@ export const ToolsPage: React.FC = () => {
 
   if (isLoading) return <PageSkeleton title="Tools" />;
 
-  const handleDeleteTool = async (toolName?: string) => {
+  const handleSetToolEnabled = async (toolName: string, enabled: boolean) => {
     try {
-      if (!toolName) return;
-      await removeTool(toolName);
+      await setToolEnabled(toolName, enabled);
       await updateTools();
     } catch {
-      setErrorMessage(`Failed to delete tool: ${toolName}`);
+      setErrorMessage(`Failed to ${enabled ? 'enable' : 'disable'} tool: ${toolName}`);
     }
   };
 
@@ -56,7 +55,9 @@ export const ToolsPage: React.FC = () => {
         forwarded MCP servers from the Forwards page.
       </p>
       <div id="page-content">
-        {fetchedData && <ToolsTable fetchedData={fetchedData} onDelete={handleDeleteTool} />}
+        {fetchedData && (
+          <ToolsTable fetchedData={fetchedData} onSetEnabled={handleSetToolEnabled} />
+        )}
       </div>
     </div>
   );

@@ -14,6 +14,9 @@ export const Carbon = {
   toastError: '.cds--toast-notification--error',
   toastSuccess: '.cds--toast-notification--success',
 
+  // Visible part of a Carbon toggle. It covers the hidden <button role="switch">.
+  toggleAppearance: '.cds--toggle__appearance',
+
   buttonWithText: (text: string) => `button:has-text("${text}")`,
 
   skeleton: '.cds--skeleton',

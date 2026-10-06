@@ -1,43 +1,25 @@
 import { useCallback } from 'react';
 import {
-  deletePrompt,
-  deletePromptResponse,
+  disablePrompt,
+  enablePrompt,
   listPrompts as apiListPrompts,
   listPromptsResponse,
 } from '../../api/wanaku-router-api';
-import { PromptEntry } from '../../models';
 
 export const usePrompts = () => {
   const listPrompts = useCallback((options?: RequestInit): Promise<listPromptsResponse> => {
     return apiListPrompts(options);
   }, []);
 
-  const updatePrompt = useCallback(
-    async (
-      originalName: string,
-      _promptEntry: PromptEntry,
-      options?: RequestInit,
-    ): Promise<void> => {
-      // No PUT endpoint - delete and recreate
-      await deletePrompt(originalName, options);
-      // Note: prompts are auto-discovered from forwards, so we can't directly create them
-    },
-    [],
-  );
-
   /**
-   * Remove a prompt.
+   * Enable or disable a prompt. MCP clients cannot list or use a disabled prompt.
    */
-  const removePrompt = useCallback(
-    (name: string, options?: RequestInit): Promise<deletePromptResponse> => {
-      return deletePrompt(name, options);
-    },
-    [],
-  );
+  const setPromptEnabled = useCallback((name: string, enabled: boolean, options?: RequestInit) => {
+    return enabled ? enablePrompt(name, options) : disablePrompt(name, options);
+  }, []);
 
   return {
     listPrompts,
-    updatePrompt,
-    removePrompt,
+    setPromptEnabled,
   };
 };
