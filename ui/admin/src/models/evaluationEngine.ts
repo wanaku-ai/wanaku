@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.3.0
  */
 import type { LlmDef } from "./llmDef";
+import type { OpaDef } from "./opaDef";
 import type { SystemOneDef } from "./systemOneDef";
 
 /**
@@ -17,6 +18,9 @@ export type EvaluationEngine =
     })
   | (SystemOneDef & {
       type: "typesafe-system-one";
+    })
+  | (OpaDef & {
+      type: "opa";
     })
   | {
       type: "passthrough";

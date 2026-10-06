@@ -144,6 +144,7 @@ export * from "./normalizedOrigin";
 export * from "./noulCriteria";
 export * from "./noulDef";
 export * from "./noulDefCriteria";
+export * from "./opaDef";
 export * from "./pipelineSnapshot";
 export * from "./pluginCatalogEntry";
 export * from "./pluginCatalogEntryMetadata";

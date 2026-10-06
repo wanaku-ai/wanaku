@@ -1,0 +1,34 @@
+# Wanaku configuration for the OPA tool-call example. See README.md.
+forwards:
+  - name: "finance-mcp"
+    address: "http://127.0.0.1:9090/mcp"
+    namespace: "finance"
+
+governance:
+  default:
+    mode: enforce
+    no_match: deny
+    on_failure: deny
+  namespaces:
+    # This example has no action-policy rules. Let unmatched actions pass the
+    # action-policy filter. The OPA evaluator matches every finance tools/call,
+    # so the policy decision still applies.
+    finance:
+      no_match: allow
+
+opa_connections:
+  - name: "local-policy"
+    url: "http://127.0.0.1:8181"
+    timeout_ms: 500
+
+evaluators:
+  - name: "tool-policy-gate"
+    trigger:
+      method: "tools/call"
+      namespace: "finance"
+    engine:
+      type: opa
+      connection: "local-policy"
+      decision_path: "wanaku/tool_call/decision"
+    processor:
+      path: "actions/dist/opa_allow_action.wasm"

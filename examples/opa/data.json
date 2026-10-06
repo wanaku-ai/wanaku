@@ -1,0 +1,10 @@
+{
+  "policy": {
+    "amount_limits": {
+      "finance": { "transfer": 1000 }
+    },
+    "blocked_tools": {
+      "finance": ["delete_ledger"]
+    }
+  }
+}

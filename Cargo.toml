@@ -16,6 +16,7 @@ members = [
 ]
 exclude = [
     "actions/assembly-filter",
+    "actions/opa-allow",
     "actions/safety-review",
 ]
 
