@@ -18,7 +18,7 @@ export const ForwardDetailModal: React.FC<ForwardDetailModalProps> = ({
     <ComposedModal open onClose={onRequestClose}>
       <ModalHeader title={forward.name ?? 'Forward Details'} />
       <ModalBody>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="stack-vertical">
           <div>
             <strong>Status:</strong>{' '}
             <Tag type={forward.available === true ? 'green' : 'red'} size="sm">
@@ -40,7 +40,7 @@ export const ForwardDetailModal: React.FC<ForwardDetailModalProps> = ({
             <strong>Namespace:</strong> {forward.namespace ?? 'default'}
           </div>
 
-          <h4 style={{ marginBottom: 0 }}>Server Info</h4>
+          <h4 className="heading-flush">Server Info</h4>
           {si?.serverName ? (
             <>
               <div>
@@ -98,7 +98,7 @@ export const ForwardDetailModal: React.FC<ForwardDetailModalProps> = ({
 
           {labels && Object.keys(labels).length > 0 && (
             <>
-              <h4 style={{ marginBottom: 0 }}>Labels</h4>
+              <h4 className="heading-flush">Labels</h4>
               <div>
                 {Object.entries(labels).map(([key, value]) => (
                   <Tag key={key} type="gray" size="sm" style={{ marginRight: '0.25rem' }}>

@@ -43,7 +43,7 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }: HeaderComp
         aria-expanded={isSideNavExpanded}
       />
       <HeaderName href={ExternalLinks.Home} target="_blank" prefix="">
-        <img src={wanakuLogo} alt="Wanaku" style={{ marginRight: '1em' }} />
+        <img src={wanakuLogo} alt="Wanaku" className="header-logo" />
         Wanaku
       </HeaderName>
 

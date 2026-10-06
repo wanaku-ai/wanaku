@@ -30,7 +30,7 @@ export const BindingDetailModal: React.FC<BindingDetailModalProps> = ({
         closeModal={onRequestClose}
       />
       <ModalBody>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="stack-vertical">
           <div>
             <strong>Forward:</strong> {binding.forwardId}
           </div>
@@ -67,7 +67,7 @@ export const BindingDetailModal: React.FC<BindingDetailModalProps> = ({
 
           {hasRestrictions && (
             <>
-              <h4 style={{ marginBottom: 0 }}>Restrictions</h4>
+              <h4 className="heading-flush">Restrictions</h4>
               {!!restrictions?.namespaces?.length && (
                 <div>
                   <strong>Namespaces:</strong> {restrictions.namespaces.join(', ')}

@@ -12,7 +12,7 @@ export const PluginDetailModal: React.FC<PluginDetailModalProps> = ({ plugin, on
     <ComposedModal open onClose={onRequestClose}>
       <ModalHeader title={`${plugin.name} v${plugin.version}`} />
       <ModalBody>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="stack-vertical">
           <div>
             <strong>ID:</strong> {plugin.id}
           </div>

@@ -45,15 +45,8 @@ export const LLMChatMessage = ({ message }) => {
   }
 
   return (
-    <div style={{ marginBottom: '2rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontWeight: 'bold',
-        }}
-      >
+    <div className="chat-message">
+      <div className="chat-message-title">
         <Icon />
         {title}
       </div>
