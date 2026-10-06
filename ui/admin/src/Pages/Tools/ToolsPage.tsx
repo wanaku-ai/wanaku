@@ -31,16 +31,19 @@ export const ToolsPage: React.FC = () => {
     updateTools();
   }, [updateTools]);
 
-  if (isLoading) return <PageSkeleton title="Tools" />;
+  const handleSetToolEnabled = useCallback(
+    async (toolName: string, enabled: boolean) => {
+      try {
+        await setToolEnabled(toolName, enabled);
+        await updateTools();
+      } catch {
+        setErrorMessage(`Failed to ${enabled ? 'enable' : 'disable'} tool: ${toolName}`);
+      }
+    },
+    [setToolEnabled, updateTools, setErrorMessage],
+  );
 
-  const handleSetToolEnabled = async (toolName: string, enabled: boolean) => {
-    try {
-      await setToolEnabled(toolName, enabled);
-      await updateTools();
-    } catch {
-      setErrorMessage(`Failed to ${enabled ? 'enable' : 'disable'} tool: ${toolName}`);
-    }
-  };
+  if (isLoading) return <PageSkeleton title="Tools" />;
 
   return (
     <div>

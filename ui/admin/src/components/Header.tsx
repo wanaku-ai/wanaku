@@ -10,6 +10,7 @@ import {
   SkipToContent,
 } from '@carbon/react';
 
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLinks, Links } from '../router/links.models';
 
@@ -22,7 +23,10 @@ interface HeaderComponentProps {
   isSideNavExpanded: boolean;
 }
 
-function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }: HeaderComponentProps) {
+const HeaderComponent = memo(function HeaderComponent({
+  onClickSideNavExpand,
+  isSideNavExpanded,
+}: HeaderComponentProps) {
   const action = (click: string) => () => {
     console.log(click);
   };
@@ -93,6 +97,6 @@ function HeaderComponent({ onClickSideNavExpand, isSideNavExpanded }: HeaderComp
       </HeaderGlobalBar>
     </Header>
   );
-}
+});
 
 export default HeaderComponent;

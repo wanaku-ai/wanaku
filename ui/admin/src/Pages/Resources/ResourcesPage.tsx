@@ -1,5 +1,5 @@
 import { RefreshHandle, ResourcesTable } from './ResourcesTable';
-import React, { useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { useResources } from '../../hooks/api/use-resources';
 import { getErrorMessage } from '../../utils/error';
 import { ErrorNotification } from '../../components/ErrorNotification';
@@ -10,21 +10,24 @@ export const ResourcesPage: React.FC = () => {
   const { setResourceEnabled } = useResources();
   const resourceTableRef = useRef<RefreshHandle>({ refresh: () => {} });
 
-  async function handleSetResourceEnabled(resourceName: string, enabled: boolean) {
-    try {
-      await setResourceEnabled(resourceName, enabled);
-    } catch (error) {
-      setErrorMessage(
-        `Error ${enabled ? 'enabling' : 'disabling'} resource: ${getErrorMessage(error)}`,
-      );
-    } finally {
-      refreshResources();
-    }
-  }
-
-  function refreshResources() {
+  const refreshResources = useCallback(() => {
     resourceTableRef.current.refresh();
-  }
+  }, []);
+
+  const handleSetResourceEnabled = useCallback(
+    async (resourceName: string, enabled: boolean) => {
+      try {
+        await setResourceEnabled(resourceName, enabled);
+      } catch (error) {
+        setErrorMessage(
+          `Error ${enabled ? 'enabling' : 'disabling'} resource: ${getErrorMessage(error)}`,
+        );
+      } finally {
+        refreshResources();
+      }
+    },
+    [setResourceEnabled, setErrorMessage, refreshResources],
+  );
 
   return (
     <div>
@@ -40,7 +43,7 @@ export const ResourcesPage: React.FC = () => {
       <div id="page-content">
         <ResourcesTable
           onSetEnabled={handleSetResourceEnabled}
-          onError={(msg) => setErrorMessage(msg)}
+          onError={setErrorMessage}
           ref={resourceTableRef}
         />
       </div>
