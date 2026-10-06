@@ -2,8 +2,8 @@ import { useCallback } from 'react';
 import {
   listTools as apiListTools,
   listToolsResponse,
-  deleteTool,
-  deleteToolResponse,
+  disableTool,
+  enableTool,
 } from '../../api/wanaku-router-api';
 
 export const useTools = () => {
@@ -15,17 +15,14 @@ export const useTools = () => {
   }, []);
 
   /**
-   * Remove a tool.
+   * Enable or disable a tool. MCP clients cannot list or use a disabled tool.
    */
-  const removeTool = useCallback(
-    (name: string, options?: RequestInit): Promise<deleteToolResponse> => {
-      return deleteTool(name, options);
-    },
-    [],
-  );
+  const setToolEnabled = useCallback((name: string, enabled: boolean, options?: RequestInit) => {
+    return enabled ? enableTool(name, options) : disableTool(name, options);
+  }, []);
 
   return {
     listTools,
-    removeTool,
+    setToolEnabled,
   };
 };

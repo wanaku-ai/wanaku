@@ -10,6 +10,12 @@ import type { ResourceEntryLabels } from "./resourceEntryLabels";
 export interface ResourceEntry {
   description?: string;
   /**
+   * Whether MCP clients can list and invoke this entry. The management API
+   * lists disabled entries; MCP calls do not. Forward-sourced entries are
+   * disabled instead of deleted, because the next discovery restores them.
+   */
+  enabled?: boolean;
+  /**
    * Stable identity of the forward that owns this discovered resource.
    *
    * The forward name is immutable and serves as the `forwardId`. Routing

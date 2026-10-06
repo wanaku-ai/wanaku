@@ -669,6 +669,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         });
         registry.register_resource(ResourceEntry {
             name: "secrets".to_owned(),
@@ -680,6 +681,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         });
         registry.register_prompt(PromptEntry {
             name: "admin".to_owned(),
@@ -689,6 +691,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         });
 
         let cases = [
@@ -917,6 +920,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         });
         registry.register_tool(ToolEntry {
             name: "tool-with-uri".to_owned(),
@@ -928,6 +932,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         });
         let id = serde_json::json!(7);
 

@@ -2025,6 +2025,76 @@ export const deletePrompt = async (
   });
 };
 
+export type disablePromptResponse200 = {
+  data: PromptEntry;
+  status: 200;
+};
+
+export type disablePromptResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type disablePromptResponseSuccess = disablePromptResponse200 & {
+  headers: Headers;
+};
+export type disablePromptResponseError = disablePromptResponse404 & {
+  headers: Headers;
+};
+
+export type disablePromptResponse =
+  | disablePromptResponseSuccess
+  | disablePromptResponseError;
+
+export const getDisablePromptUrl = (name: string) => {
+  return `/api/v1/prompts/${name}/disable`;
+};
+
+export const disablePrompt = async (
+  name: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<disablePromptResponse> => {
+  return customFetch<disablePromptResponse>(getDisablePromptUrl(name), {
+    ...options,
+    method: "PUT",
+  });
+};
+
+export type enablePromptResponse200 = {
+  data: PromptEntry;
+  status: 200;
+};
+
+export type enablePromptResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type enablePromptResponseSuccess = enablePromptResponse200 & {
+  headers: Headers;
+};
+export type enablePromptResponseError = enablePromptResponse404 & {
+  headers: Headers;
+};
+
+export type enablePromptResponse =
+  | enablePromptResponseSuccess
+  | enablePromptResponseError;
+
+export const getEnablePromptUrl = (name: string) => {
+  return `/api/v1/prompts/${name}/enable`;
+};
+
+export const enablePrompt = async (
+  name: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<enablePromptResponse> => {
+  return customFetch<enablePromptResponse>(getEnablePromptUrl(name), {
+    ...options,
+    method: "PUT",
+  });
+};
+
 export type listResourcesResponse200 = {
   data: ResourceEntry[];
   status: 200;
@@ -2118,6 +2188,76 @@ export const deleteResource = async (
   });
 };
 
+export type disableResourceResponse200 = {
+  data: ResourceEntry;
+  status: 200;
+};
+
+export type disableResourceResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type disableResourceResponseSuccess = disableResourceResponse200 & {
+  headers: Headers;
+};
+export type disableResourceResponseError = disableResourceResponse404 & {
+  headers: Headers;
+};
+
+export type disableResourceResponse =
+  | disableResourceResponseSuccess
+  | disableResourceResponseError;
+
+export const getDisableResourceUrl = (name: string) => {
+  return `/api/v1/resources/${name}/disable`;
+};
+
+export const disableResource = async (
+  name: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<disableResourceResponse> => {
+  return customFetch<disableResourceResponse>(getDisableResourceUrl(name), {
+    ...options,
+    method: "PUT",
+  });
+};
+
+export type enableResourceResponse200 = {
+  data: ResourceEntry;
+  status: 200;
+};
+
+export type enableResourceResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type enableResourceResponseSuccess = enableResourceResponse200 & {
+  headers: Headers;
+};
+export type enableResourceResponseError = enableResourceResponse404 & {
+  headers: Headers;
+};
+
+export type enableResourceResponse =
+  | enableResourceResponseSuccess
+  | enableResourceResponseError;
+
+export const getEnableResourceUrl = (name: string) => {
+  return `/api/v1/resources/${name}/enable`;
+};
+
+export const enableResource = async (
+  name: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<enableResourceResponse> => {
+  return customFetch<enableResourceResponse>(getEnableResourceUrl(name), {
+    ...options,
+    method: "PUT",
+  });
+};
+
 export type listToolsResponse200 = {
   data: ToolEntry[];
   status: 200;
@@ -2206,6 +2346,76 @@ export const deleteTool = async (
   return customFetch<deleteToolResponse>(getDeleteToolUrl(name), {
     ...options,
     method: "DELETE",
+  });
+};
+
+export type disableToolResponse200 = {
+  data: ToolEntry;
+  status: 200;
+};
+
+export type disableToolResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type disableToolResponseSuccess = disableToolResponse200 & {
+  headers: Headers;
+};
+export type disableToolResponseError = disableToolResponse404 & {
+  headers: Headers;
+};
+
+export type disableToolResponse =
+  | disableToolResponseSuccess
+  | disableToolResponseError;
+
+export const getDisableToolUrl = (name: string) => {
+  return `/api/v1/tools/${name}/disable`;
+};
+
+export const disableTool = async (
+  name: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<disableToolResponse> => {
+  return customFetch<disableToolResponse>(getDisableToolUrl(name), {
+    ...options,
+    method: "PUT",
+  });
+};
+
+export type enableToolResponse200 = {
+  data: ToolEntry;
+  status: 200;
+};
+
+export type enableToolResponse404 = {
+  data: void;
+  status: 404;
+};
+
+export type enableToolResponseSuccess = enableToolResponse200 & {
+  headers: Headers;
+};
+export type enableToolResponseError = enableToolResponse404 & {
+  headers: Headers;
+};
+
+export type enableToolResponse =
+  | enableToolResponseSuccess
+  | enableToolResponseError;
+
+export const getEnableToolUrl = (name: string) => {
+  return `/api/v1/tools/${name}/enable`;
+};
+
+export const enableTool = async (
+  name: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<enableToolResponse> => {
+  return customFetch<enableToolResponse>(getEnableToolUrl(name), {
+    ...options,
+    method: "PUT",
   });
 };
 

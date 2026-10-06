@@ -521,7 +521,9 @@ impl ToolRegistry for InMemoryRegistry {
     fn list_tools_in_namespace(&self, namespace: &str) -> Vec<ToolEntry> {
         self.tools
             .iter()
-            .filter(|entry| effective_namespace(&entry.value().namespace) == namespace)
+            .filter(|entry| {
+                entry.value().enabled && effective_namespace(&entry.value().namespace) == namespace
+            })
             .map(|entry| entry.value().clone())
             .collect()
     }
@@ -534,7 +536,7 @@ impl ToolRegistry for InMemoryRegistry {
         self.tools
             .get(name)
             .map(|entry| entry.value().clone())
-            .filter(|tool| effective_namespace(&tool.namespace) == namespace)
+            .filter(|tool| tool.enabled && effective_namespace(&tool.namespace) == namespace)
     }
 
     fn register_tool(&self, mut tool: ToolEntry) {
@@ -574,6 +576,17 @@ impl ToolRegistry for InMemoryRegistry {
         removed
     }
 
+    fn set_tool_enabled(&self, name: &str, enabled: bool) -> bool {
+        let Some(mut entry) = self.tools.get_mut(name) else {
+            return false;
+        };
+        entry.enabled = enabled;
+        // Release the shard lock before persist() iterates the map.
+        drop(entry);
+        self.persist();
+        true
+    }
+
     fn remove_tools_batch(&self, names: &[String]) -> usize {
         let mut count = 0;
         for name in names {
@@ -603,7 +616,9 @@ impl ResourceRegistry for InMemoryRegistry {
     fn list_resources_in_namespace(&self, namespace: &str) -> Vec<ResourceEntry> {
         self.resources
             .iter()
-            .filter(|entry| effective_namespace(&entry.value().namespace) == namespace)
+            .filter(|entry| {
+                entry.value().enabled && effective_namespace(&entry.value().namespace) == namespace
+            })
             .map(|entry| entry.value().clone())
             .collect()
     }
@@ -616,7 +631,7 @@ impl ResourceRegistry for InMemoryRegistry {
         self.resources
             .get(name)
             .map(|entry| entry.value().clone())
-            .filter(|res| effective_namespace(&res.namespace) == namespace)
+            .filter(|res| res.enabled && effective_namespace(&res.namespace) == namespace)
     }
 
     fn register_resource(&self, mut resource: ResourceEntry) {
@@ -649,6 +664,17 @@ impl ResourceRegistry for InMemoryRegistry {
         removed
     }
 
+    fn set_resource_enabled(&self, name: &str, enabled: bool) -> bool {
+        let Some(mut entry) = self.resources.get_mut(name) else {
+            return false;
+        };
+        entry.enabled = enabled;
+        // Release the shard lock before persist() iterates the map.
+        drop(entry);
+        self.persist();
+        true
+    }
+
     fn remove_resources_batch(&self, names: &[String]) -> usize {
         let mut count = 0;
         for name in names {
@@ -678,7 +704,9 @@ impl PromptRegistry for InMemoryRegistry {
     fn list_prompts_in_namespace(&self, namespace: &str) -> Vec<PromptEntry> {
         self.prompts
             .iter()
-            .filter(|entry| effective_namespace(&entry.value().namespace) == namespace)
+            .filter(|entry| {
+                entry.value().enabled && effective_namespace(&entry.value().namespace) == namespace
+            })
             .map(|entry| entry.value().clone())
             .collect()
     }
@@ -691,7 +719,7 @@ impl PromptRegistry for InMemoryRegistry {
         self.prompts
             .get(name)
             .map(|entry| entry.value().clone())
-            .filter(|prompt| effective_namespace(&prompt.namespace) == namespace)
+            .filter(|prompt| prompt.enabled && effective_namespace(&prompt.namespace) == namespace)
     }
 
     fn register_prompt(&self, mut prompt: PromptEntry) {
@@ -722,6 +750,17 @@ impl PromptRegistry for InMemoryRegistry {
             self.persist();
         }
         removed
+    }
+
+    fn set_prompt_enabled(&self, name: &str, enabled: bool) -> bool {
+        let Some(mut entry) = self.prompts.get_mut(name) else {
+            return false;
+        };
+        entry.enabled = enabled;
+        // Release the shard lock before persist() iterates the map.
+        drop(entry);
+        self.persist();
+        true
     }
 
     fn remove_prompts_batch(&self, names: &[String]) -> usize {
@@ -867,6 +906,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         }
     }
 
@@ -881,6 +921,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         }
     }
 
@@ -917,6 +958,90 @@ mod tests {
         registry.register_tool(sample_tool());
         assert!(registry.remove_tool("test-tool"));
         assert!(registry.get_tool("test-tool").is_none());
+    }
+
+    #[test]
+    fn disabled_tool_is_hidden_from_namespace_lookups() {
+        let registry = InMemoryRegistry::new();
+        registry.register_tool(sample_tool());
+
+        assert!(registry.set_tool_enabled("test-tool", false));
+        assert!(
+            registry
+                .list_tools_in_namespace(DEFAULT_NAMESPACE)
+                .is_empty()
+        );
+        assert!(
+            registry
+                .get_tool_in_namespace(DEFAULT_NAMESPACE, "test-tool")
+                .is_none()
+        );
+        let listed = registry.list_tools();
+        assert_eq!(listed.len(), 1);
+        assert!(!listed[0].enabled);
+
+        assert!(registry.set_tool_enabled("test-tool", true));
+        assert_eq!(registry.list_tools_in_namespace(DEFAULT_NAMESPACE).len(), 1);
+        assert!(
+            registry
+                .get_tool_in_namespace(DEFAULT_NAMESPACE, "test-tool")
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn set_enabled_on_missing_entry_returns_false() {
+        let registry = InMemoryRegistry::new();
+        assert!(!registry.set_tool_enabled("missing", false));
+        assert!(!registry.set_resource_enabled("missing", false));
+        assert!(!registry.set_prompt_enabled("missing", false));
+    }
+
+    #[test]
+    fn disabled_resource_is_hidden_from_namespace_lookups() {
+        let registry = InMemoryRegistry::new();
+        registry.register_resource(sample_resource());
+
+        assert!(registry.set_resource_enabled("test-resource", false));
+        assert!(
+            registry
+                .list_resources_in_namespace(DEFAULT_NAMESPACE)
+                .is_empty()
+        );
+        assert!(
+            registry
+                .get_resource_in_namespace(DEFAULT_NAMESPACE, "test-resource")
+                .is_none()
+        );
+        assert_eq!(registry.list_resources().len(), 1);
+    }
+
+    #[test]
+    fn disabled_prompt_is_hidden_from_namespace_lookups() {
+        let registry = InMemoryRegistry::new();
+        registry.register_prompt(PromptEntry {
+            name: "test-prompt".to_owned(),
+            description: String::new(),
+            arguments: Vec::new(),
+            messages: Vec::new(),
+            id: None,
+            namespace: None,
+            forward_id: None,
+            enabled: true,
+        });
+
+        assert!(registry.set_prompt_enabled("test-prompt", false));
+        assert!(
+            registry
+                .list_prompts_in_namespace(DEFAULT_NAMESPACE)
+                .is_empty()
+        );
+        assert!(
+            registry
+                .get_prompt_in_namespace(DEFAULT_NAMESPACE, "test-prompt")
+                .is_none()
+        );
+        assert_eq!(registry.list_prompts().len(), 1);
     }
 
     #[test]
@@ -989,6 +1114,7 @@ mod tests {
             id: None,
             forward_id: None,
             labels: std::collections::HashMap::new(),
+            enabled: true,
         };
         registry.register_tool(tool);
         let stored = registry.get_tool("test").expect("tool should exist");
@@ -1021,6 +1147,7 @@ mod tests {
             id: None,
             forward_id: None,
             labels: std::collections::HashMap::new(),
+            enabled: true,
         };
         registry.register_tool(tool);
         let stored = registry.get_tool("test").expect("tool should exist");

@@ -32,8 +32,9 @@ use self::handlers::{
     handle_forward_get, handle_forward_list, handle_forward_refresh, handle_info,
     handle_namespace_create, handle_namespace_delete, handle_namespace_get, handle_namespace_list,
     handle_namespace_update, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
-    handle_resource_delete, handle_resource_get, handle_resource_list, handle_statistics,
-    handle_tool_delete, handle_tool_get, handle_tool_list,
+    handle_prompt_set_enabled, handle_resource_delete, handle_resource_get, handle_resource_list,
+    handle_resource_set_enabled, handle_statistics, handle_tool_delete, handle_tool_get,
+    handle_tool_list, handle_tool_set_enabled,
 };
 #[cfg(feature = "ui")]
 use self::response::redirect_response;
@@ -157,6 +158,9 @@ pub(crate) async fn dispatch(
         ToolRoute::List => return handle_tool_list(registry),
         ToolRoute::GetByName(name) => return handle_tool_get(registry, &name),
         ToolRoute::Delete(name) => return handle_tool_delete(registry, &name),
+        ToolRoute::SetEnabled(name, enabled) => {
+            return handle_tool_set_enabled(registry, &name, enabled);
+        }
         ToolRoute::NotFound => {}
     }
 
@@ -164,6 +168,9 @@ pub(crate) async fn dispatch(
         ResourceRoute::List => return handle_resource_list(registry),
         ResourceRoute::GetByName(name) => return handle_resource_get(registry, &name),
         ResourceRoute::Delete(name) => return handle_resource_delete(registry, &name),
+        ResourceRoute::SetEnabled(name, enabled) => {
+            return handle_resource_set_enabled(registry, &name, enabled);
+        }
         ResourceRoute::NotFound => {}
     }
 
@@ -171,6 +178,9 @@ pub(crate) async fn dispatch(
         PromptRoute::List => return handle_prompt_list(registry),
         PromptRoute::GetByName(name) => return handle_prompt_get(registry, &name),
         PromptRoute::Delete(name) => return handle_prompt_delete(registry, &name),
+        PromptRoute::SetEnabled(name, enabled) => {
+            return handle_prompt_set_enabled(registry, &name, enabled);
+        }
         PromptRoute::NotFound => {}
     }
 

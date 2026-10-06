@@ -1,6 +1,4 @@
-import { TrashCan } from '@carbon/icons-react';
 import {
-  Button,
   DataTable,
   Table,
   TableBody,
@@ -16,10 +14,11 @@ import { FunctionComponent } from 'react';
 import { PromptEntry } from '../../models';
 import { getNamespacePathById } from '../../hooks/api/use-namespaces';
 import { TableEmptyState } from '../EmptyTableState';
+import { EnabledToggle } from '../../components/EnabledToggle';
 
 interface PromptsListProps {
   fetchedData: PromptEntry[];
-  onDelete: (promptName?: string) => void;
+  onSetEnabled: (promptName: string, enabled: boolean) => void;
 }
 
 const formatMessages = (messages?: any[]) => {
@@ -32,7 +31,10 @@ const formatArguments = (args?: any[]) => {
   return args.map((arg) => `${arg.name}${arg.required ? '*' : ''}`).join(', ');
 };
 
-export const PromptsTable: FunctionComponent<PromptsListProps> = ({ fetchedData, onDelete }) => {
+export const PromptsTable: FunctionComponent<PromptsListProps> = ({
+  fetchedData,
+  onSetEnabled,
+}) => {
   const headers = [
     { key: 'name', header: 'Name' },
     { key: 'description', header: 'Description' },
@@ -40,7 +42,7 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({ fetchedData,
     { key: 'arguments', header: 'Arguments' },
     { key: 'toolReferences', header: 'Tool References' },
     { key: 'namespace', header: 'Namespace' },
-    { key: 'actions', header: 'Actions' },
+    { key: 'enabled', header: 'Enabled' },
   ];
 
   function promptsToRows() {
@@ -84,15 +86,13 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = ({ fetchedData,
                             </TableCell>
                           );
                         }
-                        if (cell.info.header === 'actions') {
+                        if (cell.info.header === 'enabled' && prompt) {
                           return (
                             <TableCell key={cell.id}>
-                              <Button
-                                kind="ghost"
-                                renderIcon={TrashCan}
-                                iconDescription="Delete"
-                                hasIconOnly
-                                onClick={() => onDelete(prompt?.name)}
+                              <EnabledToggle
+                                name={prompt.name}
+                                enabled={prompt.enabled !== false}
+                                onSetEnabled={onSetEnabled}
                               />
                             </TableCell>
                           );

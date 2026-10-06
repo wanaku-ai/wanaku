@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use http::{Response, StatusCode};
 use tracing::{info, warn};
 
@@ -28,6 +30,26 @@ pub(super) fn handle_tool_get(registry: &InMemoryRegistry, name: &str) -> Respon
     }
 }
 
+/// Enables or disables a tool. A disabled tool stays in the management API but
+/// MCP clients cannot list or use it.
+pub(super) fn handle_tool_set_enabled(
+    registry: &InMemoryRegistry,
+    name: &str,
+    enabled: bool,
+) -> Response<Vec<u8>> {
+    match registry
+        .set_tool_enabled(name, enabled)
+        .then(|| registry.get_tool(name))
+        .flatten()
+    {
+        Some(entry) => {
+            info!(tool = %name, enabled, "changed tool state via management API");
+            json_ok(&serde_json::json!(entry))
+        }
+        None => json_err(StatusCode::NOT_FOUND, &format!("tool not found: {name}")),
+    }
+}
+
 pub(super) fn handle_tool_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     if registry.remove_tool(name) {
         info!(tool = %name, "removed tool via management API");
@@ -45,6 +67,29 @@ pub(super) fn handle_resource_list(registry: &InMemoryRegistry) -> Response<Vec<
 pub(super) fn handle_resource_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_resource(name) {
         Some(resource) => json_ok(&serde_json::json!(resource)),
+        None => json_err(
+            StatusCode::NOT_FOUND,
+            &format!("resource not found: {name}"),
+        ),
+    }
+}
+
+/// Enables or disables a resource. A disabled resource stays in the management API but
+/// MCP clients cannot list or use it.
+pub(super) fn handle_resource_set_enabled(
+    registry: &InMemoryRegistry,
+    name: &str,
+    enabled: bool,
+) -> Response<Vec<u8>> {
+    match registry
+        .set_resource_enabled(name, enabled)
+        .then(|| registry.get_resource(name))
+        .flatten()
+    {
+        Some(entry) => {
+            info!(resource = %name, enabled, "changed resource state via management API");
+            json_ok(&serde_json::json!(entry))
+        }
         None => json_err(
             StatusCode::NOT_FOUND,
             &format!("resource not found: {name}"),
@@ -72,6 +117,26 @@ pub(super) fn handle_prompt_list(registry: &InMemoryRegistry) -> Response<Vec<u8
 pub(super) fn handle_prompt_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_prompt(name) {
         Some(prompt) => json_ok(&serde_json::json!(prompt)),
+        None => json_err(StatusCode::NOT_FOUND, &format!("prompt not found: {name}")),
+    }
+}
+
+/// Enables or disables a prompt. A disabled prompt stays in the management API but
+/// MCP clients cannot list or use it.
+pub(super) fn handle_prompt_set_enabled(
+    registry: &InMemoryRegistry,
+    name: &str,
+    enabled: bool,
+) -> Response<Vec<u8>> {
+    match registry
+        .set_prompt_enabled(name, enabled)
+        .then(|| registry.get_prompt(name))
+        .flatten()
+    {
+        Some(entry) => {
+            info!(prompt = %name, enabled, "changed prompt state via management API");
+            json_ok(&serde_json::json!(entry))
+        }
         None => json_err(StatusCode::NOT_FOUND, &format!("prompt not found: {name}")),
     }
 }
@@ -299,14 +364,18 @@ pub(super) async fn handle_forward_create(
     info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
     registry.register_forward(forward.clone());
 
-    let tools_count = register_discovered_tools(registry, &forward, &discovery.tools);
+    let disabled = DisabledEntries::capture(registry, forward.forward_id());
+    let tools_count =
+        register_discovered_tools(registry, &forward, &discovery.tools, &disabled.tools);
     let resources_count = register_discovered_resources(
         registry,
         &forward,
         &discovery.resources,
         &discovery.resource_templates,
+        &disabled.resources,
     );
-    let prompts_count = register_discovered_prompts(registry, &forward, &discovery.prompts);
+    let prompts_count =
+        register_discovered_prompts(registry, &forward, &discovery.prompts, &disabled.prompts);
 
     json_ok(&serde_json::json!({
         "forward": &forward,
@@ -349,6 +418,8 @@ pub(super) async fn handle_forward_refresh(
         return json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}"));
     };
 
+    // Capture before the removal below, so rediscovered entries stay disabled.
+    let disabled = DisabledEntries::capture(registry, forward.forward_id());
     remove_forwarded_tools(registry, forward.forward_id());
     remove_forwarded_resources(registry, forward.forward_id());
     remove_forwarded_prompts(registry, forward.forward_id());
@@ -396,14 +467,17 @@ pub(super) async fn handle_forward_refresh(
     forward.status_message = None;
     registry.register_forward(forward.clone());
 
-    let tools_count = register_discovered_tools(registry, &forward, &discovery.tools);
+    let tools_count =
+        register_discovered_tools(registry, &forward, &discovery.tools, &disabled.tools);
     let resources_count = register_discovered_resources(
         registry,
         &forward,
         &discovery.resources,
         &discovery.resource_templates,
+        &disabled.resources,
     );
-    let prompts_count = register_discovered_prompts(registry, &forward, &discovery.prompts);
+    let prompts_count =
+        register_discovered_prompts(registry, &forward, &discovery.prompts, &disabled.prompts);
 
     info!(forward = %name, tools_discovered = tools_count, resources_discovered = resources_count, prompts_discovered = prompts_count, "refreshed forward");
     json_ok(
@@ -518,6 +592,43 @@ fn redact_server_info(redactor: &CredentialRedactor, info: McpServerInfo) -> Mcp
     }
 }
 
+/// Names of the forward-sourced entries that an operator disabled.
+///
+/// Discovery replaces the entries of a forward. Capture this set before
+/// discovery so that rediscovered entries stay disabled.
+#[derive(Default)]
+struct DisabledEntries {
+    tools: HashSet<String>,
+    resources: HashSet<String>,
+    prompts: HashSet<String>,
+}
+
+impl DisabledEntries {
+    fn capture(registry: &InMemoryRegistry, forward_id: &str) -> Self {
+        let owned = |id: Option<&str>| id == Some(forward_id);
+        Self {
+            tools: registry
+                .list_tools()
+                .into_iter()
+                .filter(|t| !t.enabled && owned(t.forward_id.as_deref()))
+                .map(|t| t.name)
+                .collect(),
+            resources: registry
+                .list_resources()
+                .into_iter()
+                .filter(|r| !r.enabled && owned(r.forward_id.as_deref()))
+                .map(|r| r.name)
+                .collect(),
+            prompts: registry
+                .list_prompts()
+                .into_iter()
+                .filter(|p| !p.enabled && owned(p.forward_id.as_deref()))
+                .map(|p| p.name)
+                .collect(),
+        }
+    }
+}
+
 pub async fn discover_and_update_forward(
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
@@ -566,14 +677,18 @@ pub async fn discover_and_update_forward(
     updated.status_message = None;
     registry.register_forward(updated.clone());
 
-    let tools_count = register_discovered_tools(registry, &updated, &discovery.tools);
+    let disabled = DisabledEntries::capture(registry, updated.forward_id());
+    let tools_count =
+        register_discovered_tools(registry, &updated, &discovery.tools, &disabled.tools);
     let resources_count = register_discovered_resources(
         registry,
         &updated,
         &discovery.resources,
         &discovery.resource_templates,
+        &disabled.resources,
     );
-    let prompts_count = register_discovered_prompts(registry, &updated, &discovery.prompts);
+    let prompts_count =
+        register_discovered_prompts(registry, &updated, &discovery.prompts, &disabled.prompts);
 
     info!(
         forward = %forward.name,
@@ -596,7 +711,8 @@ pub async fn discover_tools_from_forward(
         }
     };
 
-    register_discovered_tools(registry, forward, &tools)
+    let disabled = DisabledEntries::capture(registry, forward.forward_id());
+    register_discovered_tools(registry, forward, &tools, &disabled.tools)
 }
 
 #[expect(clippy::too_many_lines, reason = "sequential tool registration")]
@@ -604,6 +720,7 @@ fn register_discovered_tools(
     registry: &InMemoryRegistry,
     forward: &ForwardEntry,
     tools: &[serde_json::Value],
+    disabled: &HashSet<String>,
 ) -> usize {
     let namespace = forward
         .namespace
@@ -643,6 +760,7 @@ fn register_discovered_tools(
             id: None,
             namespace: Some(namespace.to_owned()),
             forward_id: Some(forward.forward_id().to_owned()),
+            enabled: !disabled.contains(name),
         });
     }
 
@@ -672,7 +790,14 @@ pub async fn discover_resources_from_forward(
         }
     };
 
-    register_discovered_resources(registry, forward, &resources, &templates)
+    let disabled = DisabledEntries::capture(registry, forward.forward_id());
+    register_discovered_resources(
+        registry,
+        forward,
+        &resources,
+        &templates,
+        &disabled.resources,
+    )
 }
 
 #[expect(
@@ -685,6 +810,7 @@ fn register_discovered_resources(
     forward: &ForwardEntry,
     resources: &[serde_json::Value],
     templates: &[serde_json::Value],
+    disabled: &HashSet<String>,
 ) -> usize {
     let namespace = forward
         .namespace
@@ -727,6 +853,7 @@ fn register_discovered_resources(
             id: None,
             namespace: Some(namespace.to_owned()),
             forward_id: Some(forward.forward_id().to_owned()),
+            enabled: !disabled.contains(name),
         });
     }
 
@@ -779,6 +906,7 @@ fn register_discovered_resources(
             id: None,
             namespace: Some(namespace.to_owned()),
             forward_id: Some(forward.forward_id().to_owned()),
+            enabled: !disabled.contains(name),
         });
     }
 
@@ -821,7 +949,8 @@ pub async fn discover_prompts_from_forward(
         }
     };
 
-    register_discovered_prompts(registry, forward, &prompts)
+    let disabled = DisabledEntries::capture(registry, forward.forward_id());
+    register_discovered_prompts(registry, forward, &prompts, &disabled.prompts)
 }
 
 #[expect(clippy::too_many_lines, reason = "sequential prompt registration")]
@@ -829,6 +958,7 @@ fn register_discovered_prompts(
     registry: &InMemoryRegistry,
     forward: &ForwardEntry,
     prompts: &[serde_json::Value],
+    disabled: &HashSet<String>,
 ) -> usize {
     let namespace = forward
         .namespace
@@ -885,6 +1015,7 @@ fn register_discovered_prompts(
             id: None,
             namespace: Some(namespace.to_owned()),
             forward_id: Some(forward.forward_id().to_owned()),
+            enabled: !disabled.contains(name),
         };
 
         info!(prompt = %name, forward = %forward.name, "discovered forwarded prompt");
@@ -931,6 +1062,7 @@ mod forward_helpers_tests {
             id: None,
             namespace: None,
             forward_id: Some(forward_id.to_owned()),
+            enabled: true,
         });
         registry.register_resource(ResourceEntry {
             name: "local-res".to_owned(),
@@ -942,12 +1074,61 @@ mod forward_helpers_tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         });
 
         remove_forwarded_resources(&registry, forward_id);
 
         assert!(registry.get_resource("fwd-res").is_none());
         assert!(registry.get_resource("local-res").is_some());
+    }
+
+    #[test]
+    fn rediscovery_keeps_disabled_entries_disabled() {
+        let registry = InMemoryRegistry::new();
+        let forward: ForwardEntry = serde_json::from_value(serde_json::json!({
+            "name": "remote-forward", "address": "http://remote:8080/mcp"
+        }))
+        .expect("forward");
+        let tools = [
+            serde_json::json!({"name": "off"}),
+            serde_json::json!({"name": "on"}),
+        ];
+        let prompts = [serde_json::json!({"name": "prompt-off"})];
+        register_discovered_tools(&registry, &forward, &tools, &HashSet::new());
+        register_discovered_prompts(&registry, &forward, &prompts, &HashSet::new());
+        let response = handle_tool_set_enabled(&registry, "off", false);
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(registry.set_prompt_enabled("prompt-off", false));
+
+        // Same sequence as a forward refresh.
+        let disabled = DisabledEntries::capture(&registry, forward.forward_id());
+        remove_forwarded_tools(&registry, forward.forward_id());
+        remove_forwarded_prompts(&registry, forward.forward_id());
+        register_discovered_tools(&registry, &forward, &tools, &disabled.tools);
+        register_discovered_prompts(&registry, &forward, &prompts, &disabled.prompts);
+
+        assert_eq!(registry.get_tool("off").map(|t| t.enabled), Some(false));
+        assert_eq!(registry.get_tool("on").map(|t| t.enabled), Some(true));
+        let prompt = registry.get_prompt("prompt-off");
+        assert_eq!(prompt.map(|p| p.enabled), Some(false));
+    }
+
+    #[test]
+    fn set_enabled_on_missing_entry_is_not_found() {
+        let registry = InMemoryRegistry::new();
+        assert_eq!(
+            handle_tool_set_enabled(&registry, "missing", true).status(),
+            StatusCode::NOT_FOUND
+        );
+        assert_eq!(
+            handle_resource_set_enabled(&registry, "missing", true).status(),
+            StatusCode::NOT_FOUND
+        );
+        assert_eq!(
+            handle_prompt_set_enabled(&registry, "missing", true).status(),
+            StatusCode::NOT_FOUND
+        );
     }
 
     #[test]
@@ -965,6 +1146,7 @@ mod forward_helpers_tests {
             id: None,
             namespace: None,
             forward_id: Some(forward_id.to_owned()),
+            enabled: true,
         });
         registry.register_tool(ToolEntry {
             name: "local-tool".to_owned(),
@@ -976,6 +1158,7 @@ mod forward_helpers_tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         });
 
         remove_forwarded_tools(&registry, forward_id);
@@ -997,6 +1180,7 @@ mod forward_helpers_tests {
             id: None,
             namespace: None,
             forward_id: Some(forward_id.to_owned()),
+            enabled: true,
         });
         registry.register_prompt(PromptEntry {
             name: "local-prompt".to_owned(),
@@ -1006,6 +1190,7 @@ mod forward_helpers_tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         });
 
         remove_forwarded_prompts(&registry, forward_id);
@@ -1026,6 +1211,7 @@ mod forward_helpers_tests {
             id: None,
             namespace: None,
             forward_id: Some("other-forward".to_owned()),
+            enabled: true,
         });
 
         remove_forwarded_prompts(&registry, "remote-forward");
@@ -1108,6 +1294,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         }
     }
 
@@ -1122,6 +1309,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         }
     }
 
@@ -1134,6 +1322,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         }
     }
 

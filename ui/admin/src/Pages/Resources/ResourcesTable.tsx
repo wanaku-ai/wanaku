@@ -1,6 +1,5 @@
 import React, { RefObject, useEffect, useImperativeHandle, useState } from 'react';
 import {
-  Button,
   DataTable,
   DataTableSkeleton,
   Table,
@@ -13,24 +12,24 @@ import {
   TableToolbar,
   TableToolbarContent,
 } from '@carbon/react';
-import { TrashCan } from '@carbon/icons-react';
 import { ResourceEntry } from '../../models';
 import { getNamespacePathById } from '../../hooks/api/use-namespaces';
 import { useResources } from '../../hooks/api/use-resources';
 import { TableEmptyState } from '../EmptyTableState';
 import { getErrorMessage } from '../../utils/error';
+import { EnabledToggle } from '../../components/EnabledToggle';
 
 export interface RefreshHandle {
   refresh: () => void;
 }
 
 interface ResourcesTableProps {
-  onDelete: (resourceName: string) => void;
+  onSetEnabled: (resourceName: string, enabled: boolean) => void;
   onError?: (message: string) => void;
   ref?: RefObject<RefreshHandle>;
 }
 
-export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onDelete, onError, ref }) => {
+export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onSetEnabled, onError, ref }) => {
   const [resources, setResources] = useState<ResourceEntry[]>([]);
   const [isLoading, setLoading] = useState(true);
   const { listResources } = useResources();
@@ -70,7 +69,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onDelete, onErro
     { key: 'mimeType', header: 'MIME Type' },
     { key: 'description', header: 'Description' },
     { key: 'namespace', header: 'Namespace' },
-    { key: 'actions', header: 'Actions' },
+    { key: 'enabled', header: 'Enabled' },
   ];
 
   function resourcesToRows() {
@@ -95,12 +94,10 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = ({ onDelete, onErro
         <TableCell>{resource.description}</TableCell>
         <TableCell>{getNamespacePathById(resource.namespace ?? undefined)}</TableCell>
         <TableCell>
-          <Button
-            kind="ghost"
-            renderIcon={TrashCan}
-            hasIconOnly
-            iconDescription="Delete"
-            onClick={() => onDelete(resource.name)}
+          <EnabledToggle
+            name={resource.name}
+            enabled={resource.enabled !== false}
+            onSetEnabled={onSetEnabled}
           />
         </TableCell>
       </React.Fragment>

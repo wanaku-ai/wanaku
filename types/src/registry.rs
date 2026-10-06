@@ -41,6 +41,11 @@ pub struct ToolEntry {
         alias = "forward_id"
     )]
     pub forward_id: Option<String>,
+    /// Whether MCP clients can list and invoke this entry. The management API
+    /// lists disabled entries; MCP calls do not. Forward-sourced entries are
+    /// disabled instead of deleted, because the next discovery restores them.
+    #[serde(default = "default_true")]
+    pub enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -73,6 +78,11 @@ pub struct ResourceEntry {
         alias = "forward_id"
     )]
     pub forward_id: Option<String>,
+    /// Whether MCP clients can list and invoke this entry. The management API
+    /// lists disabled entries; MCP calls do not. Forward-sourced entries are
+    /// disabled instead of deleted, because the next discovery restores them.
+    #[serde(default = "default_true")]
+    pub enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -127,6 +137,11 @@ pub struct PromptEntry {
         alias = "forward_id"
     )]
     pub forward_id: Option<String>,
+    /// Whether MCP clients can list and invoke this entry. The management API
+    /// lists disabled entries; MCP calls do not. Forward-sourced entries are
+    /// disabled instead of deleted, because the next discovery restores them.
+    #[serde(default = "default_true")]
+    pub enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -168,7 +183,7 @@ pub struct ForwardEntry {
     pub server_info: Option<McpServerInfo>,
     #[serde(default)]
     pub labels: HashMap<String, String>,
-    #[serde(default = "default_available")]
+    #[serde(default = "default_true")]
     pub available: bool,
     #[serde(
         default,
@@ -190,7 +205,7 @@ pub struct ForwardEntry {
     pub credential_bindings: HashMap<CredentialPurpose, String>,
 }
 
-const fn default_available() -> bool {
+const fn default_true() -> bool {
     true
 }
 
@@ -333,36 +348,48 @@ pub fn inject_request_id_arg(schema: &mut serde_json::Value) {
 
 pub trait ToolRegistry: Send + Sync {
     fn list_tools(&self) -> Vec<ToolEntry>;
+    /// List the enabled tools in a namespace. MCP filters use this method.
     fn list_tools_in_namespace(&self, namespace: &str) -> Vec<ToolEntry>;
     fn get_tool(&self, name: &str) -> Option<ToolEntry>;
+    /// Get an enabled tool in a namespace. MCP filters use this method.
     fn get_tool_in_namespace(&self, namespace: &str, name: &str) -> Option<ToolEntry>;
     fn register_tool(&self, tool: ToolEntry);
     fn register_tools_batch(&self, tools: Vec<ToolEntry>);
     fn remove_tool(&self, name: &str) -> bool;
+    /// Set whether a tool is enabled. Returns `false` when the tool does not exist.
+    fn set_tool_enabled(&self, name: &str, enabled: bool) -> bool;
     fn remove_tools_batch(&self, names: &[String]) -> usize;
     fn tool_count(&self) -> usize;
 }
 
 pub trait ResourceRegistry: Send + Sync {
     fn list_resources(&self) -> Vec<ResourceEntry>;
+    /// List the enabled resources in a namespace. MCP filters use this method.
     fn list_resources_in_namespace(&self, namespace: &str) -> Vec<ResourceEntry>;
     fn get_resource(&self, name: &str) -> Option<ResourceEntry>;
+    /// Get an enabled resource in a namespace. MCP filters use this method.
     fn get_resource_in_namespace(&self, namespace: &str, name: &str) -> Option<ResourceEntry>;
     fn register_resource(&self, resource: ResourceEntry);
     fn register_resources_batch(&self, resources: Vec<ResourceEntry>);
     fn remove_resource(&self, name: &str) -> bool;
+    /// Set whether a resource is enabled. Returns `false` when the resource does not exist.
+    fn set_resource_enabled(&self, name: &str, enabled: bool) -> bool;
     fn remove_resources_batch(&self, names: &[String]) -> usize;
     fn resource_count(&self) -> usize;
 }
 
 pub trait PromptRegistry: Send + Sync {
     fn list_prompts(&self) -> Vec<PromptEntry>;
+    /// List the enabled prompts in a namespace. MCP filters use this method.
     fn list_prompts_in_namespace(&self, namespace: &str) -> Vec<PromptEntry>;
     fn get_prompt(&self, name: &str) -> Option<PromptEntry>;
+    /// Get an enabled prompt in a namespace. MCP filters use this method.
     fn get_prompt_in_namespace(&self, namespace: &str, name: &str) -> Option<PromptEntry>;
     fn register_prompt(&self, prompt: PromptEntry);
     fn register_prompts_batch(&self, prompts: Vec<PromptEntry>);
     fn remove_prompt(&self, name: &str) -> bool;
+    /// Set whether a prompt is enabled. Returns `false` when the prompt does not exist.
+    fn set_prompt_enabled(&self, name: &str, enabled: bool) -> bool;
     fn remove_prompts_batch(&self, names: &[String]) -> usize;
     fn prompt_count(&self) -> usize;
 }
@@ -421,6 +448,7 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         }
     }
 
@@ -435,7 +463,28 @@ mod tests {
             id: None,
             namespace: None,
             forward_id: None,
+            enabled: true,
         }
+    }
+
+    #[test]
+    fn entries_default_to_enabled() {
+        let tool: ToolEntry = serde_json::from_value(serde_json::json!({
+            "name": "t", "description": "", "uri": "u", "type": "mcp-forward",
+            "inputSchema": {"type": "object"}
+        }))
+        .expect("deserialize tool");
+        assert!(tool.enabled);
+
+        let resource: ResourceEntry = serde_json::from_value(serde_json::json!({
+            "name": "r", "location": "l", "type": "mcp-forward"
+        }))
+        .expect("deserialize resource");
+        assert!(resource.enabled);
+
+        let prompt: PromptEntry =
+            serde_json::from_value(serde_json::json!({"name": "p"})).expect("deserialize prompt");
+        assert!(prompt.enabled);
     }
 
     #[test]

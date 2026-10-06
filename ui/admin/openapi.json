@@ -1811,6 +1811,74 @@
         }
       }
     },
+    "/api/v1/prompts/{name}/disable": {
+      "put": {
+        "tags": [
+          "Prompts"
+        ],
+        "operationId": "disable_prompt",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Prompt name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prompt disabled. MCP clients cannot list or use it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptEntry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prompt not found"
+          }
+        }
+      }
+    },
+    "/api/v1/prompts/{name}/enable": {
+      "put": {
+        "tags": [
+          "Prompts"
+        ],
+        "operationId": "enable_prompt",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Prompt name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prompt enabled. MCP clients can list and use it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptEntry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prompt not found"
+          }
+        }
+      }
+    },
     "/api/v1/resources": {
       "get": {
         "tags": [
@@ -1893,6 +1961,74 @@
         }
       }
     },
+    "/api/v1/resources/{name}/disable": {
+      "put": {
+        "tags": [
+          "Resources"
+        ],
+        "operationId": "disable_resource",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Resource name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource disabled. MCP clients cannot list or use it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceEntry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        }
+      }
+    },
+    "/api/v1/resources/{name}/enable": {
+      "put": {
+        "tags": [
+          "Resources"
+        ],
+        "operationId": "enable_resource",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Resource name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource enabled. MCP clients can list and use it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceEntry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        }
+      }
+    },
     "/api/v1/tools": {
       "get": {
         "tags": [
@@ -1968,6 +2104,74 @@
         "responses": {
           "200": {
             "description": "Tool removed"
+          },
+          "404": {
+            "description": "Tool not found"
+          }
+        }
+      }
+    },
+    "/api/v1/tools/{name}/disable": {
+      "put": {
+        "tags": [
+          "Tools"
+        ],
+        "operationId": "disable_tool",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Tool name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tool disabled. MCP clients cannot list or use it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolEntry"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tool not found"
+          }
+        }
+      }
+    },
+    "/api/v1/tools/{name}/enable": {
+      "put": {
+        "tags": [
+          "Tools"
+        ],
+        "operationId": "enable_tool",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Tool name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tool enabled. MCP clients can list and use it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolEntry"
+                }
+              }
+            }
           },
           "404": {
             "description": "Tool not found"
@@ -3733,6 +3937,10 @@
           "description": {
             "type": "string"
           },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether MCP clients can list and invoke this entry. The management API\nlists disabled entries; MCP calls do not. Forward-sourced entries are\ndisabled instead of deleted, because the next discovery restores them."
+          },
           "forwardId": {
             "type": [
               "string",
@@ -3816,6 +4024,10 @@
         "properties": {
           "description": {
             "type": "string"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether MCP clients can list and invoke this entry. The management API\nlists disabled entries; MCP calls do not. Forward-sourced entries are\ndisabled instead of deleted, because the next discovery restores them."
           },
           "forwardId": {
             "type": [
@@ -4124,6 +4336,10 @@
         "properties": {
           "description": {
             "type": "string"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether MCP clients can list and invoke this entry. The management API\nlists disabled entries; MCP calls do not. Forward-sourced entries are\ndisabled instead of deleted, because the next discovery restores them."
           },
           "forwardId": {
             "type": [

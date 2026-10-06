@@ -128,7 +128,11 @@ impl EvaluatorFilter {
             .map(|id| interactions.get_by_conversation_id(id))
             .unwrap_or_default();
         let tools = if crate::evaluation::requires_tools(&evaluator.engine) {
-            registry.list_tools()
+            registry
+                .list_tools()
+                .into_iter()
+                .filter(|t| t.enabled)
+                .collect()
         } else {
             Vec::new()
         };
@@ -519,7 +523,10 @@ fn dispatch_action(
             let mcp_tools: Vec<serde_json::Value> = tool_names
                 .iter()
                 .filter_map(|name| {
-                    registry.and_then(|r| r.get_tool(name)).map(|t| {
+                    let tool = registry
+                        .and_then(|r| r.get_tool(name))
+                        .filter(|t| t.enabled);
+                    tool.map(|t| {
                         serde_json::json!({
                             "name": t.name,
                             "description": t.description,
