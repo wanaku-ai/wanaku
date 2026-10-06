@@ -5,8 +5,8 @@ use http::{HeaderName, HeaderValue};
 use rmcp::{
     ServiceExt as _,
     model::{
-        CallToolRequestParams, GetPromptRequestParams, PaginatedRequestParams,
-        ReadResourceRequestParams,
+        CallToolRequestParams, ClientConfig, GetPromptRequestParams, PaginatedRequestParams,
+        ProtocolVersion, ReadResourceRequestParams,
     },
     transport::{
         StreamableHttpClientTransport, streamable_http_client::StreamableHttpClientTransportConfig,
@@ -64,6 +64,13 @@ pub enum McpClientError {
     },
 }
 
+/// rmcp's default protocol version (`2026-07-28`) drops the `initialize`
+/// handshake. Pin the newest version that keeps it, so upstream servers that
+/// only speak the session-based protocol still negotiate correctly.
+fn client_config() -> ClientConfig {
+    ClientConfig::default().with_protocol_version(ProtocolVersion::LATEST_WITH_INITIALIZE)
+}
+
 fn build_transport(url: &str) -> impl rmcp::transport::Transport<rmcp::RoleClient> + use<> {
     build_transport_with_headers(url, HashMap::new())
 }
@@ -88,7 +95,7 @@ pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -157,7 +164,7 @@ pub async fn call_tool(
     let url = url.to_owned();
     let transport = build_transport_with_headers(&url, forward_headers);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -203,7 +210,7 @@ pub async fn list_resources(url: &str) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -261,7 +268,7 @@ pub async fn read_resource(
     let url = url.to_owned();
     let transport = build_transport_with_headers(&url, forward_headers);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -302,7 +309,7 @@ pub async fn list_resource_templates(url: &str) -> Result<Vec<Value>, McpClientE
     let url = url.to_owned();
     let transport = build_transport(&url);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -363,7 +370,7 @@ pub async fn list_prompts(url: &str) -> Result<Vec<Value>, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport(&url);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -422,7 +429,7 @@ pub async fn get_prompt(
     let url = url.to_owned();
     let transport = build_transport_with_headers(&url, forward_headers);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -472,7 +479,7 @@ pub async fn discover_forward(
     let url = url.to_owned();
     let transport = build_transport_with_headers(&url, forward_headers);
 
-    let client = tokio::time::timeout(TIMEOUT, Box::pin(().serve(transport)))
+    let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| McpClientError::Connection {
@@ -738,4 +745,60 @@ async fn discover_prompts_on_session(
         .into_iter()
         .filter_map(|p| serde_json::to_value(p).ok())
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::{Value, json};
+    use wiremock::matchers::{body_partial_json, method};
+    use wiremock::{Mock, MockServer, Request, ResponseTemplate};
+
+    use super::list_tools;
+
+    fn reply(result: Value) -> impl Fn(&Request) -> ResponseTemplate {
+        move |request: &Request| {
+            let id = serde_json::from_slice::<Value>(&request.body)
+                .map(|body| body["id"].clone())
+                .unwrap_or(Value::Null);
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "jsonrpc": "2.0", "id": id, "result": result }))
+        }
+    }
+
+    #[tokio::test]
+    async fn initializes_with_a_handshake_protocol_version() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(body_partial_json(json!({
+                "method": "initialize",
+                "params": { "protocolVersion": "2025-11-25" }
+            })))
+            .respond_with(reply(json!({
+                "protocolVersion": "2025-11-25",
+                "capabilities": { "tools": {} },
+                "serverInfo": { "name": "upstream", "version": "1.0.0" }
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+        Mock::given(method("POST"))
+            .and(body_partial_json(
+                json!({ "method": "notifications/initialized" }),
+            ))
+            .respond_with(ResponseTemplate::new(202))
+            .mount(&server)
+            .await;
+        Mock::given(method("POST"))
+            .and(body_partial_json(json!({ "method": "tools/list" })))
+            .respond_with(reply(json!({
+                "tools": [{ "name": "echo", "inputSchema": { "type": "object" } }]
+            })))
+            .mount(&server)
+            .await;
+
+        let tools = list_tools(&server.uri()).await.expect("list tools");
+
+        assert_eq!(tools.len(), 1);
+        assert_eq!(tools[0]["name"], "echo");
+    }
 }
