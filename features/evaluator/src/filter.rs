@@ -53,6 +53,7 @@ impl EvaluatorFilter {
             namespace: &namespace,
             posture: &posture,
             evaluator: None,
+            engine: None,
             revision: None,
             start: std::time::Instant::now(),
         };
@@ -87,6 +88,7 @@ impl EvaluatorFilter {
             return finish(ctx, body, &audit, Outcome::NoMatch);
         };
         audit.evaluator = Some(&evaluator.name);
+        audit.engine = Some(&evaluator.engine);
         if let Some(metrics) = ctx.extensions.get::<MetricsStore>() {
             metrics.record_trigger_match(true);
         }
@@ -118,7 +120,8 @@ impl EvaluatorFilter {
         let tool_name = ctx
             .get_metadata(wanaku_filters::MCP_NAME_KEY)
             .map(str::to_owned);
-        let arguments = parse_arguments(body);
+        let raw_arguments = parse_raw_arguments(body);
+        let arguments = string_arguments(&raw_arguments);
         let conversation_id = arguments
             .get(wanaku_types::correlation::REQUEST_ID_ARG)
             .cloned()
@@ -145,6 +148,8 @@ impl EvaluatorFilter {
             &crate::evaluation::EvaluationContext {
                 state: &state,
                 mcp: &mcp,
+                namespace: &namespace,
+                arguments: &raw_arguments,
                 compiled_schema: schema.as_deref(),
                 metrics: metrics.as_ref(),
             },
@@ -232,6 +237,7 @@ struct RequestAudit<'a> {
     namespace: &'a str,
     posture: &'a GovernancePosture,
     evaluator: Option<&'a str>,
+    engine: Option<&'a EvaluationEngine>,
     revision: Option<u64>,
     start: std::time::Instant,
 }
@@ -453,6 +459,17 @@ fn add_outcome_attributes(event: &mut AuditEvent, audit: &RequestAudit<'_>, outc
     }) {
         event.attributes.extend(attributes);
     }
+    if let Some(engine) = audit.engine {
+        event
+            .attributes
+            .insert("engine".to_owned(), serde_json::json!(engine.kind()));
+        if let EvaluationEngine::Opa(opa) = engine {
+            event.attributes.insert(
+                "decision_path".to_owned(),
+                serde_json::json!(opa.decision_path),
+            );
+        }
+    }
     if audit.posture.mode == EnforcementMode::Disabled {
         event.attributes.insert(
             "disabled_reason".to_owned(),
@@ -552,17 +569,22 @@ fn dispatch_action(
     }
 }
 
-fn parse_arguments(body: &Option<Bytes>) -> HashMap<String, String> {
-    let Some(body_bytes) = body else {
-        return HashMap::new();
-    };
-    let Ok(parsed) = serde_json::from_slice::<serde_json::Value>(body_bytes) else {
-        return HashMap::new();
-    };
-    parsed
-        .get("params")
-        .and_then(|p| p.get("arguments"))
-        .and_then(|a| a.as_object())
+/// The `params.arguments` object with its JSON types, or an empty object.
+fn parse_raw_arguments(body: &Option<Bytes>) -> serde_json::Value {
+    body.as_ref()
+        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(bytes).ok())
+        .and_then(|mut parsed| {
+            parsed
+                .pointer_mut("/params/arguments")
+                .map(serde_json::Value::take)
+        })
+        .filter(serde_json::Value::is_object)
+        .unwrap_or_else(|| serde_json::json!({}))
+}
+
+fn string_arguments(arguments: &serde_json::Value) -> HashMap<String, String> {
+    arguments
+        .as_object()
         .map(|args| {
             args.iter()
                 .map(|(k, v)| {
@@ -651,6 +673,7 @@ mod tests {
             namespace: "default",
             posture,
             evaluator: Some("test"),
+            engine: None,
             revision: Some(42),
             start: std::time::Instant::now(),
         }
@@ -1061,6 +1084,7 @@ mod tests {
         for engine in [
             serde_json::json!({"type":"llm","connection":"remote","operation":"classify","prompt":"test"}),
             serde_json::json!({"type":"typesafe-system-one","connection":"remote","noul":{"id":"test","instructions":"test"}}),
+            serde_json::json!({"type":"opa","connection":"remote","decision_path":"wanaku/allow"}),
         ] {
             let state = EvaluatorState::new();
             state
@@ -1078,6 +1102,9 @@ mod tests {
                     model: "test".into(),
                     api_key: "secret".into(),
                 }])
+                .unwrap();
+            state
+                .load_opa_connections(&[opa_connection(&server.uri())])
                 .unwrap();
             state.load_evaluators(vec![serde_json::from_value(serde_json::json!({"name":"remote","trigger":{"method":"tools/call"},"engine":engine,"processor":{"path":"missing.wasm"}})).unwrap()]);
             let mut ctx = make_filter_context(&request);
@@ -1108,5 +1135,218 @@ mod tests {
             );
         }
         assert!(server.received_requests().await.unwrap().is_empty());
+    }
+
+    fn opa_connection(url: &str) -> crate::config::OpaConnection {
+        crate::config::OpaConnection {
+            name: "remote".into(),
+            url: url.to_owned(),
+            token: Some("opa-secret".into()),
+            timeout_ms: 1000,
+            ca_cert: None,
+        }
+    }
+
+    const OPA_REQUEST: &[u8] = br#"{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"transfer","arguments":{"amount":250.5,"count":3,"approved":true,"tags":["x"],"memo":null}}}"#;
+
+    /// Run one `tools/call` through an OPA evaluator and the sample
+    /// `opa_allow_action.wasm` processor.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "OPA mock, evaluator state, and filter context set up one end-to-end request"
+    )]
+    async fn opa_result(
+        response: wiremock::ResponseTemplate,
+        posture: GovernancePosture,
+    ) -> (FilterAction, AuditEvent) {
+        use wiremock::matchers::{body_json, header, method, path};
+        let wasm = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../actions/dist/opa_allow_action.wasm");
+        assert!(wasm.exists(), "build WASM actions before evaluator tests");
+        let server = wiremock::MockServer::start().await;
+        // The input carries typed arguments and only the documented fields.
+        wiremock::Mock::given(method("POST"))
+            .and(path("/v1/data/wanaku/tool_call/allow"))
+            .and(header("authorization", "Bearer opa-secret"))
+            .and(body_json(serde_json::json!({"input": {
+                "version": "wanaku.opa.input/v1",
+                "method": "tools/call",
+                "namespace": "finance",
+                "tool_name": "transfer",
+                "arguments": {"amount": 250.5, "count": 3, "approved": true, "tags": ["x"], "memo": null},
+            }})))
+            .respond_with(response)
+            .expect(1)
+            .mount(&server)
+            .await;
+        let state = EvaluatorState::new();
+        state
+            .load_opa_connections(&[opa_connection(&server.uri())])
+            .unwrap();
+        state.load_evaluators(vec![serde_json::from_value(serde_json::json!({
+            "name": "tool-policy-gate",
+            "trigger": {"method": "tools/call", "namespace": "finance"},
+            "engine": {"type": "opa", "connection": "remote", "decision_path": "wanaku/tool_call/allow"},
+            "processor": {"path": wasm},
+        }))
+        .unwrap()]);
+        let request = request();
+        let mut ctx = make_filter_context(&request);
+        ctx.set_metadata(wanaku_filters::MCP_METHOD_KEY, wanaku_types::TOOLS_CALL);
+        ctx.set_metadata(wanaku_filters::MCP_NAME_KEY, "transfer");
+        ctx.set_metadata(wanaku_types::NAMESPACE_METADATA_KEY, "finance");
+        ctx.extensions.insert(GovernanceConfig {
+            default: posture,
+            ..GovernanceConfig::default()
+        });
+        ctx.extensions.insert(state);
+        ctx.extensions.insert(InMemoryRegistry::new());
+        ctx.extensions.insert(InMemoryInteractionStore::new(10));
+        let store = InMemoryAuditStore::new(10);
+        ctx.extensions.insert(store.clone());
+        let mut body = Some(Bytes::from_static(OPA_REQUEST));
+        let result = EvaluatorFilter {
+            max_body_bytes: 1024,
+        }
+        .handle_body(&mut ctx, &mut body)
+        .await
+        .unwrap();
+        server.verify().await;
+        let event = store
+            .query(&wanaku_types::audit::AuditQuery::default())
+            .events
+            .remove(0);
+        (result, event)
+    }
+
+    fn opa_response(result: &serde_json::Value) -> wiremock::ResponseTemplate {
+        wiremock::ResponseTemplate::new(200).set_body_json(serde_json::json!({ "result": result }))
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "decision matrix verifies traffic and audit outcomes together"
+    )]
+    async fn opa_decisions_reach_processor_without_llm_connection() {
+        for (response, allowed) in [
+            (opa_response(&serde_json::json!(true)), true),
+            (opa_response(&serde_json::json!(false)), false),
+            (
+                opa_response(&serde_json::json!({"allow": true, "reason": "ok"})),
+                true,
+            ),
+            (
+                opa_response(&serde_json::json!({"allow": false, "reason": "amount_over_limit"})),
+                false,
+            ),
+        ] {
+            let (result, event) =
+                Box::pin(opa_result(response, GovernancePosture::default())).await;
+            assert_eq!(matches!(result, FilterAction::Continue), allowed);
+            // An explicit policy denial is an evaluated decision, not a failure.
+            assert_eq!(event.reason_code, "evaluator_evaluated");
+            assert_eq!(event.attributes["failure"], false);
+            assert_eq!(event.attributes["engine"], "opa");
+            assert_eq!(event.attributes["decision_path"], "wanaku/tool_call/allow");
+            assert_eq!(
+                event.decision,
+                if allowed {
+                    AuditDecision::Allow
+                } else {
+                    AuditDecision::Block
+                }
+            );
+            assert!(
+                !serde_json::to_string(&event)
+                    .unwrap()
+                    .contains("opa-secret")
+            );
+        }
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "failure category and failure policy matrix stays together"
+    )]
+    async fn opa_failures_follow_failure_policy() {
+        for (response, reason) in [
+            (
+                wiremock::ResponseTemplate::new(200).set_body_json(serde_json::json!({})),
+                "evaluator_decision_undefined",
+            ),
+            (
+                opa_response(&serde_json::Value::Null),
+                "evaluator_decision_invalid",
+            ),
+            (
+                opa_response(&serde_json::json!({"allowed": true})),
+                "evaluator_decision_invalid",
+            ),
+            (
+                wiremock::ResponseTemplate::new(401),
+                "evaluator_remote_auth_failed",
+            ),
+            (
+                wiremock::ResponseTemplate::new(500),
+                "evaluator_policy_error",
+            ),
+            (
+                opa_response(&serde_json::json!(true)).set_delay(std::time::Duration::from_secs(3)),
+                "evaluator_remote_timeout",
+            ),
+        ] {
+            for failure in [FailureBehavior::Deny, FailureBehavior::Allow] {
+                let posture = GovernancePosture {
+                    on_failure: failure,
+                    ..GovernancePosture::default()
+                };
+                let (result, event) = Box::pin(opa_result(response.clone(), posture)).await;
+                assert_eq!(
+                    matches!(result, FilterAction::Continue),
+                    failure == FailureBehavior::Allow,
+                    "{reason}"
+                );
+                assert_eq!(event.reason_code, reason);
+                assert_eq!(event.attributes["failure"], true);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn opa_unavailable_is_a_failure() {
+        let state = EvaluatorState::new();
+        state
+            .load_opa_connections(&[opa_connection("http://127.0.0.1:9")])
+            .unwrap();
+        let client = state.get_opa_client("remote").unwrap();
+        let definition = crate::config::OpaDef {
+            connection: "remote".into(),
+            decision_path: "wanaku/allow".into(),
+        };
+        let result =
+            crate::engines::opa::execute(&definition, &client, &serde_json::json!({})).await;
+        assert_eq!(
+            result,
+            Err(crate::evaluation::EvaluationError::RemoteUnavailable)
+        );
+    }
+
+    #[tokio::test]
+    async fn full_audit_queries_opa_without_enforcing_denial() {
+        let posture = GovernancePosture {
+            mode: EnforcementMode::Audit,
+            audit_level: AuditLevel::Full,
+            ..GovernancePosture::default()
+        };
+        let (result, event) = Box::pin(opa_result(
+            opa_response(&serde_json::json!({"allow": false, "reason": "amount_over_limit"})),
+            posture,
+        ))
+        .await;
+        assert!(matches!(result, FilterAction::Continue));
+        assert_eq!(event.attributes["would_be_action"], "block");
+        assert_eq!(event.attributes["effective_action"], "pass");
     }
 }

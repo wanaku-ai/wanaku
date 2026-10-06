@@ -450,6 +450,8 @@ Wanaku loads these top-level sections from `wanaku.yaml`:
 - `forwards` — core forward bootstrap configuration
 - `bindings` — credential bindings that forwards reference for brokered authentication. See [Credential Brokerage](./credential-brokerage.md#configuring-credentials-in-wanakuyaml)
 - `llm_connections` — named LLM connections (model/url/api_key) for evaluators; config-only, never exposed via the management API
+- `typesafe_system_one_connections` — named TypeSafe System One connections for evaluators; config-only, never exposed via the management API
+- `opa_connections` — named Open Policy Agent connections (url/token/timeout_ms/ca_cert) for evaluators; config-only, never exposed via the management API. See [Open Policy Agent](./evaluator-engine.md#open-policy-agent)
 - `evaluators` — evaluator feature configuration
 - `action_policy` — declarative action-policy rules
 - `governance` — global governance posture and namespace overrides

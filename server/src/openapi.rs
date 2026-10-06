@@ -18,7 +18,7 @@ use wanaku_feature_evaluator::api::{
     UnbindNamespaceResponse, UpdateEvaluatorsRequest,
 };
 use wanaku_feature_evaluator::config::{
-    EvaluatorDef, LlmDef, LlmOperation, NoulCriteria, NoulDef, ProcessorRef, SystemOneDef,
+    EvaluatorDef, LlmDef, LlmOperation, NoulCriteria, NoulDef, OpaDef, ProcessorRef, SystemOneDef,
     SystemOneState, TriggerDef,
 };
 use wanaku_feature_plugins::api::{
@@ -685,6 +685,7 @@ impl utoipa::Modify for OptionalActivationBodies {
         SystemOneState,
         NoulDef,
         NoulCriteria,
+        OpaDef,
         ProcessorRef,
         UpdateEvaluatorsRequest,
         ActivateEvaluatorRevisionRequest,
@@ -801,6 +802,7 @@ mod tests {
             "InstallPluginRequest",
             "ConfigurePluginRequest",
             "EvaluatorDef",
+            "OpaDef",
             "EvaluatorStatus",
             "EvaluatorReadiness",
             "GovernanceMetric",

@@ -62,6 +62,15 @@ typesafe_system_one_connections:
     url: "https://api.typesafe.ai"
     api_key: ""
 
+# OPA connections are config-only. Wanaku queries POST <url>/v1/data/<decision_path>.
+# See examples/opa for a runnable policy.
+opa_connections:
+  - name: "local-policy"
+    url: "http://127.0.0.1:8282"   # OPA defaults to :8181, which test-mcp uses above
+    # token: ""                 # Optional bearer token for OPA --authentication=token
+    # timeout_ms: 2000          # Default 2000, maximum 30000
+    # ca_cert: "/etc/wanaku/opa-ca.pem"  # Optional PEM CA certificate for https URLs
+
 evaluators:
   - name: "safety-gate"
     trigger:

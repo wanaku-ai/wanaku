@@ -97,7 +97,7 @@ Wanaku resolves the posture before it calls an evaluation engine or creates WASM
 | Mode | Engine execution | Traffic and registry effects |
 | --- | --- | --- |
 | `enforce` | Run the matching evaluator | Apply its action. Apply `on_failure` if evaluation fails. |
-| `audit`, `basic` | Skip LLM and TypeSafe System One calls. Local passthrough processors can run. | Continue without traffic changes or registry writes. |
+| `audit`, `basic` | Skip LLM, TypeSafe System One, and OPA calls. Local passthrough processors can run. | Continue without traffic changes or registry writes. |
 | `audit`, `full` | Run the matching evaluator, including external calls | Continue without traffic changes or registry writes. |
 | `disabled` | Skip evaluation | Continue. Record the disabled state and reason. |
 

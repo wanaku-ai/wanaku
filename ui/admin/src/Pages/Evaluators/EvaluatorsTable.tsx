@@ -51,6 +51,7 @@ export const EvaluatorsTable: React.FC<EvaluatorsTableProps> = ({
     return evaluators.map((ev) => {
       const llmConfiguration = getLlmConfiguration(ev);
       const systemOneConfiguration = getSystemOneConfiguration(ev);
+      const opaConfiguration = ev.engine?.type === 'opa' ? ev.engine : undefined;
       return {
         id: ev.name,
         name: ev.name,
@@ -61,13 +62,20 @@ export const EvaluatorsTable: React.FC<EvaluatorsTableProps> = ({
             ? 'LLM'
             : ev.engine?.type === 'typesafe-system-one'
               ? 'TypeSafe System One'
-              : ev.engine?.type === 'passthrough'
-                ? 'Passthrough'
-                : '—',
+              : ev.engine?.type === 'opa'
+                ? 'Open Policy Agent'
+                : ev.engine?.type === 'passthrough'
+                  ? 'Passthrough'
+                  : '—',
         operation:
           llmConfiguration?.operation ||
-          (systemOneConfiguration ? `Noul: ${systemOneConfiguration.noul.id}` : '—'),
-        connection: llmConfiguration?.connection || systemOneConfiguration?.connection || '—',
+          (systemOneConfiguration ? `Noul: ${systemOneConfiguration.noul.id}` : '') ||
+          (opaConfiguration ? `Decision: ${opaConfiguration.decision_path}` : '—'),
+        connection:
+          llmConfiguration?.connection ||
+          systemOneConfiguration?.connection ||
+          opaConfiguration?.connection ||
+          '—',
       };
     });
   }

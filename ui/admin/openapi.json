@@ -2899,6 +2899,29 @@
             "description": "TypeSafe System One typed evaluation."
           },
           {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OpaDef",
+                "description": "Open Policy Agent decision through the REST Data API."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "opa"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "Open Policy Agent decision through the REST Data API."
+          },
+          {
             "type": "object",
             "description": "Pass the normalized MCP context directly to the processor.",
             "required": [
@@ -3616,6 +3639,25 @@
             "type": "string"
           },
           "instructions": {}
+        },
+        "additionalProperties": false
+      },
+      "OpaDef": {
+        "type": "object",
+        "description": "OPA engine configuration.",
+        "required": [
+          "connection",
+          "decision_path"
+        ],
+        "properties": {
+          "connection": {
+            "type": "string",
+            "description": "Name of an entry in `opa_connections`."
+          },
+          "decision_path": {
+            "type": "string",
+            "description": "Slash-separated OPA data path, for example `wanaku/tool_call/allow`."
+          }
         },
         "additionalProperties": false
       },

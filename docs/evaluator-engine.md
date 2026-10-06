@@ -1,6 +1,6 @@
 # Evaluator Engine — Developer Guide
 
-The evaluator engine lets you build **trigger→evaluate→act** pipelines. When a request matches a trigger, an LLM or TypeSafe System One engine evaluates the request. Wanaku then executes a WebAssembly action script that has access to the registry, conversation history, and response control.
+The evaluator engine lets you build **trigger→evaluate→act** pipelines. When a request matches a trigger, an LLM, TypeSafe System One, or Open Policy Agent (OPA) engine evaluates the request. Wanaku then executes a WebAssembly action script that has access to the registry, conversation history, and response control.
 
 You write the logic in JavaScript or Rust. The engine compiles it to WASM and runs it in a sandboxed environment with a clean, versioned API defined by the [WIT interface](../features/evaluator/wit/evaluator.wit).
 
@@ -98,6 +98,7 @@ for guest ABI compatibility.
 | `llm` | Calls the named LLM connection. It supports the fields in [LLM Fields](#llm-fields). |
 | `passthrough` | Does not make a network call. It provides JSON with `method`, `tool_name`, `arguments`, `tools`, and `history`. |
 | `typesafe-system-one` | Calls a TypeSafe System One Noul primitive and provides a normalized typed result. |
+| `opa` | Queries an Open Policy Agent decision through the REST Data API and provides a normalized decision. See [Open Policy Agent](#open-policy-agent). |
 
 Use this configuration for a processor that needs the normalized request context:
 
@@ -168,6 +169,134 @@ normalized result is independent of the TypeSafe HTTP response format.
 
 The sample `safety_review_action.wasm` blocks a Noul result below `0.5`. It
 allows a result at or above `0.5`.
+
+### Open Policy Agent
+
+The `opa` engine evaluates requests with Rego policies and policy data. It does not use an LLM. Operators deploy and manage OPA, the policies, and the policy data. Wanaku sends one query per matching request and enforces the result through the processor. This page covers the REST Data API scope. Embedded Rego that is compiled to WebAssembly is a separate engine.
+
+Wanaku is tested with OPA 1.21 and Rego v1. The engine uses only the `POST /v1/data/<path>` Data API. That API is stable in all OPA 1.x releases.
+
+#### OPA Connections
+
+OPA connections are config-only. Set them in `wanaku.yaml`. The management API does not expose the URL, the token, or the certificate path.
+
+```yaml
+opa_connections:
+  - name: "local-policy"
+    url: "http://127.0.0.1:8181"
+    token: ""                          # Optional
+    timeout_ms: 2000                   # Optional
+    ca_cert: "/etc/wanaku/opa-ca.pem"  # Optional
+```
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `name` | string | Unique identifier. An evaluator refers to it in `engine.connection`. |
+| `url` | string | OPA base URL. It must start with `http://` or `https://`. |
+| `token` | string | Optional bearer token. Use it when OPA runs with `--authentication=token`. |
+| `timeout_ms` | integer | Optional request timeout. The default is `2000`. The range is `1` to `30000`. |
+| `ca_cert` | path | Optional PEM file. Wanaku trusts this CA certificate for `https` URLs in addition to the public roots. |
+
+Wanaku rejects all OPA connections at startup if one entry is not valid. Then startup fails with `connection_configuration_invalid`. Use a local sidecar with `http://127.0.0.1` URLs. Use `https`, a token, and OPA authorization policies for a remote OPA server.
+
+#### Evaluator Configuration
+
+```yaml
+evaluators:
+  - name: "tool-policy-gate"
+    trigger:
+      method: "tools/call"
+      namespace: "finance"
+    engine:
+      type: opa
+      connection: "local-policy"
+      decision_path: "wanaku/tool_call/decision"
+    processor:
+      path: "actions/dist/opa_allow_action.wasm"
+```
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `connection` | string | Name of an entry in `opa_connections`. |
+| `decision_path` | string | OPA data path of the decision. Use segments of ASCII letters, digits, and underscores. Separate the segments with `/`. Do not use a leading or trailing `/`. |
+
+Wanaku validates the connection name and the decision path when it activates a configuration. A configuration with an unknown connection or a path that is not valid does not become active.
+
+#### Input Document
+
+Wanaku sends `POST <url>/v1/data/<decision_path>` with this body:
+
+```json
+{
+  "input": {
+    "version": "wanaku.opa.input/v1",
+    "method": "tools/call",
+    "namespace": "finance",
+    "tool_name": "transfer",
+    "arguments": { "amount": 250.5, "approved": true, "tags": ["q3"] }
+  }
+}
+```
+
+| Field | Rule |
+|-------|------|
+| `version` | Always `wanaku.opa.input/v1`. Check this value in the policy. |
+| `method` | The MCP method. It is always present. |
+| `namespace` | The resolved Wanaku namespace. It is `default` when the request has no namespace. |
+| `tool_name` | The MCP `params.name` value. It is `null` when the request has no name. |
+| `arguments` | The MCP `params.arguments` object with its original JSON types. It is `{}` when the request has no arguments or the arguments are not an object. |
+
+The input contains only these fields. Wanaku does not send HTTP headers, conversation history, the tool catalog, connection tokens, or credentials from credential bindings.
+
+#### Decision Contract
+
+The policy must return one of these results:
+
+- A boolean. `true` allows the request. `false` denies the request.
+- An object with a boolean `allow` member. An optional `reason` member must be a string or `null`. Other members are permitted.
+
+Wanaku passes this normalized result to the processor in `ctx.llmResult`:
+
+```json
+{
+  "engine": "opa",
+  "version": "wanaku.opa.result/v1",
+  "decision_path": "wanaku/tool_call/decision",
+  "allow": false,
+  "reason": "amount_over_limit",
+  "result": { "allow": false, "reason": "amount_over_limit" }
+}
+```
+
+The `result` member contains the complete OPA result. The processor makes the final action. The sample `opa_allow_action.wasm` passes only when `allow` is `true`. Otherwise it blocks the request with the message `denied by policy: <reason>`.
+
+#### Failures
+
+An explicit denial from the policy is a decision. It is not a failure. Wanaku records it with the reason code `evaluator_evaluated`.
+
+These conditions are failures. They follow `on_failure`, and the processor does not run:
+
+| Condition | Audit reason code |
+|-----------|-------------------|
+| OPA is not reachable | `evaluator_remote_unavailable` |
+| OPA does not answer in `timeout_ms` | `evaluator_remote_timeout` |
+| OPA returns HTTP 401 or 403 | `evaluator_remote_auth_failed` |
+| OPA returns another error status, for example a policy evaluation error | `evaluator_policy_error` |
+| The response has no `result` member, because the decision is undefined | `evaluator_decision_undefined` |
+| The result is `null`, has an incorrect shape, is not JSON, or is larger than 1 MiB | `evaluator_decision_invalid` |
+| The connection is not available at request time | `evaluator_connection_unavailable` |
+
+The default `on_failure` value is `deny`.
+
+#### Operations
+
+- OPA is an external engine. `audit` mode with `audit_level: basic` does not send queries to OPA. `audit_level: full` sends queries and does not apply the action. `disabled` mode does not send queries. See [Governance Posture](governance-posture.md).
+- Wanaku queries OPA for each matching request. Policy and data changes in OPA, for example from OPA bundles, apply to the next request. You do not restart Wanaku and you do not create a new evaluator revision.
+- Each decision audit event contains the `engine` attribute. For OPA, it also contains `decision_path`. The event also contains the outcome, the reason code, `duration_ms`, and the request correlation ID.
+- The metrics store records the engine latency and the result for each evaluator.
+- Set `RUST_LOG=wanaku_feature_evaluator=debug` to log the decision path, outcome, and latency of each OPA query.
+
+For a runnable policy, Rego tests, and configuration, see [`examples/opa`](../examples/opa/README.md).
 
 ### Processor
 
@@ -1004,7 +1133,7 @@ Evaluator execution uses the shared [governance posture](governance-posture.md).
 
 Users of earlier 0.3.0 pre-release builds must update both startup configuration and persisted evaluator revisions. See [Update an earlier pre-release configuration](configuration.md#update-an-earlier-pre-release-configuration).
 
-- LLM and TypeSafe failures follow `on_failure`.
+- LLM, TypeSafe, and OPA failures follow `on_failure`.
 - Empty engine output is a failure.
 - Invalid LLM output gets one schema-correction attempt. If correction fails, the processor does not run.
 - Missing or failed processors, registry state, and internal state follow the failure policy.
@@ -1160,6 +1289,7 @@ This re-compiles all WASM files referenced in the config.
 - **WASM actions are deterministic** — the same input always produces the same output. Use this property to test your logic thoroughly.
 - **Namespace bindings are ephemeral** — they live in memory, not persisted. If the server restarts, you lose bindings.
 - **Evaluator revisions persist when persistence is enabled** — revision history and the active revision survive a restart. The server writes `evaluator-revisions.json` after every change and restores the active revision at startup. See [Evaluator Revision Persistence](configuration.md#evaluator-revision-persistence). When persistence is disabled, revisions live only in memory and the server rebuilds the active revision from `wanaku.yaml` on each restart.
+- **OPA connection credentials never transit the management API.** The `url`, `token`, and `ca_cert` fields live only in `opa_connections` in `wanaku.yaml`. The OPA input document does not contain headers or credentials.
 - **LLM credentials never transit the management API.** `model`, `url`, and `api_key` live only in `llm_connections` in `wanaku.yaml`, loaded once at startup. Evaluators refer to a connection by name. No route can set, update, or read an `api_key`, not on evaluator create or update, and not in evaluator revision history. To rotate a credential, edit `wanaku.yaml` and restart the server.
 
 ## Next Steps

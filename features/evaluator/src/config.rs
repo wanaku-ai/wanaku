@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 pub use crate::engines::llm::{LlmConnection, LlmDef, LlmOperation};
+pub use crate::engines::opa::{OpaConnection, OpaDef};
 pub use crate::engines::system_one::{
     NoulCriteria, NoulDef, SystemOneConnection, SystemOneDef, SystemOneState,
 };
@@ -38,6 +39,8 @@ pub enum EvaluationEngine {
     /// TypeSafe System One typed evaluation.
     #[serde(rename = "typesafe-system-one")]
     TypesafeSystemOne(SystemOneDef),
+    /// Open Policy Agent decision through the REST Data API.
+    Opa(OpaDef),
     /// Pass the normalized MCP context directly to the processor.
     Passthrough,
 }
@@ -49,6 +52,7 @@ impl EvaluationEngine {
         match self {
             Self::Llm(_) => "llm",
             Self::TypesafeSystemOne(_) => "typesafe-system-one",
+            Self::Opa(_) => "opa",
             Self::Passthrough => "passthrough",
         }
     }
@@ -177,6 +181,25 @@ mod tests {
             assert_eq!(definition.noul.id, "is_safe");
             assert!(matches!(definition.state, SystemOneState::Arguments));
         }
+    }
+
+    #[test]
+    fn opa_engine_deserializes_and_rejects_unknown_fields() {
+        let engine: EvaluationEngine = serde_json::from_value(serde_json::json!({
+            "type": "opa",
+            "connection": "local-policy",
+            "decision_path": "wanaku/tool_call/allow"
+        }))
+        .expect("valid OPA engine");
+        assert_eq!(engine.kind(), "opa");
+        assert!(matches!(
+            engine,
+            EvaluationEngine::Opa(OpaDef { ref decision_path, .. }) if decision_path == "wanaku/tool_call/allow"
+        ));
+        let result: Result<EvaluationEngine, _> = serde_json::from_value(serde_json::json!({
+            "type": "opa", "connection": "c", "decision_path": "p", "token": "secret"
+        }));
+        assert!(result.is_err(), "connection credentials must not be inline");
     }
 
     #[test]

@@ -5,17 +5,23 @@ import type {
   EvaluationEngine,
   LlmDef,
   LlmOperation,
+  OpaDef,
   SystemOneDef,
   SystemOneState,
 } from '../../models';
 
-type EngineType = 'llm' | 'passthrough' | 'typesafe-system-one';
+type EngineType = 'llm' | 'passthrough' | 'typesafe-system-one' | 'opa';
 
 const getLlmConfiguration = (evaluator?: EvaluatorDef): LlmDef | undefined =>
   evaluator?.engine?.type === 'llm' ? evaluator.engine : undefined;
 
 const getSystemOneConfiguration = (evaluator?: EvaluatorDef): SystemOneDef | undefined =>
   evaluator?.engine?.type === 'typesafe-system-one' ? evaluator.engine : undefined;
+
+const getOpaConfiguration = (evaluator?: EvaluatorDef): OpaDef | undefined =>
+  evaluator?.engine?.type === 'opa' ? evaluator.engine : undefined;
+
+const DECISION_PATH_PATTERN = /^[A-Za-z0-9_]+(\/[A-Za-z0-9_]+)*$/;
 
 interface EvaluatorModalProps {
   evaluator?: EvaluatorDef;
@@ -119,6 +125,7 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
 }) => {
   const llmConfiguration = getLlmConfiguration(evaluator);
   const systemOneConfiguration = getSystemOneConfiguration(evaluator);
+  const opaConfiguration = getOpaConfiguration(evaluator);
   const [name, setName] = useState(evaluator?.name || '');
   const [triggerMethod, setTriggerMethod] = useState(evaluator?.trigger.method || 'tools/call');
   const [triggerNamespace, setTriggerNamespace] = useState(evaluator?.trigger.namespace || '');
@@ -127,7 +134,9 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
       ? 'passthrough'
       : evaluator?.engine?.type === 'typesafe-system-one'
         ? 'typesafe-system-one'
-        : 'llm',
+        : evaluator?.engine?.type === 'opa'
+          ? 'opa'
+          : 'llm',
   );
   const [llmOperation, setLlmOperation] = useState<LlmOperation>(
     llmConfiguration?.operation || 'classify',
@@ -154,6 +163,8 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
       ? systemOneConfiguration.noul.criteria.false
       : '',
   );
+  const [opaConnection, setOpaConnection] = useState(opaConfiguration?.connection || '');
+  const [opaDecisionPath, setOpaDecisionPath] = useState(opaConfiguration?.decision_path || '');
   const [processorPath, setProcessorPath] = useState(evaluator?.processor.path || '');
 
   const trimmedName = name.trim();
@@ -161,6 +172,7 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
   const hasNoulCriteria = Boolean(noulTrueCriteria.trim() && noulFalseCriteria.trim());
   const hasIncompleteNoulCriteria =
     Boolean(noulTrueCriteria.trim()) !== Boolean(noulFalseCriteria.trim());
+  const isDecisionPathValid = DECISION_PATH_PATTERN.test(opaDecisionPath.trim());
 
   const handleSubmit = () => {
     const engine: EvaluationEngine =
@@ -185,7 +197,13 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
                   : undefined,
               },
             }
-          : { type: 'passthrough' };
+          : engineType === 'opa'
+            ? {
+                type: 'opa',
+                connection: opaConnection.trim(),
+                decision_path: opaDecisionPath.trim(),
+              }
+            : { type: 'passthrough' };
 
     onSubmit({
       name: trimmedName,
@@ -215,7 +233,8 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
         systemOneConnection.trim() &&
         noulId.trim() &&
         noulInstructions.trim() &&
-        !hasIncompleteNoulCriteria)) &&
+        !hasIncompleteNoulCriteria) ||
+      (engineType === 'opa' && opaConnection.trim() && isDecisionPathValid)) &&
     processorPath.trim();
 
   return (
@@ -273,6 +292,7 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
         >
           <SelectItem value="llm" text="LLM" />
           <SelectItem value="typesafe-system-one" text="TypeSafe System One" />
+          <SelectItem value="opa" text="Open Policy Agent" />
           <SelectItem value="passthrough" text="Passthrough" />
         </Select>
 
@@ -340,6 +360,35 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
             onTrueCriteriaChange={setNoulTrueCriteria}
             onFalseCriteriaChange={setNoulFalseCriteria}
           />
+        )}
+
+        {engineType === 'opa' && (
+          <>
+            <TextInput
+              id="opa-connection"
+              labelText="OPA Connection"
+              placeholder="Name from opa_connections"
+              value={opaConnection}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setOpaConnection(e.target.value)
+              }
+              helperText="Connections and credentials are configured in wanaku.yaml"
+              required
+            />
+            <TextInput
+              id="opa-decision-path"
+              labelText="Decision Path"
+              placeholder="wanaku/tool_call/allow"
+              value={opaDecisionPath}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setOpaDecisionPath(e.target.value)
+              }
+              invalid={Boolean(opaDecisionPath.trim()) && !isDecisionPathValid}
+              invalidText="Use path segments of letters, digits, and underscores separated by /"
+              helperText="Wanaku queries POST /v1/data/<decision path>"
+              required
+            />
+          </>
         )}
 
         <TextInput

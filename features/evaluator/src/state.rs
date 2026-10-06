@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex, MutexGuard, RwLock};
 
 use wanaku_infra::metrics::MetricsStore;
 
-use crate::config::{EvaluatorDef, LlmConnection, SystemOneConnection};
+use crate::config::{EvaluatorDef, LlmConnection, OpaConnection, SystemOneConnection};
 use crate::engine::CompiledEvaluator;
 use crate::revision::{
     RecordRevisionParams, Revision, RevisionError, RevisionOrigin, RevisionStore,
@@ -141,6 +141,7 @@ pub struct EvaluatorState {
     bindings: Arc<RwLock<HashMap<String, String>>>,
     connections: Arc<RwLock<HashMap<String, LlmConnection>>>,
     system_one_connections: Arc<RwLock<HashMap<String, SystemOneConnection>>>,
+    opa_clients: Arc<RwLock<HashMap<String, wanaku_infra::opa::OpaClient>>>,
     metrics: Option<MetricsStore>,
     revisions: RevisionStore,
     /// Serializes revision commit and snapshot installation so that revision
@@ -157,6 +158,7 @@ impl EvaluatorState {
             bindings: Arc::new(RwLock::new(HashMap::new())),
             connections: Arc::new(RwLock::new(HashMap::new())),
             system_one_connections: Arc::new(RwLock::new(HashMap::new())),
+            opa_clients: Arc::new(RwLock::new(HashMap::new())),
             metrics: None,
             revisions: RevisionStore::new(),
             activation: Arc::new(Mutex::new(())),
@@ -377,6 +379,38 @@ impl EvaluatorState {
             .and_then(|guard| guard.get(name).cloned())
     }
 
+    /// Load named OPA connections from startup configuration. Every
+    /// connection must be valid, or no connection is loaded.
+    pub fn load_opa_connections(&self, connections: &[OpaConnection]) -> Result<(), String> {
+        let mut clients = HashMap::new();
+        for connection in connections {
+            if connection.name.is_empty() {
+                return Err("OPA connection name must not be empty".to_owned());
+            }
+            if clients.contains_key(&connection.name) {
+                return Err(format!(
+                    "duplicate OPA connection name: '{}'",
+                    connection.name
+                ));
+            }
+            clients.insert(connection.name.clone(), connection.client()?);
+        }
+        let count = clients.len();
+        *self
+            .opa_clients
+            .write()
+            .map_err(|_| "OPA connection registry unavailable".to_owned())? = clients;
+        tracing::info!(count, "OPA connections loaded from config");
+        Ok(())
+    }
+
+    pub fn get_opa_client(&self, name: &str) -> Option<wanaku_infra::opa::OpaClient> {
+        self.opa_clients
+            .read()
+            .ok()
+            .and_then(|guard| guard.get(name).cloned())
+    }
+
     /// Names of configured connections, for display/selection — never the
     /// model, URL, or credential, so this endpoint has nothing worth leaking.
     /// Sorted for a stable, deterministic order — `HashMap` iteration order
@@ -533,6 +567,7 @@ impl EvaluatorState {
         if self.bindings.is_poisoned()
             || self.connections.is_poisoned()
             || self.system_one_connections.is_poisoned()
+            || self.opa_clients.is_poisoned()
             || self.activation.is_poisoned()
         {
             return Err("runtime_unavailable");
@@ -646,6 +681,9 @@ impl EvaluatorState {
                 "TypeSafe System One connection registry lock poisoned".to_owned(),
             )
         })?;
+        let opa_clients = self.opa_clients.read().map_err(|_| {
+            RevisionError::ValidationFailed("OPA connection registry lock poisoned".to_owned())
+        })?;
         for def in defs {
             match &def.engine {
                 crate::config::EvaluationEngine::Llm(llm)
@@ -663,6 +701,22 @@ impl EvaluatorState {
                         "evaluator '{}': unknown TypeSafe System One connection '{}'",
                         def.name, system_one.connection
                     )));
+                }
+                crate::config::EvaluationEngine::Opa(opa) => {
+                    if !opa_clients.contains_key(&opa.connection) {
+                        return Err(RevisionError::ValidationFailed(format!(
+                            "evaluator '{}': unknown OPA connection '{}'",
+                            def.name, opa.connection
+                        )));
+                    }
+                    crate::engines::opa::validate_decision_path(&opa.decision_path).map_err(
+                        |error| {
+                            RevisionError::ValidationFailed(format!(
+                                "evaluator '{}': {error}",
+                                def.name
+                            ))
+                        },
+                    )?;
                 }
                 _ => {}
             }
@@ -1028,6 +1082,65 @@ mod tests {
             .load_llm_connections(vec![connection("test-connection")])
             .unwrap();
         assert!(state.validate_engines(&[test_evaluator("a")]).is_ok());
+    }
+
+    fn opa_connection(name: &str) -> OpaConnection {
+        OpaConnection {
+            name: name.to_owned(),
+            url: "http://127.0.0.1:8181".to_owned(),
+            token: Some("secret".to_owned()),
+            timeout_ms: 1000,
+            ca_cert: None,
+        }
+    }
+
+    fn opa_evaluator(connection: &str, decision_path: &str) -> EvaluatorDef {
+        serde_json::from_value(serde_json::json!({
+            "name": "opa", "trigger": { "method": "tools/call" },
+            "engine": { "type": "opa", "connection": connection, "decision_path": decision_path },
+            "processor": { "path": "/proc.wasm" }
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn load_opa_connections_rejects_duplicate_and_invalid_entries() {
+        let state = EvaluatorState::new();
+        let invalid = OpaConnection {
+            url: "opa:8181".to_owned(),
+            ..opa_connection("other")
+        };
+        for connections in [
+            vec![opa_connection("opa"), opa_connection("opa")],
+            vec![opa_connection("opa"), invalid],
+            vec![opa_connection("")],
+        ] {
+            assert!(state.load_opa_connections(&connections).is_err());
+            assert!(state.get_opa_client("opa").is_none());
+        }
+    }
+
+    #[test]
+    fn validate_opa_engine_requires_known_connection_and_valid_path() {
+        let state = EvaluatorState::new();
+        state
+            .load_opa_connections(&[opa_connection("local-policy")])
+            .unwrap();
+        assert!(
+            state
+                .validate_engines(&[opa_evaluator("local-policy", "wanaku/tool_call/allow")])
+                .is_ok()
+        );
+        assert!(
+            state
+                .validate_engines(&[opa_evaluator("missing", "wanaku/tool_call/allow")])
+                .is_err()
+        );
+        assert!(
+            state
+                .validate_engines(&[opa_evaluator("local-policy", "/v1/data/x")])
+                .is_err()
+        );
     }
 
     #[test]
