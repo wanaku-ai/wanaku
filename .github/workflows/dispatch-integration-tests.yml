@@ -3,6 +3,18 @@ name: Dispatch Integration Tests
 on:
   issue_comment:
     types: [created]
+  # pull_request_target gives access to secrets for fork PRs. The PR code is never checked out
+  # or run here: this workflow only dispatches to wanaku-tests.
+  pull_request_target:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - '**.md'
+      - .claude/**
+      - .github/dependabot.yml
+      - docs/**
+      - LICENSE
 
 permissions:
   contents: read
@@ -10,7 +22,11 @@ permissions:
   issues: write
 
 concurrency:
-  group: integration-tests-pr-${{ github.event.issue.number }}
+  # Comments that do not request the tests get a unique group, so they cannot cancel a pending run.
+  group: >-
+    ${{ (github.event_name == 'pull_request_target' || contains(github.event.comment.body, '/wanaku-integration-tests'))
+      && format('integration-tests-pr-{0}', github.event.issue.number || github.event.pull_request.number)
+      || format('integration-tests-ignored-{0}', github.run_id) }}
   cancel-in-progress: true
 
 jobs:
@@ -19,21 +35,32 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.repository == 'wanaku-ai/wanaku'
-      && github.event.issue.pull_request
-      && contains(github.event.comment.body, '/wanaku-integration-tests')
+      && (
+        (github.event_name == 'issue_comment'
+          && github.event.issue.pull_request
+          && contains(github.event.comment.body, '/wanaku-integration-tests'))
+        || (github.event_name == 'pull_request_target'
+          && !github.event.pull_request.draft)
+      )
+    # Automatic runs (any PR author, including forks) wait for a maintainer to approve the
+    # "integration-tests" environment. Comment-triggered runs are gated by the permission check.
+    environment: ${{ github.event_name == 'pull_request_target' && 'integration-tests' || '' }}
     steps:
       - name: Check commenter permission
+        if: github.event_name == 'issue_comment'
         env:
           GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.event.comment.user.login }}
         run: |
-          PERM=$(gh api "repos/${{ github.repository }}/collaborators/${{ github.event.comment.user.login }}/permission" \
+          PERM=$(gh api "repos/${{ github.repository }}/collaborators/${ACTOR}/permission" \
             --jq '.permission')
           if [[ "$PERM" != "admin" && "$PERM" != "write" ]]; then
-            echo "::error::User ${{ github.event.comment.user.login }} does not have write permission (has: $PERM)"
+            echo "::error::User ${ACTOR} does not have write permission (has: $PERM)"
             exit 1
           fi
 
       - name: Acknowledge comment
+        if: github.event_name == 'issue_comment'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -44,8 +71,9 @@ jobs:
         id: pr
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
         run: |
-          PR_JSON=$(gh pr view "${{ github.event.issue.number }}" \
+          PR_JSON=$(gh pr view "${PR_NUMBER}" \
             --repo "${{ github.repository }}" \
             --json headRefName,headRepository)
           HEAD_REF=$(echo "$PR_JSON" | jq -r '.headRefName')
@@ -71,7 +99,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           HEAD_REPO: ${{ steps.pr.outputs.head_repo }}
           HEAD_REF: ${{ steps.pr.outputs.head_ref }}
-          PR_NUMBER: ${{ github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
           SOURCE_REPO: ${{ github.repository }}
         run: |
           gh workflow run full-integration-test.yml \
