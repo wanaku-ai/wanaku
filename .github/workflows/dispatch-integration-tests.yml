@@ -18,8 +18,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
 
 concurrency:
   # Comments that do not request the tests get a unique group, so they cannot cancel a pending run.
@@ -33,6 +31,10 @@ jobs:
   dispatch:
     name: Dispatch Integration Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: write
     if: >-
       github.repository == 'wanaku-ai/wanaku'
       && (
@@ -72,10 +74,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+          APPROVED_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           PR_JSON=$(gh pr view "${PR_NUMBER}" \
             --repo "${{ github.repository }}" \
-            --json headRefName,headRepository)
+            --json headRefName,headRepository,headRefOid,state)
+          if [[ "$(echo "$PR_JSON" | jq -r '.state')" != "OPEN" ]]; then
+            echo "PR is no longer open, nothing to dispatch"
+            exit 1
+          fi
+          # Automatic runs: the head must still be the commit that was approved. A newer push has its own run.
+          HEAD_SHA=$(echo "$PR_JSON" | jq -r '.headRefOid')
+          if [[ -n "$APPROVED_SHA" && "$HEAD_SHA" != "$APPROVED_SHA" ]]; then
+            echo "::error::PR head changed after this run started (${APPROVED_SHA} -> ${HEAD_SHA}); not dispatching"
+            exit 1
+          fi
           HEAD_REF=$(echo "$PR_JSON" | jq -r '.headRefName')
           HEAD_REPO=$(echo "$PR_JSON" | jq -r '.headRepository.nameWithOwner')
           if [[ -z "$HEAD_REF" || -z "$HEAD_REPO" || "$HEAD_REPO" == "null" ]]; then
