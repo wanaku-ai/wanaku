@@ -368,12 +368,13 @@ listeners:
   - name: mcp
     address: "0.0.0.0:8081"
     tls:
-      cert_path: /etc/wanaku/cert.pem
-      key_path: /etc/wanaku/key.pem
+      certificates:
+        - cert_path: /etc/wanaku/cert.pem
+          key_path: /etc/wanaku/key.pem
     filter_chains: [mcp_router]
 ```
 
-(Note: TLS support depends on Praxis version. Check `praxis-proxy-core` docs.)
+Wanaku installs the Praxis rustls crypto provider at startup. This provider uses the system OpenSSL library (`libcrypto`). The host must supply OpenSSL 3. If the provider does not install, Wanaku stops with a fatal error. For all listener TLS options, refer to the `praxis-proxy-tls` documentation.
 
 ### Filter Configuration
 
