@@ -31,16 +31,19 @@ export const PromptsPage: React.FC = () => {
     updatePrompts();
   }, [updatePrompts]);
 
-  if (isLoading) return <PageSkeleton title="Prompts" />;
+  const handleSetPromptEnabled = useCallback(
+    async (promptName: string, enabled: boolean) => {
+      try {
+        await setPromptEnabled(promptName, enabled);
+        await updatePrompts();
+      } catch {
+        setErrorMessage(`Failed to ${enabled ? 'enable' : 'disable'} prompt: ${promptName}`);
+      }
+    },
+    [setPromptEnabled, updatePrompts, setErrorMessage],
+  );
 
-  const handleSetPromptEnabled = async (promptName: string, enabled: boolean) => {
-    try {
-      await setPromptEnabled(promptName, enabled);
-      await updatePrompts();
-    } catch {
-      setErrorMessage(`Failed to ${enabled ? 'enable' : 'disable'} prompt: ${promptName}`);
-    }
-  };
+  if (isLoading) return <PageSkeleton title="Prompts" />;
 
   return (
     <div>
