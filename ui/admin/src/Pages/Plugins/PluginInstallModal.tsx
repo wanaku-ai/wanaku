@@ -38,7 +38,7 @@ export const PluginInstallModal: React.FC<PluginInstallModalProps> = ({
       onRequestSubmit={handleSubmit}
       onRequestClose={onRequestClose}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div className="stack-vertical">
         <TextInput
           id="plugin-id"
           labelText="Plugin ID"

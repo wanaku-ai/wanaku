@@ -81,7 +81,7 @@ export const PluginConfigModal: React.FC<PluginConfigModalProps> = ({
           hideCloseButton
         />
       )}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div className="stack-vertical">
         <p style={{ marginBottom: '0.5rem' }}>
           Configure target URLs for backend services required by this plugin:
         </p>
