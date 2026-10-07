@@ -21,7 +21,7 @@ export interface Selectors {
    * @nullable
    */
   operation?: string | null;
-  target_name?: null | MatchExpression;
-  target_type?: null | TargetType;
-  uri?: null | MatchExpression;
+  target_name?: MatchExpression | null;
+  target_type?: TargetType | null;
+  uri?: MatchExpression | null;
 }

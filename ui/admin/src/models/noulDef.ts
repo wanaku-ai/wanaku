@@ -11,7 +11,7 @@ import type { NoulCriteria } from "./noulCriteria";
  * A TypeSafe Noul primitive.
  */
 export interface NoulDef {
-  criteria?: null | NoulCriteria;
+  criteria?: NoulCriteria | null;
   id: string;
   instructions: unknown;
 }
