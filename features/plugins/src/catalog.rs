@@ -169,8 +169,11 @@ mod tests {
         let entries = fetch_catalog(&reqwest::Client::new(), &CatalogSource::Embedded)
             .await
             .unwrap();
-        assert_eq!(entries.len(), 1);
-        let barn = &entries[0];
+        assert_eq!(entries.len(), 2);
+        let barn = entries
+            .iter()
+            .find(|entry| entry.id == "wanaku-barn")
+            .expect("Barn catalog entry");
         assert_eq!(barn.id, "wanaku-barn");
         assert_eq!(barn.version, "0.3.0");
         assert_eq!(barn.publisher, "Wanaku");
@@ -179,6 +182,29 @@ mod tests {
         assert_eq!(barn.requires.services[0].id, "wanaku-barn-api");
         assert!(barn.description.len() < 200);
         assert!(barn.url.ends_with("wanaku-barn-plugin-0.3.0-SNAPSHOT.zip"));
+    }
+
+    #[tokio::test]
+    async fn embedded_catalog_has_curated_debugger_metadata() {
+        let entries = fetch_catalog(&reqwest::Client::new(), &CatalogSource::Embedded)
+            .await
+            .unwrap();
+        let debugger = entries
+            .iter()
+            .find(|entry| entry.id == "wanaku-debugger")
+            .expect("Debugger catalog entry");
+        assert_eq!(debugger.name, "Deployment Debugger");
+        assert_eq!(debugger.version, "0.3.0");
+        assert_eq!(debugger.publisher, "Wanaku");
+        assert_eq!(debugger.license, "Apache-2.0");
+        assert_eq!(debugger.requires.host_api, ">=1.0 <2.0");
+        assert!(debugger.requires.services.is_empty());
+        assert!(debugger.dependencies.is_empty());
+        assert!(debugger.description.len() < 200);
+        assert_eq!(
+            debugger.url,
+            "https://github.com/wanaku-ai/wanaku-barn/releases/download/early-access/wanaku-debugger-plugin-0.3.0-SNAPSHOT.zip"
+        );
     }
 
     #[tokio::test]

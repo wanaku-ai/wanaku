@@ -4,7 +4,7 @@ The Plugin Catalog connects the Wanaku admin UI to a growing ecosystem of plugin
 
 ## Catalog sources
 
-Wanaku embeds the default catalog from [`features/plugins/plugin-catalog.json`](../features/plugins/plugin-catalog.json). The initial catalog contains Wanaku Barn. Each entry has a short plugin description. GitHub release pages and release notes are not catalog sources.
+Wanaku embeds the default catalog from [`features/plugins/plugin-catalog.json`](../features/plugins/plugin-catalog.json). The default catalog contains Wanaku Barn and Deployment Debugger. Deployment Debugger connects directly to MCP, A2A, and inference listeners and requires no Barn backend service. Each entry has a short plugin description. GitHub release pages and release notes are not catalog sources.
 
 The server selects one source at startup, in this order:
 

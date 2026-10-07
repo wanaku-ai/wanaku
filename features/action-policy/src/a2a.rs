@@ -40,6 +40,15 @@ pub struct A2aFilter {
 
 struct DiscoveryBody(BytesMut);
 
+// Body callbacks run before request callbacks; defer genuine preflights to CORS.
+fn is_cors_preflight(request: &praxis_filter::Request) -> bool {
+    request.method == http::Method::OPTIONS
+        && request.headers.contains_key(http::header::ORIGIN)
+        && request
+            .headers
+            .contains_key(http::header::ACCESS_CONTROL_REQUEST_METHOD)
+}
+
 impl A2aFilter {
     fn handle_request(
         &self,
@@ -291,6 +300,9 @@ impl HttpFilter for A2aFilter {
         &self,
         ctx: &mut HttpFilterContext<'_>,
     ) -> Result<FilterAction, FilterError> {
+        if is_cors_preflight(ctx.request) {
+            return Ok(FilterAction::Continue);
+        }
         let body = ctx.buffered_request_body.clone();
         Ok(self.handle_request(ctx, body.as_ref()))
     }
@@ -301,7 +313,7 @@ impl HttpFilter for A2aFilter {
         body: &mut Option<Bytes>,
         end_of_stream: bool,
     ) -> Result<FilterAction, FilterError> {
-        if !end_of_stream {
+        if !end_of_stream || is_cors_preflight(ctx.request) {
             return Ok(FilterAction::Continue);
         }
         Ok(self.handle_request(ctx, body.as_ref()))
@@ -404,6 +416,109 @@ mod tests {
                 namespace: default_namespace(),
                 max_body_bytes: default_limit(),
             },
+        }
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "real callback contexts cover managed and unmanaged CORS allow and reject"
+    )]
+    async fn preflight_body_callbacks_defer_to_cors_validation() {
+        let registry = praxis_filter::FilterRegistry::with_builtins();
+        let pipeline = praxis_filter::FilterPipeline::build(&mut [], &registry).expect("pipeline");
+        let cors = praxis_filter::builtins::http::CorsFilter::from_config(
+            &serde_yaml::from_str(
+                r#"allow_origins: ["https://ui.example"]
+allow_methods: ["POST"]
+allow_headers: ["Content-Type"]
+disallowed_origin_mode: reject"#,
+            )
+            .expect("CORS config"),
+        )
+        .expect("CORS filter");
+        for managed in [false, true] {
+            for (origin, status) in [("https://ui.example", 204), ("https://other.example", 403)] {
+                let mut headers = http::HeaderMap::new();
+                headers.insert(http::header::ORIGIN, origin.parse().expect("origin"));
+                headers.insert(
+                    http::header::ACCESS_CONTROL_REQUEST_METHOD,
+                    "POST".parse().expect("method"),
+                );
+                headers.insert(
+                    http::header::ACCESS_CONTROL_REQUEST_HEADERS,
+                    "content-type".parse().expect("headers"),
+                );
+                let request = praxis_filter::Request {
+                    method: http::Method::OPTIONS,
+                    uri: http::Uri::from_static("/blue/a2a/worker"),
+                    headers,
+                };
+                let mut protocol =
+                    praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+                let mut ctx = protocol.build_filter_context(&pipeline, &request, None);
+                let filter = test_filter(managed);
+                // Empty-body callbacks happen before CorsFilter::on_request.
+                assert!(matches!(
+                    filter
+                        .on_request_body(&mut ctx, &mut Some(Bytes::new()), true)
+                        .await
+                        .expect("body callback"),
+                    FilterAction::Continue
+                ));
+                assert!(matches!(
+                    filter.on_request(&mut ctx).await.expect("request callback"),
+                    FilterAction::Continue
+                ));
+                assert!(ctx.upstream.is_none());
+                assert_eq!(ctx.get_metadata("wanaku.a2a.validated"), None);
+                let action = cors.on_request(&mut ctx).await.expect("preflight");
+                let response = match action {
+                    FilterAction::Reject(response) => Some(response),
+                    _ => None,
+                }
+                .expect("CORS must answer the preflight");
+                assert_eq!(response.status, status);
+                let allowed_origin = response
+                    .headers
+                    .iter()
+                    .find(|(name, _)| name.eq_ignore_ascii_case("access-control-allow-origin"))
+                    .map(|(_, value)| value.as_str());
+                assert_eq!(allowed_origin, (status == 204).then_some(origin));
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn ordinary_options_requests_still_fail_a2a_validation() {
+        let registry = praxis_filter::FilterRegistry::with_builtins();
+        let pipeline = praxis_filter::FilterPipeline::build(&mut [], &registry).expect("pipeline");
+        for managed in [false, true] {
+            for header in [
+                None,
+                Some(http::header::ORIGIN),
+                Some(http::header::ACCESS_CONTROL_REQUEST_METHOD),
+            ] {
+                let mut headers = http::HeaderMap::new();
+                if let Some(header) = header {
+                    headers.insert(header, "POST".parse().expect("header"));
+                }
+                let request = praxis_filter::Request {
+                    method: http::Method::OPTIONS,
+                    uri: http::Uri::from_static("/blue/a2a/worker"),
+                    headers,
+                };
+                let mut protocol =
+                    praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+                let mut ctx = protocol.build_filter_context(&pipeline, &request, None);
+                assert!(matches!(
+                    test_filter(managed)
+                        .on_request_body(&mut ctx, &mut Some(Bytes::new()), true)
+                        .await
+                        .expect("body callback"),
+                    FilterAction::Reject(_)
+                ));
+            }
         }
     }
 
