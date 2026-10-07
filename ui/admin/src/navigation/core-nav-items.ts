@@ -14,14 +14,6 @@ export const CORE_NAV_ITEMS: NavItem[] = [
     section: 'Developer',
     order: 40,
   },
-  {
-    id: 'tool-calls',
-    label: 'Tool Call Debugger',
-    route: Links.ToolCalls,
-    source: 'core',
-    section: 'Developer',
-    order: 41,
-  },
 
   { id: 'namespaces', label: 'Namespaces', route: Links.Namespaces, source: 'core', order: 60 },
   { id: 'forwards', label: 'Forwards', route: Links.Forwards, source: 'core', order: 70 },
