@@ -33,14 +33,10 @@ pub struct PluginsFeature {
 
 impl PluginsFeature {
     #[must_use]
-    pub fn new(plugins_path: Option<&str>) -> Self {
-        let (path, manifests) = match plugins_path {
-            Some(p) => {
-                let dir = PathBuf::from(p);
-                let discovered = discover_plugins(&dir);
-                (Some(dir), discovered)
-            }
-            None => (None, Vec::new()),
+    pub fn new(plugins_path: Option<PathBuf>) -> Self {
+        let manifests = match &plugins_path {
+            Some(dir) => discover_plugins(dir),
+            None => Vec::new(),
         };
 
         let persistence = FilePluginConfigPersistence::from_config();
@@ -60,7 +56,7 @@ impl PluginsFeature {
         }
 
         Self {
-            plugins_path: path,
+            plugins_path,
             manifests: RwLock::new(manifests),
             service_map,
             persistence,
@@ -93,7 +89,7 @@ impl PluginsFeature {
 )]
 fn discover_plugins(plugins_dir: &PathBuf) -> Vec<PluginManifest> {
     if !plugins_dir.is_dir() {
-        tracing::warn!(path = %plugins_dir.display(), "plugins directory does not exist");
+        tracing::info!(path = %plugins_dir.display(), "plugins directory does not exist yet");
         return Vec::new();
     }
 

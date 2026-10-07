@@ -76,7 +76,7 @@ Restart the server. The "My Page" link appears in the sidebar.
 
 ## Plugin Structure
 
-A plugin lives in its own directory under the path specified by `--plugins-path`. The typical layout:
+A plugin lives in its own directory under the plugins path. The plugins path is the value of `--plugins-path`. When you do not set `--plugins-path`, the plugins path is `<WANAKU_PERSIST_PATH>/plugins` (for example, `~/.wanaku/server/plugins`). The typical layout:
 
 ```
 my-plugin/
