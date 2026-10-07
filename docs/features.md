@@ -84,11 +84,15 @@ Loads external UI plugins from a filesystem directory. Plugins are ES modules th
 
 **Configuration:**
 
-Start the server with `--plugins-path`:
+The server reads plugins from `<WANAKU_PERSIST_PATH>/plugins` (for example, `~/.wanaku/server/plugins`). The server creates this directory when you install the first plugin.
+
+To use a different directory, start the server with `--plugins-path`:
 
 ```bash
 cargo run -- --plugins-path /path/to/plugins
 ```
+
+When `WANAKU_PERSIST_BACKEND=none`, the plugins feature is disabled. Set `--plugins-path` to enable it.
 
 See the [Plugin Development Guide](./plugin-development-guide.md) for details.
 

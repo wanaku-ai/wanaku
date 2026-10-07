@@ -322,10 +322,22 @@ fn build_features(
         Box::new(action_policy),
         Box::new(evaluator),
         Box::new(wanaku_feature_plugins::PluginsFeature::new(
-            args.plugins_path.as_deref(),
+            args.plugins_dir(),
         )),
     ];
     (features, credential_audit_sink)
+}
+
+/// Returns the explicit `--plugins-path`, or `<persist-dir>/plugins` when
+/// persistence is enabled. Returns `None` when neither is available.
+fn resolve_plugins_path(
+    explicit: Option<&str>,
+    persist: Option<&wanaku_types::config::PersistEnv>,
+) -> Option<std::path::PathBuf> {
+    match explicit {
+        Some(path) => Some(std::path::PathBuf::from(path)),
+        None => persist.map(|p| p.dir.join("plugins")),
+    }
 }
 
 fn build_evaluator(
@@ -358,8 +370,18 @@ struct ServerArgs {
     wanaku_config: String,
 
     /// Directory containing UI plugin subdirectories.
+    /// Defaults to `<WANAKU_PERSIST_PATH>/plugins` when persistence is enabled.
     #[arg(long, value_name = "PATH")]
     plugins_path: Option<String>,
+}
+
+impl ServerArgs {
+    fn plugins_dir(&self) -> Option<std::path::PathBuf> {
+        resolve_plugins_path(
+            self.plugins_path.as_deref(),
+            wanaku_types::config::ENV.persist.as_ref(),
+        )
+    }
 }
 
 fn load_wanaku_yaml(path: &str) -> Result<Option<serde_yaml::Value>, String> {
@@ -501,10 +523,43 @@ fn fatal(err: &dyn std::fmt::Display) -> ! {
 
 #[cfg(test)]
 mod tests {
-    use super::{load_bindings, load_governance_config, load_wanaku_yaml};
+    use super::{load_bindings, load_governance_config, load_wanaku_yaml, resolve_plugins_path};
+    use std::path::PathBuf;
     use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_types::config::PersistEnv;
     use wanaku_types::governance::{AuditLevel, EnforcementMode, FailureBehavior, NoMatchBehavior};
     use wanaku_types::registry::BindingRegistry;
+
+    #[test]
+    fn plugins_path_prefers_explicit_value() {
+        let persist = PersistEnv {
+            dir: PathBuf::from("/data/wanaku"),
+        };
+        assert_eq!(
+            resolve_plugins_path(Some("/custom/plugins"), Some(&persist)),
+            Some(PathBuf::from("/custom/plugins"))
+        );
+    }
+
+    #[test]
+    fn plugins_path_defaults_to_persist_dir() {
+        let persist = PersistEnv {
+            dir: PathBuf::from("/data/wanaku"),
+        };
+        assert_eq!(
+            resolve_plugins_path(None, Some(&persist)),
+            Some(PathBuf::from("/data/wanaku/plugins"))
+        );
+    }
+
+    #[test]
+    fn plugins_path_is_none_without_persistence() {
+        assert_eq!(resolve_plugins_path(None, None), None);
+        assert_eq!(
+            resolve_plugins_path(Some("/custom/plugins"), None),
+            Some(PathBuf::from("/custom/plugins"))
+        );
+    }
 
     #[test]
     fn load_bindings_registers_valid_binding_and_normalizes_origin() {
