@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { LlmChatPage } from '../pages/llm-chat.page';
+import { ApiHelper } from '../helpers/api-helpers';
+import { namespaceData, toolData } from '../helpers/test-data';
+import { mockRegistryEntries } from '../helpers/registry-mock';
 
 const routerUrl = process.env.WANAKU_ROUTER_URL ?? 'http://localhost:8080';
 const API_KEY = 'test-secret-key';
@@ -76,5 +79,50 @@ test.describe('LLM Chat configuration persistence', () => {
     // rather than "does not contain the old key" so a regression that persists any value is caught.
     await llmChat.setApiKey('another-value');
     expect(await llmChat.storedConfigRaw()).toBeNull();
+  });
+});
+
+// Regression test for #1932: the tool selector must list the tools of the selected namespace.
+test.describe('LLM Chat tool selection', () => {
+  let llmChat: LlmChatPage;
+  let api: ApiHelper;
+  let namespace: string;
+
+  test.beforeEach(async ({ page, request }) => {
+    llmChat = new LlmChatPage(page, `${routerUrl}/admin/`);
+    api = new ApiHelper(request, routerUrl);
+    namespace = namespaceData().name;
+    await api.addNamespace({ name: namespace });
+  });
+
+  test.afterEach(async () => {
+    await api.deleteNamespace(namespace).catch(() => {});
+  });
+
+  test('lists the tools of the selected namespace', async ({ page }) => {
+    const forwardTool = (ns: string) => ({
+      ...toolData({ type: 'mcp-forward' }),
+      forwardId: 'e2e-forward',
+      namespace: ns,
+      enabled: true,
+    });
+    const defaultTool = forwardTool('default');
+    const namespacedTools = [forwardTool(namespace), forwardTool(namespace)];
+    // Tools come from forward discovery, which needs a live upstream MCP server, so mock the list.
+    await mockRegistryEntries(page, 'tools', [defaultTool, ...namespacedTools]);
+
+    await llmChat.goto();
+    await expect(llmChat.toolCheckbox(defaultTool.name)).toBeVisible();
+    for (const tool of namespacedTools) {
+      await expect(llmChat.toolCheckbox(tool.name)).toBeHidden();
+    }
+
+    await llmChat.selectNamespace(namespace);
+
+    for (const tool of namespacedTools) {
+      await expect(llmChat.toolCheckbox(tool.name)).toBeVisible();
+    }
+    await expect(llmChat.toolCheckbox(defaultTool.name)).toBeHidden();
+    await expect(llmChat.noToolsMessage()).toBeHidden();
   });
 });
