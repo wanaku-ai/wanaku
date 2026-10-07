@@ -6,6 +6,10 @@ use praxis_filter::{
 use serde::Deserialize;
 use serde_json::Value;
 
+mod discovery;
+mod request;
+use discovery::rewrite_card;
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Config {
@@ -98,6 +102,14 @@ impl A2aFilter {
         if card {
             ctx.set_metadata("wanaku.a2a.discovery", "true");
         }
+        let address = ctx
+            .extensions
+            .get::<wanaku_infra::registry::InMemoryRegistry>()
+            .and_then(|registry| registry.get_agent(namespace, name))
+            .map(|entry| entry.address);
+        if let Some(address) = address {
+            ctx.set_metadata("wanaku.a2a.upstream_url", address);
+        }
         ctx.upstream = Some(endpoint.upstream);
         ctx.rewritten_path = Some(endpoint.path);
         Ok(())
@@ -116,20 +128,25 @@ impl A2aFilter {
             .filter(|id| id.is_string() || id.is_number())
             .cloned()
             .unwrap_or(Value::Null);
-        if ctx
-            .request
-            .headers
-            .get("a2a-version")
-            .is_some_and(|version| !matches!(version.to_str(), Ok("0.3" | "0.3.0")))
-        {
-            return rpc_error(&id, -32600, "Only A2A JSON-RPC 0.3 is supported.");
-        }
+        let version = match request::Version::from_headers(&ctx.request.headers) {
+            Ok(version) => version,
+            Err((code, message)) => return rpc_error(&id, code, message),
+        };
+        ctx.set_metadata("wanaku.a2a.version", version.as_str());
         let method = ctx.get_metadata("a2a.method").unwrap_or_default();
-        if let Err((code, message)) = validate_request(&request, method) {
+        if let Err((code, message)) = request::validate_request(&request, method, version) {
             return rpc_error(&id, code, message);
         }
         if ctx.get_metadata("a2a.streaming") == Some("true") {
-            return rpc_error(&id, -32602, "Streaming is not supported.");
+            return rpc_error(
+                &id,
+                if version == request::Version::V1 {
+                    -32004
+                } else {
+                    -32602
+                },
+                "Streaming is not supported.",
+            );
         }
         ctx.set_metadata(wanaku_filters::MCP_ID_KEY, id.to_string());
         if !self.config.managed {
@@ -137,6 +154,35 @@ impl A2aFilter {
             ctx.set_metadata("wanaku.a2a.agent", &self.config.agent);
         }
         FilterAction::Continue
+    }
+
+    fn capture_static_upstream(&self, ctx: &mut HttpFilterContext<'_>) {
+        if self.config.managed
+            || ctx.get_metadata("wanaku.a2a.upstream_url").is_some()
+            || ctx
+                .rewritten_path
+                .as_deref()
+                .is_some_and(|path| path != ctx.request.uri.path())
+        {
+            return;
+        }
+        if let Some(upstream) = ctx.upstream.as_ref() {
+            let authority = upstream
+                .authority
+                .as_ref()
+                .and_then(|authority| authority.to_str().ok())
+                .unwrap_or(&upstream.address);
+            let scheme = if upstream.tls.is_some() {
+                "https"
+            } else {
+                "http"
+            };
+            // With no discovery rewrite, the static JSON-RPC endpoint is POST /.
+            ctx.set_metadata(
+                "wanaku.a2a.upstream_url",
+                format!("{scheme}://{authority}/"),
+            );
+        }
     }
 
     pub fn from_config(config: &serde_yaml::Value) -> Result<Box<dyn HttpFilter>, FilterError> {
@@ -194,117 +240,9 @@ fn rpc_error(id: &Value, code: i32, message: &str) -> FilterAction {
     wanaku_filters::response::json_rpc_error(id, code, message)
 }
 
-fn validate_request(request: &Value, method: &str) -> Result<(), (i32, &'static str)> {
-    if request.get("jsonrpc").and_then(Value::as_str) != Some("2.0")
-        || !request
-            .get("id")
-            .is_some_and(|id| id.is_string() || id.is_number())
-    {
-        return Err((-32600, "A2A requires a JSON-RPC 2.0 request with an ID."));
-    }
-    if !is_supported_method(method) {
-        return Err((
-            -32601,
-            "A2A method is not supported; streaming and push are disabled.",
-        ));
-    }
-    let params = request
-        .get("params")
-        .and_then(Value::as_object)
-        .ok_or((-32602, "A2A params must be an object."))?;
-    validate_configuration(params)?;
-    match method {
-        "GetTask" | "CancelTask"
-            if !params
-                .get("id")
-                .and_then(Value::as_str)
-                .is_some_and(|id| !id.is_empty()) =>
-        {
-            Err((-32602, "A2A task ID is required."))
-        }
-        "SendMessage" => validate_message(params.get("message")),
-        _ => Ok(()),
-    }
-}
-
-fn validate_configuration(
-    params: &serde_json::Map<String, Value>,
-) -> Result<(), (i32, &'static str)> {
-    let streaming = |options: &serde_json::Map<String, Value>| {
-        ["stream", "streaming"].iter().any(|key| {
-            options
-                .get(*key)
-                .is_some_and(|value| value != &Value::Bool(false))
-        })
-    };
-    if streaming(params)
-        || params.get("configuration").is_some_and(|configuration| {
-            configuration.as_object().is_none_or(|options| {
-                streaming(options) || options.contains_key("pushNotificationConfig")
-            })
-        })
-    {
-        return Err((
-            -32602,
-            "Streaming and push notifications are not supported.",
-        ));
-    }
-    Ok(())
-}
-
-fn validate_message(message: Option<&Value>) -> Result<(), (i32, &'static str)> {
-    let Some(message) = message.and_then(Value::as_object) else {
-        return Err((-32602, "A2A message must be an object."));
-    };
-    if !message
-        .get("messageId")
-        .and_then(Value::as_str)
-        .is_some_and(|id| !id.is_empty())
-        || !matches!(
-            message.get("role").and_then(Value::as_str),
-            Some("user" | "agent")
-        )
-        || !message
-            .get("parts")
-            .and_then(Value::as_array)
-            .is_some_and(|parts| !parts.is_empty() && parts.iter().all(Value::is_object))
-    {
-        return Err((-32602, "A2A message requires messageId, role and parts."));
-    }
-    Ok(())
-}
-
-fn rewrite_card(card: &mut Value, public_url: &str) -> Result<(), FilterError> {
-    let card = card
-        .as_object_mut()
-        .ok_or_else(|| FilterError::from("upstream agent card must be an object"))?;
-    if card
-        .get("protocolVersion")
-        .is_some_and(|version| version != "0.3.0")
-    {
-        return Err("upstream agent card must use A2A 0.3.0".into());
-    }
-    card.insert("url".to_owned(), Value::String(public_url.to_owned()));
-    card.insert(
-        "preferredTransport".to_owned(),
-        Value::String("JSONRPC".to_owned()),
-    );
-    card.remove("additionalInterfaces");
-    card.remove("signatures");
-    card.insert(
-        "supportsAuthenticatedExtendedCard".to_owned(),
-        Value::Bool(false),
-    );
-    card.remove("supportedInterfaces");
-    let capabilities = card
-        .entry("capabilities")
-        .or_insert_with(|| serde_json::json!({}));
-    let capabilities = capabilities
-        .as_object_mut()
-        .ok_or_else(|| FilterError::from("invalid agent card capabilities"))?;
-    capabilities.insert("streaming".to_owned(), Value::Bool(false));
-    capabilities.insert("pushNotifications".to_owned(), Value::Bool(false));
-    Ok(())
+#[cfg(test)]
+fn validate_legacy_request(request: &Value, method: &str) -> Result<(), (i32, &'static str)> {
+    request::validate_request(request, method, request::Version::Legacy)
 }
 
 fn validate_response_headers(headers: &http::HeaderMap) -> Result<(), FilterError> {
@@ -390,6 +328,7 @@ impl HttpFilter for A2aFilter {
             }
         }
         if rewrite {
+            self.capture_static_upstream(ctx);
             ctx.insert_filter_state(DiscoveryBody(BytesMut::new()));
         }
         Ok(FilterAction::Continue)
@@ -424,6 +363,7 @@ impl HttpFilter for A2aFilter {
             &mut card,
             ctx.get_metadata("wanaku.a2a.public_url")
                 .unwrap_or(&self.config.public_url),
+            ctx.get_metadata("wanaku.a2a.upstream_url"),
         )?;
         *body = Some(Bytes::from(card.to_string()));
         Ok(FilterAction::Continue)
@@ -628,6 +568,136 @@ mod tests {
         assert_eq!(card["capabilities"]["streaming"], false);
     }
 
+    #[tokio::test]
+    async fn v1_request_keeps_original_body_and_sets_effective_version() {
+        let registry = praxis_filter::FilterRegistry::with_builtins();
+        let pipeline = praxis_filter::FilterPipeline::build(&mut [], &registry).expect("pipeline");
+        let mut headers = http::HeaderMap::new();
+        headers.insert("a2a-version", http::HeaderValue::from_static("1.0"));
+        let request = praxis_filter::Request {
+            method: http::Method::POST,
+            uri: http::Uri::from_static("/"),
+            headers,
+        };
+        let mut protocol = praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+        let mut ctx = protocol.build_filter_context(&pipeline, &request, None);
+        ctx.set_metadata("a2a.method", "SendMessage");
+        let body = Bytes::from_static(br#"{"jsonrpc":"2.0","id":1,"method":"SendMessage","params":{"message":{"messageId":"message","role":"ROLE_USER","parts":[{"text":"hello"}]}}}"#);
+        assert!(matches!(
+            test_filter(false).handle_rpc_request(&mut ctx, Some(&body)),
+            FilterAction::Continue
+        ));
+        assert_eq!(ctx.get_metadata("wanaku.a2a.version"), Some("1.0"));
+        assert_eq!(
+            ctx.request.headers.get("a2a-version").expect("header"),
+            "1.0"
+        );
+        assert_eq!(ctx.get_metadata("wanaku.a2a.agent"), Some("a2a"));
+    }
+
+    #[tokio::test]
+    async fn static_v1_discovery_uses_selected_upstream_root_for_interface_matching() {
+        let agents = wanaku_infra::registry::InMemoryRegistry::new();
+        let entry: wanaku_types::agents::AgentEntry = serde_json::from_value(
+            serde_json::json!({"name":"backend", "address":"https://backend.example/"}),
+        )
+        .expect("entry");
+        agents.save_agent(entry, false).expect("save agent");
+        let registry = praxis_filter::FilterRegistry::with_builtins();
+        let pipeline = praxis_filter::FilterPipeline::build(&mut [], &registry).expect("pipeline");
+        let request = praxis_filter::Request {
+            method: http::Method::GET,
+            uri: http::Uri::from_static("/.well-known/agent-card.json"),
+            headers: http::HeaderMap::new(),
+        };
+        let filter = test_filter(false);
+        for (upstream_path, compatible, authority_override, rewrite_discovery) in [
+            ("/", true, true, false),
+            ("/", true, false, false),
+            ("/rpc", false, true, false),
+            ("/", false, true, true),
+        ] {
+            let mut protocol =
+                praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+            let mut response = praxis_filter::Response {
+                status: http::StatusCode::OK,
+                headers: http::HeaderMap::new(),
+            };
+            let mut ctx = protocol.build_filter_context(&pipeline, &request, Some(&mut response));
+            let mut upstream = agents
+                .agent_endpoint("default", "backend", false)
+                .expect("endpoint")
+                .upstream;
+            if !authority_override {
+                upstream.authority = None;
+            }
+            ctx.upstream = Some(upstream);
+            if rewrite_discovery {
+                ctx.rewritten_path = Some("/rpc/.well-known/agent-card.json".to_owned());
+            }
+            ctx.current_filter_id = Some(0);
+            assert!(matches!(
+                filter
+                    .on_request(&mut ctx)
+                    .await
+                    .expect("discovery request"),
+                FilterAction::Continue
+            ));
+            assert!(matches!(
+                filter
+                    .on_response(&mut ctx)
+                    .await
+                    .expect("response headers"),
+                FilterAction::Continue
+            ));
+            assert_eq!(
+                ctx.get_metadata("wanaku.a2a.upstream_url"),
+                if rewrite_discovery {
+                    None
+                } else {
+                    Some(if authority_override {
+                        "https://backend.example/"
+                    } else {
+                        "https://backend.example:443/"
+                    })
+                }
+            );
+            ctx.response_header = None;
+            let first = format!(
+                r#"{{"supportedInterfaces":[{{"url":"https://backend.example{upstream_path}","protocolBinding":"JSONRPC","protocolVersion":"1.0","tenant":"blue"}}],"capabilities":{{"#
+            );
+            let mut first = Some(Bytes::from(first));
+            assert!(matches!(
+                filter
+                    .on_response_body(&mut ctx, &mut first, false)
+                    .expect("first chunk"),
+                FilterAction::Continue
+            ));
+            assert!(first.is_none());
+            let mut last = Some(Bytes::from_static(br#""extendedAgentCard":true}}"#));
+            let action = filter.on_response_body(&mut ctx, &mut last, true);
+            if compatible {
+                assert!(matches!(
+                    action.expect("compatible card"),
+                    FilterAction::Continue
+                ));
+                let card: Value =
+                    serde_json::from_slice(last.as_ref().expect("card")).expect("JSON");
+                assert_eq!(
+                    card["supportedInterfaces"][0]["url"],
+                    "https://proxy.example/"
+                );
+                assert_eq!(card["supportedInterfaces"][0]["tenant"], "blue");
+                assert_eq!(card["capabilities"]["extendedAgentCard"], false);
+            } else {
+                assert!(
+                    action.is_err(),
+                    "do not advertise a JSON-RPC path this pipeline cannot serve"
+                );
+            }
+        }
+    }
+
     fn request(method: &str, params: &Value) -> Value {
         serde_json::json!({"jsonrpc": "2.0", "id": 7, "method": method, "params": params})
     }
@@ -635,10 +705,10 @@ mod tests {
     #[test]
     fn basic_operations_require_valid_parameters() {
         let message = serde_json::json!({"message": {"messageId": "m1", "role": "user", "parts": [{"kind": "text", "text": "hello"}]}});
-        assert!(validate_request(&request("message/send", &message), "SendMessage").is_ok());
+        assert!(validate_legacy_request(&request("message/send", &message), "SendMessage").is_ok());
         for method in ["GetTask", "CancelTask"] {
             assert!(
-                validate_request(&request(method, &serde_json::json!({"id": "t1"})), method)
+                validate_legacy_request(&request(method, &serde_json::json!({"id": "t1"})), method)
                     .is_ok()
             );
             for params in [
@@ -647,7 +717,7 @@ mod tests {
                 serde_json::json!({"id": 7}),
             ] {
                 assert_eq!(
-                    validate_request(&request(method, &params), method)
+                    validate_legacy_request(&request(method, &params), method)
                         .expect_err("invalid task id")
                         .0,
                     -32602
@@ -655,7 +725,7 @@ mod tests {
             }
         }
         assert!(
-            validate_request(
+            validate_legacy_request(
                 &request("SendMessage", &serde_json::json!({"message": {}})),
                 "SendMessage"
             )
@@ -674,7 +744,7 @@ mod tests {
             "unknown",
         ] {
             assert_eq!(
-                validate_request(&request(method, &serde_json::json!({})), method)
+                validate_legacy_request(&request(method, &serde_json::json!({})), method)
                     .expect_err("unsupported method")
                     .0,
                 -32601
@@ -691,14 +761,14 @@ mod tests {
         ] {
             let params = serde_json::json!({"configuration": configuration, "message": {"messageId": "m1", "role": "user", "parts": [{"kind": "text", "text": "hello"}]}});
             assert_eq!(
-                validate_request(&request("SendMessage", &params), "SendMessage")
+                validate_legacy_request(&request("SendMessage", &params), "SendMessage")
                     .expect_err("unsupported configuration")
                     .0,
                 -32602
             );
         }
         assert_eq!(
-            validate_request(&Value::Null, "SendMessage")
+            validate_legacy_request(&Value::Null, "SendMessage")
                 .expect_err("invalid envelope")
                 .0,
             -32600
@@ -708,15 +778,15 @@ mod tests {
     #[test]
     fn discovery_exposes_only_the_governed_proxy_binding() {
         let mut card = serde_json::json!({"protocolVersion": "0.3.0", "url": "http://backend/", "additionalInterfaces": [{"url": "http://bypass/"}], "signatures": [{"signature": "invalid-after-rewrite"}], "capabilities": {"streaming": true, "pushNotifications": true}, "supportsAuthenticatedExtendedCard": true});
-        rewrite_card(&mut card, "https://proxy.example/").expect("valid card");
+        rewrite_card(&mut card, "https://proxy.example/", None).expect("valid card");
         assert_eq!(card["url"], "https://proxy.example/");
         assert_eq!(card["capabilities"]["streaming"], false);
         assert_eq!(card["capabilities"]["pushNotifications"], false);
         assert_eq!(card["supportsAuthenticatedExtendedCard"], false);
         assert!(card.get("additionalInterfaces").is_none());
         assert!(card.get("signatures").is_none());
-        card["protocolVersion"] = serde_json::json!("1.0.0");
-        assert!(rewrite_card(&mut card, "https://proxy.example/").is_err());
+        card["protocolVersion"] = serde_json::json!("2.0.0");
+        assert!(rewrite_card(&mut card, "https://proxy.example/", None).is_err());
     }
 
     #[test]
