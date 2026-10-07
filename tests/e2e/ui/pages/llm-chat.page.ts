@@ -58,6 +58,23 @@ export class LlmChatPage extends BasePage {
     await this.setToggle('enabledApiKeyStorage', on);
   }
 
+  namespaceSelect(): Locator {
+    return this.page.locator('select#namespace');
+  }
+
+  async selectNamespace(name: string) {
+    await this.namespaceSelect().selectOption(name);
+  }
+
+  // Each tool is a Carbon checkbox whose input id is the tool name.
+  toolCheckbox(name: string): Locator {
+    return this.page.locator(`label[for="${name}"]`);
+  }
+
+  noToolsMessage(): Locator {
+    return this.page.getByText('No tools available', { exact: true });
+  }
+
   async reload() {
     await this.page.reload();
     await this.apiKeyInput().waitFor({ state: 'visible', timeout: 15_000 });
