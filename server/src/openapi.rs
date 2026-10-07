@@ -360,7 +360,7 @@ const fn list_audit_events() {}
     params(("id" = String, Path, description = "Audit event ID")),
     responses(
         (status = 200, description = "Audit event", body = WanakuResponse<AuditEvent>),
-        (status = 404, body = ManagementErrorResponse),
+        (status = 404, description = "Audit event not found", body = ManagementErrorResponse),
     )
 )]
 const fn get_audit_event() {}
@@ -392,20 +392,20 @@ const fn get_statistics() {}
 // -- Evaluators ---------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/evaluators", tag = "Evaluators",
-    responses((status = 200, body = WanakuResponse<Vec<EvaluatorDef>>))
+    responses((status = 200, description = "Configured evaluators", body = WanakuResponse<Vec<EvaluatorDef>>))
 )]
 const fn list_evaluators() {}
 
 #[utoipa::path(get, path = "/api/v1/evaluators/status", tag = "Evaluators",
     params(("namespace" = Option<String>, Query, description = "Namespace name; defaults to default")),
-    responses((status = 200, body = WanakuResponse<EvaluatorStatus>))
+    responses((status = 200, description = "Evaluator status", body = WanakuResponse<EvaluatorStatus>))
 )]
 const fn get_evaluator_status() {}
 
 #[utoipa::path(put, path = "/api/v1/evaluators", tag = "Evaluators",
     request_body = UpdateEvaluatorsRequest,
     responses(
-        (status = 200, body = WanakuResponse<EvaluatorRevisionResponse>),
+        (status = 200, description = "Evaluator revision created", body = WanakuResponse<EvaluatorRevisionResponse>),
         (status = 400, description = "Invalid evaluator configuration", body = ManagementErrorResponse),
         (status = 409, description = "Revision conflict", body = ManagementErrorResponse),
         (status = 422, description = "Evaluator configuration rejected", body = ManagementErrorResponse),
@@ -414,51 +414,51 @@ const fn get_evaluator_status() {}
 const fn update_evaluators() {}
 
 #[utoipa::path(get, path = "/api/v1/evaluators/llm-connections", tag = "Evaluators",
-    responses((status = 200, body = WanakuResponse<Vec<String>>))
+    responses((status = 200, description = "Evaluator LLM connection names", body = WanakuResponse<Vec<String>>))
 )]
 const fn list_evaluator_llm_connections() {}
 
 #[utoipa::path(get, path = "/api/v1/evaluators/namespaces", tag = "Evaluators",
-    responses((status = 200, body = WanakuResponse<std::collections::HashMap<String, String>>))
+    responses((status = 200, description = "Namespace to evaluator bindings", body = WanakuResponse<std::collections::HashMap<String, String>>))
 )]
 const fn list_evaluator_bindings() {}
 
 #[utoipa::path(put, path = "/api/v1/evaluators/namespaces/{namespace}", tag = "Evaluators",
     params(("namespace" = String, Path)), request_body = BindNamespaceRequest,
-    responses((status = 200, body = WanakuResponse<NamespaceBinding>), (status = 400, body = ManagementErrorResponse))
+    responses((status = 200, description = "Namespace bound to evaluator", body = WanakuResponse<NamespaceBinding>), (status = 400, description = "Invalid namespace binding", body = ManagementErrorResponse))
 )]
 const fn bind_evaluator_namespace() {}
 
 #[utoipa::path(delete, path = "/api/v1/evaluators/namespaces/{namespace}", tag = "Evaluators",
     params(("namespace" = String, Path)),
-    responses((status = 200, body = WanakuResponse<UnbindNamespaceResponse>))
+    responses((status = 200, description = "Namespace unbound from evaluator", body = WanakuResponse<UnbindNamespaceResponse>))
 )]
 const fn unbind_evaluator_namespace() {}
 
 #[utoipa::path(get, path = "/api/v1/evaluators/revisions", tag = "Evaluators",
-    responses((status = 200, body = WanakuResponse<Vec<RevisionMetadata>>))
+    responses((status = 200, description = "Evaluator revision history", body = WanakuResponse<Vec<RevisionMetadata>>))
 )]
 const fn list_evaluator_revisions() {}
 
 #[utoipa::path(get, path = "/api/v1/evaluators/revisions/active", tag = "Evaluators",
-    responses((status = 200, body = WanakuResponse<EvaluatorRevisionResponse>), (status = 404, body = ManagementErrorResponse))
+    responses((status = 200, description = "Active evaluator revision", body = WanakuResponse<EvaluatorRevisionResponse>), (status = 404, description = "No active evaluator revision", body = ManagementErrorResponse))
 )]
 const fn get_active_evaluator_revision() {}
 
 #[utoipa::path(get, path = "/api/v1/evaluators/revisions/{id}", tag = "Evaluators",
     params(("id" = u64, Path)),
-    responses((status = 200, body = WanakuResponse<EvaluatorRevisionResponse>), (status = 404, body = ManagementErrorResponse))
+    responses((status = 200, description = "Evaluator revision", body = WanakuResponse<EvaluatorRevisionResponse>), (status = 404, description = "Evaluator revision not found", body = ManagementErrorResponse))
 )]
 const fn get_evaluator_revision() {}
 
 #[utoipa::path(post, path = "/api/v1/evaluators/revisions/{id}/activate", tag = "Evaluators",
     params(("id" = u64, Path)), request_body = ActivateEvaluatorRevisionRequest,
     responses(
-        (status = 200, body = WanakuResponse<EvaluatorRevisionResponse>),
-        (status = 400, body = ManagementErrorResponse),
-        (status = 404, body = ManagementErrorResponse),
-        (status = 409, body = ManagementErrorResponse),
-        (status = 422, body = ManagementErrorResponse),
+        (status = 200, description = "Evaluator revision activated", body = WanakuResponse<EvaluatorRevisionResponse>),
+        (status = 400, description = "Invalid activation request", body = ManagementErrorResponse),
+        (status = 404, description = "Evaluator revision not found", body = ManagementErrorResponse),
+        (status = 409, description = "Revision conflict", body = ManagementErrorResponse),
+        (status = 422, description = "Evaluator revision rejected", body = ManagementErrorResponse),
     )
 )]
 const fn activate_evaluator_revision() {}
@@ -466,45 +466,45 @@ const fn activate_evaluator_revision() {}
 // -- Action policies ----------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/action-policies", tag = "Action Policies",
-    responses((status = 200, body = WanakuResponse<ActionPolicyRevisionResponse>), (status = 404, body = ManagementErrorResponse))
+    responses((status = 200, description = "Effective action policy", body = WanakuResponse<ActionPolicyRevisionResponse>), (status = 404, description = "No action policy configured", body = ManagementErrorResponse))
 )]
 const fn get_effective_action_policy() {}
 
 #[utoipa::path(put, path = "/api/v1/action-policies", tag = "Action Policies",
     request_body = UpdateActionPolicyRequest,
     responses(
-        (status = 200, body = WanakuResponse<ActionPolicyRevisionResponse>),
-        (status = 400, body = ManagementErrorResponse),
-        (status = 409, body = ManagementErrorResponse),
-        (status = 422, body = ManagementErrorResponse),
+        (status = 200, description = "Action policy revision created", body = WanakuResponse<ActionPolicyRevisionResponse>),
+        (status = 400, description = "Invalid action policy", body = ManagementErrorResponse),
+        (status = 409, description = "Revision conflict", body = ManagementErrorResponse),
+        (status = 422, description = "Action policy rejected", body = ManagementErrorResponse),
     )
 )]
 const fn update_action_policy() {}
 
 #[utoipa::path(get, path = "/api/v1/action-policies/revisions", tag = "Action Policies",
-    responses((status = 200, body = WanakuResponse<Vec<RevisionMetadata>>))
+    responses((status = 200, description = "Action policy revision history", body = WanakuResponse<Vec<RevisionMetadata>>))
 )]
 const fn list_action_policy_revisions() {}
 
 #[utoipa::path(get, path = "/api/v1/action-policies/revisions/active", tag = "Action Policies",
-    responses((status = 200, body = WanakuResponse<ActionPolicyRevisionResponse>), (status = 404, body = ManagementErrorResponse))
+    responses((status = 200, description = "Active action policy revision", body = WanakuResponse<ActionPolicyRevisionResponse>), (status = 404, description = "No active action policy revision", body = ManagementErrorResponse))
 )]
 const fn get_active_action_policy_revision() {}
 
 #[utoipa::path(get, path = "/api/v1/action-policies/revisions/{id}", tag = "Action Policies",
     params(("id" = u64, Path)),
-    responses((status = 200, body = WanakuResponse<ActionPolicyRevisionResponse>), (status = 404, body = ManagementErrorResponse))
+    responses((status = 200, description = "Action policy revision", body = WanakuResponse<ActionPolicyRevisionResponse>), (status = 404, description = "Action policy revision not found", body = ManagementErrorResponse))
 )]
 const fn get_action_policy_revision() {}
 
 #[utoipa::path(post, path = "/api/v1/action-policies/revisions/{id}/activate", tag = "Action Policies",
     params(("id" = u64, Path)), request_body = ActivatePolicyRevisionRequest,
     responses(
-        (status = 200, body = WanakuResponse<ActionPolicyRevisionResponse>),
-        (status = 400, body = ManagementErrorResponse),
-        (status = 404, body = ManagementErrorResponse),
-        (status = 409, body = ManagementErrorResponse),
-        (status = 422, body = ManagementErrorResponse),
+        (status = 200, description = "Action policy revision activated", body = WanakuResponse<ActionPolicyRevisionResponse>),
+        (status = 400, description = "Invalid activation request", body = ManagementErrorResponse),
+        (status = 404, description = "Action policy revision not found", body = ManagementErrorResponse),
+        (status = 409, description = "Revision conflict", body = ManagementErrorResponse),
+        (status = 422, description = "Action policy revision rejected", body = ManagementErrorResponse),
     )
 )]
 const fn activate_action_policy_revision() {}
@@ -560,7 +560,7 @@ impl utoipa::Modify for OptionalActivationBodies {
             "/api/v1/audit/schema",
             "/api/v1/audit/health",
         ] {
-            if let Some(body) = openapi
+            if let Some(utoipa::openapi::RefOr::T(body)) = openapi
                 .paths
                 .paths
                 .get_mut(path)
@@ -749,6 +749,27 @@ mod tests {
                 .pointer("/components/schemas/AgentEntry/properties/cardAddress")
                 .is_some()
         );
+    }
+
+    #[test]
+    fn every_response_has_description() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        let paths = value["paths"].as_object().cloned().unwrap_or_default();
+        assert!(!paths.is_empty());
+        for (path, item) in paths {
+            for (method, operation) in item.as_object().cloned().unwrap_or_default() {
+                let responses = operation["responses"]
+                    .as_object()
+                    .cloned()
+                    .unwrap_or_default();
+                for (status, response) in responses {
+                    assert!(
+                        response["description"].is_string(),
+                        "{method} {path} {status} has no description"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

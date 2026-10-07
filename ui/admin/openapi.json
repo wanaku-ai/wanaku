@@ -18,7 +18,7 @@
         "operationId": "get_effective_action_policy",
         "responses": {
           "200": {
-            "description": "",
+            "description": "Effective action policy",
             "content": {
               "application/json": {
                 "schema": {
@@ -28,7 +28,7 @@
             }
           },
           "404": {
-            "description": "",
+            "description": "No action policy configured",
             "content": {
               "application/json": {
                 "schema": {
@@ -56,7 +56,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "Action policy revision created",
             "content": {
               "application/json": {
                 "schema": {
@@ -66,7 +66,7 @@
             }
           },
           "400": {
-            "description": "",
+            "description": "Invalid action policy",
             "content": {
               "application/json": {
                 "schema": {
@@ -76,7 +76,7 @@
             }
           },
           "409": {
-            "description": "",
+            "description": "Revision conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -86,7 +86,7 @@
             }
           },
           "422": {
-            "description": "",
+            "description": "Action policy rejected",
             "content": {
               "application/json": {
                 "schema": {
@@ -106,7 +106,7 @@
         "operationId": "list_action_policy_revisions",
         "responses": {
           "200": {
-            "description": "",
+            "description": "Action policy revision history",
             "content": {
               "application/json": {
                 "schema": {
@@ -126,7 +126,7 @@
         "operationId": "get_active_action_policy_revision",
         "responses": {
           "200": {
-            "description": "",
+            "description": "Active action policy revision",
             "content": {
               "application/json": {
                 "schema": {
@@ -136,7 +136,7 @@
             }
           },
           "404": {
-            "description": "",
+            "description": "No active action policy revision",
             "content": {
               "application/json": {
                 "schema": {
@@ -168,7 +168,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "Action policy revision",
             "content": {
               "application/json": {
                 "schema": {
@@ -178,7 +178,7 @@
             }
           },
           "404": {
-            "description": "",
+            "description": "Action policy revision not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -219,7 +219,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "Action policy revision activated",
             "content": {
               "application/json": {
                 "schema": {
@@ -229,7 +229,7 @@
             }
           },
           "400": {
-            "description": "",
+            "description": "Invalid activation request",
             "content": {
               "application/json": {
                 "schema": {
@@ -239,7 +239,7 @@
             }
           },
           "404": {
-            "description": "",
+            "description": "Action policy revision not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -249,7 +249,7 @@
             }
           },
           "409": {
-            "description": "",
+            "description": "Revision conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -259,7 +259,7 @@
             }
           },
           "422": {
-            "description": "",
+            "description": "Action policy revision rejected",
             "content": {
               "application/json": {
                 "schema": {
@@ -742,7 +742,7 @@
             }
           },
           "404": {
-            "description": "",
+            "description": "Audit event not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -857,7 +857,7 @@
         "operationId": "list_evaluators",
         "responses": {
           "200": {
-            "description": "",
+            "description": "Configured evaluators",
             "content": {
               "application/json": {
                 "schema": {
@@ -885,7 +885,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "Evaluator revision created",
             "content": {
               "application/json": {
                 "schema": {
@@ -935,7 +935,7 @@
         "operationId": "list_evaluator_llm_connections",
         "responses": {
           "200": {
-            "description": "",
+            "description": "Evaluator LLM connection names",
             "content": {
               "application/json": {
                 "schema": {
@@ -955,7 +955,7 @@
         "operationId": "list_evaluator_bindings",
         "responses": {
           "200": {
-            "description": "",
+            "description": "Namespace to evaluator bindings",
             "content": {
               "application/json": {
                 "schema": {
@@ -995,7 +995,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "Namespace bound to evaluator",
             "content": {
               "application/json": {
                 "schema": {
@@ -1005,7 +1005,7 @@
             }
           },
           "400": {
-            "description": "",
+            "description": "Invalid namespace binding",
             "content": {
               "application/json": {
                 "schema": {
@@ -1033,7 +1033,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "Namespace unbound from evaluator",
             "content": {
               "application/json": {
                 "schema": {
@@ -1053,7 +1053,7 @@
         "operationId": "list_evaluator_revisions",
         "responses": {
           "200": {
-            "description": "",
+            "description": "Evaluator revision history",
             "content": {
               "application/json": {
                 "schema": {
@@ -1073,7 +1073,7 @@
         "operationId": "get_active_evaluator_revision",
         "responses": {
           "200": {
-            "description": "",
+            "description": "Active evaluator revision",
             "content": {
               "application/json": {
                 "schema": {
@@ -1083,7 +1083,7 @@
             }
           },
           "404": {
-            "description": "",
+            "description": "No active evaluator revision",
             "content": {
               "application/json": {
                 "schema": {
@@ -1115,7 +1115,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "Evaluator revision",
             "content": {
               "application/json": {
                 "schema": {
@@ -1125,7 +1125,7 @@
             }
           },
           "404": {
-            "description": "",
+            "description": "Evaluator revision not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1166,7 +1166,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "Evaluator revision activated",
             "content": {
               "application/json": {
                 "schema": {
@@ -1176,7 +1176,7 @@
             }
           },
           "400": {
-            "description": "",
+            "description": "Invalid activation request",
             "content": {
               "application/json": {
                 "schema": {
@@ -1186,7 +1186,7 @@
             }
           },
           "404": {
-            "description": "",
+            "description": "Evaluator revision not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1196,7 +1196,7 @@
             }
           },
           "409": {
-            "description": "",
+            "description": "Revision conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -1206,7 +1206,7 @@
             }
           },
           "422": {
-            "description": "",
+            "description": "Evaluator revision rejected",
             "content": {
               "application/json": {
                 "schema": {
@@ -1237,7 +1237,7 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "Evaluator status",
             "content": {
               "application/json": {
                 "schema": {
@@ -3125,10 +3125,10 @@
           "serverInfo": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/McpServerInfo"
               },
               {
-                "$ref": "#/components/schemas/McpServerInfo"
+                "type": "null"
               }
             ]
           },
@@ -3207,11 +3207,7 @@
         "description": "The effective governance settings for one namespace.",
         "properties": {
           "audit_level": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/AuditLevel"
-              }
-            ],
+            "$ref": "#/components/schemas/AuditLevel",
             "default": "basic"
           },
           "disabled_reason": {
@@ -3223,27 +3219,15 @@
             "default": null
           },
           "mode": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/EnforcementMode"
-              }
-            ],
+            "$ref": "#/components/schemas/EnforcementMode",
             "default": "enforce"
           },
           "no_match": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/NoMatchBehavior"
-              }
-            ],
+            "$ref": "#/components/schemas/NoMatchBehavior",
             "default": "deny"
           },
           "on_failure": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/FailureBehavior"
-              }
-            ],
+            "$ref": "#/components/schemas/FailureBehavior",
             "default": "deny"
           }
         },
@@ -3605,10 +3589,10 @@
           "criteria": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/NoulCriteria"
               },
               {
-                "$ref": "#/components/schemas/NoulCriteria"
+                "type": "null"
               }
             ]
           },
@@ -4242,30 +4226,30 @@
           "target_name": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/MatchExpression"
               },
               {
-                "$ref": "#/components/schemas/MatchExpression"
+                "type": "null"
               }
             ]
           },
           "target_type": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/TargetType"
               },
               {
-                "$ref": "#/components/schemas/TargetType"
+                "type": "null"
               }
             ]
           },
           "uri": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/MatchExpression"
               },
               {
-                "$ref": "#/components/schemas/MatchExpression"
+                "type": "null"
               }
             ]
           }

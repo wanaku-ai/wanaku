@@ -22,7 +22,7 @@ export interface ForwardEntry {
   name: string;
   /** @nullable */
   namespace?: string | null;
-  serverInfo?: null | McpServerInfo;
+  serverInfo?: McpServerInfo | null;
   /** @nullable */
   statusMessage?: string | null;
 }
