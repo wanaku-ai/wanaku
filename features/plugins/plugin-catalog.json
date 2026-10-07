@@ -13,5 +13,20 @@
     },
     "metadata": {"homepage": "https://github.com/wanaku-ai/wanaku-barn"},
     "url": "https://github.com/wanaku-ai/wanaku-barn/releases/download/early-access/wanaku-barn-plugin-0.3.0-SNAPSHOT.zip"
+  },
+  {
+    "id": "wanaku-debugger",
+    "name": "Deployment Debugger",
+    "version": "0.3.0",
+    "description": "Debug MCP, A2A, and inference deployments with standalone protocol clients.",
+    "publisher": "Wanaku",
+    "license": "Apache-2.0",
+    "dependencies": [],
+    "requires": {
+      "hostApi": ">=1.0 <2.0",
+      "services": []
+    },
+    "metadata": {"homepage": "https://github.com/wanaku-ai/wanaku-barn"},
+    "url": "https://github.com/wanaku-ai/wanaku-barn/releases/download/early-access/wanaku-debugger-plugin-0.3.0-SNAPSHOT.zip"
   }
 ]
