@@ -20,9 +20,9 @@ Agent entries use the same persistence backend as the other registry entries. A 
 
 ## Supported operations
 
-The initial binding is A2A 0.3 JSON-RPC over HTTP. For a registered agent, use `POST /{namespace}/a2a/{name}` for protocol requests. Use `GET /{namespace}/a2a/{name}/.well-known/agent-card.json` for discovery. The namespace is the first path segment, as it is for `/{namespace}/mcp`. The agent name selects one registered agent in that namespace.
+Wanaku supports A2A 0.3 and 1.0 JSON-RPC over HTTP. For a registered agent, use `POST /{namespace}/a2a/{name}` for protocol requests. Use `GET /{namespace}/a2a/{name}/.well-known/agent-card.json` for discovery. The namespace is the first path segment, as it is for `/{namespace}/mcp`. The agent name selects one registered agent in that namespace.
 
-| Wire method | Canonical policy operation | Behavior |
+| A2A 0.3 method | A2A 1.0 method and policy operation | Behavior |
 | --- | --- | --- |
 | `message/send` | `SendMessage` | Submit a message to the upstream agent. |
 | `tasks/get` | `GetTask` | Read the upstream task state. |
@@ -30,7 +30,32 @@ The initial binding is A2A 0.3 JSON-RPC over HTTP. For a registered agent, use `
 
 The upstream agent owns task execution and state. Wanaku does not run an agent or translate A2A messages into MCP calls.
 
-Wanaku rejects streaming, push notifications, and unsupported methods before dispatch. It also rejects streaming and push options in a normal message request. An explicit `A2A-Version` header must identify the supported version.
+Wanaku rejects streaming, push notifications, and unsupported methods before dispatch. It also rejects streaming and push options in a normal message request. Set `A2A-Version: 1.0` for a 1.0 request. A missing or empty header selects 0.3. Wanaku also accepts `0.3.0` for existing clients. An unsupported version returns `VersionNotSupportedError`.
+
+Wanaku forwards method names, request bodies, and upstream responses without converting protocol versions. A method alias selects the policy operation. It does not change the method sent to the upstream agent. The upstream must support the requested version and method.
+
+For 1.0 messages, use `ROLE_USER` or `ROLE_AGENT`. Parts use fields such as `text`, `raw`, `url`, or `data`. The 1.0 format does not require a `kind` field. Task lookup and cancellation use `params.id`.
+
+Send a 1.0 message to a registered agent:
+
+```bash
+curl -sS http://127.0.0.1:8084/default/a2a/assistant \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  -H 'A2A-Version: 1.0' \
+  --data '{
+    "jsonrpc": "2.0",
+    "id": "request-1",
+    "method": "SendMessage",
+    "params": {
+      "message": {
+        "messageId": "message-1",
+        "role": "ROLE_USER",
+        "parts": [{"text": "echo"}]
+      }
+    }
+  }'
+```
 
 Wanaku checks the request envelope and required message or task fields. The upstream agent validates the complete A2A message schema. Wanaku requests uncompressed responses and rejects compressed or streaming upstream responses. Wanaku also rejects upstream redirects.
 
@@ -83,7 +108,17 @@ Set the upstream endpoint in the Praxis load-balancer configuration. Set the ups
 
 The example enables Praxis task and context routing with a local store. Follow-up requests use the recorded backend owner. Non-terminal task routes and context routes expire after 3600 seconds. Terminal task routes expire after 300 seconds. The routing store does not persist across a process restart. The example has one upstream backend, so an expired route still resolves to that configured backend. Multi-backend deployment and shared routing storage are outside this initial example.
 
-Discovery returns the upstream Agent Card with the proxy URL. Wanaku disables the advertised streaming and push capabilities. It removes additional interfaces and signatures because the card has changed. The proxy does not expose authenticated extended cards.
+## Agent Card versions
+
+Wanaku reads the upstream Agent Card. It uses declared protocol versions when present. When protocol version information is absent, Wanaku assumes 1.0.0. It writes the interface version as `1.0`. The card's `version` field identifies the agent release. It does not select the protocol version.
+
+A 1.0 card declares its proxy endpoint in `supportedInterfaces`. Wanaku advertises only supported JSON-RPC interfaces for the configured upstream endpoint. It rewrites their URLs and preserves tenant information. If interface information is absent, Wanaku supplies one JSON-RPC interface. Explicitly incompatible interface declarations fail discovery. Wanaku does not select a different upstream from the card.
+
+For a modern card in a static pipeline, discovery and messages must use the same upstream. The message endpoint must be its root path. Wanaku does not infer that endpoint when the discovery path is rewritten. Use a managed registration for custom RPC paths or separate discovery and message addresses.
+
+An explicitly declared 0.3 card that uses legacy fields retains its `url` and `preferredTransport` fields. Wanaku disables streaming, push notifications, and extended cards. It removes signatures because rewriting changes the signed content.
+
+The 1.0.0 discovery fallback does not change request version selection. Clients that use 1.0 must send `A2A-Version: 1.0`.
 
 ## Configure action policy
 
@@ -135,8 +170,11 @@ Build the server before running the isolated HTTP test:
 cargo build -p wanaku-server --no-default-features
 python3 tests/a2a/smoke.py --binary target/debug/wanaku-server
 python3 tests/a2a/managed.py --binary target/debug/wanaku-server
+python3 tests/a2a/version1.py --binary target/debug/wanaku-server
 ```
 
 The test starts two temporary upstream backends and a Wanaku process. It checks discovery, message forwarding, task lookup, cancellation, policy denial, unsupported requests, and A2A audit correlation. Split responses verify that task-owner routing sends follow-up requests to the backend that created the task. The test does not require an external agent.
 
 The managed test checks agent registration, proxy URLs, live address changes, namespace isolation, deletion, and persistence across a server restart.
+
+The 1.0 test checks version-specific message formats, task operations, untouched forwarding, discovery interfaces, unsupported features, namespace isolation, and audit correlation.

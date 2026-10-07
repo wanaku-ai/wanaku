@@ -170,6 +170,7 @@ struct DecisionAuditContext<'a> {
     store: &'a InMemoryAuditStore,
     request_id: Option<&'a str>,
     target: Option<&'a str>,
+    a2a_version: Option<&'a str>,
     policy_revision: Option<String>,
 }
 
@@ -178,6 +179,7 @@ impl<'a> DecisionAuditContext<'a> {
         Some(Self {
             store: ctx.extensions.get::<InMemoryAuditStore>()?,
             request_id: ctx.request_id(),
+            a2a_version: ctx.get_metadata("wanaku.a2a.version"),
             target: ctx
                 .get_metadata("wanaku.a2a.agent")
                 .or_else(|| ctx.get_metadata(wanaku_filters::MCP_NAME_KEY)),
@@ -447,6 +449,11 @@ fn record_event(
     );
     if crate::a2a::is_supported_method(&event.operation) {
         event.protocol = "a2a".to_owned();
+        if let Some(version) = audit.a2a_version {
+            event
+                .attributes
+                .insert("a2a_version".to_owned(), serde_json::json!(version));
+        }
         add_a2a_task_context(&mut event, body);
     }
     audit.store.record(event);
@@ -808,6 +815,7 @@ mod tests {
             }),
         );
         let allow_audit = DecisionAuditContext {
+            a2a_version: None,
             store: &store,
             request_id: Some("request-allow"),
             target: Some("safe"),
@@ -846,6 +854,7 @@ mod tests {
             }),
         );
         let deny_audit = DecisionAuditContext {
+            a2a_version: None,
             store: &store,
             request_id: Some("request-deny"),
             target: Some("unsafe"),
@@ -1067,6 +1076,7 @@ mod tests {
         let body = request(TOOLS_CALL, &serde_json::json!({"name": "unsafe"}));
         let id = serde_json::json!(7);
         let audit = DecisionAuditContext {
+            a2a_version: None,
             store: &store,
             request_id: Some("audit-mode-request"),
             target: Some("unsafe"),
@@ -1147,9 +1157,10 @@ mod tests {
         let policy = compile_policy(&serde_json::json!({
             "id": "deny-task", "effect": "deny", "selectors": {"target_type": "agent", "operation": "GetTask"}
         }));
-        let body = request("tasks/get", &serde_json::json!({"id": "t1"}));
+        let body = request("GetTask", &serde_json::json!({"id": "t1"}));
         let id = serde_json::json!(7);
         let audit = DecisionAuditContext {
+            a2a_version: Some("1.0"),
             store: &store,
             request_id: Some("http-request"),
             target: Some("worker"),
@@ -1175,6 +1186,7 @@ mod tests {
         ));
         let events = store.query(&AuditQuery::default()).events;
         assert_eq!(events[0].protocol, "a2a");
+        assert_eq!(events[0].attributes["a2a_version"], "1.0");
         assert_eq!(events[0].target_type.as_deref(), Some("agent"));
         assert_eq!(events[0].target.as_deref(), Some("worker"));
         assert_eq!(events[0].decision, AuditDecision::Block);

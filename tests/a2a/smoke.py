@@ -28,6 +28,7 @@ def free_port():
 class Backend(BaseHTTPRequestHandler):
     calls = []
     canceled = False
+    card_mode = 'legacy'
 
     def log_message(self, *_):
         pass
@@ -49,6 +50,13 @@ class Backend(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.calls.append(('GET', self.path))
+        if self.card_mode != 'legacy':
+            path = '/' if self.card_mode == 'modern-root' else '/rpc'
+            self.reply({'name': 'Modern static agent', 'capabilities': {},
+                        'supportedInterfaces': [{'protocolBinding': 'JSONRPC',
+                            'protocolVersion': '1.0',
+                            'url': f'http://127.0.0.1:{self.server.server_port}{path}'}]}, split=True)
+            return
         self.reply({'name': 'Smoke agent', 'description': 'Local test agent',
                     'url': 'http://upstream.invalid/', 'version': '1.0',
                     'protocolVersion': '0.3.0', 'capabilities': {
@@ -94,6 +102,24 @@ def check(condition, name, detail=None):
     if not condition:
         raise AssertionError(f"{name}: {detail}" if detail is not None else name)
     print('PASS ' + name, flush=True)
+
+
+def check_rejected_card(url, name):
+    """Body validation can close discovery after HTTP headers were sent."""
+    try:
+        response = urllib.request.urlopen(url, timeout=5)
+    except urllib.error.HTTPError as error:
+        response = error
+    with response:
+        data = response.read()
+        status = response.status
+    try:
+        card = json.loads(data)
+    except (ValueError, UnicodeDecodeError):
+        card = None
+    advertised = isinstance(card, dict) and any(key in card for key in ('url', 'supportedInterfaces'))
+    rejected = not data or status >= 400 or isinstance(card, dict) and 'error' in card
+    check(rejected and not advertised, name, {'status': status, 'bodyBytes': len(data)})
 
 
 def main():
@@ -279,8 +305,8 @@ action_policy:
                               config_field + ' rejected before upstream dispatch')
                     status, result = request(proxy, {'jsonrpc': '2.0', 'id': 'version-check',
                                                     'method': 'message/send', 'params': message},
-                                             headers={'A2A-Version': '1.0'})
-                    check('error' in result and (len(Backend.calls) + len(FallbackBackend.calls)) == before,
+                                             headers={'A2A-Version': '9.0'})
+                    check(result.get('error', {}).get('code') == -32009 and (len(Backend.calls) + len(FallbackBackend.calls)) == before,
                           'unsupported protocol version rejected before upstream dispatch')
                     for method in ('ListTasks', 'SendStreamingMessage', 'SubscribeToTask',
                                    'CreateTaskPushNotificationConfig', 'GetTaskPushNotificationConfig',
@@ -306,6 +332,13 @@ action_policy:
                           'audit records A2A policy denial')
                     check(any(event.get('request_id') and event.get('correlation_id')
                               for event in a2a), 'audit records request correlation')
+                    FallbackBackend.card_mode = 'modern-root'
+                    status, card = request(proxy + '.well-known/agent-card.json')
+                    check(status == 200 and card.get('supportedInterfaces', [{}])[0].get('url') == proxy,
+                          'static modern card advertises matching upstream root only', card)
+                    FallbackBackend.card_mode = 'modern-mismatch'
+                    check_rejected_card(proxy + '.well-known/agent-card.json',
+                                        'static modern card rejects unreachable RPC path')
                 except Exception:
                     log.flush()
                     diagnostic = (directory / 'server.log').read_text()[-8000:]
