@@ -364,25 +364,46 @@ fn build_success_response(
     redactor: &crate::credentials::CredentialRedactor,
     forwarded_values: &[String],
 ) -> serde_json::Value {
-    let mcp_content: Vec<serde_json::Value> = call_result
-        .content
-        .iter()
-        .map(|text| {
-            let redacted = redactor.redact(text);
-            let redacted = if call_result.is_error {
-                redact_forwarded_text(&redacted, forwarded_values)
-            } else {
-                redacted
-            };
-            serde_json::json!({"type": "text", "text": redacted})
-        })
-        .collect();
+    let mut result = redactor.redact_json(&call_result.result);
+    if call_result.is_error {
+        redact_tool_error(&mut result, forwarded_values);
+    }
+    // Retain the existing explicit false value for older upstreams that omit it.
+    result["isError"] = serde_json::Value::Bool(call_result.is_error);
 
     serde_json::json!({
         "jsonrpc": "2.0",
         "id": id,
-        "result": {"content": mcp_content, "isError": call_result.is_error}
+        "result": result
     })
+}
+
+/// Apply the existing tool-error redaction to all supported result payloads.
+fn redact_tool_error(value: &mut serde_json::Value, forwarded_values: &[String]) {
+    match value {
+        serde_json::Value::String(text) => {
+            *text = redact_forwarded_text(text, forwarded_values);
+        }
+        serde_json::Value::Array(items) => {
+            for item in items {
+                redact_tool_error(item, forwarded_values);
+            }
+        }
+        serde_json::Value::Object(fields) => {
+            for (key, mut item) in std::mem::take(fields) {
+                redact_tool_error(&mut item, forwarded_values);
+                fields.insert(redact_forwarded_text(&key, forwarded_values), item);
+            }
+        }
+        serde_json::Value::Number(number) => {
+            let text = number.to_string();
+            let redacted = redact_forwarded_text(&text, forwarded_values);
+            if text != redacted {
+                *value = serde_json::Value::String(redacted);
+            }
+        }
+        _ => {}
+    }
 }
 
 fn inject_header_arguments(
@@ -538,10 +559,10 @@ mod tests {
     fn build_success_response_redacts_injected_credential() {
         // The upstream echoes both the raw secret and the full header value.
         let call_result = wanaku_infra::mcp_client::CallToolResponse {
-            content: vec![
-                "your token is s3cr3t".to_owned(),
-                "sent Authorization: Bearer s3cr3t".to_owned(),
-            ],
+            result: serde_json::json!({"content": [
+                {"type": "text", "text": "your token is s3cr3t"},
+                {"type": "text", "text": "sent Authorization: Bearer s3cr3t"}
+            ]}),
             is_error: false,
         };
         let redactor = crate::credentials::CredentialRedactor::from_patterns(vec![
@@ -562,7 +583,7 @@ mod tests {
     #[test]
     fn build_success_response_is_noop_without_binding() {
         let call_result = wanaku_infra::mcp_client::CallToolResponse {
-            content: vec!["plain output".to_owned()],
+            result: serde_json::json!({"content": [{"type": "text", "text": "plain output"}]}),
             is_error: false,
         };
         let redactor = crate::credentials::CredentialRedactor::default();
@@ -581,7 +602,7 @@ mod tests {
         // content must still be stripped of forwarded header values and
         // credential-shaped text, not only brokered secrets.
         let call_result = wanaku_infra::mcp_client::CallToolResponse {
-            content: vec!["upstream rejected token opaque-fwd-token-xyz".to_owned()],
+            result: serde_json::json!({"content": [{"type": "text", "text": "upstream rejected token opaque-fwd-token-xyz"}]}),
             is_error: true,
         };
         // No brokered secret configured: the forwarded value must still be redacted.
@@ -611,7 +632,7 @@ mod tests {
         // redaction, so ordinary output that happens to contain a forwarded value
         // stays intact for the agent that owns it.
         let call_result = wanaku_infra::mcp_client::CallToolResponse {
-            content: vec!["result includes opaque-fwd-token-xyz".to_owned()],
+            result: serde_json::json!({"content": [{"type": "text", "text": "result includes opaque-fwd-token-xyz"}]}),
             is_error: false,
         };
         let redactor = crate::credentials::CredentialRedactor::default();
@@ -624,6 +645,64 @@ mod tests {
             response.pointer("/result/content/0/text").unwrap(),
             "result includes opaque-fwd-token-xyz"
         );
+    }
+
+    #[test]
+    fn build_success_response_preserves_structured_and_non_text_results() {
+        let result = serde_json::json!({
+            "content": [
+                {"type": "image", "data": "aW1hZ2U=", "mimeType": "image/png"},
+                {"type": "resource_link", "uri": "https://example.com/result", "name": "result"}
+            ],
+            "structuredContent": {"label": "billing", "result": "handled"},
+            "_meta": {"revision": "1"},
+            "isError": false
+        });
+        let call_result = wanaku_infra::mcp_client::CallToolResponse {
+            result: result.clone(),
+            is_error: false,
+        };
+        let response = build_success_response(
+            &serde_json::json!(9),
+            &call_result,
+            &crate::credentials::CredentialRedactor::default(),
+            &[],
+        );
+        assert_eq!(response["result"], result);
+        assert_eq!(response["id"], 9);
+    }
+
+    #[test]
+    fn build_success_response_redacts_secrets_in_all_result_payloads() {
+        let call_result = wanaku_infra::mcp_client::CallToolResponse {
+            result: serde_json::json!({
+                "content": [{"type": "resource", "resource": {
+                    "uri": "file:///error.txt", "text": "broker-secret"
+                }}],
+                "structuredContent": {"detail": "opaque-fwd-token-xyz", "opaque-fwd-token-xyz": 123},
+                "_meta": {"detail": "broker-secret"}, "isError": true
+            }),
+            is_error: true,
+        };
+        let redactor =
+            crate::credentials::CredentialRedactor::from_patterns(vec!["broker-secret".to_owned()]);
+        let response = build_success_response(
+            &serde_json::json!(1),
+            &call_result,
+            &redactor,
+            &["opaque-fwd-token-xyz".to_owned()],
+        );
+        assert_eq!(
+            response["result"]["content"][0]["resource"]["text"],
+            "<redacted>"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["detail"],
+            "[REDACTED]"
+        );
+        assert_eq!(response["result"]["structuredContent"]["[REDACTED]"], 123);
+        assert_eq!(response["result"]["_meta"]["detail"], "<redacted>");
+        assert_eq!(response["result"]["isError"], true);
     }
 
     #[test]
