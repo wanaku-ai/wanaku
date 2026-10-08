@@ -21,8 +21,8 @@ export class A2aAgentsPage extends BasePage {
     await this.page.locator('#agent-description').fill(agent.description ?? '');
     await this.page.locator('#agent-namespace').selectOption(agent.namespace ?? 'default');
     await this.page.locator('#agent-address').fill(agent.address);
-    if (agent.cardAddress) {
-      await this.page.locator('#agent-card-address').fill(agent.cardAddress);
+    if (agent.cardAddress !== undefined) {
+      await this.page.locator('#agent-card-address').fill(agent.cardAddress ?? '');
     }
   }
 

@@ -4,6 +4,43 @@ const suffix = () => {
   return `${Date.now().toString(36)}-${_counter}`;
 };
 
+export const invalidHttpUrls = [
+  'not-a-url',
+  'localhost:9090',
+  '/relative',
+  'ftp://localhost:9090/',
+  'file:///tmp/agent',
+  'http:localhost:9090',
+  'http://',
+  'http://localhost:abc/',
+  'http://localhost:99999/',
+  'http://localhost:0/',
+  'http://user:password@localhost:9090/',
+  'http://localhost:9090/#fragment',
+  ' http://localhost:9090/',
+  'http://local host:9090/',
+  'http://localhost:9090//rpc',
+  'http://localhost:9090/../rpc',
+  'http://localhost:9090/%2e%2e/rpc',
+];
+
+export const httpUrlNormalizationCases = [
+  {
+    label: 'uppercase schemes',
+    address: 'HTTPS://agent.example/rpc',
+    normalizedAddress: 'https://agent.example/rpc',
+    cardAddress: 'HTTPS://cards.example/custom.json',
+    normalizedCardAddress: 'https://cards.example/custom.json',
+  },
+  {
+    label: 'Unicode hostnames and paths',
+    address: 'https://münich.example/送信',
+    normalizedAddress: 'https://xn--mnich-kva.example/%E9%80%81%E4%BF%A1',
+    cardAddress: 'https://münich.example/卡.json',
+    normalizedCardAddress: 'https://xn--mnich-kva.example/%E5%8D%A1.json',
+  },
+];
+
 export function toolData(overrides?: Partial<{ name: string; description: string; uri: string; type: string; inputSchema: object }>) {
   return {
     name: overrides?.name ?? `e2e-tool-${suffix()}`,
