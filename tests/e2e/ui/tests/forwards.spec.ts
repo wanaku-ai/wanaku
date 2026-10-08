@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { ForwardsPage } from '../pages/forwards.page';
 import { ApiHelper } from '../helpers/api-helpers';
-import { bindingData, forwardData } from '../helpers/test-data';
+import { bindingData, forwardData, httpUrlNormalizationCases, invalidHttpUrls } from '../helpers/test-data';
 
 const routerUrl = process.env.WANAKU_ROUTER_URL ?? 'http://localhost:8080';
 
@@ -43,6 +43,48 @@ test.describe('Forwards', () => {
 
     await forwards.waitForForwardInTable(data.name);
   });
+
+  test('validates HTTP and HTTPS addresses before submitting', async ({ page }) => {
+    await forwards.goto();
+    await forwards.clickAddForward();
+    const data = forwardData();
+    await forwards.fillForwardForm(data);
+    const address = page.locator('#forward-address');
+    const add = forwards.modal().getByRole('button', { name: 'Add', exact: true });
+    const submissions: string[] = [];
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/v1/forwards') {
+        submissions.push(request.url());
+      }
+    });
+    for (const value of invalidHttpUrls) {
+      await address.fill(value);
+      await expect(address, value).toHaveAttribute('aria-invalid', 'true');
+      await expect(add, value).toBeDisabled();
+      await address.press('Enter');
+      await expect(forwards.modal()).toBeVisible();
+    }
+    for (const value of ['http://localhost:9090/mcp', 'https://example.com/mcp', 'http://[::1]:9090/mcp', 'HTTPS://example.com/mcp']) {
+      await address.fill(value);
+      await expect(add, value).toBeEnabled();
+    }
+    expect(submissions).toEqual([]);
+    await forwards.cancelModal();
+  });
+
+  for (const urls of httpUrlNormalizationCases) {
+    test(`saves a forward URL with ${urls.label}`, async () => {
+      const data = forwardData({ address: urls.address });
+      createdForwards.push(data.name);
+      await forwards.goto();
+      await forwards.clickAddForward();
+      await forwards.fillForwardForm(data);
+      await forwards.submitModal();
+      await forwards.waitForForwardInTable(data.name);
+      const saved = (await (await api.getForward(data.name)).json()).data;
+      expect(saved.address).toBe(urls.normalizedAddress);
+    });
+  }
 
   test('forward modal filters credential bindings by purpose', async ({ page }) => {
     const data = forwardData();

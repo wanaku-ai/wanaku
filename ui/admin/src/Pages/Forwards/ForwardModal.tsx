@@ -1,6 +1,7 @@
 import { Modal, TextInput } from '@carbon/react';
 import React, { useState } from 'react';
 import { CredentialPurpose, ForwardEntry } from '../../models';
+import { isHttpUrl } from '../../utils/url';
 import { NamespaceSelect } from '../Namespaces/NamespaceSelect.tsx';
 import { BindingSelect } from './BindingSelect.tsx';
 
@@ -26,8 +27,10 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
   const [invocationBinding, setInvocationBinding] = useState<string | undefined>(
     forward?.credentialBindings?.[CredentialPurpose.invocation],
   );
+  const validAddress = isHttpUrl(address);
 
   const handleSubmit = () => {
+    if (!name || !validAddress) return;
     const credentialBindings: Record<string, string> = {};
     if (discoveryBinding) {
       credentialBindings[CredentialPurpose.discovery] = discoveryBinding;
@@ -42,7 +45,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
     // failed re-discovery.
     const next: ForwardEntry = {
       name,
-      address,
+      address: new URL(address).href,
       namespace: selectedNamespace,
       credentialBindings,
     };
@@ -60,7 +63,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
       secondaryButtonText="Cancel"
       onRequestClose={onRequestClose}
       onRequestSubmit={handleSubmit}
-      primaryButtonDisabled={!name || !address}
+      primaryButtonDisabled={!name || !validAddress}
     >
       <TextInput
         id="forward-name"
@@ -75,7 +78,9 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
         labelText="Address"
         placeholder="http://host:port"
         value={address}
-        onChange={(e) => setAddress(e.target.value)}
+        invalid={Boolean(address) && !validAddress}
+        invalidText="Enter a valid HTTP or HTTPS URL without credentials or a fragment."
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) => setAddress(event.target.value)}
         required
       />
       <NamespaceSelect

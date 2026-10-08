@@ -14,6 +14,16 @@ Open the **A2A agents** page in the admin UI.
 6. Enter an explicit Agent Card address if the upstream uses a different discovery location.
 7. Save the agent.
 
+The upstream A2A endpoint and Agent Card address must be valid HTTP or HTTPS URLs. The form shows errors for invalid URLs and disables **Add** or **Save**.
+
+The form normalizes URLs before it saves them. It uses lowercase URL schemes, ASCII host names, and percent-encoded paths for Unicode input.
+
+For a new agent, the form suggests the standard Agent Card URL from the endpoint origin. For example, `http://localhost:9090/` gives `http://localhost:9090/.well-known/agent-card.json`. The suggestion follows endpoint changes until you edit or clear the Agent Card URL. A custom URL or an empty value stays unchanged after that. Editing an existing agent does not add a suggestion.
+
+The form does not save an automatic suggestion as an explicit Agent Card address. Without an explicit address, discovery follows the current upstream endpoint. An explicit Agent Card address stays unchanged when you edit the endpoint.
+
+Select **Clear agent card URL** to remove the value. An empty Agent Card URL uses the upstream agent's standard discovery path.
+
 The table shows the upstream address. Select **Details** to show the Wanaku proxy endpoint. Use **Edit** to change an agent's description or upstream addresses. The name and namespace identify the registered agent and do not change during an edit. Use **Delete** to remove the agent.
 
 Agent entries use the same persistence backend as the other registry entries. A registration, edit, or deletion changes routing for subsequent requests without a restart. Editing an upstream address does not migrate task state between upstream agents.
