@@ -41,6 +41,12 @@ pub struct ActionPolicyFeature {
 }
 
 impl ActionPolicyFeature {
+    /// Read the shared runtime policy state without activating a revision.
+    #[must_use]
+    pub fn state(&self) -> ActionPolicyState {
+        self.state.clone()
+    }
+
     #[must_use]
     pub fn new() -> Self {
         Self {

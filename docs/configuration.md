@@ -453,6 +453,7 @@ Wanaku loads these top-level sections from `wanaku.yaml`:
 - `llm_connections` — named LLM connections (model/url/api_key) for evaluators; config-only, never exposed via the management API
 - `evaluators` — evaluator feature configuration
 - `action_policy` — declarative action-policy rules
+- `simulation` — policy validation, simulation, and replay limits. See [Policy Simulation](policy-simulation.md#resource-limits)
 - `governance` — global governance posture and namespace overrides
 - `plugins` — plugin service mappings owned by the plugins feature
 

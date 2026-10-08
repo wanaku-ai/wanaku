@@ -8,6 +8,7 @@ members = [
     "features/mcp-metadata",
     "features/metrics",
     "features/plugins",
+    "features/simulation",
     "filters",
     "infra",
     "server",
@@ -62,6 +63,7 @@ wanaku-feature-intercept = { version = "0.3.0", path = "features/intercept" }
 wanaku-feature-mcp-metadata = { version = "0.3.0", path = "features/mcp-metadata" }
 wanaku-feature-metrics = { version = "0.3.0", path = "features/metrics" }
 wanaku-feature-plugins = { version = "0.3.0", path = "features/plugins" }
+wanaku-feature-simulation = { version = "0.3.0", path = "features/simulation" }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

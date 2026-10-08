@@ -376,7 +376,8 @@ const fn policy_decision_label(decision: &PolicyDecision) -> &'static str {
     }
 }
 
-const fn enforcement_action(
+/// Resolve traffic behavior from a decision and the production posture.
+pub const fn enforcement_action(
     posture: &GovernancePosture,
     decision: &PolicyDecision,
 ) -> &'static str {
@@ -511,7 +512,8 @@ fn apply_failure(posture: &GovernancePosture, id: &serde_json::Value) -> FilterA
     }
 }
 
-fn action_context(
+/// Build the same read-only action view for production and policy simulation.
+pub fn action_context(
     method: &str,
     namespace: &str,
     view: &McpRequestView,

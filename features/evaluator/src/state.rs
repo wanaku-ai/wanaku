@@ -637,7 +637,7 @@ impl EvaluatorState {
     }
 
     /// Validate the selected engine for every evaluator.
-    fn validate_engines(&self, defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
+    pub(crate) fn validate_engines(&self, defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
         let llm_connections = self.connections.read().map_err(|_| {
             RevisionError::ValidationFailed("LLM connection registry lock poisoned".to_owned())
         })?;
@@ -777,7 +777,7 @@ fn try_compile_schemas(
 }
 
 /// Validate that all evaluator names are non-empty and unique.
-fn validate_evaluator_names(defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
+pub(crate) fn validate_evaluator_names(defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
     let mut seen = std::collections::HashSet::new();
     for def in defs {
         if def.name.is_empty() {
@@ -796,7 +796,7 @@ fn validate_evaluator_names(defs: &[EvaluatorDef]) -> Result<(), RevisionError> 
 }
 
 /// Validate that all triggers reference valid methods.
-fn validate_triggers(defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
+pub(crate) fn validate_triggers(defs: &[EvaluatorDef]) -> Result<(), RevisionError> {
     for def in defs {
         if def.trigger.method.is_empty() {
             return Err(RevisionError::ValidationFailed(format!(

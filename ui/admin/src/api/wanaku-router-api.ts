@@ -12,6 +12,7 @@ import type {
   AgentEntry,
   BindEvaluatorNamespace200,
   BindNamespaceRequest,
+  CancelPolicyReplay200,
   ConfigurePluginRequest,
   CredentialBinding,
   ForwardEntry,
@@ -22,6 +23,7 @@ import type {
   GetEvaluatorRevision200,
   GetEvaluatorStatus200,
   GetEvaluatorStatusParams,
+  GetPolicyReplay200,
   InstallPlugin200,
   InstallPluginRequest,
   ListActionPolicyRevisions200Item,
@@ -36,17 +38,24 @@ import type {
   MetricsSnapshot,
   NamespaceEntry,
   PromptEntry,
+  ReplayRequest,
   ResourceEntry,
+  SimulatePolicyAction200,
+  SimulationRequest,
+  StartPolicyReplay202,
   ToolEntry,
   UnbindEvaluatorNamespace200,
   UpdateActionPolicy200,
   UpdateActionPolicyRequest,
   UpdateEvaluators200,
   UpdateEvaluatorsRequest,
+  ValidatePolicyCandidate200,
+  ValidationRequest,
   WanakuResponseAgentView,
   WanakuResponseAuditEvent,
   WanakuResponseAuditHealth,
   WanakuResponseAuditPage,
+  WanakuResponseSimulationError,
   WanakuResponseValue,
   WanakuResponseVecAgentView,
 } from "../models";
@@ -1930,6 +1939,418 @@ export const configurePlugin = async (
     },
     body: JSON.stringify(configurePluginRequest),
   });
+};
+
+export type startPolicyReplayResponse202 = {
+  data: StartPolicyReplay202;
+  status: 202;
+};
+
+export type startPolicyReplayResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type startPolicyReplayResponse408 = {
+  data: ManagementErrorResponse;
+  status: 408;
+};
+
+export type startPolicyReplayResponse413 = {
+  data: ManagementErrorResponse;
+  status: 413;
+};
+
+export type startPolicyReplayResponse422 = {
+  data: WanakuResponseSimulationError;
+  status: 422;
+};
+
+export type startPolicyReplayResponse429 = {
+  data: ManagementErrorResponse;
+  status: 429;
+};
+
+export type startPolicyReplayResponse503 = {
+  data: ManagementErrorResponse;
+  status: 503;
+};
+
+export type startPolicyReplayResponseSuccess = startPolicyReplayResponse202 & {
+  headers: Headers;
+};
+export type startPolicyReplayResponseError = (
+  | startPolicyReplayResponse400
+  | startPolicyReplayResponse408
+  | startPolicyReplayResponse413
+  | startPolicyReplayResponse422
+  | startPolicyReplayResponse429
+  | startPolicyReplayResponse503
+) & {
+  headers: Headers;
+};
+
+export type startPolicyReplayResponse =
+  | startPolicyReplayResponseSuccess
+  | startPolicyReplayResponseError;
+
+export const getStartPolicyReplayUrl = () => {
+  return `/api/v1/policy-simulations/replays`;
+};
+
+export const startPolicyReplay = async (
+  replayRequest: ReplayRequest,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<startPolicyReplayResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit["headers"]>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<
+      string | readonly string[] | undefined
+    >(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<startPolicyReplayResponse>(getStartPolicyReplayUrl(), {
+    ...options,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getHeaders(options?.headers),
+    },
+    body: JSON.stringify(replayRequest),
+  });
+};
+
+export type getPolicyReplayResponse200 = {
+  data: GetPolicyReplay200;
+  status: 200;
+};
+
+export type getPolicyReplayResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type getPolicyReplayResponse503 = {
+  data: ManagementErrorResponse;
+  status: 503;
+};
+
+export type getPolicyReplayResponseSuccess = getPolicyReplayResponse200 & {
+  headers: Headers;
+};
+export type getPolicyReplayResponseError = (
+  | getPolicyReplayResponse404
+  | getPolicyReplayResponse503
+) & {
+  headers: Headers;
+};
+
+export type getPolicyReplayResponse =
+  | getPolicyReplayResponseSuccess
+  | getPolicyReplayResponseError;
+
+export const getGetPolicyReplayUrl = (id: string) => {
+  return `/api/v1/policy-simulations/replays/${id}`;
+};
+
+export const getPolicyReplay = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<getPolicyReplayResponse> => {
+  return customFetch<getPolicyReplayResponse>(getGetPolicyReplayUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type deletePolicyReplayResponse200 = {
+  data: unknown;
+  status: 200;
+};
+
+export type deletePolicyReplayResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type deletePolicyReplayResponse503 = {
+  data: ManagementErrorResponse;
+  status: 503;
+};
+
+export type deletePolicyReplayResponseSuccess =
+  deletePolicyReplayResponse200 & {
+    headers: Headers;
+  };
+export type deletePolicyReplayResponseError = (
+  | deletePolicyReplayResponse404
+  | deletePolicyReplayResponse503
+) & {
+  headers: Headers;
+};
+
+export type deletePolicyReplayResponse =
+  | deletePolicyReplayResponseSuccess
+  | deletePolicyReplayResponseError;
+
+export const getDeletePolicyReplayUrl = (id: string) => {
+  return `/api/v1/policy-simulations/replays/${id}`;
+};
+
+export const deletePolicyReplay = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<deletePolicyReplayResponse> => {
+  return customFetch<deletePolicyReplayResponse>(getDeletePolicyReplayUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export type cancelPolicyReplayResponse200 = {
+  data: CancelPolicyReplay200;
+  status: 200;
+};
+
+export type cancelPolicyReplayResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type cancelPolicyReplayResponse503 = {
+  data: ManagementErrorResponse;
+  status: 503;
+};
+
+export type cancelPolicyReplayResponseSuccess =
+  cancelPolicyReplayResponse200 & {
+    headers: Headers;
+  };
+export type cancelPolicyReplayResponseError = (
+  | cancelPolicyReplayResponse404
+  | cancelPolicyReplayResponse503
+) & {
+  headers: Headers;
+};
+
+export type cancelPolicyReplayResponse =
+  | cancelPolicyReplayResponseSuccess
+  | cancelPolicyReplayResponseError;
+
+export const getCancelPolicyReplayUrl = (id: string) => {
+  return `/api/v1/policy-simulations/replays/${id}/cancel`;
+};
+
+export const cancelPolicyReplay = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<cancelPolicyReplayResponse> => {
+  return customFetch<cancelPolicyReplayResponse>(getCancelPolicyReplayUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export type simulatePolicyActionResponse200 = {
+  data: SimulatePolicyAction200;
+  status: 200;
+};
+
+export type simulatePolicyActionResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type simulatePolicyActionResponse408 = {
+  data: ManagementErrorResponse;
+  status: 408;
+};
+
+export type simulatePolicyActionResponse413 = {
+  data: ManagementErrorResponse;
+  status: 413;
+};
+
+export type simulatePolicyActionResponse422 = {
+  data: WanakuResponseSimulationError;
+  status: 422;
+};
+
+export type simulatePolicyActionResponse429 = {
+  data: ManagementErrorResponse;
+  status: 429;
+};
+
+export type simulatePolicyActionResponse503 = {
+  data: ManagementErrorResponse;
+  status: 503;
+};
+
+export type simulatePolicyActionResponseSuccess =
+  simulatePolicyActionResponse200 & {
+    headers: Headers;
+  };
+export type simulatePolicyActionResponseError = (
+  | simulatePolicyActionResponse400
+  | simulatePolicyActionResponse408
+  | simulatePolicyActionResponse413
+  | simulatePolicyActionResponse422
+  | simulatePolicyActionResponse429
+  | simulatePolicyActionResponse503
+) & {
+  headers: Headers;
+};
+
+export type simulatePolicyActionResponse =
+  | simulatePolicyActionResponseSuccess
+  | simulatePolicyActionResponseError;
+
+export const getSimulatePolicyActionUrl = () => {
+  return `/api/v1/policy-simulations/simulate`;
+};
+
+export const simulatePolicyAction = async (
+  simulationRequest: SimulationRequest,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<simulatePolicyActionResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit["headers"]>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<
+      string | readonly string[] | undefined
+    >(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<simulatePolicyActionResponse>(
+    getSimulatePolicyActionUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getHeaders(options?.headers),
+      },
+      body: JSON.stringify(simulationRequest),
+    },
+  );
+};
+
+export type validatePolicyCandidateResponse200 = {
+  data: ValidatePolicyCandidate200;
+  status: 200;
+};
+
+export type validatePolicyCandidateResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type validatePolicyCandidateResponse408 = {
+  data: ManagementErrorResponse;
+  status: 408;
+};
+
+export type validatePolicyCandidateResponse413 = {
+  data: ManagementErrorResponse;
+  status: 413;
+};
+
+export type validatePolicyCandidateResponse429 = {
+  data: ManagementErrorResponse;
+  status: 429;
+};
+
+export type validatePolicyCandidateResponse503 = {
+  data: ManagementErrorResponse;
+  status: 503;
+};
+
+export type validatePolicyCandidateResponseSuccess =
+  validatePolicyCandidateResponse200 & {
+    headers: Headers;
+  };
+export type validatePolicyCandidateResponseError = (
+  | validatePolicyCandidateResponse400
+  | validatePolicyCandidateResponse408
+  | validatePolicyCandidateResponse413
+  | validatePolicyCandidateResponse429
+  | validatePolicyCandidateResponse503
+) & {
+  headers: Headers;
+};
+
+export type validatePolicyCandidateResponse =
+  | validatePolicyCandidateResponseSuccess
+  | validatePolicyCandidateResponseError;
+
+export const getValidatePolicyCandidateUrl = () => {
+  return `/api/v1/policy-simulations/validate`;
+};
+
+export const validatePolicyCandidate = async (
+  validationRequest: ValidationRequest,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<validatePolicyCandidateResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit["headers"]>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<
+      string | readonly string[] | undefined
+    >(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<validatePolicyCandidateResponse>(
+    getValidatePolicyCandidateUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getHeaders(options?.headers),
+      },
+      body: JSON.stringify(validationRequest),
+    },
+  );
 };
 
 export type listPromptsResponse200 = {

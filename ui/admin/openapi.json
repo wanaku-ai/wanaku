@@ -1729,6 +1729,414 @@
         }
       }
     },
+    "/api/v1/policy-simulations/replays": {
+      "post": {
+        "tags": [
+          "Policy Simulations"
+        ],
+        "operationId": "start_policy_replay",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Bounded replay job accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_ReplayJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid replay request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Simulation duration exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Input or result limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Candidate validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_SimulationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Replay capacity exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Simulation state unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/policy-simulations/replays/{id}": {
+      "get": {
+        "tags": [
+          "Policy Simulations"
+        ],
+        "operationId": "get_policy_replay",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replay status and bounded results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_ReplayJob"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Replay not found or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Simulation state unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Policy Simulations"
+        ],
+        "operationId": "delete_policy_replay",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replay deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Value"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Replay not found or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Simulation state unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/policy-simulations/replays/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Policy Simulations"
+        ],
+        "operationId": "cancel_policy_replay",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replay cancellation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_ReplayJob"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Replay not found or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Simulation state unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/policy-simulations/simulate": {
+      "post": {
+        "tags": [
+          "Policy Simulations"
+        ],
+        "operationId": "simulate_policy_action",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Side-effect-free decision report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_SimulationReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid action or unsupported external execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Simulation duration exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Input or result limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Candidate validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_SimulationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Simulation capacity exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Simulation state unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/policy-simulations/validate": {
+      "post": {
+        "tags": [
+          "Policy Simulations"
+        ],
+        "operationId": "validate_policy_candidate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Transient validation report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_ValidationReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Simulation duration exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Input or result limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Simulation capacity exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Simulation state unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/prompts": {
       "get": {
         "tags": [
@@ -2638,6 +3046,59 @@
           }
         }
       },
+      "CandidateSelection": {
+        "type": "object",
+        "properties": {
+          "base_evaluator_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "default": null,
+            "minimum": 0
+          },
+          "base_policy_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "default": null,
+            "minimum": 0
+          },
+          "evaluator_patch": {},
+          "evaluator_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "default": null,
+            "minimum": 0
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "inline_evaluators": {},
+          "inline_policy": {},
+          "policy_patch": {},
+          "policy_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "default": null,
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
       "ConfigurePluginRequest": {
         "type": "object",
         "required": [
@@ -2761,6 +3222,25 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "Diagnostic": {
+        "type": "object",
+        "required": [
+          "severity",
+          "reason_code",
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
           }
         }
       },
@@ -3780,6 +4260,55 @@
           }
         }
       },
+      "PolicyIdentity": {
+        "type": "object",
+        "properties": {
+          "base_evaluator_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "base_policy_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "evaluator_checksum": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evaluator_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "policy_checksum": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "policy_revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
       "Predicate": {
         "oneOf": [
           {
@@ -4013,6 +4542,130 @@
             }
           }
         }
+      },
+      "ReplayDetail": {
+        "type": "object",
+        "required": [
+          "index",
+          "category",
+          "access_expansion",
+          "compatibility_impact",
+          "outside_evidence",
+          "active",
+          "candidate"
+        ],
+        "properties": {
+          "access_expansion": {
+            "type": "boolean"
+          },
+          "active": {
+            "$ref": "#/components/schemas/SimulationReport"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/SimulationReport"
+          },
+          "category": {
+            "type": "string"
+          },
+          "compatibility_impact": {
+            "type": "boolean"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "outside_evidence": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReplayJob": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "id",
+          "status",
+          "stale",
+          "identity",
+          "counts",
+          "details",
+          "skipped_audit_ids",
+          "duration_ms"
+        ],
+        "properties": {
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplayDetail"
+            }
+          },
+          "duration_ms": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "id": {
+            "type": "string"
+          },
+          "identity": {
+            "$ref": "#/components/schemas/PolicyIdentity"
+          },
+          "reason_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "schema_version": {
+            "type": "string"
+          },
+          "skipped_audit_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "ReplayRequest": {
+        "type": "object",
+        "properties": {
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyntheticAction"
+            }
+          },
+          "allow_external_evaluators": {
+            "type": "boolean"
+          },
+          "audit_event_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/CandidateSelection"
+          }
+        },
+        "additionalProperties": false
       },
       "ResourceEntry": {
         "type": "object",
@@ -4287,6 +4940,160 @@
           }
         }
       },
+      "SimulationError": {
+        "type": "object",
+        "required": [
+          "reason_code"
+        ],
+        "properties": {
+          "reason_code": {
+            "type": "string"
+          },
+          "validation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValidationReport"
+              }
+            ]
+          }
+        }
+      },
+      "SimulationReport": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "identity",
+          "stale",
+          "namespace",
+          "operation",
+          "posture",
+          "stages",
+          "decision",
+          "baseline_used",
+          "failure_used",
+          "conditional",
+          "redaction",
+          "duration_ms"
+        ],
+        "properties": {
+          "baseline_used": {
+            "type": "boolean"
+          },
+          "conditional": {
+            "type": "boolean"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "failure_used": {
+            "type": "boolean"
+          },
+          "identity": {
+            "$ref": "#/components/schemas/PolicyIdentity"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "posture": {
+            "$ref": "#/components/schemas/GovernancePosture"
+          },
+          "redaction": {
+            "$ref": "#/components/schemas/RedactionMetadata"
+          },
+          "schema_version": {
+            "type": "string"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StageDecision"
+            }
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SimulationRequest": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/SyntheticAction"
+          },
+          "allow_external_evaluators": {
+            "type": "boolean"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/CandidateSelection"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StageDecision": {
+        "type": "object",
+        "required": [
+          "stage",
+          "decision",
+          "reason_code",
+          "matched_ids"
+        ],
+        "properties": {
+          "decision": {
+            "type": "string"
+          },
+          "matched_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          }
+        }
+      },
+      "SyntheticAction": {
+        "type": "object",
+        "required": [
+          "request"
+        ],
+        "properties": {
+          "evidence_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "request": {}
+        },
+        "additionalProperties": false
+      },
       "SystemOneDef": {
         "type": "object",
         "description": "TypeSafe System One engine configuration. It currently supports Noul.",
@@ -4445,6 +5252,48 @@
             ],
             "format": "int64",
             "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "ValidationReport": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "valid",
+          "stale",
+          "identity",
+          "diagnostics"
+        ],
+        "properties": {
+          "diagnostics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Diagnostic"
+            }
+          },
+          "identity": {
+            "$ref": "#/components/schemas/PolicyIdentity"
+          },
+          "schema_version": {
+            "type": "string"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ValidationRequest": {
+        "type": "object",
+        "properties": {
+          "allow_external_evaluators": {
+            "type": "boolean"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/CandidateSelection"
           }
         },
         "additionalProperties": false
@@ -4921,6 +5770,194 @@
           }
         }
       },
+      "WanakuResponse_ReplayJob": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "schema_version",
+              "id",
+              "status",
+              "stale",
+              "identity",
+              "counts",
+              "details",
+              "skipped_audit_ids",
+              "duration_ms"
+            ],
+            "properties": {
+              "counts": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "propertyNames": {
+                  "type": "string"
+                }
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ReplayDetail"
+                }
+              },
+              "duration_ms": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "id": {
+                "type": "string"
+              },
+              "identity": {
+                "$ref": "#/components/schemas/PolicyIdentity"
+              },
+              "reason_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "schema_version": {
+                "type": "string"
+              },
+              "skipped_audit_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "stale": {
+                "type": "boolean"
+              },
+              "status": {
+                "type": "string"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_SimulationError": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "reason_code"
+            ],
+            "properties": {
+              "reason_code": {
+                "type": "string"
+              },
+              "validation": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ValidationReport"
+                  }
+                ]
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_SimulationReport": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "schema_version",
+              "identity",
+              "stale",
+              "namespace",
+              "operation",
+              "posture",
+              "stages",
+              "decision",
+              "baseline_used",
+              "failure_used",
+              "conditional",
+              "redaction",
+              "duration_ms"
+            ],
+            "properties": {
+              "baseline_used": {
+                "type": "boolean"
+              },
+              "conditional": {
+                "type": "boolean"
+              },
+              "decision": {
+                "type": "string"
+              },
+              "duration_ms": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "failure_used": {
+                "type": "boolean"
+              },
+              "identity": {
+                "$ref": "#/components/schemas/PolicyIdentity"
+              },
+              "namespace": {
+                "type": "string"
+              },
+              "operation": {
+                "type": "string"
+              },
+              "posture": {
+                "$ref": "#/components/schemas/GovernancePosture"
+              },
+              "redaction": {
+                "$ref": "#/components/schemas/RedactionMetadata"
+              },
+              "schema_version": {
+                "type": "string"
+              },
+              "stages": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/StageDecision"
+                }
+              },
+              "stale": {
+                "type": "boolean"
+              },
+              "target": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "WanakuResponse_UnbindNamespaceResponse": {
         "type": "object",
         "properties": {
@@ -4932,6 +5969,47 @@
             "properties": {
               "unbound": {
                 "type": "string"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_ValidationReport": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "schema_version",
+              "valid",
+              "stale",
+              "identity",
+              "diagnostics"
+            ],
+            "properties": {
+              "diagnostics": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Diagnostic"
+                }
+              },
+              "identity": {
+                "$ref": "#/components/schemas/PolicyIdentity"
+              },
+              "schema_version": {
+                "type": "string"
+              },
+              "stale": {
+                "type": "boolean"
+              },
+              "valid": {
+                "type": "boolean"
               }
             }
           },

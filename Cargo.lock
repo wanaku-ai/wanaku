@@ -6135,6 +6135,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "wanaku-feature-simulation"
+version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "http",
+ "praxis-proxy-filter",
+ "serde",
+ "serde_json",
+ "tokio",
+ "utoipa",
+ "wanaku-feature-action-policy",
+ "wanaku-feature-evaluator",
+ "wanaku-filters",
+ "wanaku-infra",
+ "wanaku-types",
+ "yaml_serde",
+]
+
+[[package]]
 name = "wanaku-filters"
 version = "0.3.0"
 dependencies = [
@@ -6201,6 +6221,7 @@ dependencies = [
  "wanaku-feature-mcp-metadata",
  "wanaku-feature-metrics",
  "wanaku-feature-plugins",
+ "wanaku-feature-simulation",
  "wanaku-filters",
  "wanaku-infra",
  "wanaku-types",

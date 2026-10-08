@@ -222,6 +222,19 @@ The update and activation requests accept an optional `expected_revision`. Wanak
 
 The OpenAPI document contains all action-policy request and response schemas. Run `yarn run generate-api` in `ui/admin` after you change an action-policy route or schema.
 
+### Policy Simulation
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/v1/policy-simulations/validate` | Validate a transient candidate. |
+| `POST` | `/api/v1/policy-simulations/simulate` | Evaluate one synthetic MCP action. |
+| `POST` | `/api/v1/policy-simulations/replays` | Start a bounded asynchronous comparison job. |
+| `GET` | `/api/v1/policy-simulations/replays/{id}` | Get job status and its impact report. |
+| `POST` | `/api/v1/policy-simulations/replays/{id}/cancel` | Request job cancellation. |
+| `DELETE` | `/api/v1/policy-simulations/replays/{id}` | Delete a retained job. |
+
+These routes do not activate candidates. They do not forward actions or resolve credentials. External evaluator execution is not supported. Reports contain decision metadata instead of request payloads. See [Policy Simulation](policy-simulation.md) for candidate selection, replay limits, audit input, and CI examples.
+
 ### Inference Proxy (not part of this API)
 
 Chat completions do not go through the management API. Wanaku exposes a

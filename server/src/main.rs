@@ -67,8 +67,13 @@ fn main() {
     let wanaku_config = load_wanaku_yaml(&args.wanaku_config).unwrap_or_else(|error| fatal(&error));
     let governance = load_governance_config(wanaku_config.as_ref()).unwrap_or_else(|e| fatal(&e));
     // Feature status and pipeline filters use the same immutable startup posture.
-    let (features, credential_audit_sink) =
-        build_features(&args, &metrics_store, wanaku_config.as_ref(), &governance);
+    let (features, credential_audit_sink) = build_features(
+        &args,
+        &metrics_store,
+        wanaku_config.as_ref(),
+        &governance,
+        &wanaku_registry,
+    );
 
     load_config(
         wanaku_config.as_ref(),
@@ -295,14 +300,68 @@ fn build_features(
     metrics_store: &wanaku_infra::metrics::MetricsStore,
     wanaku_config: Option<&serde_yaml::Value>,
     governance: &GovernanceConfig,
+    registry: &InMemoryRegistry,
 ) -> (Vec<Box<dyn Feature>>, Arc<dyn CredentialAuditSink>) {
+    let audit = build_audit(metrics_store, wanaku_config);
+    let credential_audit_sink = audit.credential_audit_sink();
+    let action_policy = build_action_policy();
+    let evaluator = build_evaluator(metrics_store, audit.store(), governance);
+    let simulation = build_simulation(
+        action_policy.state(),
+        evaluator.state(),
+        registry,
+        governance,
+        audit.store(),
+    );
+
+    (
+        vec![
+            Box::new(audit),
+            Box::new(wanaku_feature_metrics::MetricsFeature::new(
+                metrics_store.clone(),
+            )),
+            Box::new(wanaku_feature_intercept::InterceptFeature::new()),
+            Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
+            Box::new(action_policy),
+            Box::new(evaluator),
+            Box::new(simulation),
+            Box::new(wanaku_feature_plugins::PluginsFeature::new(
+                args.plugins_path.as_deref(),
+            )),
+        ],
+        credential_audit_sink,
+    )
+}
+
+fn build_audit(
+    metrics_store: &wanaku_infra::metrics::MetricsStore,
+    wanaku_config: Option<&serde_yaml::Value>,
+) -> wanaku_feature_audit::AuditFeature {
     let mut audit = wanaku_feature_audit::AuditFeature::new().with_metrics(metrics_store.clone());
     if let Some(backend) = wanaku_feature_audit::persistence::FileAuditPersistence::from_config() {
         info!("audit persistence enabled");
         audit = audit.with_persistence(backend);
     }
-    audit = audit.configured_from(wanaku_config);
-    let credential_audit_sink = audit.credential_audit_sink();
+    audit.configured_from(wanaku_config)
+}
+
+fn build_simulation(
+    policy: wanaku_feature_action_policy::ActionPolicyState,
+    evaluators: wanaku_feature_evaluator::state::EvaluatorState,
+    registry: &InMemoryRegistry,
+    governance: &GovernanceConfig,
+    audit: wanaku_types::audit::InMemoryAuditStore,
+) -> wanaku_feature_simulation::SimulationFeature {
+    wanaku_feature_simulation::SimulationFeature::new(wanaku_feature_simulation::SimulationDeps {
+        policy,
+        evaluators,
+        registry: registry.clone(),
+        governance: governance.clone(),
+        audit,
+    })
+}
+
+fn build_action_policy() -> wanaku_feature_action_policy::ActionPolicyFeature {
     let mut action_policy = wanaku_feature_action_policy::ActionPolicyFeature::new();
     if let Some(backend) =
         wanaku_feature_action_policy::revision_persistence::FileRevisionPersistence::from_config()
@@ -310,22 +369,7 @@ fn build_features(
         info!("action policy revision persistence enabled");
         action_policy = action_policy.with_revision_persistence(backend);
     }
-    let evaluator = build_evaluator(metrics_store, audit.store(), governance);
-
-    let features: Vec<Box<dyn Feature>> = vec![
-        Box::new(audit),
-        Box::new(wanaku_feature_metrics::MetricsFeature::new(
-            metrics_store.clone(),
-        )),
-        Box::new(wanaku_feature_intercept::InterceptFeature::new()),
-        Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
-        Box::new(action_policy),
-        Box::new(evaluator),
-        Box::new(wanaku_feature_plugins::PluginsFeature::new(
-            args.plugins_path.as_deref(),
-        )),
-    ];
-    (features, credential_audit_sink)
+    action_policy
 }
 
 fn build_evaluator(

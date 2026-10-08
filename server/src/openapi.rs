@@ -4,6 +4,11 @@
 )]
 
 use utoipa::OpenApi;
+use wanaku_feature_simulation::api::{
+    CandidateSelection, Diagnostic, PolicyIdentity, ReplayDetail, ReplayJob, ReplayRequest,
+    SimulationError, SimulationReport, SimulationRequest, StageDecision, SyntheticAction,
+    ValidationReport, ValidationRequest,
+};
 
 use wanaku_feature_action_policy::api::{
     ActionPolicyRevisionResponse, ActivateRevisionRequest as ActivatePolicyRevisionRequest,
@@ -573,6 +578,65 @@ impl utoipa::Modify for OptionalActivationBodies {
     }
 }
 
+#[utoipa::path(post, path = "/api/v1/policy-simulations/validate", tag = "Policy Simulations",
+    request_body = ValidationRequest,
+    responses((status = 200, description = "Transient validation report", body = WanakuResponse<ValidationReport>),
+        (status = 400, description = "Invalid request", body = ManagementErrorResponse),
+        (status = 413, description = "Input or result limit exceeded", body = ManagementErrorResponse),
+        (status = 408, description = "Simulation duration exceeded", body = ManagementErrorResponse),
+        (status = 429, description = "Simulation capacity exhausted", body = ManagementErrorResponse),
+        (status = 503, description = "Simulation state unavailable", body = ManagementErrorResponse))
+)]
+const fn validate_policy_candidate() {}
+
+#[utoipa::path(post, path = "/api/v1/policy-simulations/simulate", tag = "Policy Simulations",
+    request_body = SimulationRequest,
+    responses((status = 200, description = "Side-effect-free decision report", body = WanakuResponse<SimulationReport>),
+        (status = 400, description = "Invalid action or unsupported external execution", body = ManagementErrorResponse),
+        (status = 422, description = "Candidate validation failed", body = WanakuResponse<SimulationError>),
+        (status = 413, description = "Input or result limit exceeded", body = ManagementErrorResponse),
+        (status = 408, description = "Simulation duration exceeded", body = ManagementErrorResponse),
+        (status = 503, description = "Simulation state unavailable", body = ManagementErrorResponse),
+        (status = 429, description = "Simulation capacity exhausted", body = ManagementErrorResponse))
+)]
+const fn simulate_policy_action() {}
+
+#[utoipa::path(post, path = "/api/v1/policy-simulations/replays", tag = "Policy Simulations",
+    request_body = ReplayRequest,
+    responses((status = 202, description = "Bounded replay job accepted", body = WanakuResponse<ReplayJob>),
+        (status = 400, description = "Invalid replay request", body = ManagementErrorResponse),
+        (status = 413, description = "Input or result limit exceeded", body = ManagementErrorResponse),
+        (status = 408, description = "Simulation duration exceeded", body = ManagementErrorResponse),
+        (status = 422, description = "Candidate validation failed", body = WanakuResponse<SimulationError>),
+        (status = 503, description = "Simulation state unavailable", body = ManagementErrorResponse),
+        (status = 429, description = "Replay capacity exhausted", body = ManagementErrorResponse))
+)]
+const fn start_policy_replay() {}
+
+#[utoipa::path(get, path = "/api/v1/policy-simulations/replays/{id}", tag = "Policy Simulations",
+    params(("id" = String, Path)),
+    responses((status = 200, description = "Replay status and bounded results", body = WanakuResponse<ReplayJob>),
+        (status = 404, description = "Replay not found or expired", body = ManagementErrorResponse),
+        (status = 503, description = "Simulation state unavailable", body = ManagementErrorResponse))
+)]
+const fn get_policy_replay() {}
+
+#[utoipa::path(post, path = "/api/v1/policy-simulations/replays/{id}/cancel", tag = "Policy Simulations",
+    params(("id" = String, Path)),
+    responses((status = 200, description = "Replay cancellation status", body = WanakuResponse<ReplayJob>),
+        (status = 404, description = "Replay not found or expired", body = ManagementErrorResponse),
+        (status = 503, description = "Simulation state unavailable", body = ManagementErrorResponse))
+)]
+const fn cancel_policy_replay() {}
+
+#[utoipa::path(delete, path = "/api/v1/policy-simulations/replays/{id}", tag = "Policy Simulations",
+    params(("id" = String, Path)),
+    responses((status = 200, description = "Replay deleted", body = WanakuResponse<serde_json::Value>),
+        (status = 404, description = "Replay not found or expired", body = ManagementErrorResponse),
+        (status = 503, description = "Simulation state unavailable", body = ManagementErrorResponse))
+)]
+const fn delete_policy_replay() {}
+
 #[derive(OpenApi)]
 #[openapi(
     info(
@@ -637,6 +701,12 @@ impl utoipa::Modify for OptionalActivationBodies {
         list_plugin_catalog,
         install_plugin,
         configure_plugin,
+        validate_policy_candidate,
+        simulate_policy_action,
+        start_policy_replay,
+        get_policy_replay,
+        cancel_policy_replay,
+        delete_policy_replay,
     ),
     modifiers(&OptionalActivationBodies),
     components(schemas(
@@ -715,6 +785,9 @@ impl utoipa::Modify for OptionalActivationBodies {
         PluginServiceTarget,
         ConfigurePluginRequest,
         ManagementErrorResponse,
+        CandidateSelection, SyntheticAction, ValidationRequest, SimulationRequest, ReplayRequest,
+        Diagnostic, PolicyIdentity, ValidationReport, StageDecision, SimulationReport,
+        ReplayDetail, ReplayJob, SimulationError,
     ))
 )]
 pub struct ApiDoc;
@@ -727,6 +800,49 @@ pub fn openapi_json() -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn simulation_contracts_are_transient_and_versioned() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        for (path, method, status) in [
+            ("/api/v1/policy-simulations/validate", "post", "200"),
+            ("/api/v1/policy-simulations/simulate", "post", "200"),
+            ("/api/v1/policy-simulations/replays", "post", "202"),
+            ("/api/v1/policy-simulations/replays/{id}", "get", "200"),
+            ("/api/v1/policy-simulations/replays/{id}", "delete", "200"),
+            (
+                "/api/v1/policy-simulations/replays/{id}/cancel",
+                "post",
+                "200",
+            ),
+        ] {
+            let escaped = path.replace('/', "~1");
+            assert!(
+                value
+                    .pointer(&format!("/paths/{escaped}/{method}/responses/{status}"))
+                    .is_some()
+            );
+        }
+    }
+
+    #[test]
+    fn simulation_reports_have_version_and_patch_fields() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        for schema in ["ValidationReport", "SimulationReport", "ReplayJob"] {
+            assert!(
+                value
+                    .pointer(&format!(
+                        "/components/schemas/{schema}/properties/schema_version"
+                    ))
+                    .is_some()
+            );
+        }
+        assert!(
+            value
+                .pointer("/components/schemas/CandidateSelection/properties/policy_patch")
+                .is_some()
+        );
+    }
 
     #[test]
     fn agents_have_crud_contracts_and_proxy_views() {

@@ -75,7 +75,7 @@ async fn execute_system_one(
         .map_err(|_| EvaluationError::Remote)
 }
 
-fn passthrough_input(mcp: &McpContext<'_>) -> Result<String, EvaluationError> {
+pub(crate) fn passthrough_input(mcp: &McpContext<'_>) -> Result<String, EvaluationError> {
     serde_json::to_string(&serde_json::json!({
         "method": mcp.method,
         "tool_name": mcp.tool_name,

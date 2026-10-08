@@ -181,6 +181,8 @@ impl EvaluatorFilter {
                 registry,
                 interactions,
                 compiled_schema: schema,
+                mode: crate::engine::ExecutionMode::Production,
+                limits: None,
                 allow_side_effects: posture.mode == EnforcementMode::Enforce,
             },
             eval_ctx,

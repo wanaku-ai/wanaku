@@ -52,6 +52,7 @@ wanaku-feature-intercept = { workspace = true }
 wanaku-feature-mcp-metadata = { workspace = true }
 wanaku-feature-metrics = { workspace = true }
 wanaku-feature-plugins = { workspace = true, features = ["openapi"] }
+wanaku-feature-simulation = { workspace = true, features = ["openapi"] }
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.31.3", default-features = false, features = ["process", "signal", "user"] }

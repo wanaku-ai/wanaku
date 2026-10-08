@@ -6,7 +6,26 @@ pub struct CompiledSchema {
     validator: jsonschema::Validator,
 }
 
+struct NoExternalSchemas;
+
+impl jsonschema::Retrieve for NoExternalSchemas {
+    fn retrieve(
+        &self,
+        _uri: &jsonschema::Uri<String>,
+    ) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+        Err("external_schema_unavailable".into())
+    }
+}
+
 impl CompiledSchema {
+    /// Compile without file or network retrieval and without logging candidate data.
+    pub(crate) fn compile_offline(schema: &Value) -> Option<Self> {
+        jsonschema::options()
+            .with_retriever(NoExternalSchemas)
+            .build(schema)
+            .ok()
+            .map(|validator| Self { validator })
+    }
     /// Compile a JSON Schema. Returns `None` if the schema itself is invalid,
     /// logging the error so misconfiguration is surfaced at load time.
     pub fn compile(schema: &Value) -> Option<Self> {
