@@ -146,7 +146,8 @@ pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
 
 #[derive(Debug, Clone)]
 pub struct CallToolResponse {
-    pub content: Vec<String>,
+    /// Complete supported MCP result, including content, metadata and structured data.
+    pub result: Value,
     pub is_error: bool,
 }
 
@@ -186,19 +187,13 @@ pub async fn call_tool(
             message: e.to_string(),
         })?;
 
-    let content = result
-        .content
-        .iter()
-        .filter_map(|block| match block {
-            rmcp::model::ContentBlock::Text(text) => Some(text.text.clone()),
-            _ => None,
-        })
-        .collect();
-
-    Ok(CallToolResponse {
-        content,
-        is_error: result.is_error.unwrap_or(false),
-    })
+    let is_error = result.is_error.unwrap_or(false);
+    let result = serde_json::to_value(result).map_err(|e| McpClientError::CallTool {
+        url,
+        tool_name: tool_name.to_owned(),
+        message: format!("unsupported MCP tool result: {e}"),
+    })?;
+    Ok(CallToolResponse { result, is_error })
 }
 
 #[expect(
@@ -765,8 +760,7 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn initializes_with_a_handshake_protocol_version() {
+    async fn initialized_server() -> MockServer {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(body_partial_json(json!({
@@ -788,6 +782,12 @@ mod tests {
             .respond_with(ResponseTemplate::new(202))
             .mount(&server)
             .await;
+        server
+    }
+
+    #[tokio::test]
+    async fn initializes_with_a_handshake_protocol_version() {
+        let server = initialized_server().await;
         Mock::given(method("POST"))
             .and(body_partial_json(json!({ "method": "tools/list" })))
             .respond_with(reply(json!({
@@ -800,5 +800,84 @@ mod tests {
 
         assert_eq!(tools.len(), 1);
         assert_eq!(tools[0]["name"], "echo");
+    }
+
+    async fn tool_server(result: Value) -> MockServer {
+        let server = initialized_server().await;
+        Mock::given(method("POST"))
+            .and(body_partial_json(
+                json!({"method": "tools/call", "params": {
+                    "name": "route_support", "arguments": {"message": "billing"}
+                }}),
+            ))
+            .respond_with(reply(result))
+            .expect(1)
+            .mount(&server)
+            .await;
+        server
+    }
+
+    #[tokio::test]
+    async fn forwards_complete_mixed_content_and_tool_errors() {
+        for is_error in [false, true] {
+            let result = json!({
+                "content": [
+                    {"type": "text", "text": "billing", "annotations": {"priority": 0.5}},
+                    {"type": "image", "data": "aW1hZ2U=", "mimeType": "image/png"},
+                    {"type": "audio", "data": "YXVkaW8=", "mimeType": "audio/wav"},
+                    {"type": "resource", "resource": {"uri": "file:///result.txt", "text": "result"}},
+                    {"type": "resource", "resource": {"uri": "file:///result.bin", "blob": "Ymlu"}},
+                    {"type": "resource_link", "uri": "https://example.com/result", "name": "result"}
+                ],
+                "structuredContent": {"label": "billing", "count": 2},
+                "isError": is_error,
+                "_meta": {"revision": "1"}
+            });
+            let server = tool_server(result.clone()).await;
+            let response = super::call_tool(
+                &server.uri(),
+                "route_support",
+                json!({"message": "billing"}),
+                Default::default(),
+            )
+            .await
+            .expect("call tool");
+            assert_eq!(response.result, result);
+            assert_eq!(response.is_error, is_error);
+        }
+    }
+
+    #[tokio::test]
+    async fn rejects_unsupported_content_without_silent_loss() {
+        let server = tool_server(json!({"content": [{"type": "unknown_future_type"}]})).await;
+        let response = super::call_tool(
+            &server.uri(),
+            "route_support",
+            json!({"message": "billing"}),
+            Default::default(),
+        )
+        .await;
+        assert!(matches!(
+            response,
+            Err(super::McpClientError::CallTool { .. })
+        ));
+    }
+
+    #[tokio::test]
+    async fn preserves_explicit_null_structured_content() {
+        let server = tool_server(json!({"content": [], "structuredContent": null})).await;
+        let response = super::call_tool(
+            &server.uri(),
+            "route_support",
+            json!({"message": "billing"}),
+            Default::default(),
+        )
+        .await
+        .expect("call tool");
+        assert_eq!(
+            response.result,
+            json!({"content": [], "structuredContent": null})
+        );
+        assert!(!response.is_error);
     }
 }

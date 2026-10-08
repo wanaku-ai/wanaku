@@ -34,6 +34,7 @@ All in a single binary with no runtime dependencies (except libc).
 - **[Management API](./management-api.md)** — REST API reference for tools, resources, etc.
 - **[Governance Posture](./governance-posture.md)** — enforcement modes, fail-safe defaults, and namespace resolution
 - **[Action Policies](./action-policies.md)** — deterministic rules for MCP actions
+- **[Semantic Routing](./semantic-routing.md)** — Barn authoring, WSR deployment, and governed MCP acceptance checks
 - **[Redaction Boundary](./redaction.md)** — where Wanaku removes credentials and PII before logs, errors, and stored data
 - **[FAQ](./faq.md)** — common issues and troubleshooting
 
