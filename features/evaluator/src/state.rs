@@ -353,9 +353,18 @@ impl EvaluatorState {
     }
 
     /// Load named TypeSafe System One connections from startup configuration.
+    /// Reject the complete set if a name or API key environment reference is invalid.
     pub fn load_system_one_connections(
         &self,
         connections: Vec<SystemOneConnection>,
+    ) -> Result<(), String> {
+        self.load_system_one_connections_with_env(connections, |name| std::env::var(name))
+    }
+
+    fn load_system_one_connections_with_env(
+        &self,
+        connections: Vec<SystemOneConnection>,
+        lookup: impl Fn(&str) -> Result<String, std::env::VarError>,
     ) -> Result<(), String> {
         let mut seen = std::collections::HashSet::new();
         for connection in &connections {
@@ -372,8 +381,11 @@ impl EvaluatorState {
         let count = connections.len();
         let map = connections
             .into_iter()
-            .map(|connection| (connection.name.clone(), connection))
-            .collect();
+            .map(|mut connection| {
+                connection.resolve_api_key(&lookup)?;
+                Ok((connection.name.clone(), connection))
+            })
+            .collect::<Result<_, String>>()?;
         *self
             .system_one_connections
             .write()
@@ -1045,6 +1057,90 @@ mod tests {
             Some("a".to_owned())
         );
         assert!(state.get_llm_connection("missing").is_none());
+    }
+
+    #[test]
+    fn load_system_one_connections_resolves_environment_key_once() {
+        let state = EvaluatorState::new();
+        let mut conn = system_one_connection("remote");
+        conn.api_key = "env:TYPESAFE_API_KEY".to_owned();
+        assert!(
+            state
+                .load_system_one_connections_with_env(vec![conn], |name| {
+                    assert_eq!(name, "TYPESAFE_API_KEY");
+                    Ok("env:resolved-secret".to_owned())
+                })
+                .is_ok()
+        );
+        assert_eq!(
+            state
+                .get_system_one_connection("remote")
+                .map(|conn| conn.api_key),
+            Some("env:resolved-secret".to_owned())
+        );
+    }
+
+    #[test]
+    fn load_system_one_connections_preserves_literal_and_empty_keys() {
+        let state = EvaluatorState::new();
+        let mut literal = system_one_connection("literal");
+        literal.api_key = "sk-literal".to_owned();
+        let mut local = system_one_connection("local");
+        local.api_key = String::new();
+        let lookups = std::cell::Cell::new(0);
+        assert!(
+            state
+                .load_system_one_connections_with_env(vec![literal, local], |_| {
+                    lookups.set(lookups.get() + 1);
+                    Err(std::env::VarError::NotPresent)
+                })
+                .is_ok()
+        );
+        assert_eq!(lookups.get(), 0);
+        assert_eq!(
+            state
+                .get_system_one_connection("literal")
+                .map(|conn| conn.api_key),
+            Some("sk-literal".to_owned())
+        );
+        assert_eq!(
+            state
+                .get_system_one_connection("local")
+                .map(|conn| conn.api_key),
+            Some(String::new())
+        );
+    }
+
+    #[test]
+    fn load_system_one_connections_rejects_invalid_environment_keys_atomically() {
+        for (reference, value) in [
+            ("env:", Ok("secret".to_owned())),
+            ("env:MISSING", Err(std::env::VarError::NotPresent)),
+            ("env:EMPTY", Ok(String::new())),
+            (
+                "env:NON_UNICODE",
+                Err(std::env::VarError::NotUnicode(std::ffi::OsString::from(
+                    "secret-non-unicode",
+                ))),
+            ),
+        ] {
+            let state = EvaluatorState::new();
+            assert!(
+                state
+                    .load_system_one_connections(vec![system_one_connection("existing")])
+                    .is_ok()
+            );
+            let mut invalid = system_one_connection("invalid");
+            invalid.api_key = reference.to_owned();
+            let result = state.load_system_one_connections_with_env(
+                vec![system_one_connection("new"), invalid],
+                |_| value.clone(),
+            );
+            assert!(result.err().is_some_and(|error| !error.contains("secret")));
+            assert!(state.get_system_one_connection("existing").is_some());
+            assert!(state.get_system_one_connection("new").is_none());
+            assert!(state.get_system_one_connection("invalid").is_none());
+        }
     }
 
     #[test]

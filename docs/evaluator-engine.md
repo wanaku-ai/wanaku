@@ -124,7 +124,7 @@ typesafe_system_one_connections:
   - name: "typesafe"
     model: "jev-latest"
     url: "https://api.typesafe.ai"
-    api_key: ""
+    api_key: "env:TYPESAFE_API_KEY"
 
 evaluators:
   - name: "tool-safety"
@@ -143,6 +143,8 @@ evaluators:
     processor:
       path: "/wasm/tool-safety.wasm"
 ```
+
+Set `TYPESAFE_API_KEY` in the server environment before startup. Wanaku resolves `env:VARIABLE_NAME` once when it loads connections. The variable must exist and contain a non-empty Unicode value. An empty variable name or invalid value rejects the complete connection set. Error messages do not include the key value. API keys without the `env:` prefix remain literal values. See [Configuration](configuration.md) for the connection settings.
 
 The Noul primitive returns the probability that its answer is true. Wanaku
 passes this stable JSON object to `ctx.llmResult`:
