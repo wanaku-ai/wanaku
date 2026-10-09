@@ -20,18 +20,6 @@ export const getUrl = (contextUrl: string): string => {
   return requestUrl.toString();
 };
 
-export const getInferenceUrl = (contextUrl: string): string => {
-  const baseUrl =
-    VITE_INFERENCE_URL || `${window.location.protocol}//${window.location.hostname}:8083`;
-  const url = new URL(contextUrl, baseUrl);
-  const pathname = url.pathname;
-  const search = url.search;
-
-  const requestUrl = new URL(`${baseUrl}${pathname}${search}`);
-
-  return requestUrl.toString();
-};
-
 // NOTE: Add headers
 const getHeaders = (headers?: HeadersInit): HeadersInit => {
   return {
