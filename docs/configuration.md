@@ -498,6 +498,18 @@ llm_connections:
 
 Wanaku resolves the reference when it loads the connections at startup. The variable name and value must not be empty. The variable must exist and contain a valid Unicode value. An invalid reference rejects the complete connection set. Error messages do not include the key value. Other API key strings remain literal values. Omit `api_key` or use an empty string for a connection that does not require authentication.
 
+Set `typesafe_system_one_connections[].api_key` to `env:VARIABLE_NAME` to read the TypeSafe System One key from an environment variable:
+
+```yaml
+typesafe_system_one_connections:
+  - name: "typesafe"
+    model: "jev-latest"
+    url: "https://api.typesafe.ai"
+    api_key: "env:TYPESAFE_API_KEY"
+```
+
+Wanaku resolves the reference once when it loads the connections at startup. The variable name and value must not be empty. The variable must exist and contain a valid Unicode value. An invalid reference rejects the complete TypeSafe System One connection set. Error messages do not include the key value. Other API key strings remain literal values.
+
 When `result_schema` is set, the host validates LLM output against the schema and retries once with a correction prompt on mismatch.
 
 ## Common Configuration Patterns
