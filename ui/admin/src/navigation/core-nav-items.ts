@@ -6,15 +6,6 @@ export const CORE_NAV_ITEMS: NavItem[] = [
   { id: 'tools', label: 'Tools', route: Links.Tools, source: 'core', order: 10 },
   { id: 'resources', label: 'Resources', route: Links.Resources, source: 'core', order: 20 },
   { id: 'prompts', label: 'Prompts', route: Links.Prompts, source: 'core', order: 30 },
-  {
-    id: 'llmchat',
-    label: 'LLMChat',
-    route: Links.LLMChat,
-    source: 'core',
-    section: 'Developer',
-    order: 40,
-  },
-
   { id: 'namespaces', label: 'Namespaces', route: Links.Namespaces, source: 'core', order: 60 },
   { id: 'forwards', label: 'Forwards', route: Links.Forwards, source: 'core', order: 70 },
   { id: 'a2a-agents', label: 'A2A agents', route: Links.A2aAgents, source: 'core', order: 71 },

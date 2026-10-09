@@ -24,12 +24,9 @@
     "@carbon/icons-react": "^11.76.0",
     "@carbon/layout": "^11.49.0",
     "@carbon/react": "^1.103.0",
-    "@modelcontextprotocol/sdk": "^1.27.1",
-    "highlight.js": "^11.11.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-is": "^19.2.4",
-    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.0",
     "sass": "^1.98.0"
   },

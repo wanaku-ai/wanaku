@@ -45,10 +45,6 @@ export function buildRouter(pluginPages: PluginPage[]) {
           lazy: async () => import('./Pages/Prompts'),
         },
         {
-          path: Links.LLMChat,
-          lazy: async () => import('./Pages/LLMChat'),
-        },
-        {
           path: Links.Namespaces,
           lazy: async () => import('./Pages/Namespaces'),
         },
