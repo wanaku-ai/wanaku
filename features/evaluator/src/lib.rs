@@ -123,6 +123,26 @@ impl EvaluatorFeature {
             tracing::error!(error = %error, "typesafe_system_one_connections rejected; no connections loaded");
         }
     }
+
+    fn load_opa_connections_from_yaml(&self, root: &serde_yaml::Value) {
+        let Some(conn_val) = root.get("opa_connections") else {
+            return;
+        };
+        let connections = match serde_yaml::from_value::<Vec<crate::config::OpaConnection>>(
+            conn_val.clone(),
+        ) {
+            Ok(connections) => connections,
+            Err(error) => {
+                tracing::warn!(error = %error, "failed to parse opa_connections from wanaku.yaml");
+                self.state.mark_invalid("connection_configuration_invalid");
+                return;
+            }
+        };
+        if let Err(error) = self.state.load_opa_connections(&connections) {
+            self.state.mark_invalid("connection_configuration_invalid");
+            tracing::error!(error = %error, "opa_connections rejected; no connections loaded");
+        }
+    }
 }
 
 impl Default for EvaluatorFeature {
@@ -196,6 +216,7 @@ impl Feature for EvaluatorFeature {
         // that activation can validate every evaluator's connection reference.
         self.load_llm_connections_from_yaml(root);
         self.load_system_one_connections_from_yaml(root);
+        self.load_opa_connections_from_yaml(root);
 
         if !self.load_startup_policy(root) {
             return;
@@ -345,6 +366,8 @@ mod audit_tests {
         for yaml in [
             "llm_connections: invalid",
             "typesafe_system_one_connections: invalid",
+            "opa_connections: invalid",
+            "opa_connections: [{name: opa, url: 'opa:8181'}]",
         ] {
             let feature = super::EvaluatorFeature::new();
             feature.load_yaml_config(&serde_yaml::from_str(yaml).unwrap());

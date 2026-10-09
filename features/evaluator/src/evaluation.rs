@@ -11,6 +11,12 @@ pub enum EvaluationError {
     Llm,
     Schema,
     Remote,
+    RemoteUnavailable,
+    RemoteTimeout,
+    RemoteAuth,
+    Policy,
+    DecisionUndefined,
+    DecisionInvalid,
     Internal,
 }
 
@@ -21,6 +27,12 @@ impl EvaluationError {
             Self::Llm => "evaluator_llm_failed",
             Self::Schema => "evaluator_schema_invalid",
             Self::Remote => "evaluator_remote_engine_failed",
+            Self::RemoteUnavailable => "evaluator_remote_unavailable",
+            Self::RemoteTimeout => "evaluator_remote_timeout",
+            Self::RemoteAuth => "evaluator_remote_auth_failed",
+            Self::Policy => "evaluator_policy_error",
+            Self::DecisionUndefined => "evaluator_decision_undefined",
+            Self::DecisionInvalid => "evaluator_decision_invalid",
             Self::Internal => "evaluator_internal_error",
         }
     }
@@ -35,6 +47,9 @@ impl std::fmt::Display for EvaluationError {
 pub struct EvaluationContext<'a, 'm> {
     pub state: &'a EvaluatorState,
     pub mcp: &'a McpContext<'m>,
+    pub namespace: &'a str,
+    /// MCP arguments with their original JSON types.
+    pub arguments: &'a serde_json::Value,
     pub compiled_schema: Option<&'a CompiledSchema>,
     pub metrics: Option<&'a MetricsStore>,
 }
@@ -49,6 +64,7 @@ pub async fn execute(
     let result = match engine {
         EvaluationEngine::Llm(def) => execute_llm(&evaluator.name, def, context).await,
         EvaluationEngine::TypesafeSystemOne(def) => execute_system_one(def, context).await,
+        EvaluationEngine::Opa(def) => execute_opa(def, context).await,
         EvaluationEngine::Passthrough => passthrough_input(context.mcp),
     };
     if let Some(store) = context.metrics {
@@ -73,6 +89,23 @@ async fn execute_system_one(
     crate::engines::system_one::execute(definition, context.state, context.mcp)
         .await
         .map_err(|_| EvaluationError::Remote)
+}
+
+async fn execute_opa(
+    definition: &crate::config::OpaDef,
+    context: &EvaluationContext<'_, '_>,
+) -> Result<String, EvaluationError> {
+    let client = context
+        .state
+        .get_opa_client(&definition.connection)
+        .ok_or(EvaluationError::MissingConnection)?;
+    let input = crate::engines::opa::input(
+        context.mcp.method,
+        context.namespace,
+        context.mcp.tool_name,
+        context.arguments,
+    );
+    crate::engines::opa::execute(definition, &client, &input).await
 }
 
 fn passthrough_input(mcp: &McpContext<'_>) -> Result<String, EvaluationError> {
@@ -197,6 +230,8 @@ mod tests {
             &EvaluationContext {
                 state: &EvaluatorState::new(),
                 mcp: &context,
+                namespace: "default",
+                arguments: &serde_json::json!({ "city": "Berlin" }),
                 compiled_schema: None,
                 metrics: None,
             },
@@ -264,6 +299,8 @@ mod tests {
             &EvaluationContext {
                 state: &state,
                 mcp: &mcp,
+                namespace: "default",
+                arguments: &serde_json::json!({}),
                 compiled_schema: Some(&schema),
                 metrics: None,
             },

@@ -90,6 +90,19 @@ export function evaluatorData() {
   };
 }
 
+export function opaEvaluatorData() {
+  return {
+    ...evaluatorData(),
+    name: `e2e-opa-evaluator-${suffix()}`,
+    engine: {
+      type: 'opa' as const,
+      connection: 'local-policy',
+      decision_path: 'wanaku/tool_call/allow',
+    },
+    processor: { path: 'actions/dist/opa_allow_action.wasm' },
+  };
+}
+
 export function bindingData(overrides?: Partial<{
   id: string;
   forwardId: string;

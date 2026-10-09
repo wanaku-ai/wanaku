@@ -3,4 +3,5 @@
 //! pipeline, WASM processor, revision, and management API behavior.
 
 pub mod llm;
+pub mod opa;
 pub mod system_one;

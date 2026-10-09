@@ -14,6 +14,7 @@ fn main() {
     let rust_actions = [
         ("safety-review", "safety_review_action.wasm"),
         ("assembly-filter", "assembly_filter_action.wasm"),
+        ("opa-allow", "opa_allow_action.wasm"),
     ];
 
     for (crate_name, output_name) in &rust_actions {

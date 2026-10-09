@@ -40,6 +40,14 @@ export class EvaluatorsPage extends BasePage {
     return this.modal().locator(Carbon.textInput('system-one-connection'));
   }
 
+  opaConnectionInput() {
+    return this.modal().locator(Carbon.textInput('opa-connection'));
+  }
+
+  opaDecisionPathInput() {
+    return this.modal().locator(Carbon.textInput('opa-decision-path'));
+  }
+
   evaluatorRow(name: string) {
     return this.page.locator(Carbon.tableRow).filter({ hasText: name });
   }

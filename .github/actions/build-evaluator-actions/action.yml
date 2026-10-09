@@ -16,3 +16,5 @@ runs:
         cp actions/safety-review/target/wasm32-wasip1/release/safety_review_action.wasm actions/dist/
         (cd actions/assembly-filter && cargo component build --release --locked)
         cp actions/assembly-filter/target/wasm32-wasip1/release/assembly_filter_action.wasm actions/dist/
+        (cd actions/opa-allow && cargo component build --release --locked)
+        cp actions/opa-allow/target/wasm32-wasip1/release/opa_allow_action.wasm actions/dist/

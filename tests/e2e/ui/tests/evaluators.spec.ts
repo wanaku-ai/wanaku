@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { EvaluatorsPage } from '../pages/evaluators.page';
 import { ApiHelper } from '../helpers/api-helpers';
-import { evaluatorData } from '../helpers/test-data';
+import { evaluatorData, opaEvaluatorData } from '../helpers/test-data';
 
 const routerUrl = process.env.WANAKU_ROUTER_URL ?? 'http://localhost:8080';
 
@@ -72,6 +72,41 @@ test.describe('Evaluators', () => {
 
     await expect(modal.locator('.cds--modal-footer .cds--btn--primary')).toBeDisabled();
     await expect(modal).toContainText('Set both true and false criteria, or leave both empty');
+  });
+
+  test('OPA engine requires a connection and a valid decision path', async () => {
+    await evaluators.goto();
+    await evaluators.clickAddEvaluator();
+    await evaluators.selectEngine('opa');
+
+    const modal = evaluators.modal();
+    const submit = modal.locator('.cds--modal-footer .cds--btn--primary');
+    await modal.locator('#evaluator-name').fill('opa-modal-test');
+    await evaluators.opaConnectionInput().fill('local-policy');
+    await modal.locator('#processor-path').fill('actions/dist/opa_allow_action.wasm');
+    await evaluators.opaDecisionPathInput().fill('/v1/data/wanaku');
+
+    await expect(submit).toBeDisabled();
+    await expect(modal).toContainText('Use path segments of letters, digits, and underscores');
+
+    await evaluators.opaDecisionPathInput().fill('wanaku/tool_call/allow');
+    await expect(submit).toBeEnabled();
+  });
+
+  test('lists an OPA evaluator with its decision path', async ({ request }) => {
+    const api = new ApiHelper(request, routerUrl);
+    const original = await api.getEvaluators();
+    const evaluator = opaEvaluatorData();
+    try {
+      await api.setEvaluators([...original, evaluator]);
+      await evaluators.goto();
+      const row = evaluators.evaluatorRow(evaluator.name);
+      await expect(row).toContainText('Open Policy Agent');
+      await expect(row).toContainText('Decision: wanaku/tool_call/allow');
+      await expect(row).toContainText('local-policy');
+    } finally {
+      await api.setEvaluators(original);
+    }
   });
 
 });
