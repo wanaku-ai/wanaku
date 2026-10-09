@@ -15,6 +15,28 @@ pub struct LlmConnection {
     pub api_key: String,
 }
 
+impl LlmConnection {
+    pub(crate) fn resolve_api_key(
+        &mut self,
+        lookup: &impl Fn(&str) -> Result<String, std::env::VarError>,
+    ) -> Result<(), String> {
+        let Some(name) = self.api_key.strip_prefix("env:") else {
+            return Ok(());
+        };
+        if name.is_empty() {
+            return Err("LLM API key environment variable name must not be empty".to_owned());
+        }
+        let value = lookup(name).map_err(|_| {
+            "LLM API key environment variable is missing or is not valid Unicode".to_owned()
+        })?;
+        if value.is_empty() {
+            return Err("LLM API key environment variable value must not be empty".to_owned());
+        }
+        self.api_key = value;
+        Ok(())
+    }
+}
+
 /// LLM engine configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
