@@ -25,7 +25,11 @@ FROM ui-builder-${VARIANT} AS ui-builder
 FROM registry.fedoraproject.org/fedora:44 AS builder
 ARG VARIANT=full
 
-RUN dnf install -y gcc gcc-c++ openssl-devel pkgconf-pkg-config cmake make \
+RUN for attempt in 1 2 3; do \
+      dnf install -y gcc gcc-c++ openssl-devel pkgconf-pkg-config cmake make && break; \
+      if [ "$attempt" -eq 3 ]; then exit 1; fi; \
+      sleep "$((attempt * 5))"; \
+    done \
     && dnf clean all
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.96.0
@@ -116,7 +120,11 @@ LABEL org.opencontainers.image.source="https://github.com/wanaku-ai/wanaku" \
 #   1. Not hard-code a UID — OpenShift injects one at runtime.
 #   2. Grant group-write (GID 0) access to every directory the process writes.
 #   3. Not set fsGroup / runAsUser in the image — let OpenShift assign them.
-RUN microdnf install -y ca-certificates \
+RUN for attempt in 1 2 3; do \
+      microdnf install -y ca-certificates && break; \
+      if [ "$attempt" -eq 3 ]; then exit 1; fi; \
+      sleep "$((attempt * 5))"; \
+    done \
     && microdnf clean all \
     && mkdir -p /etc/wanaku /data/registry \
     && chown -R 0:0 /etc/wanaku /data/registry \
