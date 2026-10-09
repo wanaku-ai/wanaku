@@ -306,10 +306,19 @@ impl EvaluatorState {
     /// set or changed at runtime by a client.
     ///
     /// Rejects the whole set (loading none) if any name is empty or
-    /// duplicated. A silent first/last-wins collision would leave an
+    /// duplicated, or an API key environment reference cannot be resolved.
+    /// A silent first/last-wins collision would leave an
     /// evaluator referencing that name wired to the wrong endpoint and
     /// credential without any operator-visible signal.
     pub fn load_llm_connections(&self, connections: Vec<LlmConnection>) -> Result<(), String> {
+        self.load_llm_connections_with_env(connections, |name| std::env::var(name))
+    }
+
+    fn load_llm_connections_with_env(
+        &self,
+        connections: Vec<LlmConnection>,
+        lookup: impl Fn(&str) -> Result<String, std::env::VarError>,
+    ) -> Result<(), String> {
         let mut seen = std::collections::HashSet::new();
         for conn in &connections {
             if conn.name.is_empty() {
@@ -323,8 +332,11 @@ impl EvaluatorState {
         let count = connections.len();
         let map = connections
             .into_iter()
-            .map(|c| (c.name.clone(), c))
-            .collect();
+            .map(|mut connection| {
+                connection.resolve_api_key(&lookup)?;
+                Ok((connection.name.clone(), connection))
+            })
+            .collect::<Result<_, String>>()?;
         *self
             .connections
             .write()
@@ -929,6 +941,79 @@ mod tests {
                 .is_ok()
         );
         assert_eq!(state.list_llm_connections(), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn load_connections_resolves_environment_key_once() {
+        let state = EvaluatorState::new();
+        let mut conn = connection("remote");
+        conn.api_key = "env:LLM_API_KEY".to_owned();
+        assert!(
+            state
+                .load_llm_connections_with_env(vec![conn], |name| {
+                    assert_eq!(name, "LLM_API_KEY");
+                    Ok("env:resolved-secret".to_owned())
+                })
+                .is_ok()
+        );
+        assert_eq!(
+            state.get_llm_connection("remote").map(|conn| conn.api_key),
+            Some("env:resolved-secret".to_owned())
+        );
+    }
+
+    #[test]
+    fn load_connections_preserves_literal_and_empty_keys() {
+        let state = EvaluatorState::new();
+        let mut literal = connection("literal");
+        literal.api_key = "sk-literal".to_owned();
+        assert!(
+            state
+                .load_llm_connections_with_env(vec![literal, connection("local")], |_| Err(
+                    std::env::VarError::NotPresent
+                ),)
+                .is_ok()
+        );
+        assert_eq!(
+            state.get_llm_connection("literal").map(|conn| conn.api_key),
+            Some("sk-literal".to_owned())
+        );
+        assert_eq!(
+            state.get_llm_connection("local").map(|conn| conn.api_key),
+            Some(String::new())
+        );
+    }
+
+    #[test]
+    fn load_connections_rejects_invalid_environment_keys_atomically() {
+        for (reference, value) in [
+            ("env:", Ok("secret".to_owned())),
+            ("env:MISSING", Err(std::env::VarError::NotPresent)),
+            ("env:EMPTY", Ok(String::new())),
+            (
+                "env:NON_UNICODE",
+                Err(std::env::VarError::NotUnicode(std::ffi::OsString::from(
+                    "secret-non-unicode",
+                ))),
+            ),
+        ] {
+            let state = EvaluatorState::new();
+            assert!(
+                state
+                    .load_llm_connections(vec![connection("existing")])
+                    .is_ok()
+            );
+            let mut invalid = connection("invalid");
+            invalid.api_key = reference.to_owned();
+            let result = state
+                .load_llm_connections_with_env(vec![connection("new"), invalid], |_| value.clone());
+            assert!(
+                result.is_err(),
+                "invalid environment reference was accepted"
+            );
+            assert!(result.err().is_some_and(|error| !error.contains("secret")));
+            assert_eq!(state.list_llm_connections(), vec!["existing"]);
+        }
     }
 
     #[test]
