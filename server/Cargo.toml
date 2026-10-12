@@ -21,6 +21,9 @@ path = "src/openapi_export.rs"
 [features]
 default = ["ui"]
 ui = ["dep:rust-embed"]
+# Registers the Praxis `policy` filter (Cedar, Rego, CEL). Off by default
+# because the default pipeline does not use it and it is slow to compile.
+policy-engine = ["praxis-filter/policy-engine"]
 
 [lints]
 workspace = true

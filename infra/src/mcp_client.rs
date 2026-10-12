@@ -79,6 +79,9 @@ fn build_transport_with_headers(
     url: &str,
     headers: HashMap<HeaderName, HeaderValue>,
 ) -> impl rmcp::transport::Transport<rmcp::RoleClient> + use<> {
+    // rmcp's HTTP client has no built-in rustls provider. Install the Praxis
+    // one for callers that run before the server bootstrap, such as tests.
+    praxis_tls::provider::install();
     let mut config = StreamableHttpClientTransportConfig::with_uri(url);
     if !headers.is_empty() {
         config = config.custom_headers(headers);

@@ -44,7 +44,7 @@ tracing = "0.1.44"
 zeroize = "1.8"
 
 praxis-core = { version = "0.7.3", package = "praxis-proxy-core" }
-praxis-filter = { version = "0.7.3", package = "praxis-proxy-filter" }
+praxis-filter = { version = "0.7.3", package = "praxis-proxy-filter", default-features = false }
 praxis-protocol = { version = "0.7.3", package = "praxis-proxy-protocol", features = ["admin-api"] }
 praxis-proxy = { version = "0.7.3", package = "praxis-proxy" }
 praxis-tls = { version = "0.7.3", package = "praxis-proxy-tls" }
@@ -116,3 +116,11 @@ large_stack_frames = "warn"
 
 # Disallowed methods (configured in clippy.toml)
 disallowed_methods = "deny"
+
+# Dev builds: keep line numbers in backtraces for workspace crates and drop
+# debuginfo for dependencies. This reduces compile and link time.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
