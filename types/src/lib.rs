@@ -1,7 +1,7 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
-pub mod audit;
 pub mod agents;
+pub mod audit;
 pub mod audit_redaction;
 pub mod config;
 pub mod correlation;
@@ -16,6 +16,7 @@ pub mod metadata;
 pub mod persistence;
 pub mod registry;
 pub mod revision;
+pub mod semantic_audit;
 pub mod time;
 
 pub use metadata::{MCP_ID_KEY, MCP_METHOD_KEY, MCP_NAME_KEY, NAMESPACE_METADATA_KEY};

@@ -89,7 +89,7 @@ export const AuditTable = ({
                         <TableCell key={cell.id}>
                           {cell.info.header === 'decision' ? (
                             <Tag type={getDecisionTagType(event.decision)} size="sm">
-                              {event.decision}
+                              {event.decision === 'observed' ? 'Observed' : event.decision}
                             </Tag>
                           ) : (
                             <span className="audit-table__value" title={String(cell.value)}>

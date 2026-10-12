@@ -11,4 +11,5 @@ export type AuditCategory = (typeof AuditCategory)[keyof typeof AuditCategory];
 export const AuditCategory = {
   decision: "decision",
   administrative: "administrative",
+  semantic: "semantic",
 } as const;

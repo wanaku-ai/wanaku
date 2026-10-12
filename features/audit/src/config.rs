@@ -5,9 +5,15 @@ use wanaku_types::audit::DEFAULT_AUDIT_CAPACITY;
 const DEFAULT_PAYLOAD_LIMIT: usize = 16_384;
 
 #[derive(Debug, Clone, Deserialize)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "independent audit ingestion, payload capture and default redaction controls"
+)]
 #[serde(default)]
 pub struct AuditConfig {
     pub max_records: usize,
+    pub ingestion_enabled: bool,
+    pub external_max_records: usize,
     pub capture_payloads: bool,
     pub payload_max_bytes: usize,
     pub include_default_redaction_rules: bool,
@@ -21,6 +27,8 @@ impl Default for AuditConfig {
     fn default() -> Self {
         Self {
             max_records: DEFAULT_AUDIT_CAPACITY,
+            ingestion_enabled: false,
+            external_max_records: 1000,
             capture_payloads: false,
             payload_max_bytes: DEFAULT_PAYLOAD_LIMIT,
             include_default_redaction_rules: true,
@@ -34,6 +42,13 @@ impl Default for AuditConfig {
 
 impl AuditConfig {
     pub fn apply_environment(&mut self) {
+        if let Ok(value) = std::env::var("WANAKU_AUDIT_INGESTION_ENABLED") {
+            self.ingestion_enabled =
+                matches!(value.to_ascii_lowercase().as_str(), "1" | "true" | "yes");
+        }
+        if let Some(value) = parse_usize("WANAKU_AUDIT_EXTERNAL_MAX_RECORDS") {
+            self.external_max_records = value;
+        }
         if let Some(value) = parse_usize("WANAKU_AUDIT_MAX_RECORDS") {
             self.max_records = value;
         }
@@ -49,6 +64,9 @@ impl AuditConfig {
     pub fn normalize(&mut self) {
         self.max_records = self.max_records.max(1);
         self.payload_max_bytes = self.payload_max_bytes.max(1);
+        self.external_max_records = self
+            .external_max_records
+            .min(self.max_records.saturating_sub(1));
     }
 }
 
@@ -59,6 +77,26 @@ fn parse_usize(name: &str) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ingestion_defaults_off_and_reserves_native_capacity() {
+        let mut config = AuditConfig::default();
+        assert!(!config.ingestion_enabled);
+        assert_eq!(config.external_max_records, 1000);
+        config.max_records = 2;
+        config.normalize();
+        assert_eq!(config.external_max_records, 1);
+        config.max_records = 1;
+        config.normalize();
+        assert_eq!(config.external_max_records, 0);
+        let configured = serde_yaml::from_str::<AuditConfig>(
+            "ingestion_enabled: true\nexternal_max_records: 12\nmax_records: 100\n",
+        );
+        assert!(
+            configured
+                .is_ok_and(|config| config.ingestion_enabled && config.external_max_records == 12)
+        );
+    }
 
     #[test]
     fn defaults_are_minimal_and_bounded() {

@@ -6,6 +6,7 @@ use wanaku_types::http_response::{json_err, json_ok};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum AuditRoute {
+    Ingest,
     List,
     Get(String),
     Schema,
@@ -14,6 +15,9 @@ pub(crate) enum AuditRoute {
 }
 
 pub(crate) fn resolve(method: &str, path: &str) -> AuditRoute {
+    if method == "POST" && matches!(path, "/api/v1/audit/semantic" | "/api/v1/audit/semantic/") {
+        return AuditRoute::Ingest;
+    }
     if method != "GET" {
         return AuditRoute::NotFound;
     }
@@ -41,7 +45,68 @@ pub(crate) fn handle(
         ),
         AuditRoute::Schema => json_ok(&serde_json::json!({"schema_version": AUDIT_SCHEMA_VERSION})),
         AuditRoute::Health => json_ok(&serde_json::json!(store.health())),
-        AuditRoute::NotFound => json_err(StatusCode::NOT_FOUND, "audit route not found"),
+        AuditRoute::Ingest | AuditRoute::NotFound => {
+            json_err(StatusCode::NOT_FOUND, "audit route not found")
+        }
+    }
+}
+
+pub(crate) fn ingest(
+    store: &InMemoryAuditStore,
+    enabled: bool,
+    body: Option<&str>,
+) -> Response<Vec<u8>> {
+    use wanaku_types::semantic_audit::SemanticAdmissionError;
+    if !enabled {
+        return json_err(StatusCode::NOT_FOUND, "semantic audit ingestion disabled");
+    }
+    let body = body.unwrap_or_default();
+    if body.len() > 65_536 {
+        return json_err(
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "semantic audit body exceeds 64 KiB",
+        );
+    }
+    let event = match parse_semantic_event(body) {
+        Ok(event) => event,
+        Err(error) => return json_err(StatusCode::BAD_REQUEST, error),
+    };
+    match store.accept_semantic(event) {
+        Ok(accepted) => json_ok(&serde_json::json!(accepted)),
+        Err(SemanticAdmissionError::Conflict) => {
+            json_err(StatusCode::CONFLICT, "source event ID conflict")
+        }
+        Err(SemanticAdmissionError::Capacity) => json_err(
+            StatusCode::TOO_MANY_REQUESTS,
+            "audit external capacity unavailable",
+        ),
+        Err(SemanticAdmissionError::Unavailable) => {
+            json_err(StatusCode::SERVICE_UNAVAILABLE, "audit storage unavailable")
+        }
+    }
+}
+
+fn parse_semantic_event(body: &str) -> Result<wanaku_types::audit::AuditEvent, &'static str> {
+    use wanaku_types::semantic_audit::SemanticAuditEnvelope;
+    let raw = serde_json::from_str::<serde_json::Value>(body)
+        .map_err(|_| "invalid semantic audit envelope")?;
+    if contains_null(&raw) {
+        return Err("null audit fields are not supported");
+    }
+    let envelope = serde_json::from_str::<SemanticAuditEnvelope>(body)
+        .map_err(|_| "invalid semantic audit envelope")?;
+    envelope.validate()?;
+    envelope
+        .into_event()
+        .map_err(|_| "invalid semantic audit record")
+}
+
+fn contains_null(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::Null => true,
+        serde_json::Value::Array(values) => values.iter().any(contains_null),
+        serde_json::Value::Object(values) => values.values().any(contains_null),
+        _ => false,
     }
 }
 
@@ -49,6 +114,16 @@ fn parse_query(raw: Option<&str>) -> AuditQuery {
     let mut query = AuditQuery::default();
     for (key, value) in form_urlencoded::parse(raw.unwrap_or_default().as_bytes()) {
         match key.as_ref() {
+            "source_instance_id" => query.source_instance_id = Some(value.into_owned()),
+            "source_event_id" => query.source_event_id = Some(value.into_owned()),
+            "category" => {
+                query.category = match value.as_ref() {
+                    "semantic" => Some(wanaku_types::audit::AuditCategory::Semantic),
+                    "decision" => Some(wanaku_types::audit::AuditCategory::Decision),
+                    "administrative" => Some(wanaku_types::audit::AuditCategory::Administrative),
+                    _ => None,
+                }
+            }
             "from" => query.from = Some(value.into_owned()),
             "to" => query.to = Some(value.into_owned()),
             "namespace" => query.namespace = Some(value.into_owned()),
@@ -59,20 +134,23 @@ fn parse_query(raw: Option<&str>) -> AuditQuery {
             "correlation_id" => query.correlation_id = Some(value.into_owned()),
             "offset" => query.offset = value.parse().unwrap_or_default(),
             "limit" => query.limit = value.parse().unwrap_or_default(),
-            "decision" => {
-                query.decision = match value.as_ref() {
-                    "allow" => Some(AuditDecision::Allow),
-                    "block" => Some(AuditDecision::Block),
-                    "warn" => Some(AuditDecision::Warn),
-                    "reject_malformed" => Some(AuditDecision::RejectMalformed),
-                    "error" => Some(AuditDecision::Error),
-                    _ => None,
-                }
-            }
+            "decision" => query.decision = parse_decision(&value),
             _ => {}
         }
     }
     query
+}
+
+fn parse_decision(value: &str) -> Option<AuditDecision> {
+    match value {
+        "observed" => Some(AuditDecision::Observed),
+        "allow" => Some(AuditDecision::Allow),
+        "block" => Some(AuditDecision::Block),
+        "warn" => Some(AuditDecision::Warn),
+        "reject_malformed" => Some(AuditDecision::RejectMalformed),
+        "error" => Some(AuditDecision::Error),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
@@ -80,6 +158,204 @@ mod tests {
     use super::*;
     use wanaku_types::TOOLS_CALL;
     use wanaku_types::audit::{AuditCategory, AuditEvent};
+    fn envelope(category: &str, event_id: &str) -> serde_json::Value {
+        serde_json::json!({"source":{"instance_id":"runtime-1","forward_name":"support","namespace":"default","catalog_revision":"r1","catalog_digest":"digest1"},"record":{"schemaVersion":1,"eventId":event_id,"timestamp":"2026-10-12T12:00:00Z","category":category}})
+    }
+    #[test]
+    fn semantic_ingestion_is_opt_in_and_size_bounded() {
+        let store = InMemoryAuditStore::new(10);
+        let body = envelope("evaluation", "event-1").to_string();
+        assert_eq!(
+            ingest(&store, false, Some(&body)).status(),
+            StatusCode::NOT_FOUND
+        );
+        assert_eq!(
+            ingest(&store, true, Some(&"x".repeat(65_537))).status(),
+            StatusCode::PAYLOAD_TOO_LARGE
+        );
+        assert_eq!(store.query(&AuditQuery::default()).total, 0);
+    }
+    #[test]
+    fn validates_camel_fields_before_acceptance() {
+        let store = InMemoryAuditStore::new(10);
+        for (field, value) in [
+            ("schemaVersion", serde_json::json!(2)),
+            ("category", serde_json::json!("allow")),
+            ("input", serde_json::json!("secret")),
+            ("inputRedacted", serde_json::json!(true)),
+            ("unknown", serde_json::json!("value")),
+            ("status", serde_json::json!(true)),
+            ("status", serde_json::Value::Null),
+            ("durationNanos", serde_json::json!(-1)),
+            ("eventId", serde_json::json!(" ")),
+            ("timestamp", serde_json::json!("invalid")),
+            ("provider", serde_json::json!(" ")),
+        ] {
+            let mut body = envelope("evaluation", "event-1");
+            body["record"][field] = value;
+            assert_eq!(
+                ingest(&store, true, Some(&body.to_string())).status(),
+                StatusCode::BAD_REQUEST,
+                "field {field}"
+            );
+        }
+        let mut body = envelope("evaluation", "event-1");
+        body["source"]["trusted"] = serde_json::json!(true);
+        assert_eq!(
+            ingest(&store, true, Some(&body.to_string())).status(),
+            StatusCode::BAD_REQUEST
+        );
+        assert_eq!(store.query(&AuditQuery::default()).total, 0);
+    }
+    #[test]
+    fn preserves_three_categories_typed_results_and_evidence() {
+        let store = InMemoryAuditStore::new(10);
+        let values = serde_json::json!([true, 2.5, "billing", ["billing", "support"]]);
+        for (index, value) in values.as_array().into_iter().flatten().enumerate() {
+            for category in ["evaluation", "decision", "request"] {
+                let mut body = envelope(category, &format!("{category}-{index}"));
+                body["record"]["result"] = serde_json::json!({"value":value,"probability":0.7});
+                body["record"]["evidence"] = serde_json::json!(["evaluation-1"]);
+                assert_eq!(
+                    ingest(&store, true, Some(&body.to_string())).status(),
+                    StatusCode::OK
+                );
+                let page = store.query(&AuditQuery {
+                    source_event_id: Some(format!("{category}-{index}")),
+                    ..AuditQuery::default()
+                });
+                assert_eq!(page.total, 1);
+                assert_eq!(page.events[0].decision, AuditDecision::Observed);
+                assert_eq!(
+                    &page.events[0].attributes["semantic"]["result"]["value"],
+                    value
+                );
+                assert!(page.events[0].source.as_ref().is_some_and(
+                    |source| source.producer_asserted && source.evidence == ["evaluation-1"]
+                ));
+            }
+        }
+    }
+    #[test]
+    fn retries_are_atomic_and_conflicting_content_is_rejected() {
+        let store = InMemoryAuditStore::new(10);
+        let mut body = envelope("evaluation", "event-1");
+        let first = ingest(&store, true, Some(&body.to_string()));
+        let repeated = ingest(&store, true, Some(&body.to_string()));
+        let first_json: serde_json::Value =
+            serde_json::from_slice(first.body()).unwrap_or_default();
+        let repeated_json: serde_json::Value =
+            serde_json::from_slice(repeated.body()).unwrap_or_default();
+        assert_eq!(
+            first_json["data"]["event_id"],
+            repeated_json["data"]["event_id"]
+        );
+        assert_eq!(repeated_json["data"]["duplicate"], true);
+        body["record"]["status"] = serde_json::json!("failed");
+        assert_eq!(
+            ingest(&store, true, Some(&body.to_string())).status(),
+            StatusCode::CONFLICT
+        );
+        assert_eq!(store.query(&AuditQuery::default()).total, 1);
+    }
+    #[test]
+    fn maps_explicit_camel_context_into_common_query_fields() {
+        let store = InMemoryAuditStore::new(10);
+        let mut body = envelope("decision", "event-1");
+        body["record"]["correlationId"] = serde_json::json!("app-correlation");
+        body["record"]["requestId"] = serde_json::json!("app-request");
+        body["record"]["target"] = serde_json::json!("billing");
+        body["record"]["expert"] = serde_json::json!("supportExpert");
+        body["record"]["policyVersion"] = serde_json::json!("policy-3");
+        body["record"]["durationNanos"] = serde_json::json!(2_500_000);
+        body["record"]["reasonCode"] = serde_json::json!("selected");
+        assert_eq!(
+            ingest(&store, true, Some(&body.to_string())).status(),
+            StatusCode::OK
+        );
+        let response = handle(
+            &store,
+            AuditRoute::List,
+            Some("correlation_id=app-correlation&target=billing&reason_code=selected"),
+        );
+        let response: serde_json::Value =
+            serde_json::from_slice(response.body()).unwrap_or_default();
+        assert_eq!(response["data"]["total"], 1);
+        let event = &response["data"]["events"][0];
+        assert_eq!(event["request_id"], "app-request");
+        assert_eq!(event["evaluator"], "supportExpert");
+        assert_eq!(event["policy_revision"], "policy-3");
+        assert_eq!(event["duration_ms"], 2);
+        assert!(event.get("actor").is_none());
+        assert!(event.get("workload").is_none());
+    }
+    #[test]
+    fn camel_execution_identifiers_do_not_replace_application_correlation() {
+        let store = InMemoryAuditStore::new(10);
+        let mut body = envelope("evaluation", "event-1");
+        body["record"]["exchangeId"] = serde_json::json!("exchange-1");
+        body["record"]["invocationId"] = serde_json::json!("invocation-1");
+        assert_eq!(
+            ingest(&store, true, Some(&body.to_string())).status(),
+            StatusCode::OK
+        );
+        let page = store.query(&AuditQuery::default());
+        assert_eq!(page.events[0].correlation_id, page.events[0].event_id);
+        assert!(page.events[0].request_id.is_none());
+    }
+
+    #[test]
+    fn accepts_camel_identifiers_and_namespace_without_rewriting_references() {
+        let store = InMemoryAuditStore::new(10);
+        let mut body = envelope("decision", "event#1/@=x");
+        body["source"]["namespace"] = serde_json::json!("tenant west");
+        body["record"]["evidence"] = serde_json::json!(["decision#1/@=x"]);
+        assert_eq!(
+            ingest(&store, true, Some(&body.to_string())).status(),
+            StatusCode::OK
+        );
+        let page = store.query(&AuditQuery::default());
+        assert!(
+            page.events[0]
+                .source
+                .as_ref()
+                .is_some_and(|source| source.namespace == "tenant west"
+                    && source.event_id == "event#1/@=x"
+                    && source.evidence == ["decision#1/@=x"])
+        );
+        for value in [" ", "bad\nidentifier"] {
+            body["record"]["eventId"] = serde_json::json!(value);
+            assert_eq!(
+                ingest(&store, true, Some(&body.to_string())).status(),
+                StatusCode::BAD_REQUEST
+            );
+        }
+    }
+
+    #[test]
+    fn semantic_content_is_redacted_but_source_references_survive() {
+        let store = InMemoryAuditStore::new(10);
+        let mut body = envelope("evaluation", "ghp_source-reference");
+        body["record"]["result"] = serde_json::json!({"value":"Bearer secret"});
+        body["record"]["evidence"] = serde_json::json!(["ghp_evidence-reference"]);
+        assert_eq!(
+            ingest(&store, true, Some(&body.to_string())).status(),
+            StatusCode::OK
+        );
+        let page = store.query(&AuditQuery::default());
+        assert_eq!(
+            page.events[0].attributes["semantic"]["result"]["value"],
+            "[REDACTED]"
+        );
+        assert!(
+            page.events[0]
+                .source
+                .as_ref()
+                .is_some_and(|source| source.event_id == "ghp_source-reference"
+                    && source.evidence == ["ghp_evidence-reference"])
+        );
+    }
+
     #[test]
     fn resolves_supported_routes() {
         assert_eq!(

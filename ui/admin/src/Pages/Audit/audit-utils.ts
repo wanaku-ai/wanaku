@@ -9,6 +9,8 @@ export interface AuditFilterValues {
   namespace: string;
   operation: string;
   reasonCode: string;
+  sourceInstanceId: string;
+  sourceEventId: string;
   target: string;
   to: string;
 }
@@ -20,6 +22,8 @@ export const EMPTY_AUDIT_FILTERS: AuditFilterValues = {
   namespace: '',
   operation: '',
   reasonCode: '',
+  sourceInstanceId: '',
+  sourceEventId: '',
   target: '',
   to: '',
 };
@@ -34,6 +38,7 @@ export const getDecisionTagType = (decision: AuditDecision): DecisionTagType => 
       return 'warm-gray';
     case 'reject_malformed':
       return 'magenta';
+    case 'observed':
     case 'error':
       return 'gray';
   }
@@ -60,6 +65,8 @@ export const toAuditParams = (
   offset,
   operation: optional(filters.operation),
   reason_code: optional(filters.reasonCode),
+  source_instance_id: optional(filters.sourceInstanceId),
+  source_event_id: optional(filters.sourceEventId),
   target: optional(filters.target),
   to: toIsoDate(filters.to),
 });

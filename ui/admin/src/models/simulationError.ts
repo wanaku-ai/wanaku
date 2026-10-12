@@ -9,5 +9,5 @@ import type { ValidationReport } from "./validationReport";
 
 export interface SimulationError {
   reason_code: string;
-  validation?: null | ValidationReport;
+  validation?: ValidationReport | null;
 }

@@ -607,6 +607,30 @@
         "operationId": "list_audit_events",
         "parameters": [
           {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AuditCategory"
+            }
+          },
+          {
+            "name": "source_instance_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source_event_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "from",
             "in": "query",
             "description": "Inclusive ISO 8601 start time",
@@ -786,6 +810,96 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit/semantic": {
+      "post": {
+        "tags": [
+          "Audit"
+        ],
+        "operationId": "ingest_semantic_audit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SemanticAuditEnvelope"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted in memory; best effort persistence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_SemanticAuditAcceptance"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid semantic audit envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ingestion disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Source event ID conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 64 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "External capacity unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Audit storage unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
               }
             }
           }
@@ -2722,12 +2836,14 @@
         "type": "string",
         "enum": [
           "decision",
-          "administrative"
+          "administrative",
+          "semantic"
         ]
       },
       "AuditDecision": {
         "type": "string",
         "enum": [
+          "observed",
           "allow",
           "block",
           "warn",
@@ -2871,6 +2987,16 @@
             "format": "int64",
             "minimum": 0
           },
+          "source": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AuditSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "stream_id": {
             "type": "string"
           },
@@ -2983,6 +3109,56 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "AuditSource": {
+        "type": "object",
+        "required": [
+          "instance_id",
+          "forward_name",
+          "namespace",
+          "catalog_revision",
+          "catalog_digest",
+          "event_id",
+          "timestamp",
+          "evidence",
+          "producer_asserted",
+          "fingerprint"
+        ],
+        "properties": {
+          "catalog_digest": {
+            "type": "string"
+          },
+          "catalog_revision": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "forward_name": {
+            "type": "string"
+          },
+          "instance_id": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "producer_asserted": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string"
           }
         }
       },
@@ -4951,6 +5127,324 @@
         },
         "additionalProperties": false
       },
+      "SemanticAuditAcceptance": {
+        "type": "object",
+        "required": [
+          "status",
+          "event_id",
+          "duplicate"
+        ],
+        "properties": {
+          "duplicate": {
+            "type": "boolean"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "SemanticAuditEnvelope": {
+        "type": "object",
+        "required": [
+          "source",
+          "record"
+        ],
+        "properties": {
+          "record": {
+            "$ref": "#/components/schemas/SemanticRecord"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SemanticSource"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SemanticRecord": {
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "eventId",
+          "timestamp",
+          "category"
+        ],
+        "properties": {
+          "action": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batchId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "breadcrumbId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "type": "string"
+          },
+          "contextId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "correlationId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "definition": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "durationNanos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "exchangeId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expert": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inputOmitted": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "invocationId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "namespace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "operation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "origin": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "policyId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "policyVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reasonCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "requestId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SemanticResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resultOmitted": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revision": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "routeId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rule": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "schemaVersion": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "semantics": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "startedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SemanticResult": {
+        "type": "object",
+        "properties": {
+          "confidence": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "probabilities": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "number",
+              "format": "double"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "probability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "value": {}
+        },
+        "additionalProperties": false
+      },
+      "SemanticSource": {
+        "type": "object",
+        "required": [
+          "instance_id",
+          "forward_name",
+          "namespace",
+          "catalog_revision",
+          "catalog_digest"
+        ],
+        "properties": {
+          "catalog_digest": {
+            "type": "string"
+          },
+          "catalog_revision": {
+            "type": "string"
+          },
+          "forward_name": {
+            "type": "string"
+          },
+          "instance_id": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "ServiceRequirement": {
         "type": "object",
         "required": [
@@ -4978,10 +5472,10 @@
           "validation": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ValidationReport"
               },
               {
-                "$ref": "#/components/schemas/ValidationReport"
+                "type": "null"
               }
             ]
           }
@@ -5533,6 +6027,16 @@
                 "format": "int64",
                 "minimum": 0
               },
+              "source": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AuditSource"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "stream_id": {
                 "type": "string"
               },
@@ -5871,6 +6375,36 @@
           }
         }
       },
+      "WanakuResponse_SemanticAuditAcceptance": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "status",
+              "event_id",
+              "duplicate"
+            ],
+            "properties": {
+              "duplicate": {
+                "type": "boolean"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "WanakuResponse_SimulationError": {
         "type": "object",
         "properties": {
@@ -5886,10 +6420,10 @@
               "validation": {
                 "oneOf": [
                   {
-                    "type": "null"
+                    "$ref": "#/components/schemas/ValidationReport"
                   },
                   {
-                    "$ref": "#/components/schemas/ValidationReport"
+                    "type": "null"
                   }
                 ]
               }
