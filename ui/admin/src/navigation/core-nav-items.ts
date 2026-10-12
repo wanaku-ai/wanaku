@@ -28,6 +28,14 @@ export const CORE_NAV_ITEMS: NavItem[] = [
     order: 89,
   },
   {
+    id: 'policy-simulation',
+    label: 'Policy Simulation',
+    route: Links.PolicySimulation,
+    source: 'core',
+    section: 'Admin',
+    order: 89.5,
+  },
+  {
     id: 'plugin-catalog',
     label: 'Plugin Catalog',
     route: Links.PluginCatalog,

@@ -14,6 +14,7 @@ pub mod revision;
 pub mod revision_persistence;
 mod routes;
 pub mod schema;
+pub mod simulation;
 pub mod state;
 
 use http::Response;
@@ -76,6 +77,11 @@ impl EvaluatorFeature {
     ) -> Self {
         self.state = self.state.with_revision_persistence(backend);
         self
+    }
+
+    #[must_use]
+    pub fn state(&self) -> EvaluatorState {
+        self.state.clone()
     }
 
     fn load_startup_policy(&self, root: &serde_yaml::Value) -> bool {

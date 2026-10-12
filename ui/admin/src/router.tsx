@@ -69,6 +69,10 @@ export function buildRouter(pluginPages: PluginPage[]) {
           lazy: async () => import('./Pages/ActionPolicies'),
         },
         {
+          path: Links.PolicySimulation,
+          lazy: async () => import('./Pages/PolicySimulation'),
+        },
+        {
           path: Links.Audit,
           lazy: async () => import('./Pages/Audit'),
         },

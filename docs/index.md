@@ -35,6 +35,7 @@ All in a single binary with no runtime dependencies (except libc).
 - **[Governance Posture](./governance-posture.md)** — enforcement modes, fail-safe defaults, and namespace resolution
 - **[Action Policies](./action-policies.md)** — deterministic rules for MCP actions
 - **[Semantic Routing](./semantic-routing.md)** — Barn authoring, WSR deployment, and governed MCP acceptance checks
+- **[Policy Simulation](./policy-simulation.md)** — validate candidates and compare action decisions before activation
 - **[Redaction Boundary](./redaction.md)** — where Wanaku removes credentials and PII before logs, errors, and stored data
 - **[FAQ](./faq.md)** — common issues and troubleshooting
 
