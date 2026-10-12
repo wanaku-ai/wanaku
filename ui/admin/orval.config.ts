@@ -11,19 +11,20 @@ export default defineConfig({
                     for (const pathItem of Object.values(spec.paths ?? {})) {
                         for (const operation of Object.values(pathItem ?? {})) {
                             if (!operation || typeof operation !== 'object' || !('tags' in operation)) continue;
-                            if (!operation.tags?.some(tag => tag === 'Evaluators' || tag === 'Action Policies' || tag === 'Plugins')) continue;
+                            if (!operation.tags?.some(tag => tag === 'Evaluators' || tag === 'Action Policies' || tag === 'Plugins' || tag === 'Policy Simulations')) continue;
 
                             if (operation.operationId?.startsWith('activate_') && operation.requestBody) {
                                 operation.requestBody.required = false;
                             }
 
-                            const schema = operation.responses?.['200']?.content?.['application/json']?.schema;
+                            const successResponse = operation.responses?.['200'] ?? operation.responses?.['202'];
+                            const schema = successResponse?.content?.['application/json']?.schema;
                             if (!schema || !('$ref' in schema)) continue;
 
                             const name = schema.$ref.split('/').at(-1);
                             const envelope = name ? spec.components?.schemas?.[name] : undefined;
                             if (envelope && !('$ref' in envelope) && envelope.properties?.data) {
-                                operation.responses!['200']!.content!['application/json']!.schema = envelope.properties.data;
+                                successResponse!.content!['application/json']!.schema = envelope.properties.data;
                             }
                         }
                     }

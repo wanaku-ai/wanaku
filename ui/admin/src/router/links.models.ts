@@ -11,6 +11,7 @@ export const enum Links {
   Evaluators = '/evaluators',
   Audit = '/audit',
   ActionPolicies = '/action-policies',
+  PolicySimulation = '/policy-simulation',
   Plugins = '/plugins-admin',
   PluginCatalog = '/plugin-catalog',
   Downloads = '/downloads',

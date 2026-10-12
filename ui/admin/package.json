@@ -24,11 +24,13 @@
     "@carbon/icons-react": "^11.76.0",
     "@carbon/layout": "^11.49.0",
     "@carbon/react": "^1.103.0",
+    "highlight.js": "^11.12.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-is": "^19.2.4",
     "react-router-dom": "^7.18.0",
-    "sass": "^1.98.0"
+    "sass": "^1.98.0",
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

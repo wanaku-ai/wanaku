@@ -1,0 +1,81 @@
+@use '@carbon/react/scss/theme' as *;
+
+.yaml-editor {
+  .yaml-editor__input {
+    position: relative;
+    background: $field;
+  }
+
+  .yaml-editor__highlight,
+  textarea {
+    margin: 0;
+    padding: 1rem;
+    border: 0;
+    box-sizing: border-box;
+    font-family: monospace;
+    font-size: 0.875rem;
+    font-weight: normal;
+    line-height: 1.5;
+    letter-spacing: normal;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    tab-size: 2;
+    scrollbar-gutter: stable;
+  }
+
+  .yaml-editor__highlight {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: transparent;
+    color: $text-primary;
+
+    code {
+      font: inherit;
+    }
+    .hljs-attr {
+      color: $link-primary;
+    }
+    .hljs-string {
+      color: $support-info;
+    }
+    .hljs-number,
+    .hljs-literal {
+      color: $support-success;
+    }
+    .hljs-comment {
+      color: $text-secondary;
+      font-style: normal;
+    }
+    .hljs-type,
+    .hljs-meta,
+    .hljs-bullet {
+      color: $text-primary;
+    }
+  }
+
+  textarea {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-height: 22rem;
+    resize: vertical;
+    background: transparent;
+    color: transparent;
+    caret-color: $text-primary;
+    border-bottom: 1px solid $border-strong;
+
+    &:focus {
+      outline: 2px solid $focus;
+      outline-offset: -2px;
+    }
+    &:disabled {
+      cursor: not-allowed;
+    }
+  }
+
+  &:has(textarea:disabled) .yaml-editor__highlight {
+    opacity: 0.5;
+  }
+}

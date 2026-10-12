@@ -30,6 +30,17 @@ const getHeaders = (headers?: HeadersInit): HeadersInit => {
 const REDIRECT_TS_KEY = 'wanaku_auth_redirect_ts';
 const REDIRECT_LOOP_MS = 10_000;
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly data: unknown,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 export const customFetch = async <T>(url: string, options: RequestInit): Promise<T> => {
   const requestUrl = getUrl(url);
   const requestHeaders = getHeaders(options.headers);
@@ -60,8 +71,17 @@ export const customFetch = async <T>(url: string, options: RequestInit): Promise
   const body = await getBody<Record<string, unknown>>(response);
 
   if (!response.ok) {
-    const message = (body?.error as string) || `Request failed with status ${response.status}`;
-    throw new Error(message);
+    const data = body?.data;
+    const reason =
+      data &&
+      typeof data === 'object' &&
+      'reason_code' in data &&
+      typeof data.reason_code === 'string'
+        ? data.reason_code
+        : undefined;
+    const message =
+      (body?.error as string) || reason || `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status, data);
   }
 
   const data = body?.data !== undefined ? body.data : body;

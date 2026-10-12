@@ -6,7 +6,7 @@ Think of features as plugins. The core server provides the infrastructure (filte
 
 ## Built-in Features
 
-Wanaku ships with six features:
+Wanaku includes these built-in features:
 
 ### Metrics Feature (`features/metrics/`)
 
@@ -77,6 +77,16 @@ A WASM-based evaluation engine that lets you build trigger→evaluate→act pipe
 - `DELETE /api/v1/evaluators/namespaces/{namespace}` — unbind
 
 See the [Evaluator Engine](./evaluator-engine.md) guide for configuration details and WASM action script development.
+
+### Policy Simulation Feature (`features/simulation/`)
+
+Validates transient policy candidates and evaluates synthetic MCP actions. Asynchronous replay compares the active policy with a candidate. The feature reuses production policy parsing and matching. It records proposed WASM actions with read-only host capabilities.
+
+**Management API prefix:** `/api/v1/policy-simulations`
+
+**Configuration:** The top-level `simulation` section in `wanaku.yaml` sets resource and retention limits.
+
+See [Policy Simulation](policy-simulation.md) for the report schema and CI procedure.
 
 ### Plugins Feature (`features/plugins/`)
 

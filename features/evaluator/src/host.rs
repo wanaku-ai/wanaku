@@ -22,10 +22,12 @@ pub struct HostState {
     pub interactions: InMemoryInteractionStore,
     pub action: ActionResult,
     pub allow_side_effects: bool,
+    pub mode: crate::engine::ExecutionMode,
     pub side_effects_suppressed: bool,
     pub evaluator_name: String,
     pub compiled_schema: Option<Arc<CompiledSchema>>,
     pub wasi_ctx: wasmtime_wasi::WasiCtx,
+    pub limits: wasmtime::StoreLimits,
     pub wasi_table: wasmtime::component::ResourceTable,
 }
 
@@ -67,6 +69,9 @@ impl wanaku::evaluator::registry::Host for HostState {
 
 impl wanaku::evaluator::conversation::Host for HostState {
     fn get_history(&mut self, conversation_id: String) -> Vec<types::Message> {
+        if self.mode == crate::engine::ExecutionMode::Simulation {
+            self.side_effects_suppressed = true;
+        }
         let interactions = self.interactions.get_by_conversation_id(&conversation_id);
         let mut messages = Vec::new();
 
@@ -135,15 +140,21 @@ impl wanaku::evaluator::validation::Host for HostState {
 
 impl wanaku::evaluator::log::Host for HostState {
     fn info(&mut self, message: String) {
-        tracing::info!(evaluator = %self.evaluator_name, "{message}");
+        if self.mode == crate::engine::ExecutionMode::Production {
+            tracing::info!(evaluator = %self.evaluator_name, "{message}");
+        }
     }
 
     fn warn(&mut self, message: String) {
-        tracing::warn!(evaluator = %self.evaluator_name, "{message}");
+        if self.mode == crate::engine::ExecutionMode::Production {
+            tracing::warn!(evaluator = %self.evaluator_name, "{message}");
+        }
     }
 
     fn error(&mut self, message: String) {
-        tracing::error!(evaluator = %self.evaluator_name, "{message}");
+        if self.mode == crate::engine::ExecutionMode::Production {
+            tracing::error!(evaluator = %self.evaluator_name, "{message}");
+        }
     }
 }
 
@@ -183,10 +194,12 @@ mod tests {
             interactions: InMemoryInteractionStore::new(16),
             action: ActionResult::Pass,
             allow_side_effects: true,
+            mode: crate::engine::ExecutionMode::Production,
             side_effects_suppressed: false,
             evaluator_name: "test-eval".to_owned(),
             compiled_schema: None,
             wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
+            limits: wasmtime::StoreLimitsBuilder::new().build(),
             wasi_table: wasmtime::component::ResourceTable::new(),
         }
     }
@@ -375,6 +388,14 @@ mod tests {
     fn get_history_empty_for_unknown_conversation() {
         let mut state = host_state();
         assert!(state.get_history("nope".to_owned()).is_empty());
+    }
+
+    #[test]
+    fn simulation_history_read_reports_suppressed_live_context() {
+        let mut state = host_state();
+        state.mode = crate::engine::ExecutionMode::Simulation;
+        assert!(state.get_history("live-conversation".to_owned()).is_empty());
+        assert!(state.side_effects_suppressed);
     }
 
     // ---- tool_entry_to_wit ----

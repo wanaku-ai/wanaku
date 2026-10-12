@@ -1,0 +1,69 @@
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/theme' as *;
+
+.policy-simulation {
+  padding: $spacing-07;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-06;
+
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-05;
+  }
+  section section {
+    padding: $spacing-05;
+    background: $layer-02;
+  }
+  pre {
+    overflow-x: auto;
+    padding: $spacing-05;
+    background: $layer-02;
+  }
+  textarea {
+    font-family: monospace;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: $spacing-03;
+    border-bottom: 1px solid $border-subtle;
+    overflow-wrap: anywhere;
+  }
+  caption {
+    text-align: left;
+    margin-bottom: $spacing-03;
+  }
+  details {
+    overflow-wrap: anywhere;
+  }
+}
+
+.policy-simulation__buttons,
+.policy-simulation__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-03;
+}
+
+.policy-simulation__audit-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.policy-simulation__table-scroll {
+  overflow-x: auto;
+}
+
+.policy-simulation__error {
+  position: sticky;
+  top: 3rem;
+  z-index: 1;
+}

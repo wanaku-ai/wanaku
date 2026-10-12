@@ -134,3 +134,125 @@ export function agentData(overrides?: Partial<{
     ...(overrides?.cardAddress ? { cardAddress: overrides.cardAddress } : {}),
   };
 }
+
+// Policy simulation reports contain decision metadata, never request payloads.
+export const simulationIdentity = {
+  policy_revision: 1,
+  evaluator_revision: 0,
+  policy_checksum: "candidate-checksum",
+};
+export const simulationAction = {
+  namespace: "default",
+  request: {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/call",
+    params: { name: "summary", arguments: {} },
+  },
+};
+export const simulationReport = {
+  schema_version: "1.0",
+  identity: simulationIdentity,
+  stale: false,
+  namespace: "default",
+  operation: "tools/call",
+  target: "summary",
+  posture: { mode: "enforce", no_match: "allow", on_failure: "deny" },
+  stages: [
+    {
+      stage: "action_policy",
+      decision: "deny",
+      matched_ids: ["protect-production"],
+      reason_code: "production_restart_denied",
+    },
+    {
+      stage: "evaluator",
+      decision: "skipped",
+      matched_ids: ["review"],
+      reason_code: "external_evaluator_skipped",
+    },
+  ],
+  decision: "deny",
+  conditional: false,
+  baseline_used: false,
+  failure_used: false,
+  redaction: {
+    payload_captured: false,
+    payload_truncated: false,
+    redacted_fields: [],
+  },
+  duration_ms: 2,
+};
+export const simulationReplay = {
+  schema_version: "1.0",
+  id: "replay-1",
+  status: "completed",
+  identity: simulationIdentity,
+  stale: false,
+  duration_ms: 4,
+  counts: { deny_to_allow: 1, allow_to_deny: 1 },
+  skipped_audit_ids: ["audit-1"],
+  details: [
+    {
+      index: 0,
+      category: "deny_to_allow",
+      access_expansion: true,
+      compatibility_impact: false,
+      outside_evidence: true,
+      active: simulationReport,
+      candidate: { ...simulationReport, decision: "allow" },
+    },
+    {
+      index: 1,
+      category: "allow_to_deny",
+      access_expansion: false,
+      compatibility_impact: true,
+      outside_evidence: false,
+      active: { ...simulationReport, decision: "allow" },
+      candidate: simulationReport,
+    },
+  ],
+};
+
+export const simulationExampleCandidate = {
+  base_policy_revision: 0,
+  base_evaluator_revision: 0,
+  inline_policy: {
+    rules: [
+      {
+        id: "example-deny-tool-calls",
+        description: "Block tool calls in this transient candidate.",
+        effect: "deny",
+        selectors: { operation: "tools/call", target_type: "tool" },
+        reason_code: "example_tool_call_denied",
+      },
+    ],
+  },
+  inline_evaluators: [],
+};
+
+export const simulationAuditEvent = (id: string) => ({
+  schema_version: "1.0",
+  event_id: id,
+  stream_id: "test",
+  sequence: 1,
+  timestamp: "2026-10-12T08:00:00Z",
+  category: "decision",
+  decision: "allow",
+  correlation_id: id,
+  protocol: "mcp",
+  operation: "tools/call",
+  namespace: "default",
+  target: "summary",
+  reason_code: "allowed",
+  explanation: "Allowed.",
+  redaction: {
+    payload_captured: true,
+    payload_truncated: false,
+    redacted_fields: [],
+  },
+  payload: simulationAction.request,
+  attributes: {},
+  coverage_complete: true,
+  dropped_events: 0,
+});
