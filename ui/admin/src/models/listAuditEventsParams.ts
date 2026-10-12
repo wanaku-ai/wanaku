@@ -5,9 +5,13 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
+import type { AuditCategory } from "./auditCategory";
 import type { AuditDecision } from "./auditDecision";
 
 export type ListAuditEventsParams = {
+  category?: AuditCategory;
+  source_instance_id?: string;
+  source_event_id?: string;
   /**
    * Inclusive ISO 8601 start time
    */

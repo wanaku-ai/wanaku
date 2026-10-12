@@ -47,6 +47,10 @@ use wanaku_types::registry::{
     ForwardEntry, McpServerInfo, NamespaceEntry, PromptArgument, PromptEntry, PromptMessage,
     ResourceEntry, ToolEntry,
 };
+use wanaku_types::semantic_audit::{
+    AuditSource, SemanticAuditAcceptance, SemanticAuditEnvelope, SemanticRecord, SemanticResult,
+    SemanticSource,
+};
 
 #[derive(serde::Serialize, utoipa::ToSchema)]
 struct WanakuResponse<T: utoipa::ToSchema> {
@@ -342,9 +346,25 @@ const fn refresh_forward() {}
 const fn get_metrics() {}
 
 // -- Audit --------------------------------------------------------------------
+#[utoipa::path(post, path = "/api/v1/audit/semantic", tag = "Audit",
+    request_body = SemanticAuditEnvelope,
+    responses(
+        (status = 200, description = "Accepted in memory; best effort persistence", body = WanakuResponse<SemanticAuditAcceptance>),
+        (status = 400, description = "Invalid semantic audit envelope", body = ManagementErrorResponse),
+        (status = 404, description = "Ingestion disabled", body = ManagementErrorResponse),
+        (status = 409, description = "Source event ID conflict", body = ManagementErrorResponse),
+        (status = 413, description = "Body exceeds 64 KiB", body = ManagementErrorResponse),
+        (status = 429, description = "External capacity unavailable", body = ManagementErrorResponse),
+        (status = 503, description = "Audit storage unavailable", body = ManagementErrorResponse)
+    )
+)]
+const fn ingest_semantic_audit() {}
 
 #[utoipa::path(get, path = "/api/v1/audit/events", tag = "Audit",
     params(
+        ("category" = Option<AuditCategory>, Query),
+        ("source_instance_id" = Option<String>, Query),
+        ("source_event_id" = Option<String>, Query),
         ("from" = Option<String>, Query, description = "Inclusive ISO 8601 start time"),
         ("to" = Option<String>, Query, description = "Inclusive ISO 8601 end time"),
         ("namespace" = Option<String>, Query),
@@ -674,6 +694,7 @@ const fn delete_policy_replay() {}
         delete_forward,
         refresh_forward,
         get_metrics,
+        ingest_semantic_audit,
         list_audit_events,
         get_audit_event,
         get_audit_schema,
@@ -739,6 +760,12 @@ const fn delete_policy_replay() {}
         WasmSnapshot,
         PipelineSnapshot,
         GaugeSnapshot,
+        AuditSource,
+        SemanticAuditAcceptance,
+        SemanticAuditEnvelope,
+        SemanticRecord,
+        SemanticResult,
+        SemanticSource,
         AuditCategory,
         AuditDecision,
         AuditEvent,
@@ -801,6 +828,40 @@ pub fn openapi_json() -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn semantic_audit_contract_has_required_body_and_neutral_observations() {
+        let document = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        let endpoint = &document["paths"]["/api/v1/audit/semantic"]["post"];
+        assert_eq!(endpoint["requestBody"]["required"], true);
+        for status in ["200", "400", "404", "409", "413", "429", "503"] {
+            assert!(endpoint["responses"].get(status).is_some());
+        }
+        for schema in [
+            "SemanticAuditEnvelope",
+            "SemanticAuditAcceptance",
+            "AuditSource",
+            "SemanticRecord",
+            "SemanticResult",
+            "SemanticSource",
+        ] {
+            assert!(document["components"]["schemas"].get(schema).is_some());
+        }
+        assert!(
+            document["components"]["schemas"]["AuditCategory"]["enum"]
+                .as_array()
+                .is_some_and(|variants| variants.contains(&serde_json::json!("semantic")))
+        );
+        assert!(
+            document["components"]["schemas"]["AuditDecision"]["enum"]
+                .as_array()
+                .is_some_and(|variants| variants.contains(&serde_json::json!("observed")))
+        );
+        assert_eq!(
+            document["components"]["schemas"]["SemanticAuditEnvelope"]["additionalProperties"],
+            false
+        );
+    }
 
     #[test]
     fn simulation_contracts_are_transient_and_versioned() {

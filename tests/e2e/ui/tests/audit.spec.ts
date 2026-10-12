@@ -94,6 +94,65 @@ test.describe("Audit", () => {
     await expect(audit.eventDetail()).toContainText("Payload captured");
   });
 
+  test("renders semantic observations without enforcement meaning", async ({ page }) => {
+    const observation = {
+      ...auditEvent,
+      event_id: "semantic-event-1",
+      category: "semantic",
+      decision: "observed",
+      source: {
+        instance_id: "wsr-instance-1",
+        forward_name: "support-route",
+        namespace: "finance",
+        catalog_revision: "revision-1",
+        catalog_digest: "digest-1",
+        event_id: "evaluation-17",
+        timestamp: "2026-09-14T11:59:59Z",
+        evidence: ["evaluation-16"],
+        producer_asserted: true,
+        fingerprint: "fingerprint-1",
+      },
+      attributes: {
+        semantic: {
+          category: "evaluation",
+          result: { type: "choice", value: "billing" },
+          evidence: ["evaluation-17"],
+        },
+      },
+    };
+    await routeSupportingRequests(page);
+    await page.route("**/api/v1/audit/events?*", (route) => route.fulfill({
+      json: { data: { events: [observation], limit: 50, offset: 0, total: 1 } },
+    }));
+    await page.route("**/api/v1/audit/events/semantic-event-1", (route) => route.fulfill({
+      json: { data: observation },
+    }));
+
+    await audit.goto();
+    const badge = audit.eventsTable().locator(".cds--tag").filter({ hasText: "Observed" });
+    await expect(badge).toHaveClass(/cds--tag--gray/);
+    await audit.filters().getByLabel("Decision").selectOption("observed");
+    await audit.filters().getByLabel("Source instance ID").fill("wsr-instance-1");
+    await audit.filters().getByLabel("Source event ID").fill("evaluation-17");
+    const filteredResponse = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname.endsWith("/api/v1/audit/events")
+        && url.searchParams.get("decision") === "observed"
+        && url.searchParams.get("source_instance_id") === "wsr-instance-1"
+        && url.searchParams.get("source_event_id") === "evaluation-17";
+    });
+    await audit.filters().getByRole("button", { name: "Apply filters" }).click();
+    await filteredResponse;
+    await page.getByRole("button", { name: "View audit event semantic-event-1" }).click();
+    await expect(audit.eventDetail().getByRole("heading", { name: "Enforcement", exact: true })).toHaveCount(0);
+    await expect(audit.eventDetail()).toContainText('"value": "billing"');
+    await expect(audit.eventDetail()).toContainText("evaluation-17");
+    await expect(audit.eventDetail()).toContainText("evaluation-16");
+    await expect(audit.eventDetail()).toContainText("wsr-instance-1");
+    await expect(audit.eventDetail()).toContainText("support-route");
+    await expect(audit.eventDetail()).toContainText("Source metadata is asserted by the producer.");
+  });
+
   test("applies server-side filters and renders the empty state", async ({ page }) => {
     await routeSupportingRequests(page);
     const requests: URL[] = [];

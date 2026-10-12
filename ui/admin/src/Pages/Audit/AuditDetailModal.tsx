@@ -32,6 +32,27 @@ const JsonBlock = ({ label, value }: DetailFieldProps) => (
   </section>
 );
 
+interface ProducerSourceProps {
+  source: NonNullable<AuditEvent['source']>;
+}
+
+const ProducerSource = ({ source }: ProducerSourceProps) => (
+  <section className="audit-detail__section" aria-labelledby="audit-source-heading">
+    <h3 id="audit-source-heading">Producer source</h3>
+    <p>Source metadata is asserted by the producer.</p>
+    <dl className="audit-detail__grid">
+      <DetailField label="Source instance ID" value={source.instance_id} />
+      <DetailField label="Forward name" value={source.forward_name} />
+      <DetailField label="Source event ID" value={source.event_id} />
+      <DetailField label="Source timestamp" value={formatAuditDate(source.timestamp)} />
+      <DetailField label="Source namespace" value={source.namespace} />
+      <DetailField label="Catalog revision" value={source.catalog_revision} />
+      <DetailField label="Catalog digest" value={source.catalog_digest} />
+      <DetailField label="Evidence IDs" value={source.evidence.join(', ')} />
+    </dl>
+  </section>
+);
+
 export const AuditDetailModal = ({ event, onRequestClose }: AuditDetailModalProps) => (
   <ComposedModal
     open
@@ -49,13 +70,16 @@ export const AuditDetailModal = ({ event, onRequestClose }: AuditDetailModalProp
           <div className="audit-detail__field">
             <dt>Decision</dt>
             <dd>
-              <Tag type={getDecisionTagType(event.decision)}>{event.decision}</Tag>
+              <Tag type={getDecisionTagType(event.decision)}>
+                {event.decision === 'observed' ? 'Observed' : event.decision}
+              </Tag>
             </dd>
           </div>
           <DetailField label="Reason code" value={event.reason_code} />
           <DetailField label="Explanation" value={event.explanation} />
         </dl>
       </section>
+      {event.source && <ProducerSource source={event.source} />}
       <section className="audit-detail__section" aria-labelledby="audit-request-heading">
         <h3 id="audit-request-heading">Request</h3>
         <dl className="audit-detail__grid">
@@ -81,17 +105,19 @@ export const AuditDetailModal = ({ event, onRequestClose }: AuditDetailModalProp
           <DetailField label="Sequence" value={event.sequence} />
         </dl>
       </section>
-      <section className="audit-detail__section" aria-labelledby="audit-enforcement-heading">
-        <h3 id="audit-enforcement-heading">Enforcement</h3>
-        <dl className="audit-detail__grid">
-          <DetailField label="Filter" value={event.filter} />
-          <DetailField label="Evaluator" value={event.evaluator} />
-          <DetailField label="Policy revision" value={event.policy_revision} />
-          <DetailField label="Upstream ID" value={event.upstream_id} />
-          <DetailField label="Response status" value={event.response_status} />
-          <DetailField label="Duration (ms)" value={event.duration_ms} />
-        </dl>
-      </section>
+      {event.decision !== 'observed' && (
+        <section className="audit-detail__section" aria-labelledby="audit-enforcement-heading">
+          <h3 id="audit-enforcement-heading">Enforcement</h3>
+          <dl className="audit-detail__grid">
+            <DetailField label="Filter" value={event.filter} />
+            <DetailField label="Evaluator" value={event.evaluator} />
+            <DetailField label="Policy revision" value={event.policy_revision} />
+            <DetailField label="Upstream ID" value={event.upstream_id} />
+            <DetailField label="Response status" value={event.response_status} />
+            <DetailField label="Duration (ms)" value={event.duration_ms} />
+          </dl>
+        </section>
+      )}
       <section className="audit-detail__section" aria-labelledby="audit-coverage-heading">
         <h3 id="audit-coverage-heading">Redaction and coverage</h3>
         <dl className="audit-detail__grid">

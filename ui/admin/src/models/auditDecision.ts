@@ -9,6 +9,7 @@
 export type AuditDecision = (typeof AuditDecision)[keyof typeof AuditDecision];
 
 export const AuditDecision = {
+  observed: "observed",
   allow: "allow",
   block: "block",
   warn: "warn",

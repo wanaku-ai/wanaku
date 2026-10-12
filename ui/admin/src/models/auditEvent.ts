@@ -8,6 +8,7 @@
 import type { AuditCategory } from "./auditCategory";
 import type { AuditDecision } from "./auditDecision";
 import type { AuditEventAttributes } from "./auditEventAttributes";
+import type { AuditSource } from "./auditSource";
 import type { RedactionMetadata } from "./redactionMetadata";
 
 export interface AuditEvent {
@@ -54,6 +55,7 @@ export interface AuditEvent {
   schema_version: string;
   /** @minimum 0 */
   sequence: number;
+  source?: AuditSource | null;
   stream_id: string;
   /** @nullable */
   target?: string | null;

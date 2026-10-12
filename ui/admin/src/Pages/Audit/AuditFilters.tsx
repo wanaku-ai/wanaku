@@ -47,6 +47,7 @@ export const AuditFilters = ({
         <SelectItem value="warn" text="Warn" />
         <SelectItem value="reject_malformed" text="Reject malformed" />
         <SelectItem value="error" text="Error" />
+        <SelectItem value="observed" text="Observed" />
       </Select>
       <TextInput
         id="audit-operation"
@@ -77,6 +78,18 @@ export const AuditFilters = ({
         labelText="Correlation ID"
         value={values.correlationId}
         onChange={update('correlationId')}
+      />
+      <TextInput
+        id="audit-source-instance-id"
+        labelText="Source instance ID"
+        value={values.sourceInstanceId}
+        onChange={update('sourceInstanceId')}
+      />
+      <TextInput
+        id="audit-source-event-id"
+        labelText="Source event ID"
+        value={values.sourceEventId}
+        onChange={update('sourceEventId')}
       />
       <TextInput
         id="audit-from"

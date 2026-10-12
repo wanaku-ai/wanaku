@@ -122,7 +122,8 @@ impl AuditFeature {
             redactor,
             config.capture_payloads,
             self.failure_observer.clone(),
-        );
+        )
+        .with_external_capacity(config.external_max_records);
         match self.store.write() {
             Ok(mut store) => *store = replacement,
             Err(error) => tracing::error!(error = %error, "audit store lock poisoned"),
@@ -181,6 +182,17 @@ impl Feature for AuditFeature {
         let route = routes::resolve(ctx.method, ctx.path);
         if route == routes::AuditRoute::NotFound {
             return None;
+        }
+        if route == routes::AuditRoute::Ingest {
+            return Some(match (self.store.read(), self.config.read()) {
+                (Ok(store), Ok(config)) => {
+                    routes::ingest(&store, config.ingestion_enabled, ctx.body)
+                }
+                _ => wanaku_types::http_response::json_err(
+                    http::StatusCode::SERVICE_UNAVAILABLE,
+                    "audit storage unavailable",
+                ),
+            });
         }
         Some(match self.store.read() {
             Ok(store) => routes::handle(&store, route, ctx.query),

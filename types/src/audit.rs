@@ -24,12 +24,14 @@ const AUDIT_STORAGE_ERROR: &str = "audit storage unavailable";
 pub enum AuditCategory {
     Decision,
     Administrative,
+    Semantic,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum AuditDecision {
+    Observed,
     Allow,
     Block,
     Warn,
@@ -48,6 +50,8 @@ pub struct RedactionMetadata {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct AuditEvent {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<crate::semantic_audit::AuditSource>,
     pub schema_version: String,
     pub event_id: String,
     pub stream_id: String,
@@ -111,6 +115,7 @@ impl AuditEvent {
     ) -> Self {
         let event_id = crate::correlation::generate_short_id();
         Self {
+            source: None,
             schema_version: AUDIT_SCHEMA_VERSION.to_owned(),
             event_id: event_id.clone(),
             stream_id: event_id.clone(),
@@ -148,6 +153,9 @@ impl AuditEvent {
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct AuditQuery {
+    pub category: Option<AuditCategory>,
+    pub source_instance_id: Option<String>,
+    pub source_event_id: Option<String>,
     pub from: Option<String>,
     pub to: Option<String>,
     pub namespace: Option<String>,
@@ -202,6 +210,7 @@ pub struct InMemoryAuditStore {
     persistence_worker: Option<PersistenceWorker>,
     inner: Arc<Mutex<StoreState>>,
     capacity: usize,
+    external_capacity: usize,
     persistence: Option<Arc<dyn AuditPersistence>>,
     redactor: AuditRedactor,
     capture_payloads: bool,
@@ -497,6 +506,7 @@ impl InMemoryAuditStore {
         let mut store = Self {
             inner: Arc::new(Mutex::new(StoreState::default())),
             capacity,
+            external_capacity: 1000.min(capacity.saturating_sub(1)),
             persistence,
             persistence_worker: None,
             redactor,
@@ -512,6 +522,62 @@ impl InMemoryAuditStore {
             )
         });
         store
+    }
+
+    #[must_use]
+    pub fn with_external_capacity(mut self, capacity: usize) -> Self {
+        self.external_capacity = capacity.min(self.capacity.saturating_sub(1));
+        if let Ok(mut state) = self.inner.lock() {
+            while state
+                .events
+                .iter()
+                .filter(|event| event.source.is_some())
+                .count()
+                > self.external_capacity
+            {
+                match state.events.iter().position(|event| event.source.is_some()) {
+                    Some(position) => {
+                        state.events.remove(position);
+                    }
+                    None => break,
+                }
+            }
+        }
+        self
+    }
+
+    pub fn accept_semantic(
+        &self,
+        mut event: AuditEvent,
+    ) -> Result<
+        crate::semantic_audit::SemanticAuditAcceptance,
+        crate::semantic_audit::SemanticAdmissionError,
+    > {
+        use crate::semantic_audit::SemanticAdmissionError;
+        self.prepare_event(&mut event);
+        let source = event
+            .source
+            .as_ref()
+            .ok_or(SemanticAdmissionError::Unavailable)?;
+        let mut state = self
+            .inner
+            .lock()
+            .map_err(|_| SemanticAdmissionError::Unavailable)?;
+        if let Some(accepted) = semantic_duplicate(&state, source)? {
+            return Ok(accepted);
+        }
+        reserve_external(&mut state, self.external_capacity, self.capacity)?;
+        let accepted = retain_semantic(&mut state, event);
+        let generation = state.next_sequence;
+        drop(state);
+        let persisted = self
+            .persistence_worker
+            .as_ref()
+            .map_or(Ok(()), |worker| worker.enqueue(generation));
+        if let Err(error) = persisted {
+            self.mark_failure(&error);
+        }
+        Ok(accepted)
     }
 
     fn load_persisted(&self) {
@@ -577,7 +643,14 @@ impl InMemoryAuditStore {
         event.dropped_events = state.dropped;
         event.coverage_complete = state.dropped == 0;
         if state.events.len() >= self.capacity {
-            state.events.pop_front();
+            match state.events.iter().position(|event| event.source.is_some()) {
+                Some(position) => {
+                    state.events.remove(position);
+                }
+                None => {
+                    state.events.pop_front();
+                }
+            }
         }
         state.events.push_back(Arc::new(event));
         state.next_sequence
@@ -585,6 +658,76 @@ impl InMemoryAuditStore {
 
     fn mark_failure(&self, error: &str) {
         mark_failure_shared(&self.inner, self.failure_observer.as_ref(), error);
+    }
+}
+
+fn semantic_duplicate(
+    state: &StoreState,
+    source: &crate::semantic_audit::AuditSource,
+) -> Result<
+    Option<crate::semantic_audit::SemanticAuditAcceptance>,
+    crate::semantic_audit::SemanticAdmissionError,
+> {
+    use crate::semantic_audit::{SemanticAdmissionError, SemanticAuditAcceptance};
+    let duplicate = state.events.iter().find(|event| {
+        event.source.as_ref().is_some_and(|previous| {
+            previous.instance_id == source.instance_id && previous.event_id == source.event_id
+        })
+    });
+    let Some(event) = duplicate else {
+        return Ok(None);
+    };
+    if !event
+        .source
+        .as_ref()
+        .is_some_and(|previous| previous.fingerprint == source.fingerprint)
+    {
+        return Err(SemanticAdmissionError::Conflict);
+    }
+    Ok(Some(SemanticAuditAcceptance {
+        status: "accepted_in_memory".to_owned(),
+        event_id: event.event_id.clone(),
+        duplicate: true,
+    }))
+}
+fn reserve_external(
+    state: &mut StoreState,
+    external_capacity: usize,
+    total_capacity: usize,
+) -> Result<(), crate::semantic_audit::SemanticAdmissionError> {
+    use crate::semantic_audit::SemanticAdmissionError;
+    if external_capacity == 0 {
+        return Err(SemanticAdmissionError::Capacity);
+    }
+    let count = state
+        .events
+        .iter()
+        .filter(|event| event.source.is_some())
+        .count();
+    if count >= external_capacity || state.events.len() >= total_capacity {
+        let position = state
+            .events
+            .iter()
+            .position(|event| event.source.is_some())
+            .ok_or(SemanticAdmissionError::Capacity)?;
+        state.events.remove(position);
+    }
+    Ok(())
+}
+fn retain_semantic(
+    state: &mut StoreState,
+    mut event: AuditEvent,
+) -> crate::semantic_audit::SemanticAuditAcceptance {
+    event.sequence = state.next_sequence;
+    state.next_sequence = state.next_sequence.saturating_add(1);
+    event.dropped_events = state.dropped;
+    event.coverage_complete = state.dropped == 0;
+    let event_id = event.event_id.clone();
+    state.events.push_back(Arc::new(event));
+    crate::semantic_audit::SemanticAuditAcceptance {
+        status: "accepted_in_memory".to_owned(),
+        event_id,
+        duplicate: false,
     }
 }
 
@@ -693,6 +836,20 @@ fn redact_attributes(redactor: &AuditRedactor, event: &mut AuditEvent) {
 }
 
 fn redact_event_strings(redactor: &AuditRedactor, event: &mut AuditEvent) {
+    if event.source.is_some() {
+        redact_required_string(
+            redactor,
+            "/reason_code",
+            &mut event.reason_code,
+            &mut event.redaction,
+        );
+        redact_required_string(
+            redactor,
+            "/operation",
+            &mut event.operation,
+            &mut event.redaction,
+        );
+    }
     redact_tracking_strings(redactor, event);
     redact_principal_strings(redactor, event);
     redact_outcome_strings(redactor, event);
@@ -852,7 +1009,8 @@ fn json_rpc_request_id(payload: &Value) -> Option<String> {
 }
 
 fn matches_query(event: &AuditEvent, query: &AuditQuery) -> bool {
-    timestamp_matches(&event.timestamp, query.from.as_deref(), query.to.as_deref())
+    matches_source(event, query)
+        && timestamp_matches(&event.timestamp, query.from.as_deref(), query.to.as_deref())
         && query
             .namespace
             .as_ref()
@@ -878,6 +1036,24 @@ fn matches_query(event: &AuditEvent, query: &AuditQuery) -> bool {
             .correlation_id
             .as_ref()
             .is_none_or(|v| &event.correlation_id == v)
+}
+
+fn matches_source(event: &AuditEvent, query: &AuditQuery) -> bool {
+    query
+        .category
+        .is_none_or(|category| event.category == category)
+        && query.source_instance_id.as_ref().is_none_or(|id| {
+            event
+                .source
+                .as_ref()
+                .is_some_and(|source| &source.instance_id == id)
+        })
+        && query.source_event_id.as_ref().is_none_or(|id| {
+            event
+                .source
+                .as_ref()
+                .is_some_and(|source| &source.event_id == id)
+        })
 }
 
 fn timestamp_matches(timestamp: &str, from: Option<&str>, to: Option<&str>) -> bool {
@@ -908,6 +1084,145 @@ mod tests {
             "allowed",
             "Allowed",
         )
+    }
+
+    fn semantic_event(id: &str) -> AuditEvent {
+        let body = serde_json::json!({"source":{"instance_id":"runtime-1","forward_name":"support","namespace":"default","catalog_revision":"r1","catalog_digest":"digest1"},"record":{"schemaVersion":1,"eventId":id,"timestamp":"2026-10-12T12:00:00Z","category":"evaluation"}});
+        let parsed = serde_json::from_value::<crate::semantic_audit::SemanticAuditEnvelope>(body)
+            .and_then(crate::semantic_audit::SemanticAuditEnvelope::into_event);
+        assert!(parsed.is_ok());
+        parsed.unwrap_or_else(|_| decision_event("invalid"))
+    }
+
+    #[test]
+    fn external_capacity_reserves_native_events_and_dedup_tracks_retention() {
+        let store = InMemoryAuditStore::new(3).with_external_capacity(1);
+        store.record(decision_event("native-1"));
+        store.record(decision_event("native-2"));
+        assert!(store.accept_semantic(semantic_event("external-1")).is_ok());
+        assert!(store.accept_semantic(semantic_event("external-2")).is_ok());
+        let page = store.query(&AuditQuery::default());
+        assert_eq!(page.total, 3);
+        assert_eq!(
+            page.events
+                .iter()
+                .filter(|event| event.source.is_none())
+                .count(),
+            2
+        );
+        assert!(
+            store
+                .accept_semantic(semantic_event("external-1"))
+                .is_ok_and(|accepted| !accepted.duplicate)
+        );
+    }
+    #[test]
+    fn native_admission_evicts_external_records_first() {
+        let store = InMemoryAuditStore::new(2).with_external_capacity(1);
+        store.record(decision_event("native-1"));
+        assert!(store.accept_semantic(semantic_event("external-1")).is_ok());
+        store.record(decision_event("native-2"));
+        assert!(matches!(
+            store.accept_semantic(semantic_event("external-2")),
+            Err(crate::semantic_audit::SemanticAdmissionError::Capacity)
+        ));
+        assert_eq!(
+            store
+                .query(&AuditQuery::default())
+                .events
+                .iter()
+                .filter(|event| event.source.is_none())
+                .count(),
+            2
+        );
+    }
+
+    #[test]
+    fn full_retention_still_acknowledges_identical_retry() {
+        let store = InMemoryAuditStore::new(2).with_external_capacity(1);
+        store.record(decision_event("native"));
+        assert!(store.accept_semantic(semantic_event("external-1")).is_ok());
+        assert!(
+            store
+                .accept_semantic(semantic_event("external-1"))
+                .is_ok_and(|accepted| accepted.duplicate)
+        );
+        assert_eq!(store.query(&AuditQuery::default()).total, 2);
+    }
+    #[test]
+    fn concurrent_retries_retain_one_event() {
+        let store = InMemoryAuditStore::new(10);
+        let event = semantic_event("external-1");
+        let event_id = event.event_id.clone();
+        let mut joins = Vec::new();
+        for _ in 0..8 {
+            let store = store.clone();
+            let event = event.clone();
+            let spawned = std::thread::Builder::new().spawn(move || store.accept_semantic(event));
+            assert!(spawned.is_ok());
+            if let Ok(join) = spawned {
+                joins.push(join);
+            }
+        }
+        for join in joins {
+            assert!(join.join().is_ok_and(|accepted| {
+                accepted.is_ok_and(|accepted| accepted.event_id == event_id)
+            }));
+        }
+        assert_eq!(store.query(&AuditQuery::default()).total, 1);
+    }
+    #[test]
+    fn semantic_acknowledgement_does_not_claim_durable_storage() {
+        let store = InMemoryAuditStore::with_persistence(10, Arc::new(FailingPersistence));
+        assert!(
+            store
+                .accept_semantic(semantic_event("external-1"))
+                .is_ok_and(|accepted| accepted.status == "accepted_in_memory")
+        );
+        let deadline = Instant::now() + Duration::from_secs(2);
+        while store.health().healthy && Instant::now() < deadline {
+            std::thread::yield_now();
+        }
+        assert!(!store.health().healthy);
+        assert!(store.accept_semantic(semantic_event("external-1")).is_ok_and(|accepted| accepted.duplicate && accepted.status == "accepted_in_memory"));
+    }
+
+    struct LoadedPersistence(Vec<AuditEvent>);
+    impl AuditPersistence for LoadedPersistence {
+        fn load(&self) -> Result<Vec<AuditEvent>, String> {
+            Ok(self.0.clone())
+        }
+        fn save(&self, _events: &[AuditEvent]) -> Result<(), String> {
+            Ok(())
+        }
+    }
+    #[test]
+    fn persisted_source_rebuilds_dedup_after_restart() {
+        let mut retained = semantic_event("external-1");
+        retained.sequence = 4;
+        let previous_id = retained.event_id.clone();
+        let store =
+            InMemoryAuditStore::with_persistence(10, Arc::new(LoadedPersistence(vec![retained])));
+        assert!(
+            store
+                .accept_semantic(semantic_event("external-1"))
+                .is_ok_and(|accepted| accepted.duplicate && accepted.event_id == previous_id)
+        );
+    }
+    #[test]
+    fn external_admission_fails_on_poisoned_lock() {
+        let store = InMemoryAuditStore::new(10);
+        let inner = store.inner.clone();
+        let spawned = std::thread::Builder::new().spawn(move || {
+            if let Ok(_guard) = inner.lock() {
+                std::panic::resume_unwind(Box::new("poison audit store"));
+            }
+        });
+        assert!(spawned.is_ok_and(|join| join.join().is_err()));
+        assert!(matches!(
+            store.accept_semantic(semantic_event("external-1")),
+            Err(crate::semantic_audit::SemanticAdmissionError::Unavailable)
+        ));
     }
 
     #[test]
