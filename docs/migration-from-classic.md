@@ -27,6 +27,7 @@ Classic Wanaku is a Java/Quarkus application with Infinispan persistence, Camel 
 Wanaku Praxis is a ground-up rewrite in Rust, built on the Praxis proxy framework (Cloudflare Pingora under the hood). The core idea is the same — a governed action proxy that sits between AI agents and backend systems — but the architecture is fundamentally different. Wanaku Praxis introduces a composable filter pipeline that enables pluggable governance features (evaluators, policy gates, interaction tracking) that would be difficult to express in the classic architecture.
 
 **What carries over:**
+
 - MCP protocol support (tools, resources, prompts)
 - Management API (`/api/v1/`) with the same response envelope
 - Namespace isolation
@@ -35,6 +36,7 @@ Wanaku Praxis is a ground-up rewrite in Rust, built on the Praxis proxy framewor
 - CLI compatibility (the `wanaku` CLI works with both)
 
 **What's new:**
+
 - Composable filter pipeline with metadata-driven routing
 - WASM-based evaluator engine for policy enforcement
 - Raw inference proxy for OpenAI-compatible chat completions
@@ -43,6 +45,7 @@ Wanaku Praxis is a ground-up rewrite in Rust, built on the Praxis proxy framewor
 - Single static binary — no JVM, no runtime dependencies
 
 **What's not in Praxis itself (still in wanaku-barn):**
+
 - Service catalogs and service templates — managed by the wanaku-barn backend, which runs alongside Praxis
 - Camel route execution — use a Camel-based MCP server as a forward
 - gRPC communication between services
@@ -147,7 +150,7 @@ Classic Wanaku provides a **fixed set of 10 namespace slots**, named `ns-0` thro
 
 Namespace names are labels assigned to these slots. When you provide a name like `"finance"`, Wanaku automatically assigns it to the first available slot (e.g., `ns-3`). The MCP endpoint uses the slot identifier, not the name:
 
-```
+```text
 http://localhost:8180/ns-3/mcp/sse        # SSE transport
 http://localhost:8180/ns-3/mcp/           # Streamable HTTP
 http://localhost:8180/public/mcp/sse      # public namespace (no auth)
@@ -159,7 +162,7 @@ You cannot create more than 10 namespaces (beyond `default` and `public`).
 
 Wanaku Praxis uses DNS-label-style namespace names directly — no fixed slots, no numeric limit. Names must be lowercase alphanumeric with hyphens, 1-63 characters. The MCP endpoint uses the name itself:
 
-```
+```text
 http://localhost:8081/finance/mcp             # Streamable HTTP only
 ```
 
@@ -186,7 +189,7 @@ wanaku namespaces create finance --no-auth
 
 Classic Wanaku serves MCP on the same port as the management API (default 8180) and supports both SSE and Streamable HTTP transports. Endpoints use the slot identifier (`ns-0`..`ns-9`), not the namespace name:
 
-```
+```text
 http://localhost:8180/ns-3/mcp/sse              # SSE transport
 http://localhost:8180/ns-3/mcp/                 # Streamable HTTP
 http://localhost:8180/default/mcp/sse           # default namespace
@@ -196,7 +199,7 @@ http://localhost:8180/default/mcp/sse           # default namespace
 
 MCP runs on a dedicated port (8081) using Streamable HTTP only:
 
-```
+```text
 http://localhost:8081/{namespace}/mcp            # Streamable HTTP
 ```
 
@@ -223,11 +226,12 @@ The downstream MCP servers self-register with the router via the `/api/v1/manage
 
 Tools support URI template expressions for dynamic parameter injection:
 
-```
+```text
 http://api.example.com/users/{parameter.value('id')}
 ```
 
 Special argument prefixes control behavior:
+
 - `wanaku_body` — sent as request body
 - `wanaku_meta_*` — converted to HTTP headers
 - `wanaku_auth_*` — converted to auth headers
@@ -377,7 +381,7 @@ To disable: `wanaku.http.auth=none`.
 
 Wanaku Praxis has no built-in authentication. It delegates to [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) running as a reverse proxy sidecar in front of both the MCP and management API ports.
 
-```
+```text
 Client → oauth2-proxy → Wanaku Praxis
 ```
 

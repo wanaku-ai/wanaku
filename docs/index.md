@@ -65,7 +65,7 @@ These are solvable, but they're not in scope for the initial release.
 
 ## Architecture at a Glance
 
-```
+```text
 ┌────────────────────────────────────────────┐
 │           LLM / AI Agent                    │
 └──────────────┬─────────────────────────────┘
@@ -247,12 +247,14 @@ RUST_LOG=wanaku_filters=trace wanaku-server
 Wanaku is open source (Apache 2.0). Contributions welcome.
 
 **Code style:**
+
 - `cargo fmt` before committing
 - `cargo clippy -- -D warnings` must pass
 - No `unwrap()`, `expect()`, or `panic!()` (enforced by `#![deny(...)]`)
 - Trace logs for filter decisions, debug for data, warn for errors
 
 **Adding a feature:**
+
 1. Create a new crate under `features/<name>/`
 2. Implement the `Feature` trait
 3. Wire it into `server/src/main.rs`
@@ -262,9 +264,9 @@ Wanaku is open source (Apache 2.0). Contributions welcome.
 
 ## Support and Community
 
-- **GitHub:** https://github.com/wanaku-ai/wanaku
-- **Issues:** https://github.com/wanaku-ai/wanaku/issues
-- **Classic Wanaku:** https://github.com/wanaku-ai/wanaku-barn
+- **GitHub:** <https://github.com/wanaku-ai/wanaku>
+- **Issues:** <https://github.com/wanaku-ai/wanaku/issues>
+- **Classic Wanaku:** <https://github.com/wanaku-ai/wanaku-barn>
 
 ## License
 

@@ -43,9 +43,9 @@ The default rules also redact credential-shaped string values. The rules match a
 `eyJ` value that contains two periods. Wanaku replaces a matched value with
 `[REDACTED]`.
 
-The rules also match the `bearer ` and `basic ` auth-scheme markers at a
-non-alphanumeric boundary. Wanaku applies these two markers to tool-call error
-details and to audit events. Wanaku does not apply these two markers to
+The rules also match the `bearer` and `basic` auth-scheme markers, each followed
+by a space, at a non-alphanumeric boundary. Wanaku applies these two markers to
+tool-call error details and to audit events. Wanaku does not apply these two markers to
 conversation bodies. The words "basic" and "bearer" are common in natural
 language. A conversation body match would remove the conversation context that
 intent analysis needs.

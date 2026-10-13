@@ -6,7 +6,7 @@ Under the hood, Wanaku is an HTTP filter pipeline. Actions flow through a chain 
 
 ## High-Level Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                      LLM / AI Agent                         │
 └────────────────┬────────────────────────────────────────────┘

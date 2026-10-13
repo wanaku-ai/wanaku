@@ -5,13 +5,13 @@
 [![Release](https://img.shields.io/github/v/release/wanaku-ai/wanaku)](https://github.com/wanaku-ai/wanaku/releases)
 
 Wanaku is a governed action proxy for AI agents. It sits between agents and the systems they act on, intercepting
-[Model Context Protocol (MCP)](https://modelcontextprotocol.io/) tool calls, agent-to-agent messages, and inference 
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io/) tool calls, agent-to-agent messages, and inference
 traffic. Before version 0.2.0, the project was named Wanaku MCP Router. It was renamed to Wanaku Governed Execution Proxy
 to reflect its expanded scope.
 
-Wanaku supports open standards for AI agents and provides first-class integration with enterprise frameworks, 
-including [Apache Camel](https://camel.apache.org/) and [Quarkus](https://quarkus.io/). For example, integration 
-developers build Apache Camel routes and use Wanaku's [Camel Integration Capability](https://github.com/wanaku-ai/camel-integration-capability) 
+Wanaku supports open standards for AI agents and provides first-class integration with enterprise frameworks,
+including [Apache Camel](https://camel.apache.org/) and [Quarkus](https://quarkus.io/). For example, integration
+developers build Apache Camel routes and use Wanaku's [Camel Integration Capability](https://github.com/wanaku-ai/camel-integration-capability)
 to publish them as tools. Agents call those tools with parameters, but Wanaku runs the work. Agents never access backend
 systems directly. The proxy enforces policy, identity, data controls, and audit requirements.
 
@@ -38,7 +38,7 @@ Download the latest early-access build on Linux or macOS:
 curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh | bash
 ```
 
-The installer detects the host platform, verifies the release checksum, and installs `wanaku-server` into `$HOME/bin`. 
+The installer detects the host platform, verifies the release checksum, and installs `wanaku-server` into `$HOME/bin`.
 
 Override the destination with `WANAKU_INSTALL_DIR`.
 

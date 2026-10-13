@@ -16,6 +16,7 @@ Kill the process, or change the management listen address via `WANAKU_MGMT_LISTE
 ## Empty JSON-RPC response from MCP endpoint
 
 Check that:
+
 - The MCP filter has `on_invalid: continue` in the pipeline config
 - You send valid JSON-RPC with `"jsonrpc": "2.0"`, `"method"`, and `"id"`.
 - The URL path matches `/{namespace}/mcp`. Use `/default/mcp` for the default namespace.
@@ -53,6 +54,7 @@ curl -s http://your-upstream-mcp:8080/mcp \
 ## LLM-based features (evaluators, inference proxy) do not work
 
 Verify:
+
 - The LLM endpoint is reachable (`curl http://localhost:11434/v1/models`)
 - `WANAKU_INFERENCE_UPSTREAM` is set correctly for the inference proxy (port 8083)
 - Evaluator LLM connections are defined under `llm_connections` in `wanaku.yaml`
