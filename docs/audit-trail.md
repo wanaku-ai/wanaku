@@ -42,7 +42,7 @@ audit:
 
 `sensitive_json_pointers` sets exact JSON Pointer paths that Wanaku redacts. The default list is empty.
 
-`credential_markers` adds case-insensitive text markers. Wanaku matches each custom marker as a substring. The built-in rules match `bearer ` and `basic ` only at a non-alphanumeric boundary. The built-in rules match `client_secret=` as a substring.
+`credential_markers` adds case-insensitive text markers. Wanaku matches each custom marker as a substring. The built-in rules match `bearer` and `basic`, each followed by a space, only at a non-alphanumeric boundary. The built-in rules match `client_secret=` as a substring.
 
 `token_prefixes` adds case-insensitive token prefixes. Wanaku uses prefix matching for each custom value. The built-in rules match `sk-`, `ghp_`, `github_pat_`, and `xoxb-` prefixes. The built-in rules match a 20-character `AKIA` value. The built-in rules match an `eyJ` value that contains two periods.
 

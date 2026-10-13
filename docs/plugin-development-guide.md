@@ -43,6 +43,7 @@ Five steps to see a plugin running:
 The following example is the smallest working plugin:
 
 **plugin.json:**
+
 ```json
 {
   "id": "my-plugin",
@@ -53,6 +54,7 @@ The following example is the smallest working plugin:
 ```
 
 **plugin.js:**
+
 ```javascript
 export async function activate(host) {
   host.navigation.add({
@@ -78,7 +80,7 @@ Restart the server. The "My Page" link appears in the sidebar.
 
 A plugin lives in its own directory under the plugins path. The plugins path is the value of `--plugins-path`. When you do not set `--plugins-path`, the plugins path is `<WANAKU_PERSIST_PATH>/plugins` (for example, `~/.wanaku/server/plugins`). The typical layout:
 
-```
+```text
 my-plugin/
 ├── plugin.json        # Manifest (required)
 ├── plugin.js          # Entry point (required)
@@ -202,6 +204,7 @@ Registers a page that renders when the route matches. The host calls your `mount
 | `mount` | function | `(container: HTMLElement) => void \| Disposable` |
 
 The `mount` function receives a container element. You can return:
+
 - `undefined` — the host assumes that the plugin releases resources in `deactivate()`
 - A `Disposable` object — the host calls `dispose()` when the route unmounts
 
@@ -255,6 +258,7 @@ host.pages.register({
 Makes HTTP requests to backend services. These methods route through the Rust backend at `/api/plugins/{pluginId}/{serviceId}/{path}`. The backend resolves the logical service ID to a physical backend URL (configured in `wanaku.yaml` or the management API).
 
 **Why use this instead of `fetch()`?**
+
 - Authentication headers are injected automatically
 - CORS is handled (single origin)
 - The backend URL is configuration, not hardcoded in your plugin
@@ -295,7 +299,7 @@ await host.http.post("customer-api", "/customers", {
 
 The backend routes this as:
 
-```
+```text
 GET /api/plugins/my-plugin/customer-api/customers
   → resolves "customer-api" service
   → proxies to http://customer-service:8080/customers
@@ -361,6 +365,7 @@ You can dynamically register service mappings via the management API (not yet im
 The following example shows the `hello-world` plugin from the examples directory:
 
 **plugin.json:**
+
 ```json
 {
   "id": "hello-world",
@@ -378,6 +383,7 @@ The following example shows the `hello-world` plugin from the examples directory
 ```
 
 **plugin.js:**
+
 ```javascript
 // The activate function is called when the plugin loads.
 // It receives the PluginHost object.
@@ -446,6 +452,7 @@ npm install @carbon/web-components
 ```
 
 **src/plugin.js:**
+
 ```javascript
 import "@carbon/web-components/es/components/button/index.js";
 
@@ -464,6 +471,7 @@ export function deactivate() {}
 ```
 
 **Build:**
+
 ```bash
 esbuild src/plugin.js --bundle --format=esm --outfile=plugin.js
 ```
@@ -477,16 +485,19 @@ Now `plugin.js` includes the Carbon button component. The browser can load it as
 Step-by-step process to test a plugin:
 
 1. Create the plugin directory:
+
    ```bash
    mkdir -p /tmp/plugins/my-plugin
    ```
 
 2. Enter the plugin directory:
+
    ```bash
    cd /tmp/plugins/my-plugin
    ```
 
 3. Write the manifest:
+
    ```bash
    cat > plugin.json <<EOF
    {
@@ -499,6 +510,7 @@ Step-by-step process to test a plugin:
    ```
 
 4. Write the plugin code:
+
    ```bash
    cat > plugin.js <<EOF
    export async function activate(host) {
@@ -521,6 +533,7 @@ Step-by-step process to test a plugin:
    ```
 
 5. Run the server:
+
    ```bash
    cargo run -- --plugins-path /tmp/plugins
    ```
@@ -538,6 +551,7 @@ Step-by-step process to test a plugin:
 If you create timers, event listeners, subscriptions, or other stateful resources in `activate()`, dispose them in `deactivate()`. The host cannot dispose resources that the plugin does not return.
 
 **Bad:**
+
 ```javascript
 export async function activate(host) {
   setInterval(() => console.log("ping"), 1000);
@@ -549,6 +563,7 @@ export function deactivate() {
 ```
 
 **Good:**
+
 ```javascript
 let timer;
 
@@ -566,6 +581,7 @@ export function deactivate() {
 Always use `host.http` for backend calls. It handles authentication, CORS, and service resolution.
 
 **Bad:**
+
 ```javascript
 await fetch("http://customer-service:8080/customers");
 // Hard-coded URL, breaks in different environments
@@ -574,6 +590,7 @@ await fetch("http://customer-service:8080/customers");
 ```
 
 **Good:**
+
 ```javascript
 await host.http.get("customer-api", "/customers");
 // Resolves to the right backend for this environment
@@ -586,15 +603,19 @@ await host.http.get("customer-api", "/customers");
 The host and other plugins share the same document. Avoid CSS class name collisions by prefixing your classes.
 
 **Bad:**
+
 ```css
 .button { background: red; }
 ```
+
 Now every button on the page is red.
 
 **Good:**
+
 ```css
 .my-plugin-button { background: red; }
 ```
+
 Only your plugin's buttons are red.
 
 Or use CSS modules if your bundler supports them.
@@ -604,6 +625,7 @@ Or use CSS modules if your bundler supports them.
 The `mount(container)` function gives the plugin a container element. Change only elements inside this container.
 
 **Bad:**
+
 ```javascript
 mount(container) {
   document.body.appendChild(createModal());
@@ -613,6 +635,7 @@ mount(container) {
 ```
 
 **Good:**
+
 ```javascript
 mount(container) {
   const modal = createModal();

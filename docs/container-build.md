@@ -26,6 +26,7 @@ cargo build-image --push   # build and push to the registry
 ```
 
 The tag is always suffixed with the host architecture, for example:
+
 - `quay.io/wanaku/wanaku-server:latest-x86_64` on an x86_64 machine
 - `quay.io/wanaku/wanaku-server:latest-aarch64` on a Linux ARM64 machine
 
@@ -141,7 +142,7 @@ cargo build-image-headless --target minikube
 
 Runs the following command using `docker` (or `podman` if docker is not on `PATH`).
 
-```
+```bash
 docker build -f Containerfile --build-arg VARIANT=full -t <tag>-<arch> .
 docker push <tag>-<arch>   # only when --push is given
 ```
@@ -225,7 +226,7 @@ cargo build-image --target openshift --push
 
 The xtask prints the image reference at the end:
 
-```
+```text
 Registry reference : default-route-openshift-image-registry.apps.example.com/myproject/wanaku-server:latest-x86_64
 ```
 

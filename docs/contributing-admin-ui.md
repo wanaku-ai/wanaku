@@ -19,7 +19,7 @@ The UI is not a separate deployment. The management API server provides the comp
 
 ## Project Structure
 
-```
+```text
 ui/admin/
 ├── src/
 │   ├── api/                    # Orval-generated API client (DO NOT EDIT)
@@ -85,13 +85,14 @@ yarn run build
 ```
 
 This runs:
+
 1. **Orval:** Regenerates API client from committed `openapi.json`
 2. **TypeScript:** Type-checks all `.tsx` files
 3. **Vite:** Bundles and minifies to `dist/`
 
 Output:
 
-```
+```text
 dist/
 ├── index.html
 ├── assets/
@@ -113,6 +114,7 @@ struct AdminUI;
 When you visit `http://localhost:8080`, the server serves files from the embedded bundle.
 
 **Important:** Complete these steps after you change the UI:
+
 1. `yarn run build` to update `dist/`
 2. `cargo build` to re-embed `dist/` into the binary
 
@@ -393,7 +395,6 @@ The UI uses Carbon theme tokens, not hardcoded colors.
 - `$text-primary`, `$text-secondary` — text colors
 - `$interactive-01`, `$interactive-02` — buttons, links
 - `$border-subtle`, `$border-strong` — borders
-
 
 ## Router Configuration
 

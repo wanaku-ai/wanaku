@@ -141,6 +141,8 @@ cargo run -- --wanaku-config wanaku.yaml
 > [!NOTE]
 > The management API does not create bindings. The API for bindings is read-only. You author bindings in `wanaku.yaml`. Wanaku also restores bindings that were persisted in an earlier run from the registry snapshot.
 
+<!-- -->
+
 > [!WARNING]
 > Configuration is additive over the persisted snapshot. Wanaku restores the snapshot first, then applies the `bindings` from `wanaku.yaml` on top, matched by id. If you delete a binding from `wanaku.yaml` on a deployment that uses persistence, Wanaku still restores that binding from the snapshot on the next start. To remove a binding on a persistent deployment, you must also remove it from the registry snapshot. On a deployment without persistence, the configuration is the full source of truth.
 

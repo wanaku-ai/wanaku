@@ -33,6 +33,7 @@ Default configs: `server/src/default.yaml` (embedded, pipeline), `wanaku.yaml` (
 Feature crates that only need `Feature`/`HttpContext`/registry traits depend on `wanaku-types`; crates needing concrete infra (LLM calls, MCP forwarding, metrics counters, file persistence) also depend on `wanaku-infra`. See [docs/architecture.md](docs/architecture.md) for the full boundary.
 
 **Context structs** (`types/src/`): group related parameters to keep function signatures under the clippy `too-many-arguments-threshold` (5). Use `Type::new(...)` to construct:
+
 - `HttpContext` (`feature.rs`) — HTTP method, path, query, body, headers. Passed to `Feature::handle_route`.
 - `McpContext` (`mcp.rs`) — MCP method, tool name, arguments, tool list, conversation history. Used by evaluator LLM operations.
 - `PipelineDeps` (`server/src/pipelines.rs`) — filter registry, health, KV, wanaku registry, features. Used by `resolve_pipelines`.
@@ -44,6 +45,7 @@ Feature crates that only need `Feature`/`HttpContext`/registry traits depend on 
 See [docs/architecture.md](docs/architecture.md) for filter order, metadata contract, and execution model.
 
 **Implementation notes for filter authors:**
+
 - Namespace filter runs in `on_request_body` (NOT `on_request`) — StreamBuffer processes body filters before request filters
 - Feature filters registered via `Feature::register_filters`, not `register_wanaku_filters`
 - MCP filter must have `on_invalid: continue` for CORS preflight
@@ -53,6 +55,7 @@ See [docs/architecture.md](docs/architecture.md) for filter order, metadata cont
 ### Registry Architecture
 
 **InMemoryRegistry** (`infra/src/registry.rs`):
+
 - Implements ToolRegistry, ResourceRegistry, PromptRegistry, NamespaceRegistry, ForwardRegistry
 - Clone-safe `Arc<DashMap>` — shared between pipeline and mgmt API
 - Injected via `PipelineExtension`, accessed via `ctx.extensions.get::<InMemoryRegistry>()`
@@ -72,6 +75,7 @@ All tools execute via MCP forwarding (`mcp_client::call_tool` from rmcp crate). 
 See [docs/management-api.md](docs/management-api.md) for full route reference and response format.
 
 **Implementation notes:**
+
 - Uses Pingora `ServeHttp` (NOT axum) in `server/src/management/mod.rs`
 - Dispatch: core routes first, then iterate features (`Feature::handle_route`, return `None` if not owned)
 - Route pattern — 3 files per resource: `routes.rs` (enum + resolver), `mod.rs` (dispatch via guard), `handlers.rs` (handlers)
@@ -82,10 +86,12 @@ See [docs/management-api.md](docs/management-api.md) for full route reference an
 See [docs/contributing-admin-ui.md](docs/contributing-admin-ui.md) for stack, conventions, page patterns, API client, and styling.
 
 **OpenAPI updates required:** When you add or change a management API route, request, response, or schema, update the Utoipa declarations and tests in `server/src/openapi.rs`. Then regenerate the committed OpenAPI document and admin UI client:
+
 ```bash
 cd ui/admin
 yarn run generate-api
 ```
+
 Commit `ui/admin/openapi.json` and all generated changes in `ui/admin/src/api/` and `ui/admin/src/models/`. Do not replace generated API contracts with handwritten types.
 
 **E2E tests required** — Playwright in `tests/e2e/ui/`: page objects in `pages/`, test data in `helpers/test-data.ts`, API setup in `helpers/api-helpers.ts`, specs in `tests/`. Min: page title, add modal, delete. Run `cd tests/e2e/ui && npx playwright test`.
@@ -95,6 +101,7 @@ Commit `ui/admin/openapi.json` and all generated changes in `ui/admin/src/api/` 
 ### Synthetic MCP Responses
 
 Use `FilterAction::Reject(json_response(bytes))` — skips remaining filters, adds CORS + `content-type: application/json`:
+
 ```rust
 let response = serde_json::json!({
     "jsonrpc": "2.0", "id": parsed.id,
@@ -106,6 +113,7 @@ Ok(FilterAction::Reject(json_response(Bytes::from(response.to_string()))))
 ### Body Access Pattern
 
 All wanaku filters use the `body_filter_boilerplate!` macro or implement this manually:
+
 ```rust
 fn request_body_access(&self) -> BodyAccess { BodyAccess::ReadOnly }
 fn request_body_mode(&self) -> BodyMode {
@@ -122,6 +130,7 @@ async fn on_request_body(&self, ctx: &mut HttpFilterContext<'_>,
 ### Phase Ordering
 
 StreamBuffer mode executes in this order:
+
 1. **Pre-read** — body filters called before buffering completes (partial body)
 2. **Post-read** — body filters called again with full buffer (`end_of_stream = true`)
 3. **Request-phase** — `on_request` handlers run
@@ -143,6 +152,7 @@ See [docs/evaluator-engine.md](docs/evaluator-engine.md) for YAML config, WIT co
 **Add feature:** See [docs/features.md](docs/features.md) for the full tutorial. Key patterns: `body_filter_boilerplate!`, `json_rpc_error`, `NAMESPACE_METADATA_KEY`, `llm::{LlmClient, HotSwap}`, `HttpContext`, `McpContext`.
 
 **Add core filter:**
+
 1. `filters/src/<method>.rs` — use `body_filter_boilerplate!`
 2. `handle_body`: check `ctx.get_metadata(MCP_METHOD_KEY)`, return `Continue` if not yours
 3. Register in `server/src/lib.rs::register_wanaku_filters`
@@ -159,9 +169,11 @@ See [docs/evaluator-engine.md](docs/evaluator-engine.md) for YAML config, WIT co
 **Pingora workers:** `kill -9 <parent-pid>` may not kill workers. Use `lsof -ti :8081 | xargs kill -9` or `SIGTERM`.
 
 **praxis-ai git dep:** NOT on crates.io. In `Cargo.toml`:
+
 ```toml
 praxis-ai-filters = { git = "https://github.com/praxis-proxy/ai", rev = "..." }
 ```
+
 Pin to a specific `rev` — HEAD may break.
 
 ## Style
@@ -177,6 +189,7 @@ Pin to a specific `rev` — HEAD may break.
 ## Debugging
 
 See [docs/configuration.md](docs/configuration.md) for trace log options. Filter-specific pattern:
+
 ```rust
 tracing::debug!(method = ?ctx.get_metadata("mcp.method"), namespace = ?ctx.get_metadata("wanaku.namespace"), "filter context");
 ```
@@ -204,7 +217,6 @@ Unit tests in modules (`#[cfg(test)]`). Integration tests in `server/tests/` (no
 - New features should have documentation
 - Feature updates should include documentation updates
 - Amended similar commits before sending pull requests
-
 
 ## Documentation
 

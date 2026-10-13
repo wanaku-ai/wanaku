@@ -120,7 +120,6 @@ Creating an existing agent returns `409`. Getting, updating, or deleting an unkn
 
 Agent changes use the configured registry persistence backend. They affect subsequent proxy requests without a restart. See [A2A Proxy](./a2a.md) for the admin UI, listener configuration, policy, and supported protocol operations.
 
-
 ### Create a Namespace
 
 Use the Wanaku CLI:
@@ -280,7 +279,6 @@ The default source is the embedded `features/plugins/plugin-catalog.json` file. 
 `WANAKU_PLUGIN_CATALOG_PATH` selects a local JSON file. `WANAKU_PLUGIN_CATALOG_URL` selects a remote JSON file. A local path takes precedence. A custom source replaces the complete default catalog. See [Plugin Catalog](plugin-catalog.md) for the source format and publication instructions.
 
 The endpoint returns HTTP 502 if the selected source is unavailable or invalid. It does not use a fallback source. A request has a 30-second limit. A remote download has a 15-second limit. Catalog JSON has a 1 MiB size limit.
-
 
 | Method | Path | Purpose |
 | --- | --- | --- |

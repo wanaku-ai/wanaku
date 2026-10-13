@@ -80,6 +80,7 @@ management API, including out of evaluator revision history. See
 | `result_schema` | object | Optional JSON Schema for validating LLM output. When set, the host validates the LLM result before passing it to the WASM guest. On mismatch, retries once with a correction prompt. |
 
 **How the LLM sees context:** The engine builds a user prompt containing:
+
 - Recent conversation history (last 10 interactions from the intercept filter)
 - MCP method and namespace
 - Tool name and arguments (for `tools/call`)
@@ -358,6 +359,7 @@ evaluators:
 ```
 
 **What happens:**
+
 1. User calls `restart-database` tool
 2. Engine sends tool name + args to LLM with your prompt
 3. LLM returns `{"level": "red", "reason": "database restart is dangerous"}`
@@ -391,6 +393,7 @@ evaluators:
 This example reuses the `local-llama` connection from Example 1.
 
 **What happens:**
+
 1. User sends `tools/list` to the `curated` namespace (`/curated/mcp`)
 2. Engine sends conversation history + available tools to LLM
 3. LLM returns `["read-balance", "transfer-funds", "generate-report"]`
@@ -556,6 +559,7 @@ npx @bytecodealliance/jco componentize action.js \
 ```
 
 **Flags explained:**
+
 - `--wit`: path to the WIT interface file
 - `--world-name`: the world to target (always `evaluator-action`)
 - `--disable all`: Disable all optional WASI features. The action uses only the features in the WIT interface.
@@ -934,6 +938,7 @@ curl -X PUT http://localhost:8080/api/v1/evaluators \
 ```
 
 **What happens:** The engine:
+
 1. Parses the config
 2. Validates that `llm.connection` names a connection already loaded from `wanaku.yaml` — an unknown name rejects the whole update with `422` and leaves the previous evaluators active
 3. Compiles all WASM files (expensive — do this at startup or infrequently)
@@ -1076,13 +1081,14 @@ Tests cover: evaluator API CRUD, WASM block/warn actions, clearing evaluators, `
 
 **What to look for in server logs:**
 
-```
+```text
 INFO  evaluator triggered method="tools/call" namespace="default" evaluator="safety-gate"
 INFO  LLM operation result llm_result="{\"level\":\"red\",\"reason\":\"database restart\"}"
 INFO  processor result action=Block("Tool call blocked by safety classification: red")
 ```
 
 These traces confirm:
+
 1. The filter matched the trigger
 2. The LLM returned a classification
 3. The WASM action executed and returned a decision
@@ -1113,6 +1119,7 @@ You do not need these internal details to use the engine. Use them to diagnose e
 ### WASM Compilation
 
 Happens at startup and on `PUT /api/v1/evaluators`. The engine uses **wasmtime** with the component model:
+
 - Loads the `.wasm` file
 - Compiles it to native code (JIT)
 - Links WASI + custom host imports
@@ -1123,6 +1130,7 @@ Happens at startup and on `PUT /api/v1/evaluators`. The engine uses **wasmtime**
 ### LLM Context Building
 
 The engine builds the user prompt from:
+
 - **Conversation history** (last 10 interactions from the intercept filter's in-memory store)
 - **Request details** (method, namespace, tool name, arguments)
 - **Available tools** (for `tools/list` triggers)
@@ -1214,6 +1222,7 @@ Downstream filters can read this metadata and make decisions (e.g., extra loggin
 **Cause:** The `.wasm` file is invalid or does not match the WIT interface.
 
 **Fix:**
+
 1. Verify you compiled with the correct `--wit` path and `--world-name evaluator-action`
 2. Check that your imports match the WIT exactly (namespace, function names, signatures)
 3. For JavaScript, use `jco componentize`. Do not use `jco transpile`.
@@ -1224,6 +1233,7 @@ Downstream filters can read this metadata and make decisions (e.g., extra loggin
 **Cause:** The trigger does not match the request.
 
 **Fix:**
+
 1. Check server logs for `evaluator filter` trace messages — they show what the filter sees
 2. Verify `trigger.method` matches `mcp.method` metadata (e.g., `tools/call` not `tool/call`)
 3. If you use `trigger.namespace`, verify that the request URL uses `/{namespace}/mcp`. A bare `/mcp` path is invalid.
@@ -1235,7 +1245,9 @@ Enable trace logs: `RUST_LOG=wanaku_feature_evaluator=trace`
 **Cause:** The LLM did not follow the prompt format.
 
 **Fix:**
+
 1. Add `result_schema` to the LLM configuration. The host validates the LLM output. If the output does not match, the host retries once with a correction prompt:
+
    ```yaml
    engine:
      type: llm
@@ -1246,7 +1258,9 @@ Enable trace logs: `RUST_LOG=wanaku_feature_evaluator=trace`
          reason: { type: string }
        required: ["level", "reason"]
    ```
+
 2. **Use `verifyLlmResult()` in your WASM script** — even with host-side validation, the guest can double-check and call `rejectMalformed()` instead of silently proceeding with bad data:
+
    ```javascript
    const validated = verifyLlmResult(ctx.llmResult);
    if (validated.tag === 'err') {
@@ -1254,6 +1268,7 @@ Enable trace logs: `RUST_LOG=wanaku_feature_evaluator=trace`
      return;
    }
    ```
+
 3. Make your prompt more explicit: "Respond with ONLY a JSON object, no other text"
 4. Use a smaller, faster model for classification tasks — they need less context
 
