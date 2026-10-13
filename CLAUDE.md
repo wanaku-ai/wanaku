@@ -25,6 +25,9 @@ Default configs: `server/src/default.yaml` (embedded, pipeline), `wanaku.yaml` (
 - Rust 2024, MSRV 1.96
 - Lints: `#![deny(unsafe_code, unwrap_used, expect_used, panic)]` in all crates
 - Jemalloc on Unix platforms
+- `dev` profile: line tables only for workspace crates, no debuginfo for dependencies (build time)
+- Praxis `policy` filter is opt-in: `--features policy-engine` on `wanaku-server`
+- Keep dependency feature sets minimal (`default-features = false` for wasmtime, wasmtime-wasi, praxis-filter). Measure with `cargo build --timings`
 
 ## Architecture
 

@@ -55,6 +55,34 @@ For admin UI changes, follow the E2E workflow in [Admin UI Development](contribu
 
 Before you submit a pull request, review the diff for unrelated changes. Keep related corrections in the existing commit when the project maintainers ask for amended commits.
 
+## Build Time
+
+The workspace is configured to keep a clean development build short.
+
+- The `dev` profile keeps line tables only for workspace crates. Backtraces show file names and line numbers for Wanaku code.
+- The `dev` profile has no debug information for dependencies. A debugger cannot show local variables in dependency code.
+- The server does not compile the Praxis policy engine by default. The Praxis `policy` filter (Cedar, Rego, CEL) is not available in a default build.
+- The evaluator enables only the Wasmtime and WASI features that it uses.
+
+To build the server with the Praxis `policy` filter, enable the `policy-engine` feature:
+
+```bash
+cargo build -p wanaku-server --features policy-engine
+```
+
+To get full debug information for one dependency, add a profile override to your local `Cargo.toml`:
+
+```toml
+[profile.dev.package.wasmtime]
+debug = true
+```
+
+To find the slowest crates in a build, use Cargo timings:
+
+```bash
+cargo build -p wanaku-server --timings
+```
+
 ## Code of Conduct
 
 We are committed to providing a welcoming and inclusive environment. Please be respectful and professional in all interactions.
