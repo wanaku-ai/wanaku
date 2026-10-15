@@ -205,6 +205,23 @@ test.describe('A2A agents', () => {
     expect((await (await api.getAgent(data.namespace, data.name)).json()).data.cardAddress).toBe(data.cardAddress);
   });
 
+  test('shows labels in details and keeps them on edit', async ({ page }) => {
+    const labels = { 'cic.instance': 'instance-a' };
+    const data = agentData({ labels });
+    created.push(data);
+    await api.addAgent(data);
+    await agents.goto();
+    await agents.waitForAgent(data.name);
+    await agents.openDetails(data.name);
+    await expect(agents.modal()).toContainText('cic.instance=instance-a');
+    await agents.closeDetails();
+    await agents.clickEditAgent(data.name);
+    await page.locator('#agent-address').fill('http://localhost:19997/');
+    await agents.submitModal();
+    await expect(agents.rowWithText(data.name)).toContainText('http://localhost:19997/');
+    expect((await (await api.getAgent(data.namespace, data.name)).json()).data.labels).toEqual(labels);
+  });
+
   test('deletes an agent', async () => {
     const data = agentData();
     created.push(data);

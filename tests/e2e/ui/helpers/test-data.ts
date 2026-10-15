@@ -125,6 +125,7 @@ export function bindingData(overrides?: Partial<{
 
 export function agentData(overrides?: Partial<{
   name: string; description: string; namespace: string; address: string; cardAddress: string;
+  labels: Record<string, string>;
 }>) {
   return {
     name: overrides?.name ?? `e2e-agent-${suffix()}`,
@@ -132,6 +133,7 @@ export function agentData(overrides?: Partial<{
     namespace: overrides?.namespace ?? 'default',
     address: overrides?.address ?? 'http://localhost:19999/',
     ...(overrides?.cardAddress ? { cardAddress: overrides.cardAddress } : {}),
+    ...(overrides?.labels ? { labels: overrides.labels } : {}),
   };
 }
 
