@@ -13,7 +13,9 @@ pub(super) fn dispatch(
         AgentRoute::Update(namespace, name) => {
             handlers::save(registry, ctx.body.unwrap_or(""), Some((namespace, name)))
         }
-        AgentRoute::Delete(namespace, name) => handlers::delete(registry, namespace, name),
+        AgentRoute::Delete(namespace, name) => {
+            handlers::delete(registry, namespace, name, ctx.query)
+        }
         AgentRoute::NotFound => return None,
     })
 }

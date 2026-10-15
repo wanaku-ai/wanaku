@@ -119,6 +119,16 @@ function A2aAgentsPage() {
               <strong>Agent card URL</strong>
               <p>{details.cardAddress || 'Standard upstream discovery path'}</p>
             </div>
+            <div>
+              <strong>Labels</strong>
+              {Object.keys(details.labels ?? {}).length === 0 ? (
+                <p>No labels.</p>
+              ) : (
+                Object.entries(details.labels ?? {}).map(([key, value]) => (
+                  <p key={key}>{`${key}=${value}`}</p>
+                ))
+              )}
+            </div>
           </Stack>
         </Modal>
       )}
