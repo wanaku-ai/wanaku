@@ -66,7 +66,7 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `GET` | `/api/v1/forwards` | List forwards. |
 | `GET` | `/api/v1/forwards/{name}` | Get a forward. |
 | `POST` | `/api/v1/forwards` | Create a forward and run upstream discovery. |
-| `DELETE` | `/api/v1/forwards/{name}` | Delete a forward and its discovered entries. |
+| `DELETE` | `/api/v1/forwards/{name}` | Delete a forward and its discovered entries. Use optional `label.<key>=<value>` query parameters to delete only when the labels match. |
 | `POST` | `/api/v1/forwards/{name}/refreshes` | Run upstream discovery again. |
 | `GET` | `/api/v1/agents` | List A2A agents. Use the optional `namespace` query parameter to select one namespace. |
 | `GET` | `/api/v1/agents/{namespace}/{name}` | Get a registered A2A agent and its proxy endpoint. |
@@ -173,6 +173,25 @@ curl -X POST http://localhost:8080/api/v1/forwards \
 Wanaku stores the forward even if discovery fails. In that case, the response reports zero discovered entries and the forward records the error in `statusMessage`.
 
 The request body can also contain `credentialBindings`, a map from purpose (`discovery`, `invocation`) to binding id. The bindings themselves must exist in `wanaku.yaml`, because the management API cannot create bindings. See [Credential Brokerage](credential-brokerage.md#attaching-a-binding-to-a-forward).
+
+### Delete a Forward Conditionally
+
+A runtime that registers its own forward can mark the forward with a label, such as `cic.instance`. A replacement instance can register the same forward name before the old instance stops. To prevent the old instance from deleting the new forward, send the label as a precondition:
+
+```bash
+curl -X DELETE 'http://localhost:8080/api/v1/forwards/upstream-mcp?label.cic.instance=pod-a'
+```
+
+Each `label.<key>=<value>` query parameter adds one precondition. You can send more than one. Wanaku ignores query parameters that do not start with `label.`. Encode keys and values as URL query components.
+
+| Case | Response |
+|---|---|
+| No `label.*` parameters | `200`. Wanaku deletes the forward without a check. |
+| The forward has all the given labels with the given values | `200`. Wanaku deletes the forward. |
+| A given label is absent or has a different value | `409 Conflict` with `{"data": null, "error": "forward {name} label precondition failed"}`. Wanaku keeps the forward. |
+| The forward does not exist | `404`. |
+
+Wanaku checks the labels and removes the forward in one registry operation. A concurrent `POST /api/v1/forwards` for the same name cannot occur between the check and the removal. When Wanaku deletes a forward, it also removes the cached credentials and the discovered tools, resources, and prompts of the forward. A `409` response does not change these entries.
 
 ### Inspect a Credential Binding
 

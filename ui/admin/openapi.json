@@ -1449,6 +1449,7 @@
         "tags": [
           "Forwards"
         ],
+        "description": "Removes a forward and the tools, resources and prompts discovered from it. Add `label.<key>=<value>` query parameters to delete only when the forward has all the given labels. Without `label.*` parameters, the delete is unconditional.",
         "operationId": "delete_forward",
         "parameters": [
           {
@@ -1467,6 +1468,16 @@
           },
           "404": {
             "description": "Forward not found"
+          },
+          "409": {
+            "description": "A `label.<key>` precondition failed. The forward is kept",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
           }
         }
       }
