@@ -1553,10 +1553,18 @@ export type deleteForwardResponse404 = {
   status: 404;
 };
 
+export type deleteForwardResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
 export type deleteForwardResponseSuccess = deleteForwardResponse200 & {
   headers: Headers;
 };
-export type deleteForwardResponseError = deleteForwardResponse404 & {
+export type deleteForwardResponseError = (
+  | deleteForwardResponse404
+  | deleteForwardResponse409
+) & {
   headers: Headers;
 };
 
@@ -1568,6 +1576,9 @@ export const getDeleteForwardUrl = (name: string) => {
   return `/api/v1/forwards/${name}`;
 };
 
+/**
+ * Removes a forward and the tools, resources and prompts discovered from it. Add `label.<key>=<value>` query parameters to delete only when the forward has all the given labels. Without `label.*` parameters, the delete is unconditional.
+ */
 export const deleteForward = async (
   name: string,
   options?: Parameters<typeof customFetch>[1],

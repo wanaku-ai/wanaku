@@ -332,10 +332,14 @@ const fn get_forward() {}
 const fn create_forward() {}
 
 #[utoipa::path(delete, path = "/api/v1/forwards/{name}", tag = "Forwards",
+    description = "Removes a forward and the tools, resources and prompts discovered from it. \
+        Add `label.<key>=<value>` query parameters to delete only when the forward has all \
+        the given labels. Without `label.*` parameters, the delete is unconditional.",
     params(("name" = String, Path, description = "Forward name")),
     responses(
         (status = 200, description = "Forward removed"),
         (status = 404, description = "Forward not found"),
+        (status = 409, description = "A `label.<key>` precondition failed. The forward is kept", body = ManagementErrorResponse),
     )
 )]
 const fn delete_forward() {}
@@ -1125,6 +1129,21 @@ mod tests {
         );
         let (status, _) = dispatch_namespace(&registry, "GET", invalid, None).await;
         assert_eq!(status, 404, "invalid path name must not be stored");
+    }
+
+    #[test]
+    fn forward_delete_documents_label_precondition_conflict() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        let delete = &value["paths"]["/api/v1/forwards/{name}"]["delete"];
+        assert!(
+            delete["description"]
+                .as_str()
+                .is_some_and(|d| d.contains("label.<key>"))
+        );
+        assert_eq!(
+            delete["responses"]["409"]["content"]["application/json"]["schema"]["$ref"],
+            "#/components/schemas/ManagementErrorResponse"
+        );
     }
 
     #[test]
