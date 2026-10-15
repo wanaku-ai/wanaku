@@ -218,7 +218,9 @@ pub(crate) async fn dispatch(
                 None => json_err(StatusCode::BAD_REQUEST, "request body required"),
             };
         }
-        ForwardRoute::Delete(name) => return handle_forward_delete(registry, broker, &name),
+        ForwardRoute::Delete(name) => {
+            return handle_forward_delete(registry, broker, &name, ctx.query);
+        }
         ForwardRoute::Refresh(name) => {
             return handle_forward_refresh(registry, broker, audit_sink, &name).await;
         }
@@ -325,6 +327,34 @@ mod dispatch_tests {
         let data = data_field(&resp);
         assert!(data.get("name").and_then(|v| v.as_str()).is_some());
         assert!(data.get("version").and_then(|v| v.as_str()).is_some());
+    }
+
+    #[tokio::test]
+    async fn dispatch_forward_delete_passes_label_precondition() {
+        use wanaku_types::registry::{ForwardEntry, ForwardRegistry};
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(ForwardEntry {
+            name: "fwd".to_owned(),
+            address: "http://x:1".to_owned(),
+            namespace: None,
+            server_info: None,
+            labels: std::collections::HashMap::from([("owner".to_owned(), "b".to_owned())]),
+            available: true,
+            status_message: None,
+            credential_bindings: std::collections::HashMap::new(),
+        });
+        let headers = http::HeaderMap::new();
+        let features: &[Box<dyn Feature>] = &[];
+        let path = "/api/v1/forwards/fwd";
+        let stale = HttpContext::new("DELETE", path, Some("label.owner=a"), None, &headers);
+        let owner = HttpContext::new("DELETE", path, Some("label.owner=b"), None, &headers);
+
+        let conflict = dispatch(&stale, &registry, &test_broker(), None, features).await;
+        let removed = dispatch(&owner, &registry, &test_broker(), None, features).await;
+
+        assert_eq!(conflict.status(), 409);
+        assert_eq!(removed.status(), 200);
+        assert!(registry.get_forward("fwd").is_none());
     }
 
     #[tokio::test]
