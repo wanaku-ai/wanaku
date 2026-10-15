@@ -111,11 +111,14 @@ const fn create_agent() {}
 const fn update_agent() {}
 
 #[utoipa::path(delete, path = "/api/v1/agents/{namespace}/{name}", tag = "Agents",
+    description = "Removes an agent and its proxy route. Add `label.<key>=<value>` query \
+        parameters to delete only when the agent has all the given labels. Without `label.*` \
+        parameters, the delete is unconditional.",
     params(("namespace" = String, Path), ("name" = String, Path)),
     responses((status = 200, description = "Agent operation completed", body = WanakuResponse<serde_json::Value>),
         (status = 400, description = "Invalid agent", body = ManagementErrorResponse),
         (status = 404, description = "Agent not found", body = ManagementErrorResponse),
-        (status = 409, description = "Agent already exists", body = ManagementErrorResponse))
+        (status = 409, description = "A `label.<key>` precondition failed. The agent is kept", body = ManagementErrorResponse))
 )]
 const fn delete_agent() {}
 
@@ -952,6 +955,29 @@ mod tests {
             value
                 .pointer("/components/schemas/AgentEntry/properties/cardAddress")
                 .is_some()
+        );
+    }
+
+    #[test]
+    fn agents_document_labels_and_conditional_delete() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        for schema in ["AgentEntry", "AgentView"] {
+            assert!(
+                value
+                    .pointer(&format!("/components/schemas/{schema}/properties/labels"))
+                    .is_some()
+            );
+        }
+        let delete = &value["paths"]["/api/v1/agents/{namespace}/{name}"]["delete"];
+        assert!(
+            delete["description"]
+                .as_str()
+                .is_some_and(|d| d.contains("label.<key>"))
+        );
+        assert!(
+            delete["responses"]["409"]["description"]
+                .as_str()
+                .is_some_and(|d| d.contains("precondition"))
         );
     }
 

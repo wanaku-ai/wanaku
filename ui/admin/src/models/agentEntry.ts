@@ -5,12 +5,18 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
+import type { AgentEntryLabels } from "./agentEntryLabels";
 
 export interface AgentEntry {
   address: string;
   /** @nullable */
   cardAddress?: string | null;
   description?: string;
+  /**
+   * Free-form labels, for example an ownership marker of the registering
+   * runtime. A conditional delete can require them.
+   */
+  labels?: AgentEntryLabels;
   name: string;
   namespace?: string;
 }

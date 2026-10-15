@@ -135,6 +135,31 @@ impl InMemoryRegistry {
         removed
     }
 
+    /// Remove an agent only when `predicate` holds for the stored entry.
+    ///
+    /// The check and the removal run under one map write lock, so a
+    /// concurrent update of the same agent cannot occur between them.
+    pub fn remove_agent_if(
+        &self,
+        namespace: &str,
+        name: &str,
+        predicate: impl FnOnce(&wanaku_types::agents::AgentEntry) -> bool,
+    ) -> ConditionalRemoval<wanaku_types::agents::AgentEntry> {
+        let outcome = match self.agents.entry(format!("{namespace}/{name}")) {
+            dashmap::mapref::entry::Entry::Occupied(occupied)
+                if predicate(&occupied.get().entry) =>
+            {
+                ConditionalRemoval::Removed(occupied.remove().entry)
+            }
+            dashmap::mapref::entry::Entry::Occupied(_) => ConditionalRemoval::PreconditionFailed,
+            dashmap::mapref::entry::Entry::Vacant(_) => ConditionalRemoval::NotFound,
+        };
+        if matches!(outcome, ConditionalRemoval::Removed(_)) {
+            self.persist();
+        }
+        outcome
+    }
+
     /// Remove a forward only when `predicate` holds for the stored entry.
     ///
     /// The check and the removal run under one map write lock, so a
@@ -1624,27 +1649,139 @@ mod tests {
             }
         );
     }
+    /// Persistence backend that keeps the snapshot as a JSON string.
+    struct Backend(Mutex<String>);
+    impl PersistenceBackend for Backend {
+        fn load(&self) -> Result<RegistrySnapshot, PersistenceError> {
+            let value = self.0.lock().expect("test backend");
+            if value.is_empty() {
+                Ok(RegistrySnapshot::default())
+            } else {
+                Ok(serde_json::from_str(&value)?)
+            }
+        }
+        fn save(&self, snapshot: &RegistrySnapshot) -> Result<(), PersistenceError> {
+            *self.0.lock().expect("test backend") = serde_json::to_string(snapshot)?;
+            Ok(())
+        }
+    }
+
+    fn labeled_agent(owner: &str) -> wanaku_types::agents::AgentEntry {
+        serde_json::from_value(serde_json::json!({
+            "name": "worker",
+            "address": "http://agent.example/rpc",
+            "labels": {"owner": owner}
+        }))
+        .expect("agent")
+    }
+
+    fn agent_owned_by(owner: &str) -> impl Fn(&wanaku_types::agents::AgentEntry) -> bool + '_ {
+        move |agent| agent.labels.get("owner").map(String::as_str) == Some(owner)
+    }
+
+    #[test]
+    fn agent_labels_survive_persistence_and_old_snapshots_load() {
+        let backend = Arc::new(Backend(Mutex::new(String::new())));
+        let registry = InMemoryRegistry::with_persistence(backend.clone());
+        assert!(
+            registry
+                .save_agent(labeled_agent("a"), false)
+                .expect("create")
+        );
+        registry
+            .flush_persistence(Duration::from_secs(2))
+            .expect("persisted");
+        let recovered = InMemoryRegistry::with_persistence(backend);
+        recovered.load_persisted();
+        let agent = recovered.get_agent("default", "worker").expect("recovered");
+        assert_eq!(agent.labels.get("owner").map(String::as_str), Some("a"));
+
+        let old = r#"{"agents":[{"name":"worker","address":"http://agent.example/rpc"}]}"#;
+        let old_backend = Arc::new(Backend(Mutex::new(old.to_owned())));
+        let from_old = InMemoryRegistry::with_persistence(old_backend);
+        from_old.load_persisted();
+        let agent = from_old.get_agent("default", "worker").expect("old agent");
+        assert!(agent.labels.is_empty());
+    }
+
+    #[test]
+    fn remove_agent_if_reports_each_outcome() {
+        let registry = InMemoryRegistry::new();
+        assert!(matches!(
+            registry.remove_agent_if("default", "worker", agent_owned_by("a")),
+            ConditionalRemoval::NotFound
+        ));
+        assert!(
+            registry
+                .save_agent(labeled_agent("b"), false)
+                .expect("create")
+        );
+        assert!(matches!(
+            registry.remove_agent_if("default", "worker", agent_owned_by("a")),
+            ConditionalRemoval::PreconditionFailed
+        ));
+        assert!(registry.get_agent("default", "worker").is_some());
+        assert!(matches!(
+            registry.remove_agent_if("default", "worker", agent_owned_by("b")),
+            ConditionalRemoval::Removed(agent) if agent.labels["owner"] == "b"
+        ));
+        assert!(
+            registry
+                .agent_endpoint("default", "worker", false)
+                .is_none()
+        );
+    }
+
+    /// Run a conditional delete for owner "a" and an update to owner "b" at
+    /// the same time.
+    fn race_owner_delete_with_update(
+        registry: &InMemoryRegistry,
+    ) -> (ConditionalRemoval<wanaku_types::agents::AgentEntry>, bool) {
+        std::thread::scope(|scope| {
+            let remover =
+                scope.spawn(|| registry.remove_agent_if("default", "worker", agent_owned_by("a")));
+            let updater = scope.spawn(|| registry.save_agent(labeled_agent("b"), true));
+            let updated = updater.join().expect("updater thread");
+            (
+                remover.join().expect("remover thread"),
+                updated.expect("valid agent"),
+            )
+        })
+    }
+
+    #[test]
+    fn remove_agent_if_is_atomic_with_concurrent_update() {
+        for _ in 0..200 {
+            let registry = InMemoryRegistry::new();
+            registry
+                .save_agent(labeled_agent("a"), false)
+                .expect("create");
+            let (removal, updated) = race_owner_delete_with_update(&registry);
+            // Either the delete of "a" ran first and the update found no agent,
+            // or the update of "b" ran first and the delete precondition failed.
+            let owner = registry
+                .get_agent("default", "worker")
+                .map(|agent| agent.labels["owner"].clone());
+            let consistent = match &removal {
+                ConditionalRemoval::Removed(agent) => {
+                    agent.labels["owner"] == "a" && !updated && owner.is_none()
+                }
+                ConditionalRemoval::PreconditionFailed => updated && owner.as_deref() == Some("b"),
+                ConditionalRemoval::NotFound => false,
+            };
+            assert!(
+                consistent,
+                "unexpected outcome: {removal:?}, updated: {updated}"
+            );
+        }
+    }
+
     #[test]
     #[expect(
         clippy::too_many_lines,
         reason = "namespace isolation and persistence recovery fixtures"
     )]
     fn agents_are_isolated_updated_live_and_recovered_from_snapshots() {
-        struct Backend(Mutex<String>);
-        impl PersistenceBackend for Backend {
-            fn load(&self) -> Result<RegistrySnapshot, PersistenceError> {
-                let value = self.0.lock().expect("test backend");
-                if value.is_empty() {
-                    Ok(RegistrySnapshot::default())
-                } else {
-                    Ok(serde_json::from_str(&value)?)
-                }
-            }
-            fn save(&self, snapshot: &RegistrySnapshot) -> Result<(), PersistenceError> {
-                *self.0.lock().expect("test backend") = serde_json::to_string(snapshot)?;
-                Ok(())
-            }
-        }
         let backend = Arc::new(Backend(Mutex::new(String::new())));
         let registry = InMemoryRegistry::with_persistence(backend.clone());
         let mut agent: wanaku_types::agents::AgentEntry =

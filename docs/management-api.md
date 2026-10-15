@@ -72,7 +72,7 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `GET` | `/api/v1/agents/{namespace}/{name}` | Get a registered A2A agent and its proxy endpoint. |
 | `POST` | `/api/v1/agents` | Register an A2A agent. |
 | `PUT` | `/api/v1/agents/{namespace}/{name}` | Replace an A2A agent's editable configuration. |
-| `DELETE` | `/api/v1/agents/{namespace}/{name}` | Delete an A2A agent and remove its proxy route. |
+| `DELETE` | `/api/v1/agents/{namespace}/{name}` | Delete an A2A agent and remove its proxy route. Use optional `label.<key>=<value>` query parameters to delete only when the labels match. |
 | `GET` | `/api/v1/bindings` | List credential bindings. |
 | `GET` | `/api/v1/bindings/{id}` | Get a credential binding. |
 
@@ -114,9 +114,34 @@ curl -X POST http://localhost:8080/api/v1/agents \
 
 The name and namespace identify the agent. Both values must use valid identifiers. Wanaku registers a missing namespace when you create an agent. The address must be an HTTP or HTTPS URL. URL credentials and fragments are not permitted. Set `cardAddress` when the Agent Card uses a different discovery URL.
 
-Agent responses contain `name`, `namespace`, `description`, `address`, optional `cardAddress`, and `proxyUrl`. The proxy URL comes from the configured public A2A origin. It is not an editable agent field.
+Agent responses contain `name`, `namespace`, `description`, `address`, optional `cardAddress`, optional `labels`, and `proxyUrl`. The proxy URL comes from the configured public A2A origin. It is not an editable agent field.
 
 Creating an existing agent returns `409`. Getting, updating, or deleting an unknown agent returns `404`. Invalid configuration returns `400`. An invalid update does not change the existing entry. An update does not change the namespace and name in the route.
+
+### Label an A2A agent
+
+Use the optional `labels` object to attach string key-value pairs to an agent. `POST` and `PUT` accept `labels`. A `PUT` request replaces the complete entry. Send the current labels again to keep them. If you do not send `labels`, the agent has no labels. Responses do not contain `labels` when the agent has no labels.
+
+```bash
+curl -X POST http://localhost:8080/api/v1/agents \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"assistant","address":"http://localhost:9000/","labels":{"cic.instance":"pod-a"}}'
+```
+
+To delete an agent only when it has the given labels, add `label.<key>=<value>` query parameters. This contract is the same as the contract of [conditional forward deletion](#delete-a-forward-conditionally):
+
+```bash
+curl -X DELETE 'http://localhost:8080/api/v1/agents/default/assistant?label.cic.instance=pod-a'
+```
+
+| Case | Response |
+|---|---|
+| No `label.*` parameters | `200`. Wanaku deletes the agent without a check. |
+| The agent has all the given labels with the given values | `200`. Wanaku deletes the agent. |
+| A given label is absent or has a different value | `409 Conflict` with `{"data": null, "error": "agent {namespace}/{name} label precondition failed"}`. Wanaku keeps the agent. |
+| The agent does not exist | `404`. |
+
+Wanaku checks the labels and removes the agent in one registry operation. A concurrent `PUT` for the same agent cannot occur between the check and the removal.
 
 Agent changes use the configured registry persistence backend. They affect subsequent proxy requests without a restart. See [A2A Proxy](./a2a.md) for the admin UI, listener configuration, policy, and supported protocol operations.
 

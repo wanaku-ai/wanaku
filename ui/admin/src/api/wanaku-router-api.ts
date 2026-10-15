@@ -671,6 +671,9 @@ export const getDeleteAgentUrl = (namespace: string, name: string) => {
   return `/api/v1/agents/${namespace}/${name}`;
 };
 
+/**
+ * Removes an agent and its proxy route. Add `label.<key>=<value>` query parameters to delete only when the agent has all the given labels. Without `label.*` parameters, the delete is unconditional.
+ */
 export const deleteAgent = async (
   namespace: string,
   name: string,

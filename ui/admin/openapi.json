@@ -536,6 +536,7 @@
         "tags": [
           "Agents"
         ],
+        "description": "Removes an agent and its proxy route. Add `label.<key>=<value>` query parameters to delete only when the agent has all the given labels. Without `label.*` parameters, the delete is unconditional.",
         "operationId": "delete_agent",
         "parameters": [
           {
@@ -587,7 +588,7 @@
             }
           },
           "409": {
-            "description": "Agent already exists",
+            "description": "A `label.<key>` precondition failed. The agent is kept",
             "content": {
               "application/json": {
                 "schema": {
@@ -2801,6 +2802,16 @@
           "description": {
             "type": "string"
           },
+          "labels": {
+            "type": "object",
+            "description": "Free-form labels, for example an ownership marker of the registering\nruntime. A conditional delete can require them.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
           "name": {
             "type": "string"
           },
@@ -2831,6 +2842,15 @@
           },
           "description": {
             "type": "string"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "name": {
             "type": "string"
@@ -5880,6 +5900,15 @@
               "description": {
                 "type": "string"
               },
+              "labels": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "propertyNames": {
+                  "type": "string"
+                }
+              },
               "name": {
                 "type": "string"
               },
@@ -6630,6 +6659,15 @@
                 },
                 "description": {
                   "type": "string"
+                },
+                "labels": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "type": "string"
+                  }
                 },
                 "name": {
                   "type": "string"
