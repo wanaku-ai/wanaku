@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use http::{Response, StatusCode};
 use tracing::{info, warn};
@@ -9,7 +9,7 @@ use wanaku_infra::credentials::{
     resolve_discovery_headers,
 };
 use wanaku_infra::mcp_client::ForwardDiscovery;
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::{ConditionalRemoval, InMemoryRegistry};
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::NormalizedOrigin;
 use wanaku_types::registry::{
@@ -385,24 +385,51 @@ pub(super) async fn handle_forward_create(
     }))
 }
 
+/// Build the label precondition of a conditional delete from the
+/// `label.<key>=<value>` query parameters.
+///
+/// The precondition holds when every given label is present with the given
+/// value. Without `label.*` parameters, it always holds.
+pub(super) fn label_precondition(query: Option<&str>) -> impl Fn(&HashMap<String, String>) -> bool {
+    let required: Vec<(String, String)> =
+        form_urlencoded::parse(query.unwrap_or_default().as_bytes())
+            .filter_map(|(key, value)| {
+                key.strip_prefix("label.")
+                    .map(|key| (key.to_owned(), value.into_owned()))
+            })
+            .collect();
+    move |labels| {
+        required
+            .iter()
+            .all(|(key, value)| labels.get(key) == Some(value))
+    }
+}
+
 pub(super) fn handle_forward_delete(
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
     name: &str,
+    query: Option<&str>,
 ) -> Response<Vec<u8>> {
-    let forward = registry.get_forward(name);
+    let precondition = label_precondition(query);
+    let fwd = match registry.remove_forward_if(name, |fwd| precondition(&fwd.labels)) {
+        ConditionalRemoval::Removed(fwd) => fwd,
+        ConditionalRemoval::NotFound => {
+            return json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}"));
+        }
+        ConditionalRemoval::PreconditionFailed => {
+            return json_err(
+                StatusCode::CONFLICT,
+                &format!("forward {name} label precondition failed"),
+            );
+        }
+    };
 
-    if !registry.remove_forward(name) {
-        return json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}"));
-    }
-
-    if let Some(fwd) = forward {
-        // Drop credentials cached for the forward so no secret outlives it.
-        broker.cache().invalidate_forward(fwd.forward_id());
-        remove_forwarded_tools(registry, fwd.forward_id());
-        remove_forwarded_resources(registry, fwd.forward_id());
-        remove_forwarded_prompts(registry, fwd.forward_id());
-    }
+    // Drop credentials cached for the forward so no secret outlives it.
+    broker.cache().invalidate_forward(fwd.forward_id());
+    remove_forwarded_tools(registry, fwd.forward_id());
+    remove_forwarded_resources(registry, fwd.forward_id());
+    remove_forwarded_prompts(registry, fwd.forward_id());
 
     info!(forward = %name, "removed forward via management API");
     json_ok(&serde_json::json!({"removed": name}))
@@ -1709,7 +1736,7 @@ mod tests {
             credential_bindings: HashMap::new(),
         });
         assert_eq!(
-            handle_forward_delete(&registry, &test_broker(), "del-fwd").status(),
+            handle_forward_delete(&registry, &test_broker(), "del-fwd", None).status(),
             200
         );
         assert_eq!(handle_forward_get(&registry, "del-fwd").status(), 404);
@@ -1719,9 +1746,91 @@ mod tests {
     fn forward_delete_nonexistent_returns_404() {
         let registry = InMemoryRegistry::new();
         assert_eq!(
-            handle_forward_delete(&registry, &test_broker(), "nope").status(),
+            handle_forward_delete(&registry, &test_broker(), "nope", None).status(),
             404
         );
+    }
+
+    /// Register a forward owned by `owner` with one discovered tool.
+    fn register_owned_forward(registry: &InMemoryRegistry, owner: &str) {
+        let mut forward = cached_forward("owned-fwd");
+        forward
+            .labels
+            .insert("cic.instance".to_owned(), owner.to_owned());
+        registry.register_forward(forward);
+        let mut tool = test_tool("owned-tool");
+        tool.forward_id = Some("owned-fwd".to_owned());
+        tool.type_ = wanaku_types::registry::MCP_FORWARD_TYPE.to_owned();
+        registry.register_tool(tool);
+    }
+
+    fn conditional_delete(registry: &InMemoryRegistry, query: &str) -> Response<Vec<u8>> {
+        handle_forward_delete(registry, &test_broker(), "owned-fwd", Some(query))
+    }
+
+    #[test]
+    fn forward_conditional_delete_with_matching_labels_removes_forward_and_tools() {
+        let registry = InMemoryRegistry::new();
+        register_owned_forward(&registry, "pod-a");
+        let resp = conditional_delete(&registry, "label.cic.instance=pod-a&other=ignored");
+        assert_eq!(resp.status(), 200);
+        assert_eq!(data_field(&resp)["removed"], "owned-fwd");
+        assert!(registry.get_forward("owned-fwd").is_none());
+        assert!(registry.get_tool("owned-tool").is_none());
+    }
+
+    #[test]
+    fn forward_conditional_delete_with_different_label_returns_409_and_keeps_forward() {
+        let registry = InMemoryRegistry::new();
+        register_owned_forward(&registry, "pod-b");
+        let resp = conditional_delete(&registry, "label.cic.instance=pod-a");
+        assert_eq!(resp.status(), 409);
+        assert_eq!(
+            parse_body(&resp)["error"],
+            "forward owned-fwd label precondition failed"
+        );
+        assert!(parse_body(&resp)["data"].is_null());
+        assert!(registry.get_forward("owned-fwd").is_some());
+        assert!(registry.get_tool("owned-tool").is_some());
+    }
+
+    #[test]
+    fn forward_conditional_delete_with_absent_label_returns_409() {
+        let registry = InMemoryRegistry::new();
+        register_owned_forward(&registry, "pod-a");
+        let resp = conditional_delete(&registry, "label.cic.instance=pod-a&label.zone=eu");
+        assert_eq!(resp.status(), 409);
+        assert!(registry.get_forward("owned-fwd").is_some());
+        assert!(registry.get_tool("owned-tool").is_some());
+    }
+
+    #[test]
+    fn forward_conditional_delete_of_missing_forward_returns_404() {
+        let registry = InMemoryRegistry::new();
+        assert_eq!(
+            conditional_delete(&registry, "label.cic.instance=pod-a").status(),
+            404
+        );
+    }
+
+    #[test]
+    fn forward_delete_without_label_parameters_is_unconditional() {
+        let registry = InMemoryRegistry::new();
+        register_owned_forward(&registry, "pod-b");
+        assert_eq!(conditional_delete(&registry, "unrelated=1").status(), 200);
+        assert!(registry.get_forward("owned-fwd").is_none());
+        assert!(registry.get_tool("owned-tool").is_none());
+    }
+
+    #[test]
+    fn label_precondition_decodes_percent_encoded_values() {
+        let precondition = super::label_precondition(Some("label.owner=pod%20a%2F1"));
+        let labels = HashMap::from([("owner".to_owned(), "pod a/1".to_owned())]);
+        assert!(precondition(&labels));
+        assert!(super::label_precondition(None)(&HashMap::new()));
+        assert!(!super::label_precondition(Some("label.owner=x"))(
+            &HashMap::new()
+        ));
     }
 
     /// Build a broker holding one cached credential for `forward_id`.
@@ -1793,7 +1902,7 @@ mod tests {
         let broker = broker_with_cached_forward("cred-fwd");
 
         assert_eq!(
-            handle_forward_delete(&registry, &broker, "cred-fwd").status(),
+            handle_forward_delete(&registry, &broker, "cred-fwd", None).status(),
             200
         );
 
