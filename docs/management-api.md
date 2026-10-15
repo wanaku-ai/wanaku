@@ -66,13 +66,13 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `GET` | `/api/v1/forwards` | List forwards. |
 | `GET` | `/api/v1/forwards/{name}` | Get a forward. |
 | `POST` | `/api/v1/forwards` | Create a forward and run upstream discovery. |
-| `DELETE` | `/api/v1/forwards/{name}` | Delete a forward and its discovered entries. |
+| `DELETE` | `/api/v1/forwards/{name}` | Delete a forward and its discovered entries. Use optional `label.<key>=<value>` query parameters to delete only when the labels match. |
 | `POST` | `/api/v1/forwards/{name}/refreshes` | Run upstream discovery again. |
 | `GET` | `/api/v1/agents` | List A2A agents. Use the optional `namespace` query parameter to select one namespace. |
 | `GET` | `/api/v1/agents/{namespace}/{name}` | Get a registered A2A agent and its proxy endpoint. |
 | `POST` | `/api/v1/agents` | Register an A2A agent. |
 | `PUT` | `/api/v1/agents/{namespace}/{name}` | Replace an A2A agent's editable configuration. |
-| `DELETE` | `/api/v1/agents/{namespace}/{name}` | Delete an A2A agent and remove its proxy route. |
+| `DELETE` | `/api/v1/agents/{namespace}/{name}` | Delete an A2A agent and remove its proxy route. Use optional `label.<key>=<value>` query parameters to delete only when the labels match. |
 | `GET` | `/api/v1/bindings` | List credential bindings. |
 | `GET` | `/api/v1/bindings/{id}` | Get a credential binding. |
 
@@ -114,9 +114,34 @@ curl -X POST http://localhost:8080/api/v1/agents \
 
 The name and namespace identify the agent. Both values must use valid identifiers. Wanaku registers a missing namespace when you create an agent. The address must be an HTTP or HTTPS URL. URL credentials and fragments are not permitted. Set `cardAddress` when the Agent Card uses a different discovery URL.
 
-Agent responses contain `name`, `namespace`, `description`, `address`, optional `cardAddress`, and `proxyUrl`. The proxy URL comes from the configured public A2A origin. It is not an editable agent field.
+Agent responses contain `name`, `namespace`, `description`, `address`, optional `cardAddress`, optional `labels`, and `proxyUrl`. The proxy URL comes from the configured public A2A origin. It is not an editable agent field.
 
 Creating an existing agent returns `409`. Getting, updating, or deleting an unknown agent returns `404`. Invalid configuration returns `400`. An invalid update does not change the existing entry. An update does not change the namespace and name in the route.
+
+### Label an A2A agent
+
+Use the optional `labels` object to attach string key-value pairs to an agent. `POST` and `PUT` accept `labels`. A `PUT` request replaces the complete entry. Send the current labels again to keep them. If you do not send `labels`, the agent has no labels. Responses do not contain `labels` when the agent has no labels.
+
+```bash
+curl -X POST http://localhost:8080/api/v1/agents \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"assistant","address":"http://localhost:9000/","labels":{"cic.instance":"pod-a"}}'
+```
+
+To delete an agent only when it has the given labels, add `label.<key>=<value>` query parameters. This contract is the same as the contract of [conditional forward deletion](#delete-a-forward-conditionally):
+
+```bash
+curl -X DELETE 'http://localhost:8080/api/v1/agents/default/assistant?label.cic.instance=pod-a'
+```
+
+| Case | Response |
+|---|---|
+| No `label.*` parameters | `200`. Wanaku deletes the agent without a check. |
+| The agent has all the given labels with the given values | `200`. Wanaku deletes the agent. |
+| A given label is absent or has a different value | `409 Conflict` with `{"data": null, "error": "agent {namespace}/{name} label precondition failed"}`. Wanaku keeps the agent. |
+| The agent does not exist | `404`. |
+
+Wanaku checks the labels and removes the agent in one registry operation. A concurrent `PUT` for the same agent cannot occur between the check and the removal.
 
 Agent changes use the configured registry persistence backend. They affect subsequent proxy requests without a restart. See [A2A Proxy](./a2a.md) for the admin UI, listener configuration, policy, and supported protocol operations.
 
@@ -159,6 +184,25 @@ curl -X POST http://localhost:8080/api/v1/forwards \
 ```
 
 Wanaku stores the forward even if discovery fails. In that case, the response reports zero discovered entries and the forward records the error in `status_message`.
+
+### Delete a Forward Conditionally
+
+A runtime that registers its own forward can mark the forward with a label, such as `cic.instance`. A replacement instance can register the same forward name before the old instance stops. To prevent the old instance from deleting the new forward, send the label as a precondition:
+
+```bash
+curl -X DELETE 'http://localhost:8080/api/v1/forwards/upstream-mcp?label.cic.instance=pod-a'
+```
+
+Each `label.<key>=<value>` query parameter adds one precondition. You can send more than one. Wanaku ignores query parameters that do not start with `label.`. Encode keys and values as URL query components.
+
+| Case | Response |
+|---|---|
+| No `label.*` parameters | `200`. Wanaku deletes the forward without a check. |
+| The forward has all the given labels with the given values | `200`. Wanaku deletes the forward. |
+| A given label is absent or has a different value | `409 Conflict` with `{"data": null, "error": "forward {name} label precondition failed"}`. Wanaku keeps the forward. |
+| The forward does not exist | `404`. |
+
+Wanaku checks the labels and removes the forward in one registry operation. A concurrent `POST /api/v1/forwards` for the same name cannot occur between the check and the removal. When Wanaku deletes a forward, it also removes the cached credentials and the discovered tools, resources, and prompts of the forward. A `409` response does not change these entries.
 
 ### Inspect a Credential Binding
 

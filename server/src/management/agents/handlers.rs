@@ -1,6 +1,7 @@
 use crate::http_response::{json_err, json_ok};
+use crate::management::handlers::label_precondition;
 use http::{Response, StatusCode};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::{ConditionalRemoval, InMemoryRegistry};
 use wanaku_types::agents::AgentEntry;
 
 fn view(entry: AgentEntry) -> wanaku_types::agents::AgentView {
@@ -68,11 +69,16 @@ pub(super) fn delete(
     registry: &InMemoryRegistry,
     namespace: &str,
     name: &str,
+    query: Option<&str>,
 ) -> Response<Vec<u8>> {
-    if registry.remove_agent(namespace, name) {
-        json_ok(&serde_json::json!({"removed": name}))
-    } else {
-        json_err(StatusCode::NOT_FOUND, "agent not found")
+    let precondition = label_precondition(query);
+    match registry.remove_agent_if(namespace, name, |agent| precondition(&agent.labels)) {
+        ConditionalRemoval::Removed(_) => json_ok(&serde_json::json!({"removed": name})),
+        ConditionalRemoval::NotFound => json_err(StatusCode::NOT_FOUND, "agent not found"),
+        ConditionalRemoval::PreconditionFailed => json_err(
+            StatusCode::CONFLICT,
+            &format!("agent {namespace}/{name} label precondition failed"),
+        ),
     }
 }
 
@@ -122,11 +128,86 @@ mod tests {
         let body: serde_json::Value =
             serde_json::from_slice(list(&registry, Some("namespace=blue")).body()).expect("list");
         assert_eq!(body["data"], serde_json::json!([]));
-        assert_eq!(delete(&registry, "default", "worker").status(), 200);
-        assert_eq!(delete(&registry, "default", "worker").status(), 404);
+        assert_eq!(delete(&registry, "default", "worker", None).status(), 200);
+        assert_eq!(delete(&registry, "default", "worker", None).status(), 404);
         assert_eq!(
             save(&registry, initial, Some(("default", "worker"))).status(),
             404
         );
+    }
+
+    fn body(response: &Response<Vec<u8>>) -> serde_json::Value {
+        serde_json::from_slice(response.body()).expect("JSON body")
+    }
+
+    #[test]
+    fn labels_round_trip_through_create_get_and_list() {
+        let registry = InMemoryRegistry::new();
+        let created = r#"{"name":"worker","address":"http://a.example/rpc","labels":{"cic.instance":"pod-a"}}"#;
+        let response = save(&registry, created, None);
+        assert_eq!(response.status(), 200);
+        assert_eq!(body(&response)["data"]["labels"]["cic.instance"], "pod-a");
+        let fetched = body(&get(&registry, "default", "worker"));
+        assert_eq!(fetched["data"]["labels"]["cic.instance"], "pod-a");
+        let listed = body(&list(&registry, None));
+        assert_eq!(listed["data"][0]["labels"]["cic.instance"], "pod-a");
+    }
+
+    #[test]
+    fn update_replaces_labels() {
+        let registry = InMemoryRegistry::new();
+        let created = r#"{"name":"worker","address":"http://a.example/rpc","labels":{"cic.instance":"pod-a"}}"#;
+        assert_eq!(save(&registry, created, None).status(), 200);
+        let updated = r#"{"name":"worker","address":"http://a.example/rpc","labels":{"cic.instance":"pod-b"}}"#;
+        assert_eq!(
+            save(&registry, updated, Some(("default", "worker"))).status(),
+            200
+        );
+        let fetched = body(&get(&registry, "default", "worker"));
+        assert_eq!(fetched["data"]["labels"]["cic.instance"], "pod-b");
+
+        let unlabeled = r#"{"name":"worker","address":"http://a.example/rpc"}"#;
+        assert_eq!(
+            save(&registry, unlabeled, Some(("default", "worker"))).status(),
+            200
+        );
+        let fetched = body(&get(&registry, "default", "worker"));
+        assert!(fetched["data"].get("labels").is_none());
+    }
+
+    fn delete_worker(registry: &InMemoryRegistry, query: &str) -> Response<Vec<u8>> {
+        delete(registry, "default", "worker", Some(query))
+    }
+
+    #[test]
+    fn conditional_delete_follows_label_precondition() {
+        let registry = InMemoryRegistry::new();
+        let labeled = r#"{"name":"worker","address":"http://a.example/rpc","labels":{"cic.instance":"pod-b"}}"#;
+        assert_eq!(save(&registry, labeled, None).status(), 200);
+
+        let stale = delete_worker(&registry, "label.cic.instance=pod-a");
+        assert_eq!(stale.status(), 409);
+        assert_eq!(
+            body(&stale)["error"],
+            "agent default/worker label precondition failed"
+        );
+        let absent = delete_worker(&registry, "label.cic.instance=pod-b&label.zone=eu");
+        assert_eq!(absent.status(), 409);
+        assert!(registry.get_agent("default", "worker").is_some());
+
+        let owner = delete_worker(&registry, "label.cic.instance=pod-b");
+        assert_eq!(owner.status(), 200);
+        assert!(registry.get_agent("default", "worker").is_none());
+        let missing = delete_worker(&registry, "label.cic.instance=pod-b");
+        assert_eq!(missing.status(), 404);
+    }
+
+    #[test]
+    fn delete_without_label_parameters_is_unconditional() {
+        let registry = InMemoryRegistry::new();
+        let labeled = r#"{"name":"worker","address":"http://a.example/rpc","labels":{"cic.instance":"pod-b"}}"#;
+        assert_eq!(save(&registry, labeled, None).status(), 200);
+        assert_eq!(delete_worker(&registry, "namespace=x").status(), 200);
+        assert!(registry.get_agent("default", "worker").is_none());
     }
 }

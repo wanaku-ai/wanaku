@@ -5,12 +5,14 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
+import type { AgentViewLabels } from "./agentViewLabels";
 
 export interface AgentView {
   address: string;
   /** @nullable */
   cardAddress?: string | null;
   description: string;
+  labels?: AgentViewLabels;
   name: string;
   namespace: string;
   proxyUrl: string;

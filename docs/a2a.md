@@ -28,6 +28,27 @@ The table shows the upstream address. Select **Details** to show the Wanaku prox
 
 Agent entries use the same persistence backend as the other registry entries. A registration, edit, or deletion changes routing for subsequent requests without a restart. Editing an upstream address does not migrate task state between upstream agents.
 
+## Register agents from a runtime
+
+A runtime can register its own agent through the management API at startup and remove it at shutdown. During a rolling update, a new instance can register the same agent before the old instance stops. Use a label to mark the instance that owns the registration. For example, use `cic.instance` with the pod name as the value. The admin UI keeps the labels of an agent when you edit it.
+
+`POST /api/v1/agents` returns `409` when the agent exists. `PUT /api/v1/agents/{namespace}/{name}` returns `404` when the agent does not exist. `PUT` does not create an agent. Use this sequence to register:
+
+1. Send `POST /api/v1/agents` with the agent entry and the ownership label.
+2. If the response is `409`, send `GET /api/v1/agents/{namespace}/{name}`.
+3. Send `PUT /api/v1/agents/{namespace}/{name}` with the agent entry and the ownership label.
+4. If the `PUT` response is `404`, another instance deleted the agent after step 1. Start again at step 1.
+
+The `GET` in step 2 is optional. Use it to log the previous owner or to compare the configuration.
+
+At shutdown, send a conditional delete with the ownership label:
+
+```bash
+curl -X DELETE 'http://localhost:8080/api/v1/agents/default/assistant?label.cic.instance=pod-a'
+```
+
+If the response is `409`, a newer instance owns the agent. Do not retry the delete. If an older server ignores the precondition, it deletes the agent without a check. See [Management API](./management-api.md#label-an-a2a-agent) for the request and response details.
+
 ## Supported operations
 
 Wanaku supports A2A 0.3 and 1.0 JSON-RPC over HTTP. For a registered agent, use `POST /{namespace}/a2a/{name}` for protocol requests. Use `GET /{namespace}/a2a/{name}/.well-known/agent-card.json` for discovery. The namespace is the first path segment, as it is for `/{namespace}/mcp`. The agent name selects one registered agent in that namespace.
