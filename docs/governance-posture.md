@@ -103,7 +103,7 @@ Wanaku resolves the posture before it calls an evaluation engine or creates WASM
 
 Basic audit records skipped external evaluation as `not_evaluated`. It does not report an invented would-be decision. Full audit is an explicit opt-in for external cost and latency.
 
-In audit mode, the `copy-tool-to-namespace` host function returns `false` without a registry write. Registry reads return the existing data. Wanaku does not simulate writes or subsequent reads of those writes. Processor response actions are recorded but do not change traffic or metadata. WASM execution has a fuel limit of 10 million units per invocation. Fuel exhaustion follows the failure policy.
+In audit mode, the `copy-tool-to-namespace` host function returns `false` without a registry write. Registry reads return the existing data. Wanaku does not simulate writes or subsequent reads of those writes. Processor response actions are recorded but do not change traffic or metadata. WASM execution has fuel, memory, and wall-clock limits per invocation. Limit failures and runner overload follow the failure policy. See [Processor Resource Limits](evaluator-engine.md#processor-resource-limits).
 
 The evaluator `on_error` field is removed. Configuration with this field is rejected. Set `governance.default.on_failure` or a namespace override instead. The default is `deny`.
 

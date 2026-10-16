@@ -16,6 +16,8 @@ pub enum EvaluatorFailure {
     RegistryUnavailable,
     InteractionsUnavailable,
     ProcessorUnavailable,
+    /// The production runner had no free admission permit.
+    ProcessorOverloaded,
     Engine(EvaluationError),
     Processor(EvaluatorExecutionError),
 }
@@ -28,6 +30,7 @@ impl EvaluatorFailure {
             Self::RegistryUnavailable => "evaluator_registry_unavailable",
             Self::InteractionsUnavailable => "evaluator_interactions_unavailable",
             Self::ProcessorUnavailable => "evaluator_processor_unavailable",
+            Self::ProcessorOverloaded => "evaluator_processor_overloaded",
             Self::Engine(error) => error.reason_code(),
             Self::Processor(EvaluatorExecutionError::Instantiation) => {
                 "evaluator_processor_instantiation_failed"
@@ -440,6 +443,10 @@ mod tests {
             (
                 EvaluatorFailure::ProcessorUnavailable,
                 "processor_unavailable",
+            ),
+            (
+                EvaluatorFailure::ProcessorOverloaded,
+                "processor_overloaded",
             ),
             (
                 EvaluatorFailure::Engine(EvaluationError::MissingConnection),

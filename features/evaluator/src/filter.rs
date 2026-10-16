@@ -187,17 +187,21 @@ impl EvaluatorFilter {
             conversation_id,
         };
         let wasm_start = std::time::Instant::now();
-        let result = compiled.evaluate(
-            crate::engine::ExecutionContext {
-                registry,
-                interactions,
-                compiled_schema: schema,
-                mode: crate::engine::ExecutionMode::Production,
-                limits: None,
-                allow_side_effects: posture.mode == EnforcementMode::Enforce,
-            },
-            eval_ctx,
-        );
+        let result = state
+            .processor_runner()
+            .run(
+                compiled,
+                crate::engine::ExecutionContext {
+                    registry,
+                    interactions,
+                    compiled_schema: schema,
+                    mode: crate::engine::ExecutionMode::Production,
+                    limits: None,
+                    allow_side_effects: posture.mode == EnforcementMode::Enforce,
+                },
+                eval_ctx,
+            )
+            .await;
         if let Some(metrics) = &metrics {
             metrics.record_wasm_execution(&evaluator.name, wasm_start.elapsed());
         }
@@ -214,14 +218,9 @@ impl EvaluatorFilter {
                     },
                 )
             }
-            Err(error) => {
+            Err(failure) => {
                 config.record_failure(&evaluator.name);
-                finish(
-                    ctx,
-                    body,
-                    &audit,
-                    Outcome::Failure(EvaluatorFailure::Processor(error)),
-                )
+                finish(ctx, body, &audit, Outcome::Failure(failure))
             }
         }
     }
@@ -388,11 +387,9 @@ fn target_type(method: &str) -> Option<&'static str> {
 
 fn suppressed_effects(outcome: &Outcome, posture: &GovernancePosture) -> Option<bool> {
     match outcome {
-        Outcome::Failure(EvaluatorFailure::Processor(_))
-            if posture.mode == EnforcementMode::Audit =>
-        {
-            None
-        }
+        Outcome::Failure(
+            EvaluatorFailure::Processor(_) | EvaluatorFailure::ProcessorOverloaded,
+        ) if posture.mode == EnforcementMode::Audit => None,
         Outcome::Evaluated {
             action,
             side_effects_suppressed,
@@ -980,9 +977,13 @@ mod tests {
     }
 
     fn looping_evaluator() -> EvaluatorState {
+        fixture_evaluator("fuel-exhaustion")
+    }
+
+    fn fixture_evaluator(fixture: &str) -> EvaluatorState {
         let state = EvaluatorState::new();
         let processor = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests/fixtures/fuel-exhaustion.wat");
+            .join(format!("tests/fixtures/{fixture}.wat"));
         state.load_evaluators(vec![
             serde_json::from_value(serde_json::json!({
                 "name":"loop", "trigger":{"method":"tools/call"},
@@ -997,11 +998,19 @@ mod tests {
         state: &EvaluatorState,
         posture: GovernancePosture,
     ) -> (FilterAction, AuditEvent) {
+        Box::pin(processor_result(state, posture, &InMemoryRegistry::new())).await
+    }
+
+    async fn processor_result(
+        state: &EvaluatorState,
+        posture: GovernancePosture,
+        registry: &InMemoryRegistry,
+    ) -> (FilterAction, AuditEvent) {
         let request = request();
         let mut ctx = make_filter_context(&request);
         ctx.set_metadata(wanaku_filters::MCP_METHOD_KEY, wanaku_types::TOOLS_CALL);
         ctx.extensions.insert(state.clone());
-        ctx.extensions.insert(InMemoryRegistry::new());
+        ctx.extensions.insert(registry.clone());
         ctx.extensions.insert(InMemoryInteractionStore::new(10));
         ctx.extensions.insert(GovernanceConfig {
             default: posture,
@@ -1171,6 +1180,62 @@ mod tests {
             assert_eq!(
                 event.attributes["effective_action"],
                 if allowed { "pass" } else { "block" }
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn overloaded_runner_applies_failure_policy_without_blocking_audit() {
+        let state = fixture_evaluator("pass").with_processor_runner(
+            crate::runner::ProcessorRunner::new(0, crate::engine::ProcessorLimits::default()),
+        );
+        for (mode, failure, allowed) in [
+            (EnforcementMode::Enforce, FailureBehavior::Deny, false),
+            (EnforcementMode::Enforce, FailureBehavior::Allow, true),
+            (EnforcementMode::Audit, FailureBehavior::Deny, true),
+        ] {
+            let posture = GovernancePosture {
+                mode,
+                on_failure: failure,
+                ..GovernancePosture::default()
+            };
+            let (result, event) = Box::pin(fuel_failure_result(&state, posture)).await;
+            assert_eq!(matches!(result, FilterAction::Continue), allowed);
+            assert_eq!(event.reason_code, "evaluator_processor_overloaded");
+            assert_eq!(
+                event.attributes["effective_action"],
+                if allowed { "pass" } else { "block" }
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn runner_applies_processor_writes_only_in_enforce_mode() {
+        use wanaku_types::registry::ToolRegistry as _;
+        let state = fixture_evaluator("side-effects");
+        for (mode, namespace) in [
+            (EnforcementMode::Audit, "default"),
+            (EnforcementMode::Enforce, "prod"),
+        ] {
+            let registry = InMemoryRegistry::new();
+            registry.register_tool(
+                serde_json::from_value(serde_json::json!({
+                    "name": "tool", "description": "test", "uri": "test://tool",
+                    "type": "mcp-forward", "input_schema": {}, "namespace": "default"
+                }))
+                .unwrap(),
+            );
+            let posture = GovernancePosture {
+                mode,
+                audit_level: AuditLevel::Full,
+                ..GovernancePosture::default()
+            };
+            let (result, event) = Box::pin(processor_result(&state, posture, &registry)).await;
+            assert!(matches!(result, FilterAction::Continue));
+            assert_eq!(event.reason_code, "evaluator_evaluated");
+            assert_eq!(
+                registry.get_tool("tool").unwrap().namespace.as_deref(),
+                Some(namespace)
             );
         }
     }

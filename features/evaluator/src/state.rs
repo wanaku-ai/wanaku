@@ -9,6 +9,7 @@ use crate::engine::CompiledEvaluator;
 use crate::revision::{
     RecordRevisionParams, Revision, RevisionError, RevisionOrigin, RevisionStore,
 };
+use crate::runner::ProcessorRunner;
 use crate::schema::CompiledSchema;
 
 /// Immutable bundle of the runtime state derived from one evaluator
@@ -148,6 +149,7 @@ pub struct EvaluatorState {
     /// metadata and the active snapshot can never describe different
     /// configurations under concurrent activations.
     activation: Arc<Mutex<()>>,
+    processor_runner: ProcessorRunner,
 }
 
 impl EvaluatorState {
@@ -162,7 +164,20 @@ impl EvaluatorState {
             metrics: None,
             revisions: RevisionStore::new(),
             activation: Arc::new(Mutex::new(())),
+            processor_runner: ProcessorRunner::default(),
         }
+    }
+
+    /// Replace the bounded runner for production processor execution.
+    #[must_use]
+    pub fn with_processor_runner(mut self, runner: ProcessorRunner) -> Self {
+        self.processor_runner = runner;
+        self
+    }
+
+    #[must_use]
+    pub const fn processor_runner(&self) -> &ProcessorRunner {
+        &self.processor_runner
     }
 
     pub fn with_metrics(mut self, store: MetricsStore) -> Self {
