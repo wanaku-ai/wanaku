@@ -1,7 +1,6 @@
 use http::{Response, StatusCode};
-use wanaku_types::audit::{
-    AUDIT_SCHEMA_VERSION, AuditDecision, AuditQuery, AuditStore, InMemoryAuditStore,
-};
+use wanaku_infra::audit::InMemoryAuditStore;
+use wanaku_types::audit::{AUDIT_SCHEMA_VERSION, AuditDecision, AuditQuery, AuditStore};
 use wanaku_types::http_response::{json_err, json_ok};
 
 #[derive(Debug, PartialEq, Eq)]

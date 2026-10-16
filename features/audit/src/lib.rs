@@ -11,8 +11,9 @@ pub use credential_recorder::CredentialAuditRecorder;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 use std::sync::Arc;
+use wanaku_infra::audit::InMemoryAuditStore;
 use wanaku_infra::credentials::CredentialAuditSink;
-use wanaku_types::audit::{AuditFailureObserver, AuditPersistence, InMemoryAuditStore};
+use wanaku_types::audit::{AuditFailureObserver, AuditHandle, AuditPersistence};
 use wanaku_types::audit_redaction::{AuditRedactionRules, AuditRedactor};
 use wanaku_types::feature::{Feature, HttpContext};
 
@@ -75,7 +76,16 @@ impl AuditFeature {
     /// the sink here and threads it explicitly into the discovery callers.
     #[must_use]
     pub fn credential_audit_sink(&self) -> Arc<dyn CredentialAuditSink> {
-        Arc::new(CredentialAuditRecorder::new(self.store.clone()))
+        Arc::new(CredentialAuditRecorder::new(self.audit_handle()))
+    }
+
+    /// A contract handle that audit producers use to record events.
+    ///
+    /// The handle wraps the audit store. It does not expose semantic
+    /// ingestion, which stays inside this feature.
+    #[must_use]
+    pub fn audit_handle(&self) -> AuditHandle {
+        audit_handle(&self.store)
     }
 
     /// A handle to the store that the audit API reads.
@@ -96,12 +106,16 @@ fn yaml_config(root: Option<&serde_yaml::Value>) -> config::AuditConfig {
     }
 }
 
+fn audit_handle(store: &InMemoryAuditStore) -> AuditHandle {
+    AuditHandle::new(Arc::new(store.clone()))
+}
+
 struct AuditStoreExtension {
-    store: InMemoryAuditStore,
+    handle: AuditHandle,
 }
 impl PipelineExtension for AuditStoreExtension {
     fn prepare(&self, extensions: &mut RequestExtensions) {
-        extensions.insert(self.store.clone());
+        extensions.insert(self.handle.clone());
     }
 }
 
@@ -125,7 +139,7 @@ impl Feature for AuditFeature {
     fn pipeline_extensions(&self) -> Vec<Box<dyn PipelineExtension>> {
         vec![
             Box::new(AuditStoreExtension {
-                store: self.store.clone(),
+                handle: self.audit_handle(),
             }),
             Box::new(CredentialAuditSinkExtension {
                 sink: self.credential_audit_sink(),
