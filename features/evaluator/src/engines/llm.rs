@@ -1,7 +1,7 @@
 use std::fmt::Write as _;
 
 use serde::{Deserialize, Serialize};
-use wanaku_infra::llm::{self, LlmClient};
+use wanaku_infra::llm::{self, LlmClient, LlmError};
 use wanaku_infra::metrics::MetricsStore;
 use wanaku_types::mcp::McpContext;
 
@@ -75,12 +75,8 @@ pub async fn run_llm_operation(
     llm: ResolvedLlm<'_>,
     mcp: &McpContext<'_>,
     metrics: Option<&MetricsStore>,
-) -> Option<String> {
-    let client = LlmClient::new(
-        &llm.connection.url,
-        &llm.connection.model,
-        &llm.connection.api_key,
-    )?;
+) -> Result<String, LlmError> {
+    let client = client(llm.connection)?;
 
     let user_prompt = build_context_prompt(mcp);
 
@@ -88,13 +84,23 @@ pub async fn run_llm_operation(
     let result = client.chat(&llm.def.prompt, &user_prompt).await;
 
     if let Some(store) = metrics {
-        store.record_llm_call(evaluator_name, result.is_some(), start.elapsed());
-        if result.as_ref().is_none_or(String::is_empty) {
+        // A completion without usable content is an empty result of a
+        // successful call. Transport, status, and JSON failures are not.
+        let empty = matches!(
+            result,
+            Err(LlmError::MissingContent | LlmError::BlankContent)
+        );
+        store.record_llm_call(evaluator_name, result.is_ok() || empty, start.elapsed());
+        if empty {
             store.record_llm_empty_result(evaluator_name);
         }
     }
 
     result
+}
+
+fn client(connection: &LlmConnection) -> Result<LlmClient, LlmError> {
+    LlmClient::new(&connection.url, &connection.model, &connection.api_key).ok_or(LlmError::Client)
 }
 
 #[expect(
@@ -174,12 +180,8 @@ pub async fn retry_with_schema_correction(
     previous_result: &str,
     schema: &serde_json::Value,
     validation_error: &str,
-) -> Option<String> {
-    let client = LlmClient::new(
-        &llm.connection.url,
-        &llm.connection.model,
-        &llm.connection.api_key,
-    )?;
+) -> Result<String, LlmError> {
+    let client = client(llm.connection)?;
 
     let base_prompt = build_context_prompt(mcp);
     let correction = format!(
@@ -232,9 +234,17 @@ mod tests {
     }
 
     async fn mount_chat_response(server: &MockServer, status: StatusCode, content: &str) {
+        mount_response(
+            server,
+            ResponseTemplate::new(status).set_body_json(chat_response(content)),
+        )
+        .await;
+    }
+
+    async fn mount_response(server: &MockServer, response: ResponseTemplate) {
         Mock::given(method(Method::POST))
             .and(path("/chat/completions"))
-            .respond_with(ResponseTemplate::new(status).set_body_json(chat_response(content)))
+            .respond_with(response)
             .expect(1)
             .mount(server)
             .await;
@@ -421,11 +431,11 @@ mod tests {
         )
         .await;
 
-        assert_eq!(result.as_deref(), Some("allow"));
+        assert_eq!(result.as_deref(), Ok("allow"));
     }
 
     #[tokio::test]
-    async fn run_llm_operation_returns_empty_response() {
+    async fn run_llm_operation_returns_blank_content_error() {
         let server = MockServer::start().await;
         mount_chat_response(&server, StatusCode::OK, "").await;
         let args = HashMap::new();
@@ -444,11 +454,11 @@ mod tests {
         )
         .await;
 
-        assert_eq!(result.as_deref(), Some(""));
+        assert_eq!(result, Err(LlmError::BlankContent));
     }
 
     #[tokio::test]
-    async fn run_llm_operation_returns_none_for_http_failure() {
+    async fn run_llm_operation_returns_status_error_for_http_failure() {
         let server = MockServer::start().await;
         mount_chat_response(&server, StatusCode::INTERNAL_SERVER_ERROR, "ignored").await;
         let args = HashMap::new();
@@ -467,24 +477,41 @@ mod tests {
         )
         .await;
 
-        assert!(result.is_none());
+        assert_eq!(result, Err(LlmError::Status(500)));
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one metrics scenario covers every result category"
+    )]
     async fn run_llm_operation_records_success_failure_and_empty_metrics() {
-        let success_server = MockServer::start().await;
-        let empty_server = MockServer::start().await;
-        let failure_server = MockServer::start().await;
-        mount_chat_response(&success_server, StatusCode::OK, "allow").await;
-        mount_chat_response(&empty_server, StatusCode::OK, "").await;
-        mount_chat_response(&failure_server, StatusCode::SERVICE_UNAVAILABLE, "ignored").await;
+        let responses = [
+            ResponseTemplate::new(StatusCode::OK).set_body_json(chat_response("allow")),
+            ResponseTemplate::new(StatusCode::OK).set_body_json(chat_response(" ")),
+            ResponseTemplate::new(StatusCode::OK).set_body_json(serde_json::json!({})),
+            ResponseTemplate::new(StatusCode::SERVICE_UNAVAILABLE),
+            ResponseTemplate::new(StatusCode::UNAUTHORIZED),
+            ResponseTemplate::new(StatusCode::OK).set_body_string("not json"),
+        ];
+        let mut servers = Vec::new();
+        for response in responses {
+            let server = MockServer::start().await;
+            mount_response(&server, response).await;
+            servers.push(server);
+        }
+        let mut urls: Vec<String> = servers.iter().map(MockServer::uri).collect();
+        // A closed port gives a connection failure.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        urls.push(format!("http://{}", listener.local_addr().unwrap()));
+        drop(listener);
         let args = HashMap::new();
         let mcp = McpContext::new(TOOLS_CALL, None, &args, &[], &[]);
         let def = llm_def();
         let metrics = MetricsStore::new();
 
-        for server in [&success_server, &empty_server, &failure_server] {
-            let connection = llm_connection(server.uri());
+        for url in urls {
+            let connection = llm_connection(url);
             let _ = run_llm_operation(
                 "security",
                 ResolvedLlm {
@@ -499,10 +526,13 @@ mod tests {
 
         let snapshot = metrics.snapshot();
         let evaluator = &snapshot.evaluators["security"];
-        assert_eq!(evaluator.llm.calls_success, 2);
-        assert_eq!(evaluator.llm.calls_failure, 1);
+        // Valid, blank, and missing content are successful calls.
+        assert_eq!(evaluator.llm.calls_success, 3);
+        // Status, authentication, malformed JSON, and connection failures.
+        assert_eq!(evaluator.llm.calls_failure, 4);
+        // Only blank and missing content are empty results.
         assert_eq!(evaluator.llm.empty_results, 2);
-        assert_eq!(evaluator.llm.duration.count, 3);
+        assert_eq!(evaluator.llm.duration.count, 7);
     }
 
     #[tokio::test]
@@ -538,6 +568,6 @@ mod tests {
         )
         .await;
 
-        assert_eq!(result.as_deref(), Some(r#"{"decision":"allow"}"#));
+        assert_eq!(result.as_deref(), Ok(r#"{"decision":"allow"}"#));
     }
 }
