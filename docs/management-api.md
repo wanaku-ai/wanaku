@@ -2,7 +2,7 @@
 
 The management API lets operators inspect and change Wanaku at runtime. It listens on port 8080 by default. Set `WANAKU_MGMT_LISTEN` to use a different address.
 
-The server uses Pingora's `ServeHttp` trait. Core routes run first. Feature routes run after core routes.
+The server uses Pingora's `ServeHttp` trait. Core routes run first. Feature routes run after core routes. Core routes match complete path segments. For example, `/api/v1/tools-export` does not match the `/api/v1/tools` route, so a feature can own that path. If no route matches, the server returns `404`.
 
 ## Access and Response Format
 
