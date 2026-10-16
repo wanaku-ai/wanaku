@@ -126,6 +126,8 @@ The simulator uses the production MCP parser and policy adapter. Registry metada
 
 ### Evaluator isolation
 
+Simulation and live enforcement use the same evaluator outcome resolver. The resolver applies `mode`, `no_match`, and `on_failure` to the evaluator outcome. Thus, for the same processor result and posture, simulation and live enforcement allow or deny the request in the same way. `baseline_used` is `true` when the policy has no match or when no evaluator matches. `failure_used` is `true` when the policy is not valid or when the evaluator fails. Simulation rejects a candidate with an invalid evaluator configuration before execution. Thus, a report does not contain the live `configuration_invalid` outcome, which blocks enforced requests regardless of `on_failure`.
+
 Simulation does not call external LLM providers. A matching LLM evaluator has an explicit skipped stage. When that evaluator can change the outcome, the report sets `conditional` to `true`. Treat a conditional result as incomplete evidence.
 
 `allow_external_evaluators` defaults to `false`. This implementation rejects `true`. It does not offer nondeterministic external execution.

@@ -1,5 +1,6 @@
 use crate::action::ActionResult;
 use crate::config::EvaluationEngine;
+use crate::outcome::{Allowance, EvaluatorFailure, Outcome, Skip};
 use crate::state::EvaluatorState;
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
@@ -9,10 +10,7 @@ use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::audit::{
     AuditCategory, AuditDecision, AuditEvent, AuditStore, InMemoryAuditStore,
 };
-use wanaku_types::governance::{
-    AuditLevel, EnforcementMode, FailureBehavior, GovernanceConfig, GovernancePosture,
-    NoMatchBehavior,
-};
+use wanaku_types::governance::{AuditLevel, EnforcementMode, GovernanceConfig, GovernancePosture};
 use wanaku_types::interactions::{InMemoryInteractionStore, InteractionStore};
 use wanaku_types::mcp::McpContext;
 use wanaku_types::registry::ToolRegistry;
@@ -59,7 +57,7 @@ impl EvaluatorFilter {
         };
         if posture.mode == EnforcementMode::Disabled {
             tracing::warn!(namespace = %namespace, reason = ?posture.disabled_reason, "evaluator governance disabled");
-            return finish(ctx, body, &audit, Outcome::Skipped("disabled"));
+            return finish(ctx, body, &audit, Outcome::Skipped(Skip::Disabled));
         }
         let state = ctx.extensions.get::<EvaluatorState>().cloned();
         let config = state
@@ -74,7 +72,12 @@ impl EvaluatorFilter {
             return Ok(FilterAction::Continue);
         }
         let (Some(state), Some(config)) = (state, config) else {
-            return finish(ctx, body, &audit, Outcome::Failure("state_unavailable"));
+            return finish(
+                ctx,
+                body,
+                &audit,
+                Outcome::Failure(EvaluatorFailure::StateUnavailable),
+            );
         };
         audit.revision = config.revision_id;
         if let Some(reason) = config.invalid_reason {
@@ -97,12 +100,17 @@ impl EvaluatorFilter {
                 ctx,
                 body,
                 &audit,
-                Outcome::Skipped("external_evaluation_disabled"),
+                Outcome::Skipped(Skip::ExternalEvaluationDisabled),
             );
         }
         let Some(registry) = ctx.extensions.get::<InMemoryRegistry>().cloned() else {
             config.record_failure(&evaluator.name);
-            return finish(ctx, body, &audit, Outcome::Failure("registry_unavailable"));
+            return finish(
+                ctx,
+                body,
+                &audit,
+                Outcome::Failure(EvaluatorFailure::RegistryUnavailable),
+            );
         };
         let Some(interactions) = ctx.extensions.get::<InMemoryInteractionStore>().cloned() else {
             config.record_failure(&evaluator.name);
@@ -110,12 +118,17 @@ impl EvaluatorFilter {
                 ctx,
                 body,
                 &audit,
-                Outcome::Failure("interactions_unavailable"),
+                Outcome::Failure(EvaluatorFailure::InteractionsUnavailable),
             );
         };
         let Some(compiled) = config.get_compiled(&evaluator.processor.path) else {
             config.record_failure(&evaluator.name);
-            return finish(ctx, body, &audit, Outcome::Failure("processor_unavailable"));
+            return finish(
+                ctx,
+                body,
+                &audit,
+                Outcome::Failure(EvaluatorFailure::ProcessorUnavailable),
+            );
         };
         let tool_name = ctx
             .get_metadata(wanaku_filters::MCP_NAME_KEY)
@@ -163,12 +176,7 @@ impl EvaluatorFilter {
                     ctx,
                     body,
                     &audit,
-                    Outcome::Failure(
-                        error
-                            .reason_code()
-                            .strip_prefix("evaluator_")
-                            .unwrap_or(error.reason_code()),
-                    ),
+                    Outcome::Failure(EvaluatorFailure::Engine(error)),
                 );
             }
         };
@@ -202,20 +210,20 @@ impl EvaluatorFilter {
                     ctx,
                     body,
                     &audit,
-                    Outcome::Evaluated(result.action, result.side_effects_suppressed),
+                    Outcome::Evaluated {
+                        action: result.action,
+                        side_effects_suppressed: result.side_effects_suppressed,
+                    },
                 )
             }
             Err(error) => {
                 config.record_failure(&evaluator.name);
-                let reason = match error {
-                    crate::engine::EvaluatorExecutionError::Instantiation => {
-                        "processor_instantiation_failed"
-                    }
-                    crate::engine::EvaluatorExecutionError::Execution => {
-                        "processor_execution_failed"
-                    }
-                };
-                finish(ctx, body, &audit, Outcome::Failure(reason))
+                finish(
+                    ctx,
+                    body,
+                    &audit,
+                    Outcome::Failure(EvaluatorFailure::Processor(error)),
+                )
             }
         }
     }
@@ -244,48 +252,6 @@ struct RequestAudit<'a> {
     start: std::time::Instant,
 }
 
-enum Outcome {
-    NoMatch,
-    Failure(&'static str),
-    Unavailable(&'static str),
-    Skipped(&'static str),
-    Evaluated(ActionResult, bool),
-}
-
-impl Outcome {
-    fn proposed_action(&self, posture: &GovernancePosture) -> Option<&'static str> {
-        match self {
-            Self::Unavailable(_) => Some("block"),
-            Self::NoMatch => Some(if posture.no_match == NoMatchBehavior::Deny {
-                "block"
-            } else {
-                "pass"
-            }),
-            Self::Failure(_) => Some(if posture.on_failure == FailureBehavior::Deny {
-                "block"
-            } else {
-                "pass"
-            }),
-            Self::Skipped(_) => None,
-            Self::Evaluated(action, _) => Some(action_label(action)),
-        }
-    }
-    fn effective_action(&self, posture: &GovernancePosture) -> &'static str {
-        if posture.mode == EnforcementMode::Enforce {
-            self.proposed_action(posture).unwrap_or("pass")
-        } else {
-            "pass"
-        }
-    }
-    const fn reason(&self) -> &'static str {
-        match self {
-            Self::NoMatch => "no_match",
-            Self::Failure(reason) | Self::Unavailable(reason) | Self::Skipped(reason) => reason,
-            Self::Evaluated(_, _) => "evaluated",
-        }
-    }
-}
-
 fn finish(
     ctx: &mut HttpFilterContext<'_>,
     body: &mut Option<Bytes>,
@@ -297,7 +263,7 @@ fn finish(
         return Ok(FilterAction::Continue);
     }
     match outcome {
-        Outcome::Evaluated(action, _) => dispatch_action(
+        Outcome::Evaluated { action, .. } => dispatch_action(
             ctx,
             body,
             action,
@@ -305,7 +271,7 @@ fn finish(
             audit.evaluator.unwrap_or("evaluator"),
         ),
         Outcome::NoMatch | Outcome::Failure(_) | Outcome::Unavailable(_)
-            if outcome.effective_action(audit.posture) == "block" =>
+            if outcome.effective_allowance(audit.posture) == Allowance::Deny =>
         {
             let mut id = wanaku_filters::response::json_rpc_id_from_metadata(
                 ctx.get_metadata(wanaku_filters::MCP_ID_KEY),
@@ -349,10 +315,7 @@ fn governance_outcome(posture: &GovernancePosture, outcome: &Outcome) -> Governa
     if posture.mode == EnforcementMode::Disabled {
         return GovernanceOutcome::Disabled;
     }
-    let deny = matches!(
-        outcome.proposed_action(posture),
-        Some("block" | "reject_malformed")
-    );
+    let deny = outcome.proposed_allowance(posture) == Allowance::Deny;
     match outcome {
         Outcome::Skipped(_) => GovernanceOutcome::AuditSkipped,
         Outcome::NoMatch => {
@@ -369,7 +332,7 @@ fn governance_outcome(posture: &GovernancePosture, outcome: &Outcome) -> Governa
                 GovernanceOutcome::FailOpen
             }
         }
-        Outcome::Evaluated(_, _) => match (posture.mode, deny) {
+        Outcome::Evaluated { .. } => match (posture.mode, deny) {
             (EnforcementMode::Audit, true) => GovernanceOutcome::AuditDeny,
             (EnforcementMode::Audit, false) => GovernanceOutcome::AuditAllow,
             (_, true) => GovernanceOutcome::EnforcedDeny,
@@ -427,13 +390,16 @@ fn target_type(method: &str) -> Option<&'static str> {
 
 fn suppressed_effects(outcome: &Outcome, posture: &GovernancePosture) -> Option<bool> {
     match outcome {
-        Outcome::Failure("processor_execution_failed" | "processor_instantiation_failed")
+        Outcome::Failure(EvaluatorFailure::Processor(_))
             if posture.mode == EnforcementMode::Audit =>
         {
             None
         }
-        Outcome::Evaluated(action, writes_suppressed) => Some(
-            *writes_suppressed
+        Outcome::Evaluated {
+            action,
+            side_effects_suppressed,
+        } => Some(
+            *side_effects_suppressed
                 || (posture.mode == EnforcementMode::Audit
                     && !matches!(action, ActionResult::Pass)),
         ),
@@ -446,7 +412,7 @@ fn add_outcome_attributes(event: &mut AuditEvent, audit: &RequestAudit<'_>, outc
         Outcome::Skipped(_) => "not_evaluated",
         Outcome::Failure(_) | Outcome::Unavailable(_) => "error",
         Outcome::NoMatch => "no_match",
-        Outcome::Evaluated(_, _) => "evaluated",
+        Outcome::Evaluated { .. } => "evaluated",
     };
     if let serde_json::Value::Object(attributes) = serde_json::json!({
         "effective_action": outcome.effective_action(audit.posture),
@@ -454,7 +420,7 @@ fn add_outcome_attributes(event: &mut AuditEvent, audit: &RequestAudit<'_>, outc
         "enforcement_mode": audit.posture.mode,
         "audit_level": audit.posture.audit_level,
         "skipped": matches!(outcome, Outcome::Skipped(_)),
-        "failure": matches!(outcome, Outcome::Failure(_) | Outcome::Unavailable(_)),
+        "failure": outcome.failure_used(),
         "side_effects_suppressed": suppressed_effects(outcome, audit.posture),
         "no_match": matches!(outcome, Outcome::NoMatch),
         "evaluation_status": evaluation_status,
@@ -480,16 +446,6 @@ fn add_outcome_attributes(event: &mut AuditEvent, audit: &RequestAudit<'_>, outc
     }
 }
 
-const fn action_label(result: &ActionResult) -> &'static str {
-    match result {
-        ActionResult::Pass => "pass",
-        ActionResult::Block(_) => "block",
-        ActionResult::RejectMalformed(_) => "reject_malformed",
-        ActionResult::Warn(_) => "warn",
-        ActionResult::FilterTools(_) => "filter_tools",
-        ActionResult::SetMetadata(_, _) => "set_metadata",
-    }
-}
 #[expect(
     clippy::too_many_lines,
     clippy::cognitive_complexity,
@@ -604,7 +560,10 @@ fn string_arguments(arguments: &serde_json::Value) -> HashMap<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::engine::EvaluatorExecutionError;
+    use crate::evaluation::EvaluationError;
     use praxis_filter::Request;
+    use wanaku_types::governance::{FailureBehavior, NoMatchBehavior};
     static TEST_ID_GENERATOR: std::sync::LazyLock<praxis_core::id::IdGenerator> =
         std::sync::LazyLock::new(|| praxis_core::id::IdGenerator::with_seed(0));
     #[expect(
@@ -872,7 +831,10 @@ mod tests {
             let mut body = Some(Bytes::from_static(b"original"));
             let original_metadata = ctx.filter_metadata.clone();
             let suppressed = !matches!(action, ActionResult::Pass);
-            let outcome = Outcome::Evaluated(action, false);
+            let outcome = Outcome::Evaluated {
+                action,
+                side_effects_suppressed: false,
+            };
             let event = outcome_event(&ctx, body.as_ref(), &audit(&posture), &outcome);
             assert_eq!(event.decision, AuditDecision::Allow);
             assert_eq!(
@@ -906,13 +868,13 @@ mod tests {
                     ..GovernancePosture::default()
                 };
                 for reason in [
-                    "state_unavailable",
-                    "registry_unavailable",
-                    "interactions_unavailable",
-                    "engine_failed",
-                    "schema_invalid",
-                    "processor_unavailable",
-                    "processor_execution_failed",
+                    EvaluatorFailure::StateUnavailable,
+                    EvaluatorFailure::RegistryUnavailable,
+                    EvaluatorFailure::InteractionsUnavailable,
+                    EvaluatorFailure::Engine(EvaluationError::Remote),
+                    EvaluatorFailure::Engine(EvaluationError::Schema),
+                    EvaluatorFailure::ProcessorUnavailable,
+                    EvaluatorFailure::Processor(EvaluatorExecutionError::Execution),
                 ] {
                     let mut ctx = make_filter_context(&request);
                     let result = finish(
@@ -1057,6 +1019,135 @@ mod tests {
             .events
             .remove(0);
         (result, event)
+    }
+
+    /// Write a processor component that calls one single-string response function.
+    fn response_processor(
+        directory: &std::path::Path,
+        function: &str,
+        parameter: &str,
+    ) -> std::path::PathBuf {
+        let source = include_str!("../tests/fixtures/response.wat")
+            .replace("FUNCTION", function)
+            .replace("PARAMETER", parameter);
+        let path = directory.join(format!("{function}.wat"));
+        std::fs::write(&path, source).unwrap();
+        path
+    }
+
+    /// Processor and trigger for each executable fixture case shared with simulation.
+    fn executable_case(
+        name: &str,
+        directory: &std::path::Path,
+    ) -> Option<(&'static str, std::path::PathBuf)> {
+        let fixtures = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+        Some(match name {
+            "pass" => ("tools/call", fixtures.join("pass.wat")),
+            "no_match" => ("prompts/get", fixtures.join("pass.wat")),
+            "suppressed_pass" => ("tools/call", fixtures.join("side-effects.wat")),
+            "processor_failure" => ("tools/call", fixtures.join("fuel-exhaustion.wat")),
+            "block" => (
+                "tools/call",
+                response_processor(directory, "block", "reason"),
+            ),
+            "warn" => (
+                "tools/call",
+                response_processor(directory, "warn", "message"),
+            ),
+            "malformed" => (
+                "tools/call",
+                response_processor(directory, "reject-malformed", "reason"),
+            ),
+            _ => return None,
+        })
+    }
+
+    async fn live_allowed(
+        definition: &crate::config::EvaluatorDef,
+        posture: &GovernancePosture,
+    ) -> bool {
+        let state = EvaluatorState::new();
+        state.load_evaluators(vec![definition.clone()]);
+        let request = request();
+        let mut ctx = make_filter_context(&request);
+        ctx.set_metadata(wanaku_filters::MCP_METHOD_KEY, wanaku_types::TOOLS_CALL);
+        ctx.set_metadata(wanaku_filters::MCP_NAME_KEY, "tool");
+        ctx.extensions.insert(state);
+        ctx.extensions.insert(InMemoryRegistry::new());
+        ctx.extensions.insert(InMemoryInteractionStore::new(10));
+        ctx.extensions.insert(GovernanceConfig {
+            default: posture.clone(),
+            ..GovernanceConfig::default()
+        });
+        let result = EvaluatorFilter {
+            max_body_bytes: 1024,
+        }
+        .handle_body(&mut ctx, &mut None)
+        .await
+        .unwrap();
+        matches!(result, FilterAction::Continue)
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "agreement test runs live and simulated execution for every posture"
+    )]
+    async fn live_and_simulation_agree_on_shared_fixture_allowance() {
+        use crate::outcome::fixtures::{cases, postures};
+        let directory = tempfile::tempdir().unwrap();
+        let mut executed = 0;
+        for case in cases() {
+            let Some((trigger, processor)) = executable_case(case.name, directory.path()) else {
+                continue;
+            };
+            let definition: crate::config::EvaluatorDef =
+                serde_json::from_value(serde_json::json!({
+                    "name": "shared", "trigger": {"method": trigger},
+                    "engine": {"type": "passthrough"}, "processor": {"path": processor}
+                }))
+                .unwrap();
+            let prepared =
+                crate::simulation::prepare(&EvaluatorState::new(), vec![definition.clone()])
+                    .unwrap();
+            let arguments = HashMap::new();
+            let simulated = prepared.evaluate(
+                &crate::simulation::SimulationInput {
+                    method: wanaku_types::TOOLS_CALL,
+                    namespace: "default",
+                    target: Some("tool"),
+                    arguments: &arguments,
+                },
+                &InMemoryRegistry::new(),
+            );
+            assert_eq!(
+                simulated.outcome.side_effects_suppressed(),
+                case.outcome.side_effects_suppressed(),
+                "{}",
+                case.name
+            );
+            for posture in postures() {
+                let context = format!("{} {posture:?}", case.name);
+                let expected = case.outcome.effective_allowance(&posture);
+                assert_eq!(
+                    simulated.outcome.proposed_allowance(&posture),
+                    (case.proposed)(&posture),
+                    "{context}"
+                );
+                assert_eq!(
+                    simulated.outcome.effective_allowance(&posture),
+                    expected,
+                    "{context}"
+                );
+                assert_eq!(
+                    Box::pin(live_allowed(&definition, &posture)).await,
+                    expected == Allowance::Allow,
+                    "{context}"
+                );
+            }
+            executed += 1;
+        }
+        assert_eq!(executed, 7);
     }
 
     #[tokio::test]
