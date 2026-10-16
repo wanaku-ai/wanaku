@@ -257,7 +257,7 @@ Wanaku is open source (Apache 2.0). Contributions welcome.
 
 1. Create a new crate under `features/<name>/`
 2. Implement the `Feature` trait
-3. Wire it into `server/src/main.rs`
+3. Wire it into `build_features` in `server/src/app.rs`
 4. Add filter to `server/src/default.yaml` if needed
 5. Write tests
 6. Update docs
