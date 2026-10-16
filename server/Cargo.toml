@@ -64,4 +64,5 @@ tikv-jemallocator = "0.7.0"
 openssl = { version = "0.10.81", features = ["vendored"] }
 
 [dev-dependencies]
+bytes = { workspace = true }
 tempfile = "3"

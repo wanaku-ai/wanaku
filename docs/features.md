@@ -272,7 +272,7 @@ Add to `server/Cargo.toml`:
 wanaku-feature-tool-stats = { workspace = true }
 ```
 
-Add the feature to the vector returned by `build_features` in `server/src/main.rs`:
+Add the feature to the vector returned by `build_features` in `server/src/app.rs`:
 
 ```rust
 let features: Vec<Box<dyn Feature>> = vec![
@@ -394,7 +394,7 @@ let error = json_err(StatusCode::BAD_REQUEST, "invalid configuration");
 
 ## Feature Discovery
 
-The server does not scan for features. List each feature explicitly in `main.rs`:
+The server does not scan for features. List each feature explicitly in `build_features` in `server/src/app.rs`:
 
 ```rust
 let features: Vec<Box<dyn Feature>> = vec![
@@ -403,11 +403,11 @@ let features: Vec<Box<dyn Feature>> = vec![
 ];
 ```
 
-The explicit list makes feature registration visible. Read `main.rs` to identify the enabled features.
+The explicit list makes feature registration visible. Read `server/src/app.rs` to identify the enabled features.
 
 ## Feature Lifecycle
 
-1. **Creation:** The server constructs each feature in `main.rs`.
+1. **Creation:** `App::build` in `server/src/app.rs` constructs each feature.
 2. **Config loading:** The server calls `load_yaml_config()` and `load_env_config()`.
 3. **Filter registration:** The server calls `register_filters()` to add filters to the pipeline.
 4. **Extension injection:** The server calls `pipeline_extensions()` to get shared state.
@@ -419,7 +419,7 @@ The `Feature` trait does not provide a shutdown hook. Implement `Drop` when the 
 
 To disable a feature:
 
-1. Remove the feature from the `features` vector in `main.rs`.
+1. Remove the feature from the `features` vector in `server/src/app.rs`.
 2. Remove its filter from `server/src/default.yaml`.
 3. Rebuild the server.
 
