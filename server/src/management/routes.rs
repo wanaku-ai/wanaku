@@ -1,3 +1,16 @@
+/// Matches `path` against a collection path on a segment boundary.
+///
+/// Returns `Some(None)` for the collection itself (with or without a trailing
+/// slash) and `Some(Some(child))` for `collection/child`. Returns `None` when
+/// `path` is outside the collection, including sibling paths that share the
+/// prefix (for example `/api/v1/tools-export`).
+fn collection_child<'a>(path: &'a str, collection: &str) -> Option<Option<&'a str>> {
+    match path.strip_prefix(collection)? {
+        "" | "/" => Some(None),
+        rest => rest.strip_prefix('/').map(Some),
+    }
+}
+
 /// Resolves `{name}/enable` and `{name}/disable` to the name and the new state.
 fn resolve_set_enabled(path: &str) -> Option<(String, bool)> {
     let (name, enabled) = match path.strip_suffix("/enable") {
@@ -17,11 +30,9 @@ pub(super) enum ToolRoute {
 }
 
 pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
-    let Some(suffix) = path.strip_prefix("/api/v1/tools") else {
+    let Some(name) = collection_child(path, "/api/v1/tools") else {
         return ToolRoute::NotFound;
     };
-
-    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
 
     match (method, name) {
         ("GET", None) => ToolRoute::List,
@@ -45,11 +56,9 @@ pub(super) enum ResourceRoute {
 }
 
 pub(super) fn resolve_resource_route(method: &str, path: &str) -> ResourceRoute {
-    let Some(suffix) = path.strip_prefix("/api/v1/resources") else {
+    let Some(name) = collection_child(path, "/api/v1/resources") else {
         return ResourceRoute::NotFound;
     };
-
-    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
 
     match (method, name) {
         ("GET", None) => ResourceRoute::List,
@@ -73,11 +82,9 @@ pub(super) enum PromptRoute {
 }
 
 pub(super) fn resolve_prompt_route(method: &str, path: &str) -> PromptRoute {
-    let Some(suffix) = path.strip_prefix("/api/v1/prompts") else {
+    let Some(name) = collection_child(path, "/api/v1/prompts") else {
         return PromptRoute::NotFound;
     };
-
-    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
 
     match (method, name) {
         ("GET", None) => PromptRoute::List,
@@ -121,11 +128,9 @@ pub(super) enum ForwardRoute {
 }
 
 pub(super) fn resolve_forward_route(method: &str, path: &str) -> ForwardRoute {
-    let Some(suffix) = path.strip_prefix("/api/v1/forwards") else {
+    let Some(name) = collection_child(path, "/api/v1/forwards") else {
         return ForwardRoute::NotFound;
     };
-
-    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
 
     match (method, name) {
         ("GET", None) => ForwardRoute::List,
@@ -158,11 +163,9 @@ pub(super) enum NamespaceRoute {
 }
 
 pub(super) fn resolve_namespace_route(method: &str, path: &str) -> NamespaceRoute {
-    let Some(suffix) = path.strip_prefix("/api/v1/namespaces") else {
+    let Some(name) = collection_child(path, "/api/v1/namespaces") else {
         return NamespaceRoute::NotFound;
     };
-
-    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
 
     match (method, name) {
         ("GET", None) => NamespaceRoute::List,
@@ -182,11 +185,9 @@ pub(super) enum BindingRoute {
 }
 
 pub(super) fn resolve_binding_route(method: &str, path: &str) -> BindingRoute {
-    let Some(suffix) = path.strip_prefix("/api/v1/bindings") else {
+    let Some(id) = collection_child(path, "/api/v1/bindings") else {
         return BindingRoute::NotFound;
     };
-
-    let id = suffix.strip_prefix('/').filter(|s| !s.is_empty());
 
     match (method, id) {
         ("GET", None) => BindingRoute::List,
@@ -362,6 +363,169 @@ mod tests {
             resolve_binding_route("DELETE", "/api/v1/bindings/my-binding"),
             BindingRoute::NotFound
         );
+    }
+
+    #[test]
+    fn collection_child_enforces_segment_boundary() {
+        let cases = [
+            ("/api/v1/tools", Some(None)),
+            ("/api/v1/tools/", Some(None)),
+            ("/api/v1/tools/a", Some(Some("a"))),
+            ("/api/v1/tools/a/enable", Some(Some("a/enable"))),
+            ("/api/v1/tools-export", None),
+            ("/api/v1/toolsx/a", None),
+            ("/api/v1/tool", None),
+            ("/other", None),
+        ];
+        for (path, expected) in cases {
+            assert_eq!(collection_child(path, "/api/v1/tools"), expected, "{path}");
+        }
+    }
+
+    fn assert_routes<R: PartialEq + std::fmt::Debug>(
+        resolve: fn(&str, &str) -> R,
+        cases: impl IntoIterator<Item = (&'static str, &'static str, R)>,
+    ) {
+        for (method, path, expected) in cases {
+            assert_eq!(resolve(method, path), expected, "{method} {path}");
+        }
+    }
+
+    #[test]
+    fn tool_route_table() {
+        use ToolRoute as R;
+        let cases = [
+            ("GET", "/api/v1/tools", R::List),
+            ("GET", "/api/v1/tools/", R::List),
+            ("GET", "/api/v1/tools/t", R::GetByName("t".into())),
+            ("DELETE", "/api/v1/tools/t", R::Delete("t".into())),
+            ("DELETE", "/api/v1/tools/", R::NotFound),
+            (
+                "PUT",
+                "/api/v1/tools/t/enable",
+                R::SetEnabled("t".into(), true),
+            ),
+            (
+                "PUT",
+                "/api/v1/tools/t/disable",
+                R::SetEnabled("t".into(), false),
+            ),
+            ("PUT", "/api/v1/tools//enable", R::NotFound),
+            ("GET", "/api/v1/tools-export", R::NotFound),
+            ("GET", "/api/v1/toolsx/t", R::NotFound),
+            ("PUT", "/api/v1/tools-x/t/enable", R::NotFound),
+            ("DELETE", "/api/v1/tools-x/t", R::NotFound),
+        ];
+        assert_routes(resolve_tool_route, cases);
+    }
+
+    #[test]
+    fn resource_route_table() {
+        use ResourceRoute as R;
+        let cases = [
+            ("GET", "/api/v1/resources", R::List),
+            ("GET", "/api/v1/resources/", R::List),
+            ("GET", "/api/v1/resources/r", R::GetByName("r".into())),
+            ("DELETE", "/api/v1/resources/r", R::Delete("r".into())),
+            ("DELETE", "/api/v1/resources/", R::NotFound),
+            (
+                "PUT",
+                "/api/v1/resources/r/enable",
+                R::SetEnabled("r".into(), true),
+            ),
+            (
+                "PUT",
+                "/api/v1/resources/r/disable",
+                R::SetEnabled("r".into(), false),
+            ),
+            ("GET", "/api/v1/resources-export", R::NotFound),
+            ("DELETE", "/api/v1/resourcesx/r", R::NotFound),
+        ];
+        assert_routes(resolve_resource_route, cases);
+    }
+
+    #[test]
+    fn prompt_route_table() {
+        use PromptRoute as R;
+        let cases = [
+            ("GET", "/api/v1/prompts", R::List),
+            ("GET", "/api/v1/prompts/", R::List),
+            ("GET", "/api/v1/prompts/p", R::GetByName("p".into())),
+            ("DELETE", "/api/v1/prompts/p", R::Delete("p".into())),
+            ("DELETE", "/api/v1/prompts/", R::NotFound),
+            (
+                "PUT",
+                "/api/v1/prompts/p/enable",
+                R::SetEnabled("p".into(), true),
+            ),
+            (
+                "PUT",
+                "/api/v1/prompts/p/disable",
+                R::SetEnabled("p".into(), false),
+            ),
+            ("GET", "/api/v1/prompts-export", R::NotFound),
+            ("PUT", "/api/v1/promptsx/p/enable", R::NotFound),
+        ];
+        assert_routes(resolve_prompt_route, cases);
+    }
+
+    #[test]
+    fn forward_route_table() {
+        use ForwardRoute as R;
+        let cases = [
+            ("GET", "/api/v1/forwards", R::List),
+            ("GET", "/api/v1/forwards/", R::List),
+            ("POST", "/api/v1/forwards", R::Create),
+            ("POST", "/api/v1/forwards/", R::Create),
+            ("GET", "/api/v1/forwards/f", R::GetByName("f".into())),
+            ("DELETE", "/api/v1/forwards/f", R::Delete("f".into())),
+            ("DELETE", "/api/v1/forwards/", R::NotFound),
+            (
+                "POST",
+                "/api/v1/forwards/f/refreshes",
+                R::Refresh("f".into()),
+            ),
+            ("POST", "/api/v1/forwards/f", R::NotFound),
+            ("POST", "/api/v1/forwards-extra", R::NotFound),
+            ("GET", "/api/v1/forwards-extra", R::NotFound),
+            ("POST", "/api/v1/forwardsx/f/refreshes", R::NotFound),
+            ("DELETE", "/api/v1/forwardsx/f", R::NotFound),
+        ];
+        assert_routes(resolve_forward_route, cases);
+    }
+
+    #[test]
+    fn namespace_route_table() {
+        use NamespaceRoute as R;
+        let cases = [
+            ("GET", "/api/v1/namespaces", R::List),
+            ("GET", "/api/v1/namespaces/", R::List),
+            ("POST", "/api/v1/namespaces", R::Create),
+            ("POST", "/api/v1/namespaces/", R::Create),
+            ("GET", "/api/v1/namespaces/n", R::GetByName("n".into())),
+            ("PUT", "/api/v1/namespaces/n", R::Update("n".into())),
+            ("DELETE", "/api/v1/namespaces/n", R::Delete("n".into())),
+            ("PUT", "/api/v1/namespaces/", R::NotFound),
+            ("DELETE", "/api/v1/namespaces/", R::NotFound),
+            ("POST", "/api/v1/namespaces-extra", R::NotFound),
+            ("GET", "/api/v1/namespaces-extra", R::NotFound),
+            ("PUT", "/api/v1/namespacesx/n", R::NotFound),
+            ("DELETE", "/api/v1/namespacesx/n", R::NotFound),
+        ];
+        assert_routes(resolve_namespace_route, cases);
+    }
+
+    #[test]
+    fn binding_route_table() {
+        use BindingRoute as R;
+        let cases = [
+            ("GET", "/api/v1/bindings", R::List),
+            ("GET", "/api/v1/bindings/", R::List),
+            ("GET", "/api/v1/bindings/b", R::GetById("b".into())),
+            ("GET", "/api/v1/bindings-extra", R::NotFound),
+            ("GET", "/api/v1/bindingsx/b", R::NotFound),
+        ];
+        assert_routes(resolve_binding_route, cases);
     }
 
     #[test]

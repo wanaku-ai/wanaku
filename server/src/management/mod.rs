@@ -327,6 +327,79 @@ mod dispatch_tests {
         assert!(data.get("version").and_then(|v| v.as_str()).is_some());
     }
 
+    /// Test feature that owns only `GET /api/v1/tools-export`.
+    struct ToolsExportFeature;
+
+    #[async_trait]
+    impl Feature for ToolsExportFeature {
+        fn name(&self) -> &'static str {
+            "tools-export"
+        }
+
+        fn register_filters(&self, _registry: &mut praxis_filter::FilterRegistry) {}
+
+        fn pipeline_extensions(&self) -> Vec<Box<dyn praxis_filter::PipelineExtension>> {
+            Vec::new()
+        }
+
+        async fn handle_route(&self, ctx: &HttpContext<'_>) -> Option<Response<Vec<u8>>> {
+            match (ctx.method, ctx.path) {
+                ("GET", "/api/v1/tools-export") => {
+                    Some(json_ok(&serde_json::json!({"owner": "tools-export"})))
+                }
+                _ => None,
+            }
+        }
+
+        fn load_yaml_config(&self, _root: &serde_yaml::Value) {}
+
+        fn load_env_config(&self) {}
+    }
+
+    #[tokio::test]
+    async fn dispatch_sibling_prefix_reaches_feature() {
+        let registry = InMemoryRegistry::new();
+        let headers = http::HeaderMap::new();
+        let features: Vec<Box<dyn Feature>> = vec![Box::new(ToolsExportFeature)];
+        let ctx = HttpContext::new("GET", "/api/v1/tools-export", None, None, &headers);
+
+        let resp = dispatch(&ctx, &registry, &test_broker(), None, &features).await;
+
+        assert_eq!(resp.status(), 200);
+        let data = data_field(&resp);
+        assert_eq!(
+            data.get("owner").and_then(|v| v.as_str()),
+            Some("tools-export")
+        );
+    }
+
+    #[tokio::test]
+    async fn dispatch_sibling_prefix_mutations_return_404() {
+        use wanaku_types::registry::{ForwardRegistry, NamespaceRegistry};
+
+        let registry = InMemoryRegistry::new();
+        let headers = http::HeaderMap::new();
+        let features: &[Box<dyn Feature>] = &[];
+        let namespaces_before = registry.list_namespaces().len();
+        let forwards_before = registry.list_forwards().len();
+
+        let cases = [
+            ("/api/v1/namespaces-extra", r#"{"name":"extra-ns"}"#),
+            (
+                "/api/v1/forwards-extra",
+                r#"{"name":"extra-fwd","address":"http://127.0.0.1:1/mcp"}"#,
+            ),
+        ];
+        for (path, body) in cases {
+            let ctx = HttpContext::new("POST", path, None, Some(body), &headers);
+            let resp = dispatch(&ctx, &registry, &test_broker(), None, features).await;
+            assert_eq!(resp.status(), 404, "{path}");
+        }
+
+        assert_eq!(registry.list_namespaces().len(), namespaces_before);
+        assert_eq!(registry.list_forwards().len(), forwards_before);
+    }
+
     #[tokio::test]
     async fn dispatch_post_without_body_returns_400() {
         let registry = InMemoryRegistry::new();
