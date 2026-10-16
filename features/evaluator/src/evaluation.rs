@@ -1,3 +1,4 @@
+use wanaku_infra::llm::LlmError;
 use wanaku_infra::metrics::MetricsStore;
 use wanaku_types::mcp::McpContext;
 
@@ -142,17 +143,26 @@ async fn execute_llm(
         def: definition,
         connection: &connection,
     };
+    // Only successful output reaches schema validation and its retry.
     let result =
         crate::engines::llm::run_llm_operation(evaluator_name, llm, context.mcp, context.metrics)
-            .await;
-    let result = nonempty_llm_result(result)?;
+            .await
+            .map_err(llm_failure)?;
     validate_and_retry(evaluator_name, llm, context, &result).await
 }
 
-fn nonempty_llm_result(result: Option<String>) -> Result<String, EvaluationError> {
-    result
-        .filter(|value| !value.trim().is_empty())
-        .ok_or(EvaluationError::Llm)
+/// Map an LLM client failure to a safe evaluator failure category.
+const fn llm_failure(error: LlmError) -> EvaluationError {
+    match error {
+        LlmError::Timeout => EvaluationError::RemoteTimeout,
+        LlmError::Connection => EvaluationError::RemoteUnavailable,
+        LlmError::Auth(_) => EvaluationError::RemoteAuth,
+        LlmError::Client
+        | LlmError::Status(_)
+        | LlmError::MalformedJson
+        | LlmError::MissingContent
+        | LlmError::BlankContent => EvaluationError::Llm,
+    }
 }
 
 async fn validate_and_retry(
@@ -195,9 +205,12 @@ async fn retry_invalid_result(
         validation_error,
     )
     .await;
-    let validated = retry
-        .filter(|retried| schema.validate(retried).is_ok())
-        .ok_or(EvaluationError::Schema);
+    let validated = retry.map_err(llm_failure).and_then(|retried| {
+        schema
+            .validate(&retried)
+            .map(|()| retried)
+            .map_err(|_| EvaluationError::Schema)
+    });
     if let Some(store) = context.metrics {
         store.record_schema_retry(evaluator_name, validated.is_ok());
     }
@@ -245,10 +258,141 @@ mod tests {
     }
 
     #[test]
-    fn empty_and_whitespace_llm_responses_are_failures() {
-        for response in [None, Some(String::new()), Some(" \n\t".to_owned())] {
-            assert_eq!(nonempty_llm_result(response), Err(EvaluationError::Llm));
+    fn llm_failures_map_to_safe_categories() {
+        for (error, expected) in [
+            (LlmError::Timeout, EvaluationError::RemoteTimeout),
+            (LlmError::Connection, EvaluationError::RemoteUnavailable),
+            (LlmError::Auth(401), EvaluationError::RemoteAuth),
+            (LlmError::Auth(403), EvaluationError::RemoteAuth),
+            (LlmError::Status(500), EvaluationError::Llm),
+            (LlmError::MalformedJson, EvaluationError::Llm),
+            (LlmError::MissingContent, EvaluationError::Llm),
+            (LlmError::BlankContent, EvaluationError::Llm),
+            (LlmError::Client, EvaluationError::Llm),
+        ] {
+            assert_eq!(llm_failure(error), expected);
         }
+    }
+
+    /// Run an LLM evaluator with a result schema against one mock response
+    /// per call. The mock verifies the exact number of LLM calls.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "complete LLM state, schema, and mock server setup"
+    )]
+    async fn execute_llm_with_schema(
+        responses: Vec<wiremock::ResponseTemplate>,
+    ) -> (Result<String, EvaluationError>, MetricsStore) {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer};
+
+        let server = MockServer::start().await;
+        for response in responses {
+            Mock::given(method("POST"))
+                .and(path("/chat/completions"))
+                .respond_with(response)
+                .up_to_n_times(1)
+                .expect(1)
+                .mount(&server)
+                .await;
+        }
+        let raw_schema = serde_json::json!({
+            "type": "object",
+            "properties": {"allowed": {"type": "boolean"}},
+            "required": ["allowed"]
+        });
+        let schema = CompiledSchema::compile(&raw_schema).expect("valid schema");
+        let definition = LlmDef {
+            operation: crate::config::LlmOperation::Classify,
+            prompt: "classify".to_owned(),
+            connection: "test".to_owned(),
+            result_schema: Some(raw_schema),
+        };
+        let state = EvaluatorState::new();
+        state
+            .load_llm_connections(vec![crate::config::LlmConnection {
+                name: "test".to_owned(),
+                model: "test".to_owned(),
+                url: server.uri(),
+                api_key: String::new(),
+            }])
+            .expect("valid connection");
+        let arguments = HashMap::new();
+        let mcp = McpContext::new("tools/call", Some("test"), &arguments, &[], &[]);
+        let metrics = MetricsStore::new();
+        let result = execute_llm(
+            "test",
+            &definition,
+            &EvaluationContext {
+                state: &state,
+                mcp: &mcp,
+                namespace: "default",
+                arguments: &serde_json::json!({}),
+                compiled_schema: Some(&schema),
+                metrics: Some(&metrics),
+            },
+        )
+        .await;
+        server.verify().await;
+        (result, metrics)
+    }
+
+    fn content(value: &str) -> wiremock::ResponseTemplate {
+        wiremock::ResponseTemplate::new(200)
+            .set_body_json(serde_json::json!({"choices": [{"message": {"content": value}}]}))
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "failure category matrix and the retry case stay together"
+    )]
+    async fn only_schema_invalid_output_triggers_schema_correction() {
+        for (response, expected) in [
+            (
+                wiremock::ResponseTemplate::new(401),
+                EvaluationError::RemoteAuth,
+            ),
+            (wiremock::ResponseTemplate::new(503), EvaluationError::Llm),
+            (
+                wiremock::ResponseTemplate::new(200).set_body_string("not json"),
+                EvaluationError::Llm,
+            ),
+            (
+                wiremock::ResponseTemplate::new(200).set_body_json(serde_json::json!({})),
+                EvaluationError::Llm,
+            ),
+            (content(" "), EvaluationError::Llm),
+        ] {
+            // One mounted response: a correction request would fail verification.
+            let (result, metrics) = execute_llm_with_schema(vec![response]).await;
+            assert_eq!(result, Err(expected));
+            let snapshot = metrics.snapshot();
+            let schema = &snapshot.evaluators["test"].schema;
+            assert_eq!(schema.validations_pass + schema.validations_fail, 0);
+            assert_eq!(schema.retries_success + schema.retries_failure, 0);
+        }
+
+        let (result, metrics) = execute_llm_with_schema(vec![
+            content(r#"{"allowed":"invalid"}"#),
+            content(r#"{"allowed":true}"#),
+        ])
+        .await;
+        assert_eq!(result.as_deref(), Ok(r#"{"allowed":true}"#));
+        assert_eq!(
+            metrics.snapshot().evaluators["test"].schema.retries_success,
+            1
+        );
+    }
+
+    #[tokio::test]
+    async fn failed_correction_call_keeps_its_failure_category() {
+        let (result, _) = execute_llm_with_schema(vec![
+            content(r#"{"allowed":"invalid"}"#),
+            wiremock::ResponseTemplate::new(403),
+        ])
+        .await;
+        assert_eq!(result, Err(EvaluationError::RemoteAuth));
     }
 
     #[tokio::test]
