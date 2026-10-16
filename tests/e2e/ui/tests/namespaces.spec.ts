@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { NamespacesPage } from '../pages/namespaces.page';
 import { ApiHelper } from '../helpers/api-helpers';
-import { namespaceData } from '../helpers/test-data';
+import { agentData, namespaceData } from '../helpers/test-data';
 
 const routerUrl = process.env.WANAKU_ROUTER_URL ?? 'http://localhost:8080';
 
@@ -9,6 +9,7 @@ test.describe('Namespaces', () => {
   let namespaces: NamespacesPage;
   let api: ApiHelper;
   const createdNamespaces: string[] = [];
+  const createdAgents: { namespace: string; name: string }[] = [];
 
   test.beforeEach(async ({ page, request }) => {
     namespaces = new NamespacesPage(page, `${routerUrl}/admin/`);
@@ -16,6 +17,10 @@ test.describe('Namespaces', () => {
   });
 
   test.afterEach(async () => {
+    for (const agent of createdAgents) {
+      await api.deleteAgent(agent.namespace, agent.name).catch(() => {});
+    }
+    createdAgents.length = 0;
     for (const name of createdNamespaces) {
       await api.deleteNamespace(name).catch(() => {});
     }
@@ -93,5 +98,63 @@ test.describe('Namespaces', () => {
     const row = namespaces.rowWithText(data.name);
     const rowText = await row.innerText();
     expect(rowText).toContain(`/${data.name}/mcp`);
+  });
+
+  test('edit saves a namespace with an A2A agent through PUT', async ({ page }) => {
+    const data = namespaceData();
+    const agent = agentData({ namespace: data.name });
+    createdNamespaces.push(data.name);
+    createdAgents.push(agent);
+    await api.addNamespace(data);
+    await api.addAgent(agent);
+
+    const namespaceRequests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/v1/namespaces/')) {
+        namespaceRequests.push(request.method());
+      }
+    });
+
+    await namespaces.goto();
+    await namespaces.waitForNamespaceInTable(data.name);
+    await namespaces.clickEditNamespace(data.name);
+    expect(await namespaces.getModalHeading()).toBe('Edit Namespace');
+
+    const update = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        response.url().endsWith(`/api/v1/namespaces/${data.name}`),
+    );
+    await namespaces.submitModal();
+    expect((await update).status()).toBe(200);
+
+    await namespaces.waitForNamespaceInTable(data.name);
+    await expect(namespaces.errorNotification()).toBeHidden();
+    expect(namespaceRequests).toContain('PUT');
+    expect(namespaceRequests).not.toContain('DELETE');
+    expect(namespaceRequests).not.toContain('POST');
+    expect((await api.getNamespace(data.name)).status()).toBe(200);
+    expect((await api.getAgent(agent.namespace, agent.name)).status()).toBe(200);
+  });
+
+  test('failed PUT keeps the namespace and reports the error', async ({ page }) => {
+    const data = namespaceData();
+    createdNamespaces.push(data.name);
+    await api.addNamespace(data);
+
+    await page.route(`**/api/v1/namespaces/${data.name}`, (route) =>
+      route.request().method() === 'PUT'
+        ? route.fulfill({ status: 500, json: { data: null, error: 'simulated update failure' } })
+        : route.continue(),
+    );
+
+    await namespaces.goto();
+    await namespaces.waitForNamespaceInTable(data.name);
+    await namespaces.clickEditNamespace(data.name);
+    await namespaces.submitModal();
+
+    await expect(namespaces.errorNotification()).toContainText('simulated update failure');
+    await namespaces.waitForNamespaceInTable(data.name);
+    expect((await api.getNamespace(data.name)).status()).toBe(200);
   });
 });

@@ -13,6 +13,7 @@ export const Carbon = {
 
   toastError: '.cds--toast-notification--error',
   toastSuccess: '.cds--toast-notification--success',
+  inlineError: '.cds--inline-notification--error',
 
   // Visible part of a Carbon toggle. It covers the hidden <button role="switch">.
   toggleAppearance: '.cds--toggle__appearance',
