@@ -1646,6 +1646,56 @@
           }
         }
       },
+      "put": {
+        "tags": [
+          "Namespaces"
+        ],
+        "summary": "Updates the namespace metadata. The path name replaces the body name.",
+        "operationId": "update_namespace",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Namespace name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NamespaceEntry"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Namespace updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_NamespaceEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid namespace name, malformed JSON, or missing body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": [
           "Namespaces"
@@ -6288,6 +6338,49 @@
                 "type": "string"
               },
               "namespace": {
+                "type": "string"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_NamespaceEntry": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "audience": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "authRequired": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "labels": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "propertyNames": {
+                  "type": "string"
+                }
+              },
+              "name": {
                 "type": "string"
               }
             }
