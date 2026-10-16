@@ -8,7 +8,7 @@ use wanaku_types::mcp::McpContext;
 
 use crate::action::ActionResult;
 use crate::config::{EvaluationEngine, EvaluatorDef};
-pub use crate::engine::SimulationLimits;
+pub use crate::engine::ProcessorLimits as SimulationLimits;
 use crate::engine::{CompiledEvaluator, ExecutionContext};
 use crate::schema::CompiledSchema;
 use crate::state::EvaluatorState;
