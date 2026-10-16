@@ -7,9 +7,7 @@ use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use std::collections::HashMap;
 use wanaku_infra::metrics::{GovernanceOutcome, MetricsStore, SkipReason};
 use wanaku_infra::registry::InMemoryRegistry;
-use wanaku_types::audit::{
-    AuditCategory, AuditDecision, AuditEvent, AuditStore, InMemoryAuditStore,
-};
+use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHandle, AuditStore};
 use wanaku_types::governance::{AuditLevel, EnforcementMode, GovernanceConfig, GovernancePosture};
 use wanaku_types::interactions::{InMemoryInteractionStore, InteractionStore};
 use wanaku_types::mcp::McpContext;
@@ -306,7 +304,7 @@ fn record_outcome(
             metrics.record_pipeline_duration(name, audit.start.elapsed());
         }
     }
-    if let Some(store) = ctx.extensions.get::<InMemoryAuditStore>() {
+    if let Some(store) = ctx.extensions.get::<AuditHandle>() {
         store.record(outcome_event(ctx, body, audit, outcome));
     }
 }
@@ -563,6 +561,7 @@ mod tests {
     use crate::engine::EvaluatorExecutionError;
     use crate::evaluation::EvaluationError;
     use praxis_filter::Request;
+    use wanaku_infra::audit::InMemoryAuditStore;
     use wanaku_types::governance::{FailureBehavior, NoMatchBehavior};
     static TEST_ID_GENERATOR: std::sync::LazyLock<praxis_core::id::IdGenerator> =
         std::sync::LazyLock::new(|| praxis_core::id::IdGenerator::with_seed(0));
@@ -760,7 +759,8 @@ mod tests {
         governance.default.disabled_reason = Some("maintenance".into());
         ctx.extensions.insert(governance);
         let store = InMemoryAuditStore::new(10);
-        ctx.extensions.insert(store.clone());
+        ctx.extensions
+            .insert(AuditHandle::new(std::sync::Arc::new(store.clone())));
         assert!(matches!(
             EvaluatorFilter {
                 max_body_bytes: 1024
@@ -945,7 +945,8 @@ mod tests {
             ctx.extensions.insert(InMemoryRegistry::new());
             ctx.extensions.insert(InMemoryInteractionStore::new(10));
             let store = InMemoryAuditStore::new(10);
-            ctx.extensions.insert(store.clone());
+            ctx.extensions
+                .insert(AuditHandle::new(std::sync::Arc::new(store.clone())));
             let metadata = ctx.filter_metadata.clone();
             let original = Bytes::from_static(
                 br#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"arguments":{}}}"#,
@@ -1007,7 +1008,8 @@ mod tests {
             ..GovernanceConfig::default()
         });
         let store = InMemoryAuditStore::new(10);
-        ctx.extensions.insert(store.clone());
+        ctx.extensions
+            .insert(AuditHandle::new(std::sync::Arc::new(store.clone())));
         let result = EvaluatorFilter {
             max_body_bytes: 1024,
         }
@@ -1214,7 +1216,8 @@ mod tests {
             ctx.extensions.insert(governance);
             ctx.extensions.insert(state);
             let store = InMemoryAuditStore::new(10);
-            ctx.extensions.insert(store.clone());
+            ctx.extensions
+                .insert(AuditHandle::new(std::sync::Arc::new(store.clone())));
             assert!(matches!(
                 EvaluatorFilter {
                     max_body_bytes: 1024
@@ -1307,7 +1310,8 @@ mod tests {
         ctx.extensions.insert(InMemoryRegistry::new());
         ctx.extensions.insert(InMemoryInteractionStore::new(10));
         let store = InMemoryAuditStore::new(10);
-        ctx.extensions.insert(store.clone());
+        ctx.extensions
+            .insert(AuditHandle::new(std::sync::Arc::new(store.clone())));
         let mut body = Some(Bytes::from_static(OPA_REQUEST));
         let result = EvaluatorFilter {
             max_body_bytes: 1024,

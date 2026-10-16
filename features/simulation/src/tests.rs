@@ -1,11 +1,12 @@
 use crate::{api::CandidateSelection, *};
+use wanaku_infra::audit::InMemoryAuditStore;
 pub(crate) fn deps() -> SimulationDeps {
     SimulationDeps {
         policy: ActionPolicyState::new(),
         evaluators: EvaluatorState::new(),
         registry: InMemoryRegistry::new(),
         governance: GovernanceConfig::default(),
-        audit: InMemoryAuditStore::new(100),
+        audit: AuditHandle::new(Arc::new(InMemoryAuditStore::new(100))),
     }
 }
 #[test]
@@ -313,13 +314,13 @@ fn captured_audit_deps() -> SimulationDeps {
     use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent};
     let mut d = deps();
     d.governance.default.no_match = wanaku_types::governance::NoMatchBehavior::Allow;
-    d.audit = InMemoryAuditStore::configured(
+    d.audit = AuditHandle::new(Arc::new(InMemoryAuditStore::configured(
         100,
         None,
         wanaku_types::audit_redaction::AuditRedactor::default(),
         true,
         None,
-    );
+    )));
     let mut event = AuditEvent::new(
         AuditCategory::Decision,
         AuditDecision::Allow,

@@ -725,8 +725,9 @@ mod tests {
     use super::*;
     use wanaku_feature_action_policy::ActionPolicyFeature;
     use wanaku_feature_evaluator::state::EvaluatorState;
+    use wanaku_infra::audit::InMemoryAuditStore;
     use wanaku_infra::registry::InMemoryRegistry;
-    use wanaku_types::audit::InMemoryAuditStore;
+    use wanaku_types::audit::AuditHandle;
     use wanaku_types::feature::Feature;
     use wanaku_types::governance::GovernanceConfig;
 
@@ -736,7 +737,7 @@ mod tests {
             evaluators: EvaluatorState::new(),
             registry: InMemoryRegistry::new(),
             governance: GovernanceConfig::default(),
-            audit: InMemoryAuditStore::new(10),
+            audit: AuditHandle::new(Arc::new(InMemoryAuditStore::new(10))),
         }
     }
 
