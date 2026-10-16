@@ -340,11 +340,9 @@ pub(super) enum ToolRoute {
 }
 
 pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
-    let suffix = match path.strip_prefix("/api/v1/tools") {
-        Some(s) => s,
-        None => return ToolRoute::NotFound,
+    let Some(name) = collection_child(path, "/api/v1/tools") else {
+        return ToolRoute::NotFound;
     };
-    let name = suffix.strip_prefix('/').filter(|s| !s.is_empty());
     match (method, name) {
         ("GET", None) => ToolRoute::List,
         ("GET", Some(n)) => ToolRoute::GetByName(n.to_owned()),
@@ -354,6 +352,8 @@ pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
     }
 }
 ```
+
+`collection_child` matches the collection path on a segment boundary. It returns `Some(None)` for the collection path, with or without a trailing slash. It returns `Some(Some(child))` for a path below the collection. It returns `None` for all other paths. A sibling path that shares the prefix, for example `/api/v1/tools-export`, does not match a core route. The dispatcher then sends that path to the features.
 
 Feature routes follow the same pattern but live entirely inside the feature crate.
 
