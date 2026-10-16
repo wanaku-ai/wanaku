@@ -1318,6 +1318,113 @@ mod tests {
         }
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "complete LLM evaluator, filter context, and audit setup"
+    )]
+    async fn llm_failure_result(
+        response: wiremock::ResponseTemplate,
+        posture: GovernancePosture,
+    ) -> (FilterAction, AuditEvent) {
+        let wasm = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../actions/dist/safety_review_action.wasm");
+        assert!(wasm.exists(), "build WASM actions before evaluator tests");
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("POST"))
+            .respond_with(response)
+            .expect(1)
+            .mount(&server)
+            .await;
+        let state = EvaluatorState::new();
+        state
+            .load_llm_connections(vec![crate::config::LlmConnection {
+                name: "remote".into(),
+                url: server.uri(),
+                model: "test".into(),
+                api_key: "llm-secret-key".into(),
+            }])
+            .unwrap();
+        state.load_evaluators(vec![serde_json::from_value(serde_json::json!({"name":"remote","trigger":{"method":"tools/call"},"engine":{"type":"llm","connection":"remote","operation":"classify","prompt":"test"},"processor":{"path":wasm}})).unwrap()]);
+        let request = request();
+        let mut ctx = make_filter_context(&request);
+        ctx.set_metadata(wanaku_filters::MCP_METHOD_KEY, "tools/call");
+        ctx.extensions.insert(GovernanceConfig {
+            default: posture,
+            ..GovernanceConfig::default()
+        });
+        ctx.extensions.insert(state);
+        ctx.extensions.insert(InMemoryRegistry::new());
+        ctx.extensions.insert(InMemoryInteractionStore::new(10));
+        let store = InMemoryAuditStore::new(10);
+        ctx.extensions.insert(store.clone());
+        let mut body = Some(Bytes::from_static(
+            br#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"arguments":{}}}"#,
+        ));
+        let result = EvaluatorFilter {
+            max_body_bytes: 1024,
+        }
+        .handle_body(&mut ctx, &mut body)
+        .await
+        .unwrap();
+        server.verify().await;
+        let event = store
+            .query(&wanaku_types::audit::AuditQuery::default())
+            .events
+            .remove(0);
+        (result, event)
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "failure category and failure policy matrix stays together"
+    )]
+    async fn llm_failures_follow_failure_policy_without_exposing_secrets() {
+        let upstream = "upstream-private-diagnostic";
+        for (response, reason) in [
+            (
+                wiremock::ResponseTemplate::new(401).set_body_string(upstream),
+                "evaluator_remote_auth_failed",
+            ),
+            (
+                wiremock::ResponseTemplate::new(500).set_body_string(upstream),
+                "evaluator_llm_failed",
+            ),
+            (
+                wiremock::ResponseTemplate::new(200).set_body_string(upstream),
+                "evaluator_llm_failed",
+            ),
+            (
+                wiremock::ResponseTemplate::new(200)
+                    .set_body_json(serde_json::json!({"detail": upstream})),
+                "evaluator_llm_failed",
+            ),
+        ] {
+            for failure in [FailureBehavior::Deny, FailureBehavior::Allow] {
+                let posture = GovernancePosture {
+                    on_failure: failure,
+                    ..GovernancePosture::default()
+                };
+                let (result, event) = Box::pin(llm_failure_result(response.clone(), posture)).await;
+                assert_eq!(
+                    matches!(result, FilterAction::Continue),
+                    failure == FailureBehavior::Allow,
+                    "{reason}"
+                );
+                assert_eq!(event.reason_code, reason);
+                assert_eq!(event.attributes["failure"], true);
+                let serialized = serde_json::to_string(&event).unwrap();
+                assert!(!serialized.contains("llm-secret-key"));
+                assert!(!serialized.contains(upstream));
+                if let FilterAction::Reject(rejection) = result {
+                    let text = format!("{rejection:?}");
+                    assert!(!text.contains("llm-secret-key"));
+                    assert!(!text.contains(upstream));
+                }
+            }
+        }
+    }
+
     #[tokio::test]
     async fn opa_unavailable_is_a_failure() {
         let state = EvaluatorState::new();

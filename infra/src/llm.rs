@@ -43,12 +43,13 @@ impl LlmClient {
         })
     }
 
-    #[expect(
-        clippy::too_many_lines,
-        clippy::cognitive_complexity,
-        reason = "sequential HTTP request/response handling"
-    )]
-    pub async fn chat(&self, system_prompt: &str, user_prompt: &str) -> Option<String> {
+    /// Send one chat completion request and return the message content.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`LlmError`] that identifies the failure category. The
+    /// error never contains the API key or the upstream response body.
+    pub async fn chat(&self, system_prompt: &str, user_prompt: &str) -> Result<String, LlmError> {
         let body = serde_json::json!({
             "model": self.model,
             "messages": [
@@ -63,28 +64,82 @@ impl LlmClient {
             request = request.bearer_auth(&self.api_key);
         }
 
-        let response = match request.json(&body).send().await {
-            Ok(r) => r,
-            Err(e) => {
-                tracing::warn!(url = %self.url, model = %self.model, error = %e, "LLM request failed");
-                return None;
-            }
-        };
-
-        if !response.status().is_success() {
-            tracing::warn!(url = %self.url, model = %self.model, status = %response.status(), "LLM returned non-success status");
-            return None;
+        let result = send(request.json(&body)).await;
+        if let Err(error) = &result {
+            tracing::warn!(url = %self.url, model = %self.model, %error, "LLM request failed");
         }
+        result
+    }
+}
 
-        let json: serde_json::Value = match response.json().await {
-            Ok(b) => b,
-            Err(e) => {
-                tracing::warn!(url = %self.url, model = %self.model, error = %e, "LLM response parse failed");
-                return None;
-            }
-        };
+async fn send(request: reqwest::RequestBuilder) -> Result<String, LlmError> {
+    let response = request
+        .send()
+        .await
+        .map_err(|e| LlmError::from_transport(&e))?;
 
-        extract_content(&json).map(String::from)
+    let status = response.status();
+    if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+        return Err(LlmError::Auth(status.as_u16()));
+    }
+    if !status.is_success() {
+        return Err(LlmError::Status(status.as_u16()));
+    }
+
+    let json: serde_json::Value = response.json().await.map_err(|e| {
+        if e.is_decode() {
+            LlmError::MalformedJson
+        } else {
+            LlmError::from_transport(&e)
+        }
+    })?;
+
+    match extract_content(&json) {
+        None => Err(LlmError::MissingContent),
+        Some(content) if content.trim().is_empty() => Err(LlmError::BlankContent),
+        Some(content) => Ok(content.to_owned()),
+    }
+}
+
+/// Failure categories of an LLM chat completion call.
+///
+/// Messages contain only the category and, for HTTP failures, the status
+/// code. They never contain credentials or the upstream response body.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum LlmError {
+    /// The HTTP client could not be built.
+    #[error("LLM HTTP client is not available")]
+    Client,
+    /// The request or the response body did not complete in the timeout.
+    #[error("LLM request timed out")]
+    Timeout,
+    /// The endpoint is not reachable or the transfer failed.
+    #[error("LLM endpoint is not reachable")]
+    Connection,
+    /// The endpoint returned HTTP 401 or 403.
+    #[error("LLM endpoint rejected the credentials (HTTP {0})")]
+    Auth(u16),
+    /// The endpoint returned another non-success HTTP status.
+    #[error("LLM endpoint returned HTTP {0}")]
+    Status(u16),
+    /// The response body is not valid JSON.
+    #[error("LLM response is not valid JSON")]
+    MalformedJson,
+    /// The response has no `choices[0].message.content` string.
+    #[error("LLM response has no message content")]
+    MissingContent,
+    /// The message content is empty or contains only whitespace.
+    #[error("LLM response content is blank")]
+    BlankContent,
+}
+
+impl LlmError {
+    fn from_transport(error: &reqwest::Error) -> Self {
+        if error.is_timeout() {
+            Self::Timeout
+        } else {
+            Self::Connection
+        }
     }
 }
 
@@ -175,6 +230,8 @@ impl<T: Clone> HotSwap<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wiremock::matchers::{header, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
     fn strip_fences_json() {
@@ -252,5 +309,109 @@ mod tests {
     #[test]
     fn sanitize_strips_hashes_and_newlines() {
         assert_eq!(super::sanitize("a#b\nc\rd", 100), "ab c d");
+    }
+
+    const SECRET_KEY: &str = "sk-test-secret-key";
+    const UPSTREAM_BODY: &str = "upstream-private-diagnostic";
+
+    async fn chat_with(response: ResponseTemplate) -> Result<String, LlmError> {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .and(header(
+                "authorization",
+                format!("Bearer {SECRET_KEY}").as_str(),
+            ))
+            .respond_with(response)
+            .expect(1)
+            .mount(&server)
+            .await;
+        let client = LlmClient::with_timeout(
+            &server.uri(),
+            "model",
+            SECRET_KEY,
+            Duration::from_millis(200),
+        )
+        .unwrap();
+        client.chat("system", "user").await
+    }
+
+    fn content(value: &serde_json::Value) -> ResponseTemplate {
+        ResponseTemplate::new(200)
+            .set_body_json(serde_json::json!({"choices": [{"message": {"content": value}}]}))
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one table covers every result category"
+    )]
+    async fn chat_distinguishes_each_result_category() {
+        let cases = [
+            (content(&serde_json::json!("allow")), Ok("allow".to_owned())),
+            (
+                content(&serde_json::json!("ok")).set_delay(Duration::from_secs(2)),
+                Err(LlmError::Timeout),
+            ),
+            (
+                ResponseTemplate::new(401).set_body_string(UPSTREAM_BODY),
+                Err(LlmError::Auth(401)),
+            ),
+            (
+                ResponseTemplate::new(403).set_body_string(UPSTREAM_BODY),
+                Err(LlmError::Auth(403)),
+            ),
+            (
+                ResponseTemplate::new(503).set_body_string(UPSTREAM_BODY),
+                Err(LlmError::Status(503)),
+            ),
+            (
+                ResponseTemplate::new(200).set_body_string(UPSTREAM_BODY),
+                Err(LlmError::MalformedJson),
+            ),
+            (
+                ResponseTemplate::new(200).set_body_json(serde_json::json!({"choices": []})),
+                Err(LlmError::MissingContent),
+            ),
+            (
+                content(&serde_json::json!(42)),
+                Err(LlmError::MissingContent),
+            ),
+            (
+                content(&serde_json::json!(" \n\t")),
+                Err(LlmError::BlankContent),
+            ),
+        ];
+        for (response, expected) in cases {
+            assert_eq!(chat_with(response).await, expected);
+        }
+    }
+
+    #[tokio::test]
+    async fn chat_reports_unreachable_endpoint_as_connection_failure() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        drop(listener);
+        let client = LlmClient::new(&format!("http://{address}"), "model", SECRET_KEY).unwrap();
+        assert_eq!(
+            client.chat("system", "user").await,
+            Err(LlmError::Connection)
+        );
+    }
+
+    #[tokio::test]
+    async fn chat_errors_never_expose_api_key_or_upstream_body() {
+        for response in [
+            ResponseTemplate::new(401).set_body_string(UPSTREAM_BODY),
+            ResponseTemplate::new(500).set_body_json(serde_json::json!({"error": UPSTREAM_BODY})),
+            ResponseTemplate::new(200).set_body_string(UPSTREAM_BODY),
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({"detail": UPSTREAM_BODY})),
+        ] {
+            let error = chat_with(response).await.unwrap_err();
+            for text in [error.to_string(), format!("{error:?}")] {
+                assert!(!text.contains(SECRET_KEY), "{text}");
+                assert!(!text.contains(UPSTREAM_BODY), "{text}");
+            }
+        }
     }
 }
