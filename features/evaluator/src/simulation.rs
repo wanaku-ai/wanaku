@@ -86,7 +86,7 @@ fn prepare_definition(definition: EvaluatorDef) -> Result<PreparedEvaluator, Vec
         .and_then(|_| {
             CompiledEvaluator::from_file(&definition.name, &definition.processor.path).ok()
         });
-    if matches!(definition.engine, EvaluationEngine::Passthrough)
+    if definition.engine.supports_offline_simulation()
         && processor
             .as_ref()
             .is_some_and(|processor| !processor.supports_simulation())
@@ -121,9 +121,7 @@ fn reuse_active(
         .iter()
         .map(|definition| {
             let processor = snapshot.get_compiled(&definition.processor.path)?;
-            if matches!(definition.engine, EvaluationEngine::Passthrough)
-                && !processor.supports_simulation()
-            {
+            if definition.engine.supports_offline_simulation() && !processor.supports_simulation() {
                 return None;
             }
             Some(PreparedEvaluator {
@@ -229,7 +227,7 @@ impl PreparedEvaluators {
         let Some(evaluator) = evaluator else {
             return SimulationOutcome::new(None, Outcome::NoMatch);
         };
-        if !matches!(evaluator.definition.engine, EvaluationEngine::Passthrough) {
+        if !evaluator.definition.engine.supports_offline_simulation() {
             return SimulationOutcome::new(
                 Some(&evaluator.definition),
                 Outcome::Skipped(Skip::ExternalEngineNotSimulated),
@@ -363,6 +361,80 @@ mod tests {
         );
         assert_eq!(result.reason_code(), "evaluator_external_engine_skipped");
         assert!(result.outcome.action().is_none());
+    }
+
+    const SKIPPED: &str = "evaluator_external_engine_skipped";
+
+    /// Every engine type with its expected simulation reason code.
+    const ENGINE_CASES: [(&str, &str); 4] = [
+        (
+            r#"{"type":"llm","connection":"remote","operation":"classify","prompt":"p"}"#,
+            SKIPPED,
+        ),
+        (
+            r#"{"type":"typesafe-system-one","connection":"remote","noul":{"id":"n","instructions":"i"}}"#,
+            SKIPPED,
+        ),
+        (
+            r#"{"type":"opa","connection":"remote","decision_path":"wanaku/allow"}"#,
+            SKIPPED,
+        ),
+        (r#"{"type":"passthrough"}"#, "evaluator_simulated"),
+    ];
+
+    fn remote_connection_state() -> EvaluatorState {
+        let state = EvaluatorState::new();
+        state
+            .load_llm_connections(vec![crate::config::LlmConnection {
+                name: "remote".to_owned(),
+                model: "test".to_owned(),
+                url: "http://127.0.0.1:1".to_owned(),
+                api_key: "secret".to_owned(),
+            }])
+            .unwrap();
+        state
+            .load_system_one_connections(vec![crate::config::SystemOneConnection {
+                name: "remote".to_owned(),
+                model: "test".to_owned(),
+                url: "http://127.0.0.1:1".to_owned(),
+                api_key: "secret".to_owned(),
+            }])
+            .unwrap();
+        state
+            .load_opa_connections(&[crate::config::OpaConnection {
+                name: "remote".to_owned(),
+                url: "http://127.0.0.1:1".to_owned(),
+                token: None,
+                timeout_ms: 1000,
+                ca_cert: None,
+            }])
+            .unwrap();
+        state
+    }
+
+    #[test]
+    fn simulation_admits_only_engines_that_support_offline_simulation() {
+        let state = remote_connection_state();
+        let arguments = HashMap::new();
+        for (engine, expected) in ENGINE_CASES {
+            let mut def = definition("tools/call");
+            def.processor.path =
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pass.wat");
+            def.engine = serde_json::from_str(engine).expect("valid engine");
+            let kind = def.engine.kind();
+            let prepared = prepare(&state, vec![def]).expect("valid evaluator");
+            let result = prepared.evaluate(
+                &SimulationInput {
+                    method: "tools/call",
+                    namespace: "default",
+                    target: Some("tool"),
+                    arguments: &arguments,
+                },
+                &InMemoryRegistry::new(),
+            );
+            assert_eq!(result.reason_code(), expected, "{kind}");
+            assert_eq!(result.engine, Some(kind));
+        }
     }
 
     #[test]
