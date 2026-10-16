@@ -208,7 +208,7 @@ cargo test -p wanaku-infra  # single crate
 cargo test -- --nocapture          # tracing output
 ```
 
-Unit tests in modules (`#[cfg(test)]`). Integration tests in `server/tests/` (none yet).
+Unit tests in modules (`#[cfg(test)]`). Composition tests in `server/tests/app_assembly.rs` build the production graph with `wanaku_server::app::App::build` (see [docs/architecture.md](docs/architecture.md#application-assembly)).
 
 ## Acceptance Criteria
 

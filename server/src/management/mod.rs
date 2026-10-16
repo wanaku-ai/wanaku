@@ -78,6 +78,21 @@ impl WanakuManagementService {
             ui_path,
         }
     }
+
+    /// Dispatch one management API request.
+    ///
+    /// The Pingora service and the in-process server tests use this entry
+    /// point. It does not serve the embedded admin UI.
+    pub async fn dispatch(&self, ctx: &HttpContext<'_>) -> Response<Vec<u8>> {
+        dispatch(
+            ctx,
+            &self.registry,
+            &self.broker,
+            self.audit_sink.as_deref(),
+            &self.features,
+        )
+        .await
+    }
 }
 
 #[async_trait]
@@ -112,14 +127,7 @@ impl ServeHttp for WanakuManagementService {
         };
 
         let ctx = HttpContext::new(&method, &path, query.as_deref(), body.as_deref(), &headers);
-        dispatch(
-            &ctx,
-            &self.registry,
-            &self.broker,
-            self.audit_sink.as_deref(),
-            &self.features,
-        )
-        .await
+        self.dispatch(&ctx).await
     }
 }
 
