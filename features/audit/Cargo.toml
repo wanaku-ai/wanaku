@@ -22,3 +22,6 @@ serde_yaml = { workspace = true }
 tracing = { workspace = true }
 wanaku-types = { workspace = true }
 wanaku-infra = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

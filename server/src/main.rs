@@ -337,12 +337,15 @@ fn build_audit(
     metrics_store: &wanaku_infra::metrics::MetricsStore,
     wanaku_config: Option<&serde_yaml::Value>,
 ) -> wanaku_feature_audit::AuditFeature {
-    let mut audit = wanaku_feature_audit::AuditFeature::new().with_metrics(metrics_store.clone());
-    if let Some(backend) = wanaku_feature_audit::persistence::FileAuditPersistence::from_config() {
+    let persistence = wanaku_feature_audit::persistence::FileAuditPersistence::from_config();
+    if persistence.is_some() {
         info!("audit persistence enabled");
-        audit = audit.with_persistence(backend);
     }
-    audit.configured_from(wanaku_config)
+    wanaku_feature_audit::AuditFeature::new(wanaku_feature_audit::AuditDeps {
+        config_root: wanaku_config,
+        persistence,
+        failure_observer: Some(Arc::new(metrics_store.clone())),
+    })
 }
 
 fn build_simulation(
