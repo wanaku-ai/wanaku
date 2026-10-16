@@ -9,22 +9,17 @@ use std::sync::Arc;
 
 use clap::Parser;
 use praxis_core::PingoraServerRuntime;
-use praxis_core::config::{Config, ProtocolKind};
-use praxis_core::health::build_health_registry;
-use praxis_filter::FilterRegistry;
+use praxis_core::config::ProtocolKind;
+use praxis_protocol::Protocol as _;
 use praxis_protocol::http::PingoraHttp;
-use praxis_protocol::{ListenerPipelines, Protocol as _};
 use tracing::info;
 
 use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
 use wanaku_infra::persistence::FilePersistence;
 use wanaku_infra::registry::InMemoryRegistry;
-use wanaku_types::credentials::{
-    CredentialBinding, EnvResolver, NormalizedOrigin, ResolverRegistry,
-};
-use wanaku_types::feature::Feature;
+use wanaku_server::app::{App, AppPersistence, AppResources, AppSettings};
+use wanaku_types::credentials::{EnvResolver, ResolverRegistry};
 use wanaku_types::governance::GovernanceConfig;
-use wanaku_types::registry::{BindingRegistry, ForwardEntry, ForwardRegistry};
 
 #[expect(clippy::too_many_lines, reason = "server bootstrap")]
 fn main() {
@@ -44,99 +39,39 @@ fn main() {
         ));
     }
 
-    let metrics_store = wanaku_infra::metrics::MetricsStore::new();
-
-    let wanaku_registry = match FilePersistence::from_config() {
-        Some(backend) => {
-            info!("file-based persistence enabled");
-            let registry = InMemoryRegistry::with_persistence(backend);
-            registry.load_persisted();
-            registry
-        }
-        None => InMemoryRegistry::new(),
-    };
-
-    // Paired with InterceptFeature: adds x-request-id to tool schemas for conversation tracking
-    wanaku_registry.enable_request_id_injection();
+    let wanaku_config = load_wanaku_yaml(&args.wanaku_config).unwrap_or_else(|error| fatal(&error));
+    let governance = load_governance_config(wanaku_config.as_ref()).unwrap_or_else(|e| fatal(&e));
 
     // The credential broker holds a shared, single-flight resolution cache. It
     // is built once and shared across startup discovery, every request pipeline,
     // and the management and reconnect services.
-    let credential_broker = Arc::new(build_credential_broker());
-
-    let wanaku_config = load_wanaku_yaml(&args.wanaku_config).unwrap_or_else(|error| fatal(&error));
-    let governance = load_governance_config(wanaku_config.as_ref()).unwrap_or_else(|e| fatal(&e));
-    // Feature status and pipeline filters use the same immutable startup posture.
-    let (features, credential_audit_sink) = build_features(
-        &args,
-        &metrics_store,
-        wanaku_config.as_ref(),
-        &governance,
-        &wanaku_registry,
-    );
-
-    load_config(
-        wanaku_config.as_ref(),
-        &wanaku_registry,
-        &credential_broker,
-        Some(credential_audit_sink.as_ref()),
-        &features,
-    );
-    for feature in &features {
-        feature
-            .validate_startup()
-            .unwrap_or_else(|error| fatal(&error));
-    }
-
-    let mut filter_registry = wanaku_server::build_full_registry();
-    for feature in &features {
-        feature.register_filters(&mut filter_registry);
-    }
-
-    let service_deps = ServiceDeps {
-        health_registry: build_health_registry(&config.clusters),
-        kv_stores: praxis_core::kv::KvStoreRegistry::new(),
-        mgmt_registry: wanaku_registry.clone(),
-        governance,
-        broker: credential_broker,
-        audit_sink: credential_audit_sink,
-        features,
+    let resources = AppResources {
+        persistence: AppPersistence {
+            registry: FilePersistence::from_config(),
+            audit: wanaku_feature_audit::persistence::FileAuditPersistence::from_config(),
+            action_policy:
+                wanaku_feature_action_policy::revision_persistence::FileRevisionPersistence::from_config(),
+            evaluator:
+                wanaku_feature_evaluator::revision_persistence::FileRevisionPersistence::from_config(),
+        },
+        broker: Arc::new(build_credential_broker()),
     };
-
-    let pipelines = build_pipelines(
-        &config,
-        &wanaku_registry,
-        &mut filter_registry,
-        &service_deps,
-    );
+    // Feature status and pipeline filters use the same immutable startup posture.
+    let settings = AppSettings {
+        pipeline: &config,
+        wanaku_config: wanaku_config.as_ref(),
+        governance,
+        plugins_dir: args.plugins_dir(),
+    };
+    let app = App::build(&settings, resources).unwrap_or_else(|e| fatal(&e));
 
     info!("initializing server");
     let mut server = PingoraServerRuntime::new(&config);
 
-    setup_management_service(&config, &pipelines, service_deps, &mut server);
+    setup_management_service(&config, app, &mut server);
 
     info!("starting wanaku server");
     server.run()
-}
-
-fn build_pipelines(
-    config: &Config,
-    wanaku_registry: &InMemoryRegistry,
-    filter_registry: &mut FilterRegistry,
-    service_deps: &ServiceDeps,
-) -> ListenerPipelines {
-    info!("building wanaku pipelines");
-    let pipeline_deps = wanaku_server::pipelines::PipelineDeps::new(
-        filter_registry,
-        &service_deps.health_registry,
-        &service_deps.kv_stores,
-        wanaku_registry,
-        &service_deps.governance,
-        &service_deps.broker,
-        &service_deps.features,
-    );
-    wanaku_server::pipelines::resolve_pipelines(config, &pipeline_deps)
-        .unwrap_or_else(|e| fatal(&e))
 }
 
 /// Build the shared credential broker.
@@ -147,33 +82,6 @@ fn build_pipelines(
 fn build_credential_broker() -> CredentialBroker {
     let resolvers = ResolverRegistry::new().with_resolver(Arc::new(EnvResolver::new()));
     CredentialBroker::new(resolvers)
-}
-
-struct ServiceDeps {
-    health_registry: praxis_core::health::HealthRegistry,
-    kv_stores: praxis_core::kv::KvStoreRegistry,
-    mgmt_registry: InMemoryRegistry,
-    governance: GovernanceConfig,
-    broker: Arc<CredentialBroker>,
-    audit_sink: Arc<dyn CredentialAuditSink>,
-    features: Vec<Box<dyn Feature>>,
-}
-
-fn load_config(
-    wanaku_config: Option<&serde_yaml::Value>,
-    wanaku_registry: &InMemoryRegistry,
-    broker: &Arc<CredentialBroker>,
-    audit_sink: Option<&dyn CredentialAuditSink>,
-    features: &[Box<dyn Feature>],
-) {
-    if let Some(yaml) = wanaku_config {
-        load_core_config(yaml, wanaku_registry, broker, audit_sink);
-    }
-    let empty = serde_yaml::Value::Mapping(serde_yaml::Mapping::new());
-    for feature in features {
-        feature.load_yaml_config(wanaku_config.unwrap_or(&empty));
-        feature.load_env_config();
-    }
 }
 
 fn load_governance_config(root: Option<&serde_yaml::Value>) -> Result<GovernanceConfig, String> {
@@ -192,8 +100,7 @@ fn load_governance_config(root: Option<&serde_yaml::Value>) -> Result<Governance
 #[expect(clippy::too_many_lines, reason = "service registration is sequential")]
 fn setup_management_service(
     config: &praxis_core::config::Config,
-    pipelines: &praxis_protocol::ListenerPipelines,
-    deps: ServiceDeps,
+    app: App,
     server: &mut PingoraServerRuntime,
 ) {
     if config
@@ -202,7 +109,7 @@ fn setup_management_service(
         .any(|listener| listener.protocol == ProtocolKind::Http)
     {
         let _cert_shutdowns = Box::new(PingoraHttp)
-            .register(server, config, pipelines)
+            .register(server, config, &app.pipelines)
             .unwrap_or_else(|e| fatal(&e));
     }
 
@@ -211,39 +118,30 @@ fn setup_management_service(
             server.server_mut(),
             admin_addr,
             praxis_protocol::http::pingora::health::AdminEndpointOptions {
-                health_registry: Some(deps.health_registry),
-                kv_registry: Some(deps.kv_stores),
+                health_registry: Some(app.health_registry),
+                kv_registry: Some(app.kv_stores),
                 verbose: config.admin.verbose,
                 ..Default::default()
             },
         );
     }
 
-    let mgmt_registry = deps.mgmt_registry.clone();
-    let persistence_registry = deps.mgmt_registry.clone();
-    let reconnect_broker = deps.broker.clone();
-    let reconnect_audit_sink = deps.audit_sink.clone();
-
     let mgmt_addr = &wanaku_types::config::ENV.mgmt_listen;
-    let mgmt = wanaku_server::management::WanakuManagementService::new(
-        deps.mgmt_registry,
-        deps.broker,
-        Some(deps.audit_sink),
-        deps.features,
+    let mut mgmt_service = pingora_core::services::listening::Service::new(
+        "wanaku-management".to_owned(),
+        app.management,
     );
-    let mut mgmt_service =
-        pingora_core::services::listening::Service::new("wanaku-management".to_owned(), mgmt);
     mgmt_service.add_tcp(mgmt_addr);
     server.server_mut().add_service(mgmt_service);
     info!(address = %mgmt_addr, "management API enabled");
 
     register_forward_reconnect_service(
-        mgmt_registry,
-        reconnect_broker,
-        Some(reconnect_audit_sink),
+        app.registry.clone(),
+        app.broker,
+        Some(app.audit_sink),
         server,
     );
-    register_registry_persistence_service(persistence_registry, server);
+    register_registry_persistence_service(app.registry, server);
 }
 
 fn register_registry_persistence_service(
@@ -288,90 +186,6 @@ fn register_forward_reconnect_service(
     );
 }
 
-/// Build the feature set and the credential audit sink.
-///
-/// The sink adapts credential brokerage records into audit events on the shared
-/// audit store. The request pipeline gets it from the request extensions; the
-/// forward discovery path runs outside the pipeline, so this returns the sink for
-/// the server to thread into the management, reconnect, and startup discovery
-/// callers explicitly.
-fn build_features(
-    args: &ServerArgs,
-    metrics_store: &wanaku_infra::metrics::MetricsStore,
-    wanaku_config: Option<&serde_yaml::Value>,
-    governance: &GovernanceConfig,
-    registry: &InMemoryRegistry,
-) -> (Vec<Box<dyn Feature>>, Arc<dyn CredentialAuditSink>) {
-    let audit = build_audit(metrics_store, wanaku_config);
-    let credential_audit_sink = audit.credential_audit_sink();
-    let action_policy = build_action_policy();
-    let evaluator = build_evaluator(metrics_store, audit.store(), governance);
-    let simulation = build_simulation(
-        action_policy.state(),
-        evaluator.state(),
-        registry,
-        governance,
-        audit.store(),
-    );
-
-    (
-        vec![
-            Box::new(audit),
-            Box::new(wanaku_feature_metrics::MetricsFeature::new(
-                metrics_store.clone(),
-            )),
-            Box::new(wanaku_feature_intercept::InterceptFeature::new()),
-            Box::new(wanaku_feature_mcp_metadata::McpMetadataFeature::new()),
-            Box::new(action_policy),
-            Box::new(evaluator),
-            Box::new(simulation),
-            Box::new(wanaku_feature_plugins::PluginsFeature::new(
-                args.plugins_dir(),
-            )),
-        ],
-        credential_audit_sink,
-    )
-}
-
-fn build_audit(
-    metrics_store: &wanaku_infra::metrics::MetricsStore,
-    wanaku_config: Option<&serde_yaml::Value>,
-) -> wanaku_feature_audit::AuditFeature {
-    let mut audit = wanaku_feature_audit::AuditFeature::new().with_metrics(metrics_store.clone());
-    if let Some(backend) = wanaku_feature_audit::persistence::FileAuditPersistence::from_config() {
-        info!("audit persistence enabled");
-        audit = audit.with_persistence(backend);
-    }
-    audit.configured_from(wanaku_config)
-}
-
-fn build_simulation(
-    policy: wanaku_feature_action_policy::ActionPolicyState,
-    evaluators: wanaku_feature_evaluator::state::EvaluatorState,
-    registry: &InMemoryRegistry,
-    governance: &GovernanceConfig,
-    audit: wanaku_types::audit::InMemoryAuditStore,
-) -> wanaku_feature_simulation::SimulationFeature {
-    wanaku_feature_simulation::SimulationFeature::new(wanaku_feature_simulation::SimulationDeps {
-        policy,
-        evaluators,
-        registry: registry.clone(),
-        governance: governance.clone(),
-        audit,
-    })
-}
-
-fn build_action_policy() -> wanaku_feature_action_policy::ActionPolicyFeature {
-    let mut action_policy = wanaku_feature_action_policy::ActionPolicyFeature::new();
-    if let Some(backend) =
-        wanaku_feature_action_policy::revision_persistence::FileRevisionPersistence::from_config()
-    {
-        info!("action policy revision persistence enabled");
-        action_policy = action_policy.with_revision_persistence(backend);
-    }
-    action_policy
-}
-
 /// Returns the explicit `--plugins-path`, or `<persist-dir>/plugins` when
 /// persistence is enabled. Returns `None` when neither is available.
 fn resolve_plugins_path(
@@ -382,24 +196,6 @@ fn resolve_plugins_path(
         Some(path) => Some(std::path::PathBuf::from(path)),
         None => persist.map(|p| p.dir.join("plugins")),
     }
-}
-
-fn build_evaluator(
-    metrics_store: &wanaku_infra::metrics::MetricsStore,
-    audit: wanaku_types::audit::InMemoryAuditStore,
-    governance: &GovernanceConfig,
-) -> wanaku_feature_evaluator::EvaluatorFeature {
-    let mut evaluator = wanaku_feature_evaluator::EvaluatorFeature::new()
-        .with_metrics(metrics_store.clone())
-        .with_audit(audit)
-        .with_governance(governance.clone());
-    if let Some(backend) =
-        wanaku_feature_evaluator::revision_persistence::FileRevisionPersistence::from_config()
-    {
-        info!("evaluator revision persistence enabled");
-        evaluator = evaluator.with_revision_persistence(backend);
-    }
-    evaluator
 }
 
 #[derive(Debug, Parser)]
@@ -447,115 +243,6 @@ fn load_wanaku_yaml(path: &str) -> Result<Option<serde_yaml::Value>, String> {
 }
 
 #[expect(
-    clippy::cognitive_complexity,
-    clippy::too_many_lines,
-    reason = "config loading requires sequential steps"
-)]
-fn load_core_config(
-    config: &serde_yaml::Value,
-    registry: &InMemoryRegistry,
-    broker: &Arc<CredentialBroker>,
-    audit_sink: Option<&dyn CredentialAuditSink>,
-) {
-    let mut forwards = Vec::new();
-    if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
-        for fwd_value in fwd_list {
-            match serde_yaml::from_value::<ForwardEntry>(fwd_value.clone()) {
-                Ok(mut fwd) => {
-                    fwd.available = false;
-                    info!(forward = %fwd.name, address = %fwd.address, "registered forward from config");
-                    registry.register_forward(fwd.clone());
-                    forwards.push(fwd);
-                }
-                Err(e) => {
-                    tracing::warn!(error = %e, "failed to deserialize forward entry from config");
-                }
-            }
-        }
-    }
-
-    // Credential bindings are authored here, alongside the forwards that own
-    // them. A binding must be registered before discovery runs, because a
-    // forward that references a discovery binding fails closed when the binding
-    // is absent.
-    load_bindings(config, registry);
-
-    if !forwards.is_empty() {
-        let rt = match tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-        {
-            Ok(rt) => rt,
-            Err(e) => {
-                tracing::error!(error = %e, "failed to create runtime for forward discovery");
-                return;
-            }
-        };
-
-        rt.block_on(async {
-            for fwd in &forwards {
-                info!(forward = %fwd.name, address = %fwd.address, "discovering from forward");
-                wanaku_server::management::discover_and_update_forward(
-                    registry, broker, audit_sink, fwd,
-                )
-                .await;
-            }
-        });
-    }
-}
-
-/// Register the credential bindings declared under the top-level `bindings`
-/// key of the wanaku configuration.
-///
-/// Each entry deserializes into a [`CredentialBinding`] and is validated before
-/// registration. Malformed or invalid bindings are logged and skipped so a
-/// single bad entry does not stop the rest of the configuration from loading.
-fn load_bindings(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
-    let Some(binding_list) = config.get("bindings").and_then(|b| b.as_sequence()) else {
-        return;
-    };
-    for binding_value in binding_list {
-        match serde_yaml::from_value::<CredentialBinding>(binding_value.clone()) {
-            Ok(mut binding) => {
-                // The configured origin must be the exact normalized origin the
-                // broker compares against. Normalize it here so an operator who
-                // omits the explicit port (for example `https://api.example.com`
-                // instead of `https://api.example.com:443`) does not register a
-                // binding that logs success but silently fails closed on use.
-                match NormalizedOrigin::from_address(binding.origin.as_str()) {
-                    Ok(origin) => binding.origin = origin,
-                    Err(e) => {
-                        tracing::warn!(
-                            binding_id = %binding.id,
-                            error = %e,
-                            "skipping credential binding with an invalid origin"
-                        );
-                        continue;
-                    }
-                }
-                if let Err(e) = binding.validate() {
-                    tracing::warn!(
-                        binding_id = %binding.id,
-                        error = %e,
-                        "skipping invalid credential binding from config"
-                    );
-                    continue;
-                }
-                info!(
-                    binding_id = %binding.id,
-                    forward_id = %binding.forward_id,
-                    "registered credential binding from config"
-                );
-                registry.register_binding(binding);
-            }
-            Err(e) => {
-                tracing::warn!(error = %e, "failed to deserialize credential binding from config");
-            }
-        }
-    }
-}
-
-#[expect(
     clippy::print_stderr,
     clippy::exit,
     reason = "fatal error before runtime is available"
@@ -567,12 +254,10 @@ fn fatal(err: &dyn std::fmt::Display) -> ! {
 
 #[cfg(test)]
 mod tests {
-    use super::{load_bindings, load_governance_config, load_wanaku_yaml, resolve_plugins_path};
+    use super::{load_governance_config, load_wanaku_yaml, resolve_plugins_path};
     use std::path::PathBuf;
-    use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::config::PersistEnv;
     use wanaku_types::governance::{AuditLevel, EnforcementMode, FailureBehavior, NoMatchBehavior};
-    use wanaku_types::registry::BindingRegistry;
 
     #[test]
     fn plugins_path_prefers_explicit_value() {
@@ -603,96 +288,6 @@ mod tests {
             resolve_plugins_path(Some("/custom/plugins"), None),
             Some(PathBuf::from("/custom/plugins"))
         );
-    }
-
-    #[test]
-    fn load_bindings_registers_valid_binding_and_normalizes_origin() {
-        // The origin omits the explicit port on purpose: the loader must
-        // normalize it to the exact form the broker compares against.
-        let config: serde_yaml::Value = serde_yaml::from_str(
-            r#"
-bindings:
-  - id: my-binding
-    forwardId: my-forward
-    origin: "https://api.example.com"
-    mechanism:
-      type: bearer
-    secretRefs:
-      - "env:API_TOKEN"
-    allowedPurposes:
-      - discovery
-"#,
-        )
-        .unwrap();
-        let registry = InMemoryRegistry::new();
-
-        load_bindings(&config, &registry);
-
-        let binding = registry.get_binding("my-binding").unwrap();
-        assert_eq!(binding.forward_id, "my-forward");
-        assert_eq!(binding.secret_refs[0].scheme(), "env");
-        assert_eq!(binding.origin.as_str(), "https://api.example.com:443");
-    }
-
-    #[test]
-    fn load_bindings_skips_binding_with_invalid_origin() {
-        let config: serde_yaml::Value = serde_yaml::from_str(
-            r#"
-bindings:
-  - id: bad-origin
-    forwardId: my-forward
-    origin: "not-a-url"
-    mechanism:
-      type: bearer
-    secretRefs:
-      - "env:API_TOKEN"
-    allowedPurposes:
-      - discovery
-"#,
-        )
-        .unwrap();
-        let registry = InMemoryRegistry::new();
-
-        load_bindings(&config, &registry);
-
-        assert!(registry.get_binding("bad-origin").is_none());
-        assert_eq!(registry.binding_count(), 0);
-    }
-
-    #[test]
-    fn load_bindings_skips_invalid_binding() {
-        // Basic auth requires two secret references; a single one is invalid.
-        let config: serde_yaml::Value = serde_yaml::from_str(
-            r#"
-bindings:
-  - id: bad-binding
-    forwardId: my-forward
-    origin: "https://api.example.com:443"
-    mechanism:
-      type: basic
-    secretRefs:
-      - "env:ONLY_ONE"
-    allowedPurposes:
-      - invocation
-"#,
-        )
-        .unwrap();
-        let registry = InMemoryRegistry::new();
-
-        load_bindings(&config, &registry);
-
-        assert!(registry.get_binding("bad-binding").is_none());
-        assert_eq!(registry.binding_count(), 0);
-    }
-
-    #[test]
-    fn load_bindings_is_noop_without_bindings_key() {
-        let config: serde_yaml::Value = serde_yaml::from_str("forwards: []").unwrap();
-        let registry = InMemoryRegistry::new();
-
-        load_bindings(&config, &registry);
-
-        assert_eq!(registry.binding_count(), 0);
     }
 
     #[test]
