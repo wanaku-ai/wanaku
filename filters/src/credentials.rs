@@ -21,6 +21,7 @@ use tracing::{trace, warn};
 use wanaku_infra::credentials::{
     CredentialAuditRecord, CredentialAuditSink, CredentialBroker, ResolutionOutcome, record_audit,
 };
+use wanaku_infra::mcp_client::McpInvoker;
 use wanaku_infra::registry::InMemoryRegistry;
 
 // The redactor is shared with the forward discovery path, so it lives in
@@ -34,11 +35,14 @@ use wanaku_types::registry::{BindingRegistry, ForwardEntry};
 
 /// The transport inputs and output sanitizer for one forwarded MCP call.
 ///
-/// Groups the outbound headers to send upstream with the [`CredentialRedactor`]
-/// that strips any injected secret from the upstream response and errors. Passing
-/// this as one value keeps the forwarding handlers under the argument-count
-/// threshold and mirrors the `HttpContext`/`McpContext` context-struct pattern.
+/// Groups the invocation adapter and the outbound headers to send upstream with
+/// the [`CredentialRedactor`] that strips any injected secret from the upstream
+/// response and errors. Passing this as one value keeps the forwarding handlers
+/// under the argument-count threshold and mirrors the `HttpContext`/`McpContext`
+/// context-struct pattern.
 pub struct ForwardExchange {
+    /// The MCP invocation adapter taken from the request extensions.
+    pub invoker: Arc<dyn McpInvoker>,
     /// Headers to send on the forwarded call (may include brokered credentials).
     pub headers: HashMap<HeaderName, HeaderValue>,
     /// Redactor for the upstream response content and error text.

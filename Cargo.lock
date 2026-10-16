@@ -6174,6 +6174,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "http",
+ "praxis-proxy-core",
  "praxis-proxy-filter",
  "serde_json",
  "thiserror 2.0.21",
@@ -6188,6 +6189,7 @@ dependencies = [
 name = "wanaku-infra"
 version = "0.3.0"
 dependencies = [
+ "async-trait",
  "dashmap",
  "http",
  "praxis-proxy-core",
