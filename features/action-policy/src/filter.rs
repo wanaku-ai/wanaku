@@ -4,9 +4,7 @@ use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use wanaku_filters::json_rpc::{McpRequestView, RequestViewError};
 use wanaku_infra::registry::InMemoryRegistry;
-use wanaku_types::audit::{
-    AuditCategory, AuditDecision, AuditEvent, AuditStore, InMemoryAuditStore,
-};
+use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHandle, AuditStore};
 use wanaku_types::governance::{
     EnforcementMode, FailureBehavior, GovernanceConfig, GovernancePosture, NoMatchBehavior,
 };
@@ -167,7 +165,7 @@ struct RequestEvaluation<'a> {
 }
 
 struct DecisionAuditContext<'a> {
-    store: &'a InMemoryAuditStore,
+    store: &'a dyn AuditStore,
     request_id: Option<&'a str>,
     target: Option<&'a str>,
     a2a_version: Option<&'a str>,
@@ -177,7 +175,7 @@ struct DecisionAuditContext<'a> {
 impl<'a> DecisionAuditContext<'a> {
     fn from_http(ctx: &'a HttpFilterContext<'_>) -> Option<Self> {
         Some(Self {
-            store: ctx.extensions.get::<InMemoryAuditStore>()?,
+            store: ctx.extensions.get::<AuditHandle>()?,
             request_id: ctx.request_id(),
             a2a_version: ctx.get_metadata("wanaku.a2a.version"),
             target: ctx
@@ -620,6 +618,7 @@ fn policy_error(id: &serde_json::Value, reason_code: &str, message: &str) -> Fil
 mod tests {
     use super::*;
     use crate::DEFAULT_DENY_REASON_CODE;
+    use wanaku_infra::audit::InMemoryAuditStore;
     use wanaku_types::audit::AuditQuery;
     use wanaku_types::registry::{
         PromptEntry, PromptRegistry, ResourceEntry, ResourceRegistry, ToolEntry,
@@ -1224,5 +1223,120 @@ mod tests {
             }),
             FilterAction::Continue
         ));
+    }
+
+    /// Records events in memory. It has no retention and no persistence worker.
+    #[derive(Default)]
+    struct RecordingAuditStore {
+        events: std::sync::Mutex<Vec<AuditEvent>>,
+    }
+
+    impl AuditStore for RecordingAuditStore {
+        fn record(&self, event: AuditEvent) {
+            self.events.lock().expect("recorded events").push(event);
+        }
+        fn query(&self, _query: &AuditQuery) -> wanaku_types::audit::AuditPage {
+            let events = self.events.lock().expect("recorded events").clone();
+            wanaku_types::audit::AuditPage {
+                total: events.len(),
+                limit: events.len(),
+                offset: 0,
+                events,
+            }
+        }
+        fn get(&self, event_id: &str) -> Option<AuditEvent> {
+            self.events
+                .lock()
+                .expect("recorded events")
+                .iter()
+                .find(|event| event.event_id == event_id)
+                .cloned()
+        }
+        fn health(&self) -> wanaku_types::audit::AuditHealth {
+            wanaku_types::audit::AuditHealth {
+                healthy: true,
+                dropped_events: 0,
+                retained_events: self.events.lock().expect("recorded events").len(),
+                capacity: usize::MAX,
+                last_error: None,
+            }
+        }
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "fixture builds a real request context with a recording audit handle"
+    )]
+    fn audited_requests_record_through_extension_handle_without_store_runtime() {
+        let recorder = std::sync::Arc::new(RecordingAuditStore::default());
+        let filters = praxis_filter::FilterRegistry::with_builtins();
+        let pipeline = praxis_filter::FilterPipeline::build(&mut [], &filters).expect("pipeline");
+        let mut headers = http::HeaderMap::new();
+        headers.insert("x-request-id", http::HeaderValue::from_static("request-9"));
+        let http_request = praxis_filter::Request {
+            method: http::Method::POST,
+            uri: http::Uri::from_static("/mcp"),
+            headers,
+        };
+        let mut protocol = praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+        let mut ctx = protocol.build_filter_context(&pipeline, &http_request, None);
+        ctx.extensions.insert(AuditHandle::new(recorder.clone()));
+        ctx.set_metadata(wanaku_filters::MCP_NAME_KEY, "unsafe");
+
+        let registry = InMemoryRegistry::new();
+        let posture = GovernancePosture::default();
+        let id = serde_json::json!(7);
+        let policy = compile_policy(&serde_json::json!({
+            "id": "deny-unsafe", "effect": "deny",
+            "selectors": {"operation": TOOLS_CALL, "target_name": {"matcher": "exact", "value": "unsafe"}}
+        }));
+        let body = request(
+            TOOLS_CALL,
+            &serde_json::json!({"name": "unsafe", "arguments": {}}),
+        );
+        let input = RequestEvaluation {
+            method: TOOLS_CALL,
+            namespace: DEFAULT_NAMESPACE,
+            body: Some(&body),
+            policy: &policy,
+            posture: &posture,
+            registry: &registry,
+            id: &id,
+            agent: None,
+        };
+        assert_denied(
+            evaluate_request_audited(&ctx, input),
+            DEFAULT_DENY_REASON_CODE,
+        );
+        let malformed = Bytes::from_static(b"not json");
+        let malformed_action = evaluate_request_audited(
+            &ctx,
+            RequestEvaluation {
+                body: Some(&malformed),
+                ..input
+            },
+        );
+        assert!(matches!(malformed_action, FilterAction::Reject(_)));
+
+        let events = recorder.events.lock().expect("recorded events");
+        assert_eq!(events.len(), 2);
+        let denied = &events[0];
+        assert_eq!(denied.category, AuditCategory::Decision);
+        assert_eq!(denied.decision, AuditDecision::Block);
+        assert_eq!(denied.operation, TOOLS_CALL);
+        assert_eq!(denied.reason_code, DEFAULT_DENY_REASON_CODE);
+        assert_eq!(denied.namespace.as_deref(), Some(DEFAULT_NAMESPACE));
+        assert_eq!(denied.filter.as_deref(), Some("wanaku_action_policy"));
+        assert_eq!(denied.target.as_deref(), Some("unsafe"));
+        assert_eq!(denied.target_type.as_deref(), Some("tool"));
+        assert_eq!(denied.request_id.as_deref(), Some("request-9"));
+        assert_eq!(denied.correlation_id, "request-9");
+        assert_eq!(
+            denied.attributes["deny_rule_ids"],
+            serde_json::json!(["deny-unsafe"])
+        );
+        assert_eq!(events[1].decision, AuditDecision::RejectMalformed);
+        assert_eq!(events[1].reason_code, INVALID_ACTION_REASON_CODE);
     }
 }

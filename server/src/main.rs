@@ -305,13 +305,13 @@ fn build_features(
     let audit = build_audit(metrics_store, wanaku_config);
     let credential_audit_sink = audit.credential_audit_sink();
     let action_policy = build_action_policy();
-    let evaluator = build_evaluator(metrics_store, audit.store(), governance);
+    let evaluator = build_evaluator(metrics_store, audit.audit_handle(), governance);
     let simulation = build_simulation(
         action_policy.state(),
         evaluator.state(),
         registry,
         governance,
-        audit.store(),
+        audit.audit_handle(),
     );
 
     (
@@ -350,7 +350,7 @@ fn build_simulation(
     evaluators: wanaku_feature_evaluator::state::EvaluatorState,
     registry: &InMemoryRegistry,
     governance: &GovernanceConfig,
-    audit: wanaku_types::audit::InMemoryAuditStore,
+    audit: wanaku_types::audit::AuditHandle,
 ) -> wanaku_feature_simulation::SimulationFeature {
     wanaku_feature_simulation::SimulationFeature::new(wanaku_feature_simulation::SimulationDeps {
         policy,
@@ -386,7 +386,7 @@ fn resolve_plugins_path(
 
 fn build_evaluator(
     metrics_store: &wanaku_infra::metrics::MetricsStore,
-    audit: wanaku_types::audit::InMemoryAuditStore,
+    audit: wanaku_types::audit::AuditHandle,
     governance: &GovernanceConfig,
 ) -> wanaku_feature_evaluator::EvaluatorFeature {
     let mut evaluator = wanaku_feature_evaluator::EvaluatorFeature::new()
