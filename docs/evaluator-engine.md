@@ -312,6 +312,28 @@ processor:
 
 The WASM script can call `block()`, `pass()`, `warn()`, `filterTools()`, or `setMetadata()` based on its analysis of the LLM output.
 
+### Processor Resource Limits
+
+Production processors run on a bounded runner. The runner keeps slow or runaway processors away from the async request workers.
+
+- The runner executes each processor invocation on the Tokio blocking thread pool.
+- The runner admits a limited number of concurrent invocations. Each invocation holds one permit.
+- An invocation keeps its permit until the processor work stops. A cancelled request or a request timeout does not release the permit early.
+- When all permits are in use, the runner does not queue the invocation. The runner rejects it with the reason `processor_overloaded`.
+- Each invocation gets a fuel budget, a memory budget, and a wall-clock deadline. The processor stops with `processor_execution_failed` when it exceeds one of these budgets.
+- A failed invocation does not affect the next invocation. Each invocation gets a fresh instance.
+
+| Limit | Default | Environment variable |
+|---|---|---|
+| Concurrent invocations | Number of available CPUs | `WANAKU_EVALUATOR_PROCESSOR_CONCURRENCY` |
+| Wall-clock deadline | `1000` ms | `WANAKU_EVALUATOR_PROCESSOR_TIMEOUT_MS` |
+| Linear memory | `67108864` bytes (64 MiB) | `WANAKU_EVALUATOR_PROCESSOR_MEMORY_BYTES` |
+| Fuel | `10000000` | `WANAKU_EVALUATOR_PROCESSOR_FUEL` |
+
+The `processor_overloaded`, `processor_execution_failed`, and `processor_instantiation_failed` reasons follow the [Error Policy](#error-policy). With `on_failure: deny`, enforce mode blocks the request. With `on_failure: allow`, enforce mode permits the request. Audit mode records the failure and permits the request. Audit events show the reason with the `evaluator_` prefix, for example `evaluator_processor_overloaded`.
+
+The wall-clock deadline stops guest code. It cannot stop a host import that blocks. The current host imports do not block.
+
 ### Error Policy
 
 - `governance.default.on_failure: allow` permits requests after evaluator failures.
@@ -1163,6 +1185,7 @@ Users of earlier 0.3.0 pre-release builds must update both startup configuration
 - Empty engine output is a failure.
 - Invalid LLM output gets one schema-correction attempt. If correction fails, the processor does not run.
 - Missing or failed processors, registry state, and internal state follow the failure policy.
+- Processor budget failures and runner overload follow the failure policy. See [Processor Resource Limits](#processor-resource-limits).
 - Invalid startup configuration stops startup by default. The `evaluator_startup_failure: deny` option retains an explicit invalid runtime instead.
 - Invalid management updates do not replace the working revision.
 - Audit mode does not block traffic or apply processor mutations. Basic audit skips external engines. Full audit permits external calls only by explicit opt-in.
@@ -1313,6 +1336,7 @@ This re-compiles all WASM files referenced in the config.
 - **LLM calls are slow** (100-500ms per classification). Evaluators add latency to the request path. Use them sparingly, or only for high-stakes operations (e.g., `tools/call`, not `tools/list`).
 - **WASM compilation is expensive** (10-50ms per module). The engine caches compiled modules, so only the first load (or hot-reload) is slow.
 - **WASM execution is fast** (sub-millisecond for simple logic). A compiled action has minimal overhead.
+- **WASM execution is bounded.** Processors run on the blocking thread pool with a concurrency limit. See [Processor Resource Limits](#processor-resource-limits).
 - **Conversation history is capped at 10 interactions** to keep LLM context bounded. If you need more, fetch it explicitly in your WASM action via `getHistory()`.
 
 ## Security Considerations

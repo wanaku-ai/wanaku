@@ -7,7 +7,7 @@ use wanaku_types::interactions::InMemoryInteractionStore;
 use wanaku_types::mcp::McpContext;
 
 use crate::config::{EvaluationEngine, EvaluatorDef};
-pub use crate::engine::SimulationLimits;
+pub use crate::engine::ProcessorLimits as SimulationLimits;
 use crate::engine::{CompiledEvaluator, ExecutionContext};
 use crate::evaluation::EvaluationError;
 use crate::outcome::{EvaluatorFailure, Outcome, Skip};

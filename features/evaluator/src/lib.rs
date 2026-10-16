@@ -14,6 +14,7 @@ pub use host::types as wit_types;
 pub mod revision;
 pub mod revision_persistence;
 mod routes;
+pub mod runner;
 pub mod schema;
 pub mod simulation;
 pub mod state;
@@ -43,7 +44,8 @@ impl EvaluatorFeature {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            state: EvaluatorState::new(),
+            state: EvaluatorState::new()
+                .with_processor_runner(crate::runner::ProcessorRunner::from_env()),
             audit: None,
             governance: wanaku_types::governance::GovernanceConfig::default(),
             startup_deny: std::sync::atomic::AtomicBool::new(false),
