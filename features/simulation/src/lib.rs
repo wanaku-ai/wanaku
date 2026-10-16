@@ -19,7 +19,7 @@ use wanaku_feature_action_policy::ActionPolicyState;
 use wanaku_feature_evaluator::state::EvaluatorState;
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::{
-    audit::{AuditCategory, AuditDecision, AuditEvent, AuditStore, InMemoryAuditStore},
+    audit::{AuditCategory, AuditDecision, AuditEvent, AuditHandle, AuditStore},
     feature::{Feature, HttpContext},
     governance::GovernanceConfig,
 };
@@ -30,7 +30,7 @@ pub struct SimulationDeps {
     pub evaluators: EvaluatorState,
     pub registry: InMemoryRegistry,
     pub governance: GovernanceConfig,
-    pub audit: InMemoryAuditStore,
+    pub audit: AuditHandle,
 }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]

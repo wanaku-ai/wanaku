@@ -220,6 +220,31 @@ export WANAKU_PERSIST_PATH=/data/registry
 
 On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On an orderly shutdown, it writes the current registry. Set `WANAKU_PERSIST_BACKEND=none` to disable persistence. File persistence supports one writer; it is not a shared production database.
 
+## The Audit Store
+
+Audit code has two owners: a contract in `wanaku-types` and a runtime in `wanaku-infra`. This split keeps storage changes inside the runtime, so audit producers do not change when the store changes.
+
+**Contract ownership (`types/src/audit.rs`):**
+
+- The audit DTOs: `AuditEvent`, `AuditQuery`, `AuditPage`, and `AuditHealth`. These types define the audit wire schema.
+- The `AuditStore` trait: `record`, `query`, `get`, and `health`.
+- The `AuditPersistence` and `AuditFailureObserver` traits.
+- `AuditHandle`: a cloneable handle around `Arc<dyn AuditStore>`.
+
+**Runtime ownership (`infra/src/audit.rs`):**
+
+- `InMemoryAuditStore`: retention, native and external capacity, redaction, and query matching.
+- The persistence worker. The last store owner flushes and joins the worker when it drops.
+- Checked semantic admission: `InMemoryAuditStore::accept_semantic`. This method deduplicates external events and enforces the external capacity.
+
+**Rules:**
+
+- The audit feature (`features/audit/`) creates the store. The feature puts an `AuditHandle` into the request extensions.
+- Audit producers get the handle with `ctx.extensions.get::<AuditHandle>()`. The action-policy, evaluator, simulation, and credential audit producers use only the handle.
+- Producers do not use `InMemoryAuditStore` in production code.
+- `AuditHandle` does not give access to semantic ingestion. Only the audit feature calls `accept_semantic` for `POST /api/v1/audit/semantic`. The ingestion route does not use `record`.
+- Tests can wrap a recording fake in `AuditHandle`. A recording fake does not start a persistence worker.
+
 ## Tool Routing
 
 All tool execution in Wanaku happens via MCP forwarding. When a tool call arrives (`tools/call`), the tool_call filter:

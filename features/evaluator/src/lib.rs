@@ -33,7 +33,7 @@ use crate::state::EvaluatorState;
 
 pub struct EvaluatorFeature {
     state: EvaluatorState,
-    audit: Option<wanaku_types::audit::InMemoryAuditStore>,
+    audit: Option<wanaku_types::audit::AuditHandle>,
     governance: wanaku_types::governance::GovernanceConfig,
     startup_deny: std::sync::atomic::AtomicBool,
 }
@@ -62,7 +62,7 @@ impl EvaluatorFeature {
     }
 
     #[must_use]
-    pub fn with_audit(mut self, store: wanaku_types::audit::InMemoryAuditStore) -> Self {
+    pub fn with_audit(mut self, store: wanaku_types::audit::AuditHandle) -> Self {
         self.audit = Some(store);
         self
     }
@@ -275,7 +275,7 @@ const fn administrative_operation(route: &EvaluatorRoute) -> Option<&'static str
 }
 
 fn record_administrative_event(
-    store: Option<&wanaku_types::audit::InMemoryAuditStore>,
+    store: Option<&wanaku_types::audit::AuditHandle>,
     ctx: &HttpContext<'_>,
     operation: &str,
     status: http::StatusCode,
@@ -362,7 +362,9 @@ fn parse_evaluator_yaml(eval_val: &serde_yaml::Value) -> Option<Vec<crate::confi
 #[cfg(test)]
 mod audit_tests {
     use http::{HeaderMap, HeaderValue, StatusCode};
-    use wanaku_types::audit::{AuditQuery, AuditStore as _, InMemoryAuditStore};
+    use std::sync::Arc;
+    use wanaku_infra::audit::InMemoryAuditStore;
+    use wanaku_types::audit::{AuditHandle, AuditQuery, AuditStore as _};
 
     use super::record_administrative_event;
 
@@ -420,7 +422,7 @@ mod audit_tests {
 
     #[test]
     fn administrative_events_use_request_correlation_header() {
-        let store = InMemoryAuditStore::new(10);
+        let store = AuditHandle::new(Arc::new(InMemoryAuditStore::new(10)));
         let mut headers = HeaderMap::new();
         headers.insert("x-request-id", HeaderValue::from_static("request-42"));
         let ctx = wanaku_types::feature::HttpContext::new(
