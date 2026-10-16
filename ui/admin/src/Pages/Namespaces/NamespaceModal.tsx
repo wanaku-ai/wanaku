@@ -31,10 +31,8 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
   }
 
   const handleSubmit = () => {
-    onSubmit({
-      name: name ?? '',
-      labels: openedNamespace?.labels,
-    });
+    // The name is immutable in the edit flow. Keep the other stored metadata.
+    onSubmit(openedNamespace ? { ...openedNamespace } : { name: name ?? '' });
   };
 
   return (

@@ -4,6 +4,8 @@ import {
   listNamespacesResponse,
   createNamespace as apiCreateNamespace,
   createNamespaceResponse,
+  updateNamespace as apiUpdateNamespace,
+  updateNamespaceResponse,
   deleteNamespace,
   deleteNamespaceResponse,
 } from '../../api/wanaku-router-api';
@@ -30,13 +32,12 @@ export const useNamespaces = () => {
   );
 
   const updateNamespace = useCallback(
-    async (namespace: NamespaceEntry, options?: RequestInit): Promise<void> => {
+    (namespace: NamespaceEntry, options?: RequestInit): Promise<updateNamespaceResponse> => {
       if (!namespace.name) {
-        throw new Error('Namespace name is required for update');
+        return Promise.reject(new Error('Namespace name is required for update'));
       }
       clearNamespacesCache();
-      await deleteNamespace(namespace.name, options);
-      await apiCreateNamespace(namespace, options);
+      return apiUpdateNamespace(namespace.name, namespace, options);
     },
     [],
   );
