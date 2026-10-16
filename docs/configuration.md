@@ -207,6 +207,19 @@ When disabled, headers are forwarded only as raw HTTP headers on the downstream 
 
 Features (mcp-metadata, evaluator, etc.) define their own environment variables.
 
+### Evaluator Processor Runner
+
+The evaluator runs production WASM processors on a bounded runner. These variables set the runner limits. The server reads them at startup. A missing, invalid, or zero value keeps the default.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `WANAKU_EVALUATOR_PROCESSOR_CONCURRENCY` | Number of available CPUs | Maximum concurrent processor invocations. The runner rejects more invocations with `processor_overloaded`. |
+| `WANAKU_EVALUATOR_PROCESSOR_TIMEOUT_MS` | `1000` | Wall-clock deadline for one invocation. |
+| `WANAKU_EVALUATOR_PROCESSOR_MEMORY_BYTES` | `67108864` | Linear memory limit for one invocation. |
+| `WANAKU_EVALUATOR_PROCESSOR_FUEL` | `10000000` | Fuel budget for one invocation. |
+
+Runner failures follow the governance `on_failure` behavior. See [Processor Resource Limits](evaluator-engine.md#processor-resource-limits).
+
 ### Authentication with oauth2-proxy
 
 Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. Wanaku provides OAuth metadata and forwards token requests to the configured issuer.
