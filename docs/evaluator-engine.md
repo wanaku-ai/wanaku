@@ -1056,17 +1056,33 @@ echo "Done."
 
 ### Rust Integration Tests (no server needed)
 
-The evaluator crate has integration tests that run in the process. The test runner skips WASM engine tests if the action `.wasm` files do not exist.
+The evaluator crate has two in-process test suites: the default suite and the example-action suite.
+
+**Default suite.** This suite needs no build prerequisites. It does not need `cargo-component` or `actions/dist/`. Host and runtime tests use the minimal WAT components in `features/evaluator/tests/fixtures/`. These tests cover activation, CAS conflicts and metrics, concurrent activation, snapshot immutability, restart, and host side effects. If a fixture is missing, the test fails.
 
 ```bash
-# Run all integration tests
 cargo test -p wanaku-feature-evaluator
-
-# Build WASM actions so engine tests run (instead of skipping)
-cd actions/safety-review && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
 ```
 
-Tests cover: config parsing (including `result_schema`), trigger matching, evaluator state management, schema validation, action result variants, and WASM action execution with hardcoded `llm_result` (no LLM needed).
+The default suite also covers config parsing (including `result_schema`), trigger matching, evaluator state management, schema validation, and action result variants.
+
+**Example-action suite.** This suite tests the compiled example actions in `actions/dist/`, for example the safety-review and OPA allow algorithms. The suite contains `features/evaluator/tests/example_actions.rs` and the filter unit tests that run these actions. These tests use the `#[ignore]` attribute, so `cargo test` does not run them. If you run the suite and an action `.wasm` file is missing, the test fails.
+
+```bash
+# Build the Rust example actions into actions/dist/
+mkdir -p actions/dist
+(cd actions/safety-review && cargo component build --release)
+cp actions/safety-review/target/wasm32-wasip1/release/safety_review_action.wasm actions/dist/
+(cd actions/assembly-filter && cargo component build --release)
+cp actions/assembly-filter/target/wasm32-wasip1/release/assembly_filter_action.wasm actions/dist/
+(cd actions/opa-allow && cargo component build --release)
+cp actions/opa-allow/target/wasm32-wasip1/release/opa_allow_action.wasm actions/dist/
+
+# Run the example-action suite
+cargo test -p wanaku-feature-evaluator --lib --test example_actions -- --ignored
+```
+
+The example-action tests use a hardcoded `llm_result`, so they do not need an LLM. CI runs both suites.
 
 ### Rust E2E Tests (server required, no LLM needed)
 

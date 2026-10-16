@@ -1,12 +1,10 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //! Integration tests for the evaluator engine.
 //!
-//! Tests that need pre-built WASM actions skip automatically if the
-//! `.wasm` files are not found. Build them with:
-//!
-//! ```sh
-//! cd actions/safety-review && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
-//! ```
+//! These tests need no build prerequisites. Host and runtime invariants use
+//! the committed minimal WAT components in `tests/fixtures/`, and a missing
+//! fixture fails the test. Tests of the compiled example actions in
+//! `actions/dist/` are in the separate `example_actions` suite.
 
 use std::path::PathBuf;
 
@@ -56,10 +54,18 @@ fn safety_evaluator_with_schema(name: &str) -> EvaluatorDef {
     eval
 }
 
-fn wasm_path(name: &str) -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../actions/dist")
-        .join(name)
+/// Resolve a committed WAT component fixture. A missing fixture fails the
+/// test: host and runtime invariants must never pass without running.
+fn fixture_path(name: &str) -> PathBuf {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures")
+        .join(name);
+    assert!(
+        path.is_file(),
+        "missing committed WAT fixture: {}",
+        path.display()
+    );
+    path
 }
 
 // =====================================================================
@@ -379,14 +385,7 @@ mod state {
 
     #[test]
     fn activation_installs_snapshot_matching_revision() {
-        let path = wasm_path("safety_review_action.wasm");
-        if !path.exists() {
-            eprintln!(
-                "SKIP: {} not found — build WASM actions first",
-                path.display()
-            );
-            return;
-        }
+        let path = fixture_path("pass.wat");
 
         let state = EvaluatorState::new();
         state.load_llm_connections(vec![test_connection()]).unwrap();
@@ -442,14 +441,7 @@ mod state {
 
     #[test]
     fn cas_conflict_does_not_change_active_state_gauges() {
-        let path = wasm_path("safety_review_action.wasm");
-        if !path.exists() {
-            eprintln!(
-                "SKIP: {} not found — build WASM actions first",
-                path.display()
-            );
-            return;
-        }
+        let path = fixture_path("pass.wat");
 
         let store = MetricsStore::new();
         let state = EvaluatorState::new().with_metrics(store.clone());
@@ -491,14 +483,7 @@ mod state {
         reason = "synchronous test needs real OS threads to exercise concurrent activation locking; the tokio guidance does not apply"
     )]
     fn concurrent_activations_keep_snapshot_and_revision_consistent() {
-        let path = wasm_path("safety_review_action.wasm");
-        if !path.exists() {
-            eprintln!(
-                "SKIP: {} not found — build WASM actions first",
-                path.display()
-            );
-            return;
-        }
+        let path = fixture_path("pass.wat");
 
         let state = EvaluatorState::new();
         state.load_llm_connections(vec![test_connection()]).unwrap();
@@ -539,14 +524,7 @@ mod state {
 
     #[test]
     fn captured_snapshot_is_immutable_across_activation() {
-        let path = wasm_path("safety_review_action.wasm");
-        if !path.exists() {
-            eprintln!(
-                "SKIP: {} not found — build WASM actions first",
-                path.display()
-            );
-            return;
-        }
+        let path = fixture_path("pass.wat");
 
         let state = EvaluatorState::new();
         state.load_llm_connections(vec![test_connection()]).unwrap();
@@ -880,237 +858,86 @@ mod action_result {
 }
 
 // =====================================================================
-// WASM engine (requires pre-built actions in actions/dist/)
-//
-// These tests skip automatically if the WASM files are not built.
-// Build them with:
-//   cd actions/safety-review && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
-//   cd actions/safety-warn  && cargo component build --release && cp target/wasm32-wasip1/release/*.wasm ../dist/
+// WASM host (committed WAT fixtures, no build prerequisites)
 // =====================================================================
 
-mod engine {
+mod host {
     use super::*;
-    use std::sync::Arc;
-    use wanaku_feature_evaluator::engine::CompiledEvaluator;
-    use wanaku_feature_evaluator::schema::CompiledSchema;
+    use wanaku_feature_evaluator::engine::{CompiledEvaluator, ExecutionContext, ExecutionMode};
     use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::interactions::InMemoryInteractionStore;
+    use wanaku_types::registry::ToolRegistry;
 
-    macro_rules! require_wasm {
-        ($name:expr) => {{
-            let p = wasm_path($name);
-            if !p.exists() {
-                eprintln!("SKIP: {} not found — build WASM actions first", p.display());
-                return;
-            }
-            p
-        }};
-    }
-
-    fn eval_context(
-        method: &str,
-        llm_result: &str,
-    ) -> wanaku_feature_evaluator::wit_types::EvaluationContext {
+    fn eval_context() -> wanaku_feature_evaluator::wit_types::EvaluationContext {
         wanaku_feature_evaluator::wit_types::EvaluationContext {
-            method: method.to_owned(),
+            method: "tools/call".to_owned(),
             namespace: "default".to_owned(),
-            tool_name: Some("restart-database".to_owned()),
-            arguments: vec![("target".to_owned(), "prod".to_owned())],
-            llm_result: llm_result.to_owned(),
+            tool_name: Some("tool".to_owned()),
+            arguments: vec![],
+            llm_result: String::new(),
             conversation_id: None,
         }
     }
 
-    #[test]
-    fn audit_capabilities_prevent_real_processor_registry_writes() {
-        use wanaku_types::registry::ToolRegistry;
-        let path = require_wasm!("assembly_filter_action.wasm");
-        let processor = CompiledEvaluator::from_file("assembly", &path).unwrap();
+    /// Registry with the tool that `side-effects.wat` copies to `prod`.
+    fn registry_with_tool() -> InMemoryRegistry {
         let registry = InMemoryRegistry::new();
         registry.register_tool(
             serde_json::from_value(serde_json::json!({
-                "name": "alpha", "description": "test", "uri": "test", "type": "mcp-forward",
-                "inputSchema": {}, "namespace": "source"
+                "name": "tool", "description": "test", "uri": "test://tool",
+                "type": "mcp-forward", "inputSchema": {}, "namespace": "default"
             }))
             .unwrap(),
         );
-        let before = serde_json::to_value(registry.list_tools()).unwrap();
+        registry
+    }
+
+    fn run_side_effects(registry: &InMemoryRegistry, allow_side_effects: bool) -> bool {
+        let processor =
+            CompiledEvaluator::from_file("side-effects", &fixture_path("side-effects.wat"))
+                .expect("side-effects fixture must compile");
         let result = processor
             .evaluate(
-                wanaku_feature_evaluator::engine::ExecutionContext {
+                ExecutionContext {
                     registry: registry.clone(),
                     interactions: InMemoryInteractionStore::new(10),
                     compiled_schema: None,
-                    mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
+                    mode: ExecutionMode::Production,
                     limits: None,
-                    allow_side_effects: false,
+                    allow_side_effects,
                 },
-                eval_context("tools/list", r#"["alpha"]"#),
+                eval_context(),
             )
-            .unwrap();
-        assert!(matches!(result.action, ActionResult::FilterTools(_)));
-        assert!(result.side_effects_suppressed);
+            .expect("side-effects fixture must run");
+        assert!(matches!(result.action, ActionResult::Pass));
+        result.side_effects_suppressed
+    }
+
+    #[test]
+    fn host_applies_registry_write_when_side_effects_allowed() {
+        let registry = registry_with_tool();
+        assert!(!run_side_effects(&registry, true));
+        assert_eq!(
+            registry.get_tool("tool").unwrap().namespace.as_deref(),
+            Some("prod"),
+            "allowed host call must apply the registry write"
+        );
+    }
+
+    #[test]
+    fn audit_capabilities_prevent_processor_registry_writes() {
+        let registry = registry_with_tool();
+        let before = serde_json::to_value(registry.list_tools()).unwrap();
+        assert!(
+            run_side_effects(&registry, false),
+            "suppressed host call must be reported"
+        );
         assert_eq!(serde_json::to_value(registry.list_tools()).unwrap(), before);
     }
 
     #[test]
-    fn safety_action_blocks_on_red() {
-        let path = require_wasm!("safety_review_action.wasm");
-        let compiled = CompiledEvaluator::from_file("safety-review", &path)
-            .expect("failed to compile safety-review WASM");
-
-        let ctx = eval_context("tools/call", r#"{"level": "red", "reason": "dangerous"}"#);
-        let result = compiled
-            .evaluate(
-                wanaku_feature_evaluator::engine::ExecutionContext {
-                    registry: InMemoryRegistry::new(),
-                    interactions: InMemoryInteractionStore::new(100),
-                    compiled_schema: None,
-                    mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
-                    limits: None,
-                    allow_side_effects: true,
-                },
-                ctx,
-            )
-            .expect("WASM evaluator execution failed")
-            .action;
-
-        assert!(
-            matches!(result, ActionResult::Block(_)),
-            "safety-review should block on red, got: {result:?}"
-        );
-    }
-
-    #[test]
-    fn safety_action_warns_on_yellow() {
-        let path = require_wasm!("safety_review_action.wasm");
-        let compiled = CompiledEvaluator::from_file("safety-review", &path)
-            .expect("failed to compile safety-review WASM");
-
-        let ctx = eval_context("tools/call", r#"{"level": "yellow", "reason": "elevated"}"#);
-        let result = compiled
-            .evaluate(
-                wanaku_feature_evaluator::engine::ExecutionContext {
-                    registry: InMemoryRegistry::new(),
-                    interactions: InMemoryInteractionStore::new(100),
-                    compiled_schema: None,
-                    mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
-                    limits: None,
-                    allow_side_effects: true,
-                },
-                ctx,
-            )
-            .expect("WASM evaluator execution failed")
-            .action;
-
-        assert!(
-            matches!(result, ActionResult::Warn(_)),
-            "safety-review should warn on yellow, got: {result:?}"
-        );
-    }
-
-    #[test]
-    fn safety_action_passes_on_green() {
-        let path = require_wasm!("safety_review_action.wasm");
-        let compiled = CompiledEvaluator::from_file("safety-review", &path)
-            .expect("failed to compile safety-review WASM");
-
-        let ctx = eval_context("tools/call", r#"{"level": "green", "reason": "safe"}"#);
-        let result = compiled
-            .evaluate(
-                wanaku_feature_evaluator::engine::ExecutionContext {
-                    registry: InMemoryRegistry::new(),
-                    interactions: InMemoryInteractionStore::new(100),
-                    compiled_schema: None,
-                    mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
-                    limits: None,
-                    allow_side_effects: true,
-                },
-                ctx,
-            )
-            .expect("WASM evaluator execution failed")
-            .action;
-
-        assert!(
-            matches!(result, ActionResult::Pass),
-            "safety-review should pass on green, got: {result:?}"
-        );
-    }
-
-    #[test]
-    fn block_action_includes_llm_result_in_reason() {
-        let path = require_wasm!("safety_review_action.wasm");
-        let compiled = CompiledEvaluator::from_file("safety-review", &path)
-            .expect("failed to compile safety-review WASM");
-
-        let llm_output = r#"{"level": "red", "reason": "nuclear launch detected"}"#;
-        let ctx = eval_context("tools/call", llm_output);
-        let result = compiled
-            .evaluate(
-                wanaku_feature_evaluator::engine::ExecutionContext {
-                    registry: InMemoryRegistry::new(),
-                    interactions: InMemoryInteractionStore::new(100),
-                    compiled_schema: None,
-                    mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
-                    limits: None,
-                    allow_side_effects: true,
-                },
-                ctx,
-            )
-            .expect("WASM evaluator execution failed")
-            .action;
-
-        if let ActionResult::Block(reason) = result {
-            assert!(
-                reason.contains("nuclear launch detected"),
-                "block reason should contain LLM output, got: {reason}"
-            );
-        } else {
-            panic!("expected Block, got: {result:?}");
-        }
-    }
-
-    #[test]
-    fn evaluate_with_schema_passed_to_host() {
-        let path = require_wasm!("safety_review_action.wasm");
-        let compiled = CompiledEvaluator::from_file("safety-review", &path)
-            .expect("failed to compile safety-review WASM");
-
-        let schema_val = serde_json::json!({
-            "type": "object",
-            "properties": {
-                "level": { "type": "string" },
-                "reason": { "type": "string" }
-            },
-            "required": ["level", "reason"]
-        });
-        let compiled_schema = CompiledSchema::compile(&schema_val).map(Arc::new);
-
-        let ctx = eval_context("tools/call", r#"{"level": "red", "reason": "test"}"#);
-        let result = compiled
-            .evaluate(
-                wanaku_feature_evaluator::engine::ExecutionContext {
-                    registry: InMemoryRegistry::new(),
-                    interactions: InMemoryInteractionStore::new(100),
-                    compiled_schema,
-                    mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
-                    limits: None,
-                    allow_side_effects: true,
-                },
-                ctx,
-            )
-            .expect("WASM evaluator execution failed")
-            .action;
-
-        assert!(
-            matches!(result, ActionResult::Block(_)),
-            "should still block with schema present, got: {result:?}"
-        );
-    }
-
-    #[test]
     fn state_compiles_and_caches_wasm() {
-        let path = require_wasm!("safety_review_action.wasm");
+        let path = fixture_path("pass.wat");
 
         let state = EvaluatorState::new();
         let mut eval = safety_evaluator("compile-test", "tools/call", None);
@@ -1197,14 +1024,7 @@ mod persistence {
 
     #[test]
     fn active_revision_and_runtime_survive_restart() {
-        let path = wasm_path("safety_review_action.wasm");
-        if !path.exists() {
-            eprintln!(
-                "SKIP: {} not found — build WASM actions first",
-                path.display()
-            );
-            return;
-        }
+        let path = fixture_path("pass.wat");
         let dir = temp_dir("wanaku-eval-persist-restart");
         let file = dir.join("evaluator-revisions.json");
 
@@ -1246,14 +1066,7 @@ mod persistence {
 
     #[test]
     fn changed_startup_config_records_new_revision() {
-        let path = wasm_path("safety_review_action.wasm");
-        if !path.exists() {
-            eprintln!(
-                "SKIP: {} not found — build WASM actions first",
-                path.display()
-            );
-            return;
-        }
+        let path = fixture_path("pass.wat");
         let dir = temp_dir("wanaku-eval-persist-changed");
         let file = dir.join("evaluator-revisions.json");
 

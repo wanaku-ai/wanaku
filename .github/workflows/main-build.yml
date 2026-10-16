@@ -57,6 +57,9 @@ jobs:
       - name: Test
         run: cargo test --verbose
 
+      - name: Test evaluator example actions
+        run: cargo test --verbose -p wanaku-feature-evaluator --lib --test example_actions -- --ignored
+
       - name: Login to Container Registry
         if: env.QUAY_USERNAME != '' && env.QUAY_PASSWORD != ''
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0

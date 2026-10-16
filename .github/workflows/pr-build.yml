@@ -89,3 +89,5 @@ jobs:
         run: cargo build --verbose --no-default-features -p wanaku-server
       - name: Test
         run: cargo test --verbose
+      - name: Test evaluator example actions
+        run: cargo test --verbose -p wanaku-feature-evaluator --lib --test example_actions -- --ignored

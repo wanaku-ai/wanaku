@@ -944,6 +944,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires actions/dist built with cargo-component"]
     #[expect(
         clippy::too_many_lines,
         reason = "end-to-end mode matrix includes remote server, WASM, and audit assertions"
@@ -951,7 +952,11 @@ mod tests {
     async fn full_audit_calls_remote_and_processor_without_enforcing_block() {
         let wasm = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../actions/dist/safety_review_action.wasm");
-        assert!(wasm.exists(), "build WASM actions before evaluator tests");
+        assert!(
+            wasm.is_file(),
+            "missing example action {}: build the actions with cargo-component first",
+            wasm.display()
+        );
         let request = request();
         for mode in [EnforcementMode::Enforce, EnforcementMode::Audit] {
             let server = wiremock::MockServer::start().await;
@@ -1166,7 +1171,11 @@ mod tests {
         use wiremock::matchers::{body_json, header, method, path};
         let wasm = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../actions/dist/opa_allow_action.wasm");
-        assert!(wasm.exists(), "build WASM actions before evaluator tests");
+        assert!(
+            wasm.is_file(),
+            "missing example action {}: build the actions with cargo-component first",
+            wasm.display()
+        );
         let server = wiremock::MockServer::start().await;
         // The input carries typed arguments and only the documented fields.
         wiremock::Mock::given(method("POST"))
@@ -1228,6 +1237,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires actions/dist built with cargo-component"]
     #[expect(
         clippy::too_many_lines,
         reason = "decision matrix verifies traffic and audit outcomes together"
@@ -1270,6 +1280,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires actions/dist built with cargo-component"]
     #[expect(
         clippy::too_many_lines,
         reason = "failure category and failure policy matrix stays together"
@@ -1342,6 +1353,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires actions/dist built with cargo-component"]
     async fn full_audit_queries_opa_without_enforcing_denial() {
         let posture = GovernancePosture {
             mode: EnforcementMode::Audit,
