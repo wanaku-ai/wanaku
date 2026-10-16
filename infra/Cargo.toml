@@ -15,6 +15,7 @@ workspace = true
 openapi = ["dep:utoipa", "wanaku-types/openapi"]
 
 [dependencies]
+async-trait = { workspace = true }
 praxis-core = { workspace = true }
 praxis-tls = { workspace = true }
 dashmap = { workspace = true }

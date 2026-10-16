@@ -159,6 +159,10 @@ impl ResourceReadFilter {
                 ));
             };
             let address = forward.address.clone();
+            let invoker = match crate::invoker::invoker_from_extensions(ctx, &parsed.id) {
+                Ok(invoker) => invoker,
+                Err(action) => return Ok(action),
+            };
 
             let mut forward_headers: HashMap<HeaderName, HeaderValue> = HashMap::new();
             let request = crate::credentials::ForwardCredentialRequest {
@@ -184,6 +188,7 @@ impl ResourceReadFilter {
                 Err(action) => return Ok(action),
             };
             let exchange = crate::credentials::ForwardExchange {
+                invoker,
                 headers: forward_headers,
                 redactor,
             };
@@ -204,10 +209,6 @@ impl ResourceReadFilter {
         ))
     }
 
-    #[expect(
-        clippy::too_many_lines,
-        reason = "MCP forwarding handler with error paths"
-    )]
     async fn handle_forwarded_read(
         &self,
         forward_address: &str,
@@ -216,17 +217,15 @@ impl ResourceReadFilter {
         exchange: crate::credentials::ForwardExchange,
     ) -> Result<FilterAction, FilterError> {
         let crate::credentials::ForwardExchange {
+            invoker,
             headers: forward_headers,
             redactor,
         } = exchange;
         trace!(uri = %resource_uri, forward = %forward_address, "forwarding resources/read to remote MCP server");
 
-        match wanaku_infra::mcp_client::read_resource(
-            forward_address,
-            resource_uri,
-            forward_headers,
-        )
-        .await
+        match invoker
+            .read_resource(forward_address, resource_uri, forward_headers)
+            .await
         {
             Ok(contents) => {
                 let response = build_read_response(&parsed.id, &contents, &redactor);
@@ -392,5 +391,128 @@ mod tests {
             "logs://{server/syslog",
             "logs://web-01/syslog"
         ));
+    }
+}
+
+/// Whole-filter tests with the recording invocation adapter. No test opens a
+/// network connection.
+#[cfg(test)]
+mod filter_tests {
+    use std::sync::Arc;
+
+    use praxis_filter::FilterAction;
+    use serde_json::{Value, json};
+    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_types::registry::{ResourceEntry, ResourceRegistry};
+
+    use super::ResourceReadFilter;
+    use crate::invoker::testing::{
+        ADDRESS, FORWARD_ID, RecordingInvoker, SECRET, filter_context, registry, request,
+        response_json,
+    };
+
+    const URI: &str = "file:///notes.txt";
+
+    fn resource(forward_id: Option<&str>, enabled: bool) -> ResourceEntry {
+        serde_json::from_value(json!({
+            "name": "notes",
+            "location": URI,
+            "type": "mcp-forward",
+            "forwardId": forward_id,
+            "enabled": enabled
+        }))
+        .unwrap()
+    }
+
+    async fn run(registry: &InMemoryRegistry, invoker: &Arc<RecordingInvoker>) -> FilterAction {
+        let req = request(&[]);
+        let mut ctx = filter_context(&req, crate::RESOURCES_READ, registry, invoker);
+        let filter = ResourceReadFilter {
+            max_body_bytes: 1024,
+        };
+        let body = format!(
+            r#"{{"jsonrpc":"2.0","id":7,"method":"resources/read","params":{{"uri":"{URI}"}}}}"#
+        );
+        let mut body = Some(bytes::Bytes::from(body));
+        filter.handle_body(&mut ctx, &mut body).await.unwrap()
+    }
+
+    #[tokio::test]
+    async fn success_invokes_once_with_resolved_read_and_credentials() {
+        let registry = registry(Some("b1"), Some("fake:token"));
+        registry.register_resource(resource(Some(FORWARD_ID), true));
+        let invoker =
+            RecordingInvoker::succeeding(json!({"uri": URI, "text": format!("key {SECRET}")}));
+
+        let response = response_json(run(&registry, &invoker).await);
+
+        let calls = invoker.calls();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].operation, crate::RESOURCES_READ);
+        assert_eq!(calls[0].address, ADDRESS);
+        assert_eq!(calls[0].target, URI);
+        assert_eq!(calls[0].headers.len(), 1);
+        assert_eq!(
+            calls[0].headers[&http::header::AUTHORIZATION],
+            format!("Bearer {SECRET}")
+        );
+        assert_eq!(response["id"], 7);
+        assert_eq!(response["result"]["contents"][0]["text"], "key <redacted>");
+    }
+
+    #[tokio::test]
+    async fn upstream_error_is_redacted_with_the_request_id() {
+        let registry = registry(Some("b1"), Some("fake:token"));
+        registry.register_resource(resource(Some(FORWARD_ID), true));
+        let invoker = RecordingInvoker::failing("rejected s3cr3t");
+
+        let response = response_json(run(&registry, &invoker).await);
+
+        assert_eq!(invoker.calls().len(), 1);
+        assert_eq!(response["id"], 7);
+        let message = response["error"]["message"].as_str().unwrap();
+        assert!(message.starts_with("forwarded resource read failed"));
+        assert!(!message.contains(SECRET), "leaked: {message}");
+    }
+
+    async fn assert_not_invoked(registry: &InMemoryRegistry, expected: &str) {
+        let invoker = RecordingInvoker::succeeding(Value::Null);
+        let response = response_json(run(registry, &invoker).await);
+        assert!(
+            invoker.calls().is_empty(),
+            "adapter invoked for: {expected}"
+        );
+        assert_eq!(response["id"], 7);
+        let message = response["error"]["message"].as_str().unwrap();
+        assert!(message.contains(expected), "unexpected error: {message}");
+    }
+
+    #[tokio::test]
+    async fn missing_provenance_does_not_invoke() {
+        let registry = registry(None, None);
+        registry.register_resource(resource(None, true));
+        assert_not_invoked(&registry, "no forwardId provenance").await;
+    }
+
+    #[tokio::test]
+    async fn missing_forward_does_not_invoke() {
+        let registry = registry(None, None);
+        registry.register_resource(resource(Some("fwd-missing"), true));
+        assert_not_invoked(&registry, "forward not found").await;
+    }
+
+    #[tokio::test]
+    async fn disabled_or_unknown_resource_does_not_invoke() {
+        let registry = registry(None, None);
+        assert_not_invoked(&registry, "resource not found").await;
+        registry.register_resource(resource(Some(FORWARD_ID), false));
+        assert_not_invoked(&registry, "resource not found").await;
+    }
+
+    #[tokio::test]
+    async fn failed_credential_resolution_does_not_invoke() {
+        let unresolved = registry(Some("b1"), Some("fake:absent"));
+        unresolved.register_resource(resource(Some(FORWARD_ID), true));
+        assert_not_invoked(&unresolved, "credential brokerage failed").await;
     }
 }

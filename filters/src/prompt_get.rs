@@ -94,6 +94,10 @@ impl PromptGetFilter {
                 ));
             };
             let address = forward.address.clone();
+            let invoker = match crate::invoker::invoker_from_extensions(ctx, &parsed.id) {
+                Ok(invoker) => invoker,
+                Err(action) => return Ok(action),
+            };
 
             let mut forward_headers: HashMap<HeaderName, HeaderValue> = HashMap::new();
             let request = crate::credentials::ForwardCredentialRequest {
@@ -119,6 +123,7 @@ impl PromptGetFilter {
                 Err(action) => return Ok(action),
             };
             let exchange = crate::credentials::ForwardExchange {
+                invoker,
                 headers: forward_headers,
                 redactor,
             };
@@ -183,6 +188,7 @@ impl PromptGetFilter {
         exchange: crate::credentials::ForwardExchange,
     ) -> Result<FilterAction, FilterError> {
         let crate::credentials::ForwardExchange {
+            invoker,
             headers: forward_headers,
             redactor,
         } = exchange;
@@ -194,13 +200,9 @@ impl PromptGetFilter {
             Some(parsed.arguments.clone())
         };
 
-        match wanaku_infra::mcp_client::get_prompt(
-            forward_address,
-            prompt_name,
-            arguments,
-            forward_headers,
-        )
-        .await
+        match invoker
+            .get_prompt(forward_address, prompt_name, arguments, forward_headers)
+            .await
         {
             Ok(result) => {
                 let response = build_get_response(&parsed.id, &result, &redactor);
@@ -320,5 +322,135 @@ mod tests {
         ));
         let parsed = parse_body(&body, serde_json::Value::from(1));
         assert_eq!(parsed.id, serde_json::Value::from(1));
+    }
+}
+
+/// Whole-filter tests with the recording invocation adapter. No test opens a
+/// network connection.
+#[cfg(test)]
+mod filter_tests {
+    use std::sync::Arc;
+
+    use praxis_filter::FilterAction;
+    use serde_json::{Value, json};
+    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_types::registry::{PromptEntry, PromptRegistry};
+
+    use super::PromptGetFilter;
+    use crate::invoker::testing::{
+        ADDRESS, FORWARD_ID, RecordingInvoker, SECRET, filter_context, registry, request,
+        response_json,
+    };
+
+    const BODY: &str = r#"{"jsonrpc":"2.0","id":7,"method":"prompts/get","params":{"name":"greet","arguments":{"who":"ada"}}}"#;
+
+    fn prompt(forward_id: Option<&str>, enabled: bool) -> PromptEntry {
+        serde_json::from_value(json!({
+            "name": "greet",
+            "forwardId": forward_id,
+            "enabled": enabled
+        }))
+        .unwrap()
+    }
+
+    async fn run(registry: &InMemoryRegistry, invoker: &Arc<RecordingInvoker>) -> FilterAction {
+        let req = request(&[]);
+        let mut ctx = filter_context(&req, crate::PROMPTS_GET, registry, invoker);
+        let filter = PromptGetFilter {
+            max_body_bytes: 1024,
+        };
+        let mut body = Some(bytes::Bytes::from_static(BODY.as_bytes()));
+        filter.handle_body(&mut ctx, &mut body).await.unwrap()
+    }
+
+    #[tokio::test]
+    async fn success_invokes_once_with_resolved_get_and_credentials() {
+        let registry = registry(Some("b1"), Some("fake:token"));
+        registry.register_prompt(prompt(Some(FORWARD_ID), true));
+        let invoker = RecordingInvoker::succeeding(json!({"messages": [
+            {"role": "user", "content": {"type": "text", "text": format!("hi {SECRET}")}}
+        ]}));
+
+        let response = response_json(run(&registry, &invoker).await);
+
+        let calls = invoker.calls();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].operation, crate::PROMPTS_GET);
+        assert_eq!(calls[0].address, ADDRESS);
+        assert_eq!(calls[0].target, "greet");
+        assert_eq!(calls[0].arguments, Some(json!({"who": "ada"})));
+        assert_eq!(calls[0].headers.len(), 1);
+        assert_eq!(
+            calls[0].headers[&http::header::AUTHORIZATION],
+            format!("Bearer {SECRET}")
+        );
+        assert_eq!(response["id"], 7);
+        assert_eq!(
+            response["result"]["messages"][0]["content"]["text"],
+            "hi <redacted>"
+        );
+    }
+
+    #[tokio::test]
+    async fn upstream_error_is_redacted_with_the_request_id() {
+        let registry = registry(Some("b1"), Some("fake:token"));
+        registry.register_prompt(prompt(Some(FORWARD_ID), true));
+        let invoker = RecordingInvoker::failing("rejected s3cr3t");
+
+        let response = response_json(run(&registry, &invoker).await);
+
+        assert_eq!(invoker.calls().len(), 1);
+        assert_eq!(response["id"], 7);
+        let message = response["error"]["message"].as_str().unwrap();
+        assert!(message.starts_with("forwarded prompt get failed"));
+        assert!(!message.contains(SECRET), "leaked: {message}");
+    }
+
+    async fn assert_not_invoked(registry: &InMemoryRegistry, expected: &str) {
+        let invoker = RecordingInvoker::succeeding(Value::Null);
+        let response = response_json(run(registry, &invoker).await);
+        assert!(
+            invoker.calls().is_empty(),
+            "adapter invoked for: {expected}"
+        );
+        assert_eq!(response["id"], 7);
+        let message = response["error"]["message"].as_str().unwrap();
+        assert!(message.contains(expected), "unexpected error: {message}");
+    }
+
+    #[tokio::test]
+    async fn missing_provenance_does_not_invoke() {
+        // A prompt without messages and without provenance renders locally.
+        let registry = registry(None, None);
+        registry.register_prompt(prompt(None, true));
+        let invoker = RecordingInvoker::succeeding(Value::Null);
+
+        let response = response_json(run(&registry, &invoker).await);
+
+        assert!(invoker.calls().is_empty());
+        assert_eq!(response["id"], 7);
+        assert_eq!(response["result"]["messages"], json!([]));
+    }
+
+    #[tokio::test]
+    async fn missing_forward_does_not_invoke() {
+        let registry = registry(None, None);
+        registry.register_prompt(prompt(Some("fwd-missing"), true));
+        assert_not_invoked(&registry, "forward not found").await;
+    }
+
+    #[tokio::test]
+    async fn disabled_or_unknown_prompt_does_not_invoke() {
+        let registry = registry(None, None);
+        assert_not_invoked(&registry, "prompt not found").await;
+        registry.register_prompt(prompt(Some(FORWARD_ID), false));
+        assert_not_invoked(&registry, "prompt not found").await;
+    }
+
+    #[tokio::test]
+    async fn failed_credential_resolution_does_not_invoke() {
+        let unresolved = registry(Some("b1"), Some("fake:absent"));
+        unresolved.register_prompt(prompt(Some(FORWARD_ID), true));
+        assert_not_invoked(&unresolved, "credential brokerage failed").await;
     }
 }

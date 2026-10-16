@@ -7,6 +7,7 @@ use praxis_protocol::ListenerPipelines;
 use tracing::info;
 
 use wanaku_infra::credentials::CredentialBroker;
+use wanaku_infra::mcp_client::{McpInvoker, RmcpInvoker};
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::feature::Feature;
 use wanaku_types::governance::GovernanceConfig;
@@ -68,6 +69,18 @@ struct BrokerExtension {
 impl PipelineExtension for BrokerExtension {
     fn prepare(&self, extensions: &mut RequestExtensions) {
         extensions.insert(self.broker.clone());
+    }
+}
+
+/// Supplies the production rmcp adapter that the forwarding filters use to
+/// reach upstream MCP servers.
+struct InvokerExtension {
+    invoker: Arc<dyn McpInvoker>,
+}
+
+impl PipelineExtension for InvokerExtension {
+    fn prepare(&self, extensions: &mut RequestExtensions) {
+        extensions.insert(Arc::clone(&self.invoker));
     }
 }
 
@@ -150,6 +163,9 @@ pub fn resolve_pipelines(
         pipeline.add_pipeline_extension(Box::new(BrokerExtension {
             broker: deps.broker.clone(),
         }));
+        pipeline.add_pipeline_extension(Box::new(InvokerExtension {
+            invoker: Arc::new(RmcpInvoker),
+        }));
 
         for feature in deps.features {
             for ext in feature.pipeline_extensions() {
@@ -171,6 +187,16 @@ pub fn resolve_pipelines(
 mod tests {
     use super::*;
     use wanaku_types::credentials::ResolverRegistry;
+
+    #[test]
+    fn invoker_extension_supplies_the_mcp_invoker() {
+        let extension = InvokerExtension {
+            invoker: Arc::new(RmcpInvoker),
+        };
+        let mut extensions = RequestExtensions::default();
+        extension.prepare(&mut extensions);
+        assert!(extensions.get::<Arc<dyn McpInvoker>>().is_some());
+    }
 
     #[test]
     fn resolved_pipelines_apply_private_upstream_option() {

@@ -151,6 +151,78 @@ pub struct CallToolResponse {
     pub is_error: bool,
 }
 
+/// The invocation contract for forwarded MCP operations.
+///
+/// The terminal `tools/call`, `resources/read` and `prompts/get` filters use
+/// this contract to reach the upstream MCP server. The production adapter is
+/// [`RmcpInvoker`]. Tests supply a fake through the request extensions. The
+/// contract uses only `serde_json` and `http` types, so rmcp types stay behind
+/// the adapter. Discovery and listing calls are not part of this contract.
+#[async_trait::async_trait]
+pub trait McpInvoker: Send + Sync {
+    /// Call `tool_name` on the MCP server at `address`.
+    async fn call_tool(
+        &self,
+        address: &str,
+        tool_name: &str,
+        arguments: Value,
+        headers: HashMap<HeaderName, HeaderValue>,
+    ) -> Result<CallToolResponse, McpClientError>;
+
+    /// Read `resource_uri` from the MCP server at `address`.
+    async fn read_resource(
+        &self,
+        address: &str,
+        resource_uri: &str,
+        headers: HashMap<HeaderName, HeaderValue>,
+    ) -> Result<Vec<Value>, McpClientError>;
+
+    /// Get `prompt_name` from the MCP server at `address`.
+    async fn get_prompt(
+        &self,
+        address: &str,
+        prompt_name: &str,
+        arguments: Option<serde_json::Map<String, Value>>,
+        headers: HashMap<HeaderName, HeaderValue>,
+    ) -> Result<Value, McpClientError>;
+}
+
+/// The production [`McpInvoker`]: one rmcp streamable HTTP session per call.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct RmcpInvoker;
+
+#[async_trait::async_trait]
+impl McpInvoker for RmcpInvoker {
+    async fn call_tool(
+        &self,
+        address: &str,
+        tool_name: &str,
+        arguments: Value,
+        headers: HashMap<HeaderName, HeaderValue>,
+    ) -> Result<CallToolResponse, McpClientError> {
+        Box::pin(call_tool(address, tool_name, arguments, headers)).await
+    }
+
+    async fn read_resource(
+        &self,
+        address: &str,
+        resource_uri: &str,
+        headers: HashMap<HeaderName, HeaderValue>,
+    ) -> Result<Vec<Value>, McpClientError> {
+        Box::pin(read_resource(address, resource_uri, headers)).await
+    }
+
+    async fn get_prompt(
+        &self,
+        address: &str,
+        prompt_name: &str,
+        arguments: Option<serde_json::Map<String, Value>>,
+        headers: HashMap<HeaderName, HeaderValue>,
+    ) -> Result<Value, McpClientError> {
+        Box::pin(get_prompt(address, prompt_name, arguments, headers)).await
+    }
+}
+
 #[expect(
     clippy::too_many_lines,
     clippy::large_stack_frames,
@@ -748,7 +820,7 @@ mod tests {
     use wiremock::matchers::{body_partial_json, method};
     use wiremock::{Mock, MockServer, Request, ResponseTemplate};
 
-    use super::list_tools;
+    use super::{McpInvoker as _, RmcpInvoker, list_tools};
 
     fn reply(result: Value) -> impl Fn(&Request) -> ResponseTemplate {
         move |request: &Request| {
@@ -834,14 +906,16 @@ mod tests {
                 "_meta": {"revision": "1"}
             });
             let server = tool_server(result.clone()).await;
-            let response = super::call_tool(
-                &server.uri(),
-                "route_support",
-                json!({"message": "billing"}),
-                Default::default(),
-            )
-            .await
-            .expect("call tool");
+            // Call through the production adapter that the filters use.
+            let response = RmcpInvoker
+                .call_tool(
+                    &server.uri(),
+                    "route_support",
+                    json!({"message": "billing"}),
+                    Default::default(),
+                )
+                .await
+                .expect("call tool");
             assert_eq!(response.result, result);
             assert_eq!(response.is_error, is_error);
         }
