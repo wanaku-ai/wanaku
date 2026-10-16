@@ -6,10 +6,11 @@ use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::interactions::InMemoryInteractionStore;
 use wanaku_types::mcp::McpContext;
 
-use crate::action::ActionResult;
 use crate::config::{EvaluationEngine, EvaluatorDef};
 pub use crate::engine::SimulationLimits;
 use crate::engine::{CompiledEvaluator, ExecutionContext};
+use crate::evaluation::EvaluationError;
+use crate::outcome::{EvaluatorFailure, Outcome, Skip};
 use crate::schema::CompiledSchema;
 use crate::state::EvaluatorState;
 
@@ -42,9 +43,7 @@ pub struct SimulationInput<'a> {
 pub struct SimulationOutcome {
     pub evaluator: Option<String>,
     pub engine: Option<&'static str>,
-    pub action: Option<ActionResult>,
-    pub reason_code: &'static str,
-    pub side_effects_suppressed: bool,
+    pub outcome: Outcome,
 }
 
 fn validation_codes(state: &EvaluatorState, definition: &EvaluatorDef) -> Vec<&'static str> {
@@ -178,17 +177,23 @@ pub fn prepare(
 }
 
 impl SimulationOutcome {
-    fn new(evaluator: Option<&EvaluatorDef>) -> Self {
+    fn new(evaluator: Option<&EvaluatorDef>, outcome: Outcome) -> Self {
         Self {
             evaluator: evaluator.map(|definition| definition.name.clone()),
             engine: evaluator.map(|definition| definition.engine.kind()),
-            action: None,
-            side_effects_suppressed: false,
-            reason_code: if evaluator.is_some() {
-                "evaluator_external_engine_skipped"
-            } else {
-                "evaluator_not_matched"
-            },
+            outcome,
+        }
+    }
+
+    /// Stable simulation reason code for the evaluator stage.
+    pub const fn reason_code(&self) -> &'static str {
+        match &self.outcome {
+            Outcome::NoMatch => "evaluator_not_matched",
+            Outcome::Skipped(_) => "evaluator_external_engine_skipped",
+            Outcome::Failure(EvaluatorFailure::Processor(_)) => "evaluator_processor_failed",
+            Outcome::Failure(failure) => failure.reason_code(),
+            Outcome::Unavailable(_) => "evaluator_configuration_unavailable",
+            Outcome::Evaluated { .. } => "evaluator_simulated",
         }
     }
 }
@@ -221,12 +226,14 @@ impl PreparedEvaluators {
                 .trigger
                 .matches(input.method, input.namespace)
         });
-        let outcome = SimulationOutcome::new(evaluator.map(|entry| &entry.definition));
         let Some(evaluator) = evaluator else {
-            return outcome;
+            return SimulationOutcome::new(None, Outcome::NoMatch);
         };
         if !matches!(evaluator.definition.engine, EvaluationEngine::Passthrough) {
-            return outcome;
+            return SimulationOutcome::new(
+                Some(&evaluator.definition),
+                Outcome::Skipped(Skip::ExternalEngineNotSimulated),
+            );
         }
         self.run_processor(evaluator, input, registry, limits)
     }
@@ -238,10 +245,12 @@ impl PreparedEvaluators {
         registry: &InMemoryRegistry,
         limits: SimulationLimits,
     ) -> SimulationOutcome {
-        let mut outcome = SimulationOutcome::new(Some(&evaluator.definition));
+        let definition = Some(&evaluator.definition);
         let Some(context) = self.processor_context(input) else {
-            outcome.reason_code = "evaluator_internal_error";
-            return outcome;
+            return SimulationOutcome::new(
+                definition,
+                Outcome::Failure(EvaluatorFailure::Engine(EvaluationError::Internal)),
+            );
         };
         let execution = ExecutionContext {
             registry: registry.clone(),
@@ -251,15 +260,14 @@ impl PreparedEvaluators {
             mode: crate::engine::ExecutionMode::Simulation,
             limits: Some(limits),
         };
-        match evaluator.processor.evaluate(execution, context) {
-            Ok(result) => {
-                outcome.reason_code = "evaluator_simulated";
-                outcome.action = Some(result.action);
-                outcome.side_effects_suppressed = result.side_effects_suppressed;
-            }
-            Err(_) => outcome.reason_code = "evaluator_processor_failed",
-        }
-        outcome
+        let outcome = match evaluator.processor.evaluate(execution, context) {
+            Ok(result) => Outcome::Evaluated {
+                action: result.action,
+                side_effects_suppressed: result.side_effects_suppressed,
+            },
+            Err(error) => Outcome::Failure(EvaluatorFailure::Processor(error)),
+        };
+        SimulationOutcome::new(definition, outcome)
     }
 
     fn processor_context(
@@ -289,6 +297,7 @@ impl PreparedEvaluators {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::action::ActionResult;
     use crate::config::{ProcessorRef, TriggerDef};
 
     fn definition(method: &str) -> EvaluatorDef {
@@ -352,8 +361,8 @@ mod tests {
             },
             &InMemoryRegistry::new(),
         );
-        assert_eq!(result.reason_code, "evaluator_external_engine_skipped");
-        assert!(result.action.is_none());
+        assert_eq!(result.reason_code(), "evaluator_external_engine_skipped");
+        assert!(result.outcome.action().is_none());
     }
 
     #[test]
@@ -370,7 +379,7 @@ mod tests {
             },
             &InMemoryRegistry::new(),
         );
-        assert_eq!(result.reason_code, "evaluator_processor_failed");
+        assert_eq!(result.reason_code(), "evaluator_processor_failed");
     }
 
     #[test]
@@ -391,8 +400,8 @@ mod tests {
             },
             &InMemoryRegistry::new(),
         );
-        assert_eq!(result.reason_code, "evaluator_simulated");
-        assert!(matches!(result.action, Some(ActionResult::Pass)));
+        assert_eq!(result.reason_code(), "evaluator_simulated");
+        assert!(matches!(result.outcome.action(), Some(ActionResult::Pass)));
         assert_eq!(
             state.get_binding("default").as_deref(),
             Some("conversation")
@@ -423,7 +432,7 @@ mod tests {
             },
             &InMemoryRegistry::new(),
         );
-        assert_eq!(result.reason_code, "evaluator_processor_failed");
+        assert_eq!(result.reason_code(), "evaluator_processor_failed");
     }
 
     #[test]
@@ -446,7 +455,7 @@ mod tests {
             },
             &InMemoryRegistry::new(),
         );
-        assert_eq!(result.reason_code, "evaluator_processor_failed");
+        assert_eq!(result.reason_code(), "evaluator_processor_failed");
         assert!(start.elapsed() < std::time::Duration::from_secs(5));
     }
 
@@ -467,7 +476,7 @@ mod tests {
                 timeout_ms,
             },
         );
-        assert_eq!(result.reason_code, "evaluator_processor_failed");
+        assert_eq!(result.reason_code(), "evaluator_processor_failed");
         start.elapsed()
     }
 
@@ -516,8 +525,8 @@ mod tests {
             },
             &registry,
         );
-        assert_eq!(result.reason_code, "evaluator_simulated");
-        assert!(result.side_effects_suppressed);
+        assert_eq!(result.reason_code(), "evaluator_simulated");
+        assert!(result.outcome.side_effects_suppressed());
         assert_eq!(
             registry.get_tool("tool").unwrap().namespace.as_deref(),
             Some("default")
@@ -552,8 +561,8 @@ mod tests {
             },
             &InMemoryRegistry::new(),
         );
-        assert_eq!(result.reason_code, "evaluator_simulated");
-        assert!(matches!(result.action, Some(ActionResult::Pass)));
+        assert_eq!(result.reason_code(), "evaluator_simulated");
+        assert!(matches!(result.outcome.action(), Some(ActionResult::Pass)));
     }
 
     #[test]
