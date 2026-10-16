@@ -9,6 +9,7 @@ pub mod engines;
 pub mod evaluation;
 pub mod filter;
 mod host;
+pub mod outcome;
 pub use host::types as wit_types;
 pub mod revision;
 pub mod revision_persistence;

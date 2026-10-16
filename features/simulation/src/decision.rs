@@ -8,12 +8,13 @@ use std::{collections::HashMap, time::Instant};
 use wanaku_feature_action_policy::{PolicyDecision, PolicyEngine, PolicySnapshot, PolicyState};
 use wanaku_feature_evaluator::{
     action::ActionResult,
+    outcome::{Allowance, Outcome},
     simulation::{SimulationInput, SimulationOutcome},
 };
 use wanaku_filters::json_rpc::McpRequestView;
 use wanaku_types::{
     audit_redaction::AuditRedactor,
-    governance::{EnforcementMode, FailureBehavior, GovernancePosture, NoMatchBehavior},
+    governance::{EnforcementMode, GovernancePosture},
 };
 
 pub(crate) fn simulate(
@@ -74,6 +75,7 @@ fn simulate_view(input: &ViewInput<'_>) -> Result<SimulationReport, &'static str
         stages: vec![policy_stage(&decision, effective)],
         effective: effective.to_owned(),
         conditional: false,
+        evaluator: None,
         decision,
         started,
         limits,
@@ -85,7 +87,7 @@ fn downstream_report(
     input: &mut ReportInput<'_>,
     view: &McpRequestView,
 ) -> Result<(), &'static str> {
-    let (effective, conditional) = evaluate_downstream(
+    let (effective, conditional, evaluator) = evaluate_downstream(
         &Downstream {
             deps: input.deps,
             candidate: input.candidate,
@@ -100,6 +102,7 @@ fn downstream_report(
     )?;
     input.effective = effective;
     input.conditional = conditional;
+    input.evaluator = evaluator;
     Ok(())
 }
 
@@ -181,9 +184,9 @@ struct Downstream<'a> {
 fn evaluate_downstream(
     input: &Downstream<'_>,
     stages: &mut Vec<StageDecision>,
-) -> Result<(String, bool), &'static str> {
+) -> Result<(String, bool, Option<Outcome>), &'static str> {
     if input.effective != "allow" || input.posture.mode == EnforcementMode::Disabled {
-        return Ok((input.effective.to_owned(), false));
+        return Ok((input.effective.to_owned(), false, None));
     }
     let arguments = arguments(input.view)?;
     let simulation = SimulationInput {
@@ -192,24 +195,24 @@ fn evaluate_downstream(
         target: input.target,
         arguments: &arguments,
     };
-    let outcome = execute_evaluator(input, &simulation);
-    let (result, conditional) = evaluator_result(&outcome, input.posture);
-    let conditional = conditional
-        || (outcome.side_effects_suppressed && input.posture.mode == EnforcementMode::Enforce);
+    let simulated = execute_evaluator(input, &simulation);
+    let outcome = &simulated.outcome;
+    let enforce = input.posture.mode == EnforcementMode::Enforce;
+    let proposed = outcome.proposed_allowance(input.posture);
+    // Simulation cannot know what a skipped external engine or a suppressed
+    // host write would change, so enforcement depends on live data.
+    let conditional =
+        enforce && (proposed == Allowance::Indeterminate || outcome.side_effects_suppressed());
     stages.push(StageDecision {
         stage: "evaluator".to_owned(),
-        decision: result.to_owned(),
-        reason_code: evaluator_reason(&outcome).to_owned(),
-        matched_ids: outcome.evaluator.into_iter().collect(),
+        decision: allowance_label(proposed).to_owned(),
+        reason_code: evaluator_reason(&simulated).to_owned(),
+        matched_ids: simulated.evaluator.iter().cloned().collect(),
     });
     Ok((
-        if input.posture.mode == EnforcementMode::Enforce {
-            result
-        } else {
-            input.effective
-        }
-        .to_owned(),
+        allowance_label(outcome.effective_allowance(input.posture)).to_owned(),
         conditional,
+        Some(simulated.outcome),
     ))
 }
 fn arguments(view: &McpRequestView) -> Result<HashMap<String, String>, &'static str> {
@@ -229,32 +232,11 @@ fn arguments(view: &McpRequestView) -> Result<HashMap<String, String>, &'static 
                 .collect()
         }))
 }
-fn evaluator_result(
-    outcome: &SimulationOutcome,
-    posture: &GovernancePosture,
-) -> (&'static str, bool) {
-    match &outcome.action {
-        Some(ActionResult::Block(_) | ActionResult::RejectMalformed(_)) => ("deny", false),
-        Some(_) => ("allow", false),
-        None if outcome.reason_code == "evaluator_external_engine_skipped" => {
-            ("indeterminate", posture.mode == EnforcementMode::Enforce)
-        }
-        None if outcome.evaluator.is_some() => (
-            if posture.on_failure == FailureBehavior::Deny {
-                "deny"
-            } else {
-                "allow"
-            },
-            false,
-        ),
-        None => (
-            if posture.no_match == NoMatchBehavior::Deny {
-                "deny"
-            } else {
-                "allow"
-            },
-            false,
-        ),
+const fn allowance_label(allowance: Allowance) -> &'static str {
+    match allowance {
+        Allowance::Allow => "allow",
+        Allowance::Deny => "deny",
+        Allowance::Indeterminate => "indeterminate",
     }
 }
 struct ReportInput<'a> {
@@ -267,12 +249,13 @@ struct ReportInput<'a> {
     stages: Vec<StageDecision>,
     effective: String,
     conditional: bool,
+    evaluator: Option<Outcome>,
     decision: PolicyDecision,
     started: Instant,
     limits: Option<wanaku_feature_evaluator::simulation::SimulationLimits>,
 }
 fn report(input: ReportInput<'_>) -> SimulationReport {
-    let failure_used = failure_used(&input.stages);
+    let failure_used = failure_used(&input.decision, input.evaluator.as_ref());
     let baseline_used = baseline_used(&input);
     SimulationReport {
         schema_version: "1.0".to_owned(),
@@ -331,18 +314,19 @@ fn execute_evaluator(
     }
 }
 
-const fn evaluator_reason(outcome: &SimulationOutcome) -> &'static str {
-    if outcome.action.is_none() {
-        return outcome.reason_code;
-    }
-    if outcome.side_effects_suppressed {
-        return "evaluator_side_effects_suppressed";
-    }
-    match outcome.action {
-        Some(ActionResult::SetMetadata(..)) => "evaluator_metadata_proposed",
-        Some(ActionResult::FilterTools(_)) => "evaluator_filter_proposed",
-        Some(ActionResult::Warn(_)) => "evaluator_warning_proposed",
-        _ => outcome.reason_code,
+const fn evaluator_reason(simulated: &SimulationOutcome) -> &'static str {
+    match &simulated.outcome {
+        Outcome::Evaluated {
+            side_effects_suppressed: true,
+            ..
+        } => "evaluator_side_effects_suppressed",
+        Outcome::Evaluated { action, .. } => match action {
+            ActionResult::SetMetadata(..) => "evaluator_metadata_proposed",
+            ActionResult::FilterTools(_) => "evaluator_filter_proposed",
+            ActionResult::Warn(_) => "evaluator_warning_proposed",
+            _ => simulated.reason_code(),
+        },
+        _ => simulated.reason_code(),
     }
 }
 
@@ -351,37 +335,78 @@ fn baseline_used(input: &ReportInput<'_>) -> bool {
         && (matches!(
             input.decision,
             PolicyDecision::NoMatch | PolicyDecision::PolicyUnavailable
-        ) || input.stages.iter().any(|stage| {
-            stage.stage == "evaluator" && stage.reason_code == "evaluator_not_matched"
-        }))
+        ) || input.evaluator.as_ref().is_some_and(Outcome::baseline_used))
 }
-fn failure_used(stages: &[StageDecision]) -> bool {
-    stages.iter().any(|stage| {
-        matches!(
-            stage.reason_code.as_str(),
-            "evaluator_processor_failed" | "evaluator_internal_error" | "action_policy_invalid"
-        )
-    })
+fn failure_used(decision: &PolicyDecision, evaluator: Option<&Outcome>) -> bool {
+    matches!(decision, PolicyDecision::PolicyInvalid)
+        || evaluator.is_some_and(Outcome::failure_used)
 }
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn suppressed_effects_do_not_hide_execution_failure() {
-        let outcome = SimulationOutcome {
+    use wanaku_feature_evaluator::{
+        engine::EvaluatorExecutionError,
+        outcome::{EvaluatorFailure, Skip},
+    };
+
+    fn simulated(outcome: Outcome) -> SimulationOutcome {
+        SimulationOutcome {
             evaluator: Some("test".to_owned()),
             engine: Some("passthrough"),
-            action: None,
-            reason_code: "evaluator_processor_failed",
-            side_effects_suppressed: true,
-        };
+            outcome,
+        }
+    }
+
+    #[test]
+    fn execution_failure_keeps_failure_reason_and_fact() {
+        let outcome = simulated(Outcome::Failure(EvaluatorFailure::Processor(
+            EvaluatorExecutionError::Execution,
+        )));
         assert_eq!(evaluator_reason(&outcome), "evaluator_processor_failed");
-        let stage = StageDecision {
-            stage: "evaluator".to_owned(),
-            decision: "deny".to_owned(),
-            reason_code: evaluator_reason(&outcome).to_owned(),
-            matched_ids: Vec::new(),
-        };
-        assert!(failure_used(&[stage]));
+        assert!(failure_used(
+            &PolicyDecision::NoMatch,
+            Some(&outcome.outcome)
+        ));
+        assert!(!outcome.outcome.baseline_used());
+    }
+
+    #[test]
+    fn typed_facts_do_not_depend_on_reason_codes() {
+        for (outcome, failure, baseline) in [
+            (Outcome::NoMatch, false, true),
+            (
+                Outcome::Skipped(Skip::ExternalEngineNotSimulated),
+                false,
+                false,
+            ),
+            (Outcome::Unavailable("configuration_invalid"), true, false),
+            (
+                Outcome::Evaluated {
+                    action: ActionResult::Pass,
+                    side_effects_suppressed: true,
+                },
+                false,
+                false,
+            ),
+        ] {
+            assert_eq!(
+                failure_used(&PolicyDecision::NoMatch, Some(&outcome)),
+                failure
+            );
+            assert_eq!(outcome.baseline_used(), baseline);
+        }
+        assert!(failure_used(&PolicyDecision::PolicyInvalid, None));
+    }
+
+    #[test]
+    fn suppressed_effects_report_suppression_before_action() {
+        let outcome = simulated(Outcome::Evaluated {
+            action: ActionResult::Warn("message".to_owned()),
+            side_effects_suppressed: true,
+        });
+        assert_eq!(
+            evaluator_reason(&outcome),
+            "evaluator_side_effects_suppressed"
+        );
     }
 }
