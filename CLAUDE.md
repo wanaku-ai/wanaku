@@ -68,7 +68,7 @@ See [docs/architecture.md](docs/architecture.md) for filter order, metadata cont
 
 See [docs/architecture.md](docs/architecture.md) for tool routing and forward discovery flow.
 
-All tools execute via MCP forwarding (`mcp_client::call_tool` from rmcp crate). Non-MCP-forward types error.
+All tools execute via MCP forwarding through the `McpInvoker` request extension (production adapter `RmcpInvoker` wraps `mcp_client::call_tool`). Non-MCP-forward types error.
 
 ### Management API (Port 8080)
 

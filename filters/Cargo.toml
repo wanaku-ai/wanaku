@@ -24,4 +24,5 @@ praxis-filter = { workspace = true }
 serde_yaml = { workspace = true }
 
 [dev-dependencies]
+praxis-core = { workspace = true }
 tokio = { workspace = true }
