@@ -25,6 +25,15 @@ export class NamespacesPage extends BasePage {
     return btn.isDisabled();
   }
 
+  async clickEditNamespace(name: string) {
+    await this.rowWithText(name).getByRole('button', { name: 'Edit' }).click();
+    await this.modal().waitFor({ state: 'visible' });
+  }
+
+  errorNotification() {
+    return this.page.locator(Carbon.inlineError);
+  }
+
   async clickDeleteNamespace(name: string) {
     await this.rowWithText(name).getByRole('button', { name: 'Delete' }).click();
   }

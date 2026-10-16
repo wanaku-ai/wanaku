@@ -50,6 +50,7 @@ import type {
   UpdateActionPolicyRequest,
   UpdateEvaluators200,
   UpdateEvaluatorsRequest,
+  UpdateNamespace200,
   ValidatePolicyCandidate200,
   ValidationRequest,
   WanakuResponseAgentView,
@@ -1797,6 +1798,71 @@ export const getNamespace = async (
   return customFetch<getNamespaceResponse>(getGetNamespaceUrl(name), {
     ...options,
     method: "GET",
+  });
+};
+
+export type updateNamespaceResponse200 = {
+  data: UpdateNamespace200;
+  status: 200;
+};
+
+export type updateNamespaceResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type updateNamespaceResponseSuccess = updateNamespaceResponse200 & {
+  headers: Headers;
+};
+export type updateNamespaceResponseError = updateNamespaceResponse400 & {
+  headers: Headers;
+};
+
+export type updateNamespaceResponse =
+  | updateNamespaceResponseSuccess
+  | updateNamespaceResponseError;
+
+export const getUpdateNamespaceUrl = (name: string) => {
+  return `/api/v1/namespaces/${name}`;
+};
+
+/**
+ * @summary Updates the namespace metadata. The path name replaces the body name.
+ */
+export const updateNamespace = async (
+  name: string,
+  namespaceEntry: NamespaceEntry,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<updateNamespaceResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit["headers"]>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<
+      string | readonly string[] | undefined
+    >(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<updateNamespaceResponse>(getUpdateNamespaceUrl(name), {
+    ...options,
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getHeaders(options?.headers),
+    },
+    body: JSON.stringify(namespaceEntry),
   });
 };
 

@@ -78,6 +78,10 @@ export class ApiHelper {
     return this.assertOk(resp, `addNamespace(${namespace.name})`);
   }
 
+  async getNamespace(name: string) {
+    return this.request.get(`${this.baseUrl}/api/v1/namespaces/${encodeURIComponent(name)}`);
+  }
+
   async deleteNamespace(name: string) {
     return this.request.delete(`${this.baseUrl}/api/v1/namespaces/${name}`);
   }
