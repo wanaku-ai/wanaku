@@ -146,6 +146,62 @@ cargo run -- --wanaku-config wanaku.yaml
 > [!WARNING]
 > Configuration is additive over the persisted snapshot. Wanaku restores the snapshot first, then applies the `bindings` from `wanaku.yaml` on top, matched by id. If you delete a binding from `wanaku.yaml` on a deployment that uses persistence, Wanaku still restores that binding from the snapshot on the next start. To remove a binding on a persistent deployment, you must also remove it from the registry snapshot. On a deployment without persistence, the configuration is the full source of truth.
 
+## Example: GitHub MCP Server
+
+The GitHub MCP server needs a GitHub token on every request, including discovery. The hosted server is at `https://api.githubcopilot.com/mcp/`. You can also run `github-mcp-server http` yourself. Wanaku cannot connect to the server in `stdio` mode.
+
+Wanaku does not do the OAuth flow that the GitHub MCP server offers. Use a GitHub personal access token.
+
+1. Create a GitHub personal access token with the scopes that your tools need.
+2. Export the token in the environment of the Wanaku process:
+
+   ```bash
+   export GITHUB_PAT=<your-token>
+   ```
+
+3. Add the forward and the binding to `wanaku.yaml`. The same binding serves discovery and invocation:
+
+   ```yaml
+   forwards:
+     - name: github
+       address: "https://api.githubcopilot.com/mcp/"
+       namespace: github
+       credentialBindings:
+         discovery: github-pat
+         invocation: github-pat
+
+   bindings:
+     - id: github-pat
+       forwardId: github
+       origin: "https://api.githubcopilot.com:443"
+       mechanism:
+         type: bearer
+       secretRefs:
+         - "env:GITHUB_PAT"
+       allowedPurposes:
+         - discovery
+         - invocation
+       revision: 1
+   ```
+
+4. Start Wanaku:
+
+   ```bash
+   cargo run -- --wanaku-config wanaku.yaml
+   ```
+
+Wanaku discovers the GitHub tools, resources, and prompts. Agents use them at `http://<host>:8081/github/mcp`. The governance configuration must allow the tool calls in the `github` namespace. See [Governance Posture](governance-posture.md).
+
+### Troubleshooting Authentication Failures
+
+If the upstream server rejects discovery, Wanaku marks the forward as unavailable. The `statusMessage` field of the forward tells you the cause:
+
+| Status message | Cause | Action |
+| --- | --- | --- |
+| `requires authentication (HTTP 401). Add a credential binding for discovery to this forward in wanaku.yaml` | The forward has no discovery binding. | Add a binding as shown above. You cannot add credentials through the admin UI or the management API. |
+| `requires authentication (HTTP 401)` | The forward has a discovery binding, but the upstream rejected the credential. | Make sure that the secret is set and that the token is valid. |
+| `rejected the credential: insufficient scope (HTTP 403)` | The token does not have the scopes that the upstream requires. | Give the token the necessary scopes. |
+
 ## Injection Mechanisms
 
 Wanaku supports a deliberately small set of injection mechanisms. There is no query-parameter, URL-path, request-body, or arbitrary template injection — a mechanism can never place a credential somewhere a caller could observe or redirect.

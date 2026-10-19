@@ -8,7 +8,7 @@ use wanaku_infra::credentials::{
     CredentialAuditSink, CredentialBroker, CredentialRedactor, DiscoveryExchange,
     resolve_discovery_headers,
 };
-use wanaku_infra::mcp_client::ForwardDiscovery;
+use wanaku_infra::mcp_client::{ForwardDiscovery, McpClientError};
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::NormalizedOrigin;
@@ -343,7 +343,7 @@ pub(super) async fn handle_forward_create(
             Err(e) => {
                 // Redact any injected discovery secret the upstream echoed into
                 // its error before it reaches the operator or the logs.
-                let message = redactor.redact(&e.to_string());
+                let message = discovery_failure_message(&forward, &redactor, &e);
                 warn!(forward = %forward.name, error = %message, "forward discovery failed");
                 forward.available = false;
                 forward.status_message = Some(message);
@@ -450,7 +450,7 @@ pub(super) async fn handle_forward_refresh(
         Err(e) => {
             // Redact any injected discovery secret the upstream echoed into its
             // error before it reaches the operator or the logs.
-            let message = redactor.redact(&e.to_string());
+            let message = discovery_failure_message(&forward, &redactor, &e);
             warn!(forward = %name, error = %message, "forward refresh discovery failed");
             forward.available = false;
             forward.status_message = Some(message);
@@ -542,6 +542,28 @@ async fn discovery_headers_or_status(
     resolve_discovery_headers(broker, registry, forward, audit_sink)
         .await
         .map_err(|e| format!("discovery credential brokerage failed: {e}"))
+}
+
+/// Build the redacted status message for a failed discovery.
+///
+/// When the upstream requires authentication and the forward has no discovery
+/// binding, the message tells the operator where to configure one.
+fn discovery_failure_message(
+    forward: &ForwardEntry,
+    redactor: &CredentialRedactor,
+    error: &McpClientError,
+) -> String {
+    let message = redactor.redact(&error.to_string());
+    match error {
+        McpClientError::AuthRequired { .. }
+            if forward.binding_for(CredentialPurpose::Discovery).is_none() =>
+        {
+            format!(
+                "{message}. Add a credential binding for discovery to this forward in wanaku.yaml"
+            )
+        }
+        _ => message,
+    }
 }
 
 /// Redact any brokered discovery credential the upstream echoed into its
@@ -660,7 +682,7 @@ pub async fn discover_and_update_forward(
         Err(e) => {
             // Redact any injected discovery secret the upstream echoed into
             // its error before it reaches the operator or the logs.
-            let message = redactor.redact(&e.to_string());
+            let message = discovery_failure_message(forward, &redactor, &e);
             warn!(forward = %forward.name, error = %message, "forward discovery failed at startup");
             let mut unavailable = forward.clone();
             unavailable.available = false;
@@ -1219,6 +1241,48 @@ mod forward_helpers_tests {
         assert!(
             registry.get_prompt("other-prompt").is_some(),
             "prompt from a different forward must not be removed"
+        );
+    }
+
+    fn github_forward(bindings: &serde_json::Value) -> ForwardEntry {
+        serde_json::from_value(serde_json::json!({
+            "name": "github",
+            "address": "https://api.githubcopilot.com/mcp/",
+            "credentialBindings": bindings,
+        }))
+        .expect("forward")
+    }
+
+    fn auth_required() -> McpClientError {
+        McpClientError::AuthRequired {
+            url: "https://api.githubcopilot.com/mcp/".to_owned(),
+        }
+    }
+
+    #[test]
+    fn auth_failure_without_discovery_binding_points_to_wanaku_yaml() {
+        let message = discovery_failure_message(
+            &github_forward(&serde_json::json!({})),
+            &CredentialRedactor::default(),
+            &auth_required(),
+        );
+        assert_eq!(
+            message,
+            "MCP server at https://api.githubcopilot.com/mcp/ requires authentication (HTTP 401). \
+             Add a credential binding for discovery to this forward in wanaku.yaml"
+        );
+    }
+
+    #[test]
+    fn auth_failure_with_discovery_binding_has_no_hint() {
+        let message = discovery_failure_message(
+            &github_forward(&serde_json::json!({"discovery": "gh-pat"})),
+            &CredentialRedactor::default(),
+            &auth_required(),
+        );
+        assert_eq!(
+            message,
+            "MCP server at https://api.githubcopilot.com/mcp/ requires authentication (HTTP 401)"
         );
     }
 }

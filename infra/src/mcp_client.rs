@@ -8,8 +8,12 @@ use rmcp::{
         CallToolRequestParams, ClientConfig, GetPromptRequestParams, PaginatedRequestParams,
         ProtocolVersion, ReadResourceRequestParams,
     },
+    service::ClientInitializeError,
     transport::{
-        StreamableHttpClientTransport, streamable_http_client::StreamableHttpClientTransportConfig,
+        StreamableHttpClientTransport,
+        streamable_http_client::{
+            AuthRequiredError, InsufficientScopeError, StreamableHttpClientTransportConfig,
+        },
     },
 };
 use serde_json::Value;
@@ -26,6 +30,12 @@ const MAX_PROMPTS: usize = 500;
 pub enum McpClientError {
     #[error("failed to connect to MCP server at {url}: {message}")]
     Connection { url: String, message: String },
+
+    #[error("MCP server at {url} requires authentication (HTTP 401)")]
+    AuthRequired { url: String },
+
+    #[error("MCP server at {url} rejected the credential: insufficient scope (HTTP 403)")]
+    InsufficientScope { url: String },
 
     #[error("MCP operation timed out for {url}")]
     Timeout { url: String },
@@ -71,6 +81,32 @@ fn client_config() -> ClientConfig {
     ClientConfig::default().with_protocol_version(ProtocolVersion::LATEST_WITH_INITIALIZE)
 }
 
+/// Map a failed client handshake to an error. An HTTP 401 or 403 from the
+/// upstream becomes a typed authentication error instead of an opaque
+/// transport message.
+fn connect_error(url: &str, error: &ClientInitializeError) -> McpClientError {
+    if let ClientInitializeError::TransportError { error, .. } = error {
+        let mut current: Option<&(dyn std::error::Error + 'static)> = Some(error);
+        while let Some(e) = current {
+            if e.is::<AuthRequiredError>() {
+                return McpClientError::AuthRequired {
+                    url: url.to_owned(),
+                };
+            }
+            if e.is::<InsufficientScopeError>() {
+                return McpClientError::InsufficientScope {
+                    url: url.to_owned(),
+                };
+            }
+            current = e.source();
+        }
+    }
+    McpClientError::Connection {
+        url: url.to_owned(),
+        message: error.to_string(),
+    }
+}
+
 fn build_transport(url: &str) -> impl rmcp::transport::Transport<rmcp::RoleClient> + use<> {
     build_transport_with_headers(url, HashMap::new())
 }
@@ -98,10 +134,7 @@ pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
     let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
-        .map_err(|e| McpClientError::Connection {
-            url: url.clone(),
-            message: e.to_string(),
-        })?;
+        .map_err(|e| connect_error(&url, &e))?;
 
     tracing::debug!(url = %url, "connected to MCP server for tools/list");
 
@@ -168,10 +201,7 @@ pub async fn call_tool(
     let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
-        .map_err(|e| McpClientError::Connection {
-            url: url.clone(),
-            message: e.to_string(),
-        })?;
+        .map_err(|e| connect_error(&url, &e))?;
 
     let mut params = CallToolRequestParams::new(tool_name.to_owned());
     if let Value::Object(args) = &arguments {
@@ -208,10 +238,7 @@ pub async fn list_resources(url: &str) -> Result<Vec<Value>, McpClientError> {
     let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
-        .map_err(|e| McpClientError::Connection {
-            url: url.clone(),
-            message: e.to_string(),
-        })?;
+        .map_err(|e| connect_error(&url, &e))?;
 
     tracing::debug!(url = %url, "connected to MCP server for resources/list");
 
@@ -266,10 +293,7 @@ pub async fn read_resource(
     let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
-        .map_err(|e| McpClientError::Connection {
-            url: url.clone(),
-            message: e.to_string(),
-        })?;
+        .map_err(|e| connect_error(&url, &e))?;
 
     let params = ReadResourceRequestParams::new(resource_uri.to_owned());
 
@@ -307,10 +331,7 @@ pub async fn list_resource_templates(url: &str) -> Result<Vec<Value>, McpClientE
     let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
-        .map_err(|e| McpClientError::Connection {
-            url: url.clone(),
-            message: e.to_string(),
-        })?;
+        .map_err(|e| connect_error(&url, &e))?;
 
     tracing::debug!(url = %url, "connected to MCP server for resources/templates/list");
 
@@ -368,10 +389,7 @@ pub async fn list_prompts(url: &str) -> Result<Vec<Value>, McpClientError> {
     let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
-        .map_err(|e| McpClientError::Connection {
-            url: url.clone(),
-            message: e.to_string(),
-        })?;
+        .map_err(|e| connect_error(&url, &e))?;
 
     tracing::debug!(url = %url, "connected to MCP server for prompts/list");
 
@@ -427,10 +445,7 @@ pub async fn get_prompt(
     let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
-        .map_err(|e| McpClientError::Connection {
-            url: url.clone(),
-            message: e.to_string(),
-        })?;
+        .map_err(|e| connect_error(&url, &e))?;
 
     let mut params = GetPromptRequestParams::new(prompt_name.to_owned());
     if let Some(args) = arguments {
@@ -477,10 +492,7 @@ pub async fn discover_forward(
     let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
-        .map_err(|e| McpClientError::Connection {
-            url: url.clone(),
-            message: e.to_string(),
-        })?;
+        .map_err(|e| connect_error(&url, &e))?;
 
     tracing::debug!(url = %url, "connected to MCP server for forward discovery");
 
@@ -879,5 +891,51 @@ mod tests {
             json!({"content": [], "structuredContent": null})
         );
         assert!(!response.is_error);
+    }
+
+    async fn rejecting_server(status: u16, challenge: Option<&str>) -> MockServer {
+        let server = MockServer::start().await;
+        let mut response = ResponseTemplate::new(status);
+        if let Some(challenge) = challenge {
+            response = response.insert_header("www-authenticate", challenge);
+        }
+        Mock::given(method("POST"))
+            .respond_with(response)
+            .mount(&server)
+            .await;
+        server
+    }
+
+    #[tokio::test]
+    async fn reports_auth_required_on_401_challenge() {
+        let server = rejecting_server(401, Some("Bearer resource_metadata=\"x\"")).await;
+        let error = list_tools(&server.uri()).await.expect_err("401");
+        assert!(matches!(error, super::McpClientError::AuthRequired { .. }));
+        assert_eq!(
+            error.to_string(),
+            format!(
+                "MCP server at {} requires authentication (HTTP 401)",
+                server.uri()
+            )
+        );
+    }
+
+    #[tokio::test]
+    async fn reports_insufficient_scope_on_403_challenge() {
+        let server = rejecting_server(403, Some("Bearer error=\"insufficient_scope\"")).await;
+        let error = super::discover_forward(&server.uri(), Default::default())
+            .await
+            .expect_err("403");
+        assert!(matches!(
+            error,
+            super::McpClientError::InsufficientScope { .. }
+        ));
+    }
+
+    #[tokio::test]
+    async fn reports_other_handshake_failures_as_connection_errors() {
+        let server = rejecting_server(500, None).await;
+        let error = list_tools(&server.uri()).await.expect_err("500");
+        assert!(matches!(error, super::McpClientError::Connection { .. }));
     }
 }
