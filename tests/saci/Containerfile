@@ -1,0 +1,56 @@
+# Saci worker image for Wanaku test plans (tests/saci/README.md).
+#
+# It extends the Saci worker image (https://github.com/orpiske/midnight-saci)
+# with `wanaku-server` and the `wanaku` CLI, so a Saci test plan can start
+# the server and drive it with the CLI, `curl` and `jq`.
+#
+#   make saci-image
+#   docker build -f tests/saci/Containerfile -t localhost/wanaku-saci-worker:latest tests/saci
+#
+# WANAKU_IMAGE supplies `wanaku-server`. `make saci-image` builds it from
+# this checkout first. The CLI comes from a wanaku-barn release.
+
+ARG SACI_IMAGE=quay.io/orpiske/saci-worker:latest
+ARG WANAKU_IMAGE=quay.io/wanaku/wanaku-server:early-access
+# A static busybox, used only to extract the CLI archive.
+ARG BUSYBOX_IMAGE=docker.io/library/busybox:1.37-musl
+
+FROM ${WANAKU_IMAGE} AS wanaku
+FROM ${BUSYBOX_IMAGE} AS busybox
+
+FROM ${SACI_IMAGE}
+ARG TARGETARCH
+ARG WANAKU_CLI_RELEASE=early-access
+ARG WANAKU_CLI_VERSION=0.3.0-SNAPSHOT
+
+USER root
+COPY --from=wanaku /usr/local/bin/wanaku-server /usr/local/bin/wanaku-server
+
+# The CLI has a native build for Linux x86_64 only. Other architectures use
+# the JVM build, which needs Java 21 or later. The launcher finds its files
+# relative to its own path, so /usr/local/bin/wanaku is a wrapper, not a link.
+RUN --mount=type=bind,from=busybox,source=/bin/busybox,target=/tmp/busybox \
+    set -eu; \
+    base="https://github.com/wanaku-ai/wanaku-barn/releases/download/${WANAKU_CLI_RELEASE}"; \
+    case "${TARGETARCH:-$(uname -m)}" in \
+        amd64|x86_64) archive="wanaku-cli-${WANAKU_CLI_VERSION}-linux-x86_64.zip"; launcher=bin/wanaku; programs="bin/wanaku bin/wanaku-cli" ;; \
+        *) archive="wanaku-cli-${WANAKU_CLI_VERSION}.zip"; launcher=wanaku; programs=wanaku; \
+           dnf install --assumeyes --setopt=install_weak_deps=False java-headless && dnf clean all ;; \
+    esac; \
+    tmp=$(mktemp -d); \
+    curl -fsSL -o "$tmp/$archive" "$base/$archive"; \
+    curl -fsSL -o "$tmp/checksums_sha256.txt" "$base/checksums_sha256.txt"; \
+    (cd "$tmp" && grep -F "  $archive" checksums_sha256.txt | sha256sum -c -); \
+    /tmp/busybox unzip -q "$tmp/$archive" -d "$tmp/out"; \
+    mv "$tmp"/out/* /opt/wanaku-cli; \
+    chmod -R a+rX,go-w /opt/wanaku-cli; \
+    (cd /opt/wanaku-cli && chmod 0755 $programs); \
+    printf '#!/bin/sh\nexec /opt/wanaku-cli/%s "$@"\n' "$launcher" >/usr/local/bin/wanaku; \
+    chmod 0755 /usr/local/bin/wanaku; \
+    rm -rf "$tmp"
+USER 10001:0
+
+LABEL org.opencontainers.image.title="wanaku-saci-worker" \
+      org.opencontainers.image.description="Saci worker with wanaku-server and the wanaku CLI" \
+      org.opencontainers.image.source="https://github.com/wanaku-ai/wanaku" \
+      org.opencontainers.image.licenses="Apache-2.0"

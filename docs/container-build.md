@@ -256,3 +256,10 @@ make build-image TARGET=openshift       # openshift, full variant (build only)
 make build-image-headless               # docker, headless variant (build only)
 make build-image-headless TARGET=minikube
 ```
+
+## Saci test image
+
+`make saci-image` builds `localhost/wanaku-saci-worker:latest`. This image is a
+[Midnight Saci](https://github.com/orpiske/midnight-saci) worker with `wanaku-server`
+and the `wanaku` CLI. Use it to run Saci test plans against Wanaku. See
+[tests/saci/README.md](../tests/saci/README.md).
