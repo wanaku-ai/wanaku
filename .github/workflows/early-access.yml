@@ -40,9 +40,6 @@ jobs:
           - os: macos-15
             platform: macos-aarch64
             container: false
-          - os: windows-2025
-            platform: windows-x86_64
-            container: false
     env:
       QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
       QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
@@ -93,8 +90,7 @@ jobs:
       - name: Build release binary
         run: cargo build --release --locked -p wanaku-server
 
-      - name: Package release binary (Unix)
-        if: runner.os != 'Windows'
+      - name: Package release binary
         env:
           PLATFORM: ${{ matrix.platform }}
         run: |
@@ -105,24 +101,10 @@ jobs:
           tar -C dist -czf "dist/$archive.tar.gz" "$archive"
           rm -rf "dist/$archive"
 
-      - name: Package release binary (Windows)
-        if: runner.os == 'Windows'
-        env:
-          PLATFORM: ${{ matrix.platform }}
-        shell: pwsh
-        run: |
-          $archive = "wanaku-server-$env:VERSION-$env:PLATFORM"
-          New-Item -ItemType Directory -Path "dist/$archive" -Force
-          Copy-Item target/release/wanaku-server.exe "dist/$archive/wanaku-server.exe"
-          Copy-Item LICENSE, README.md, wanaku.yaml "dist/$archive/"
-          Compress-Archive -Path "dist/$archive" -DestinationPath "dist/$archive.zip"
-          Remove-Item -Recurse -Force "dist/$archive"
-
       - name: Build headless release binary
         run: cargo build --release --locked -p wanaku-server --no-default-features
 
-      - name: Package headless release binary (Unix)
-        if: runner.os != 'Windows'
+      - name: Package headless release binary
         env:
           PLATFORM: ${{ matrix.platform }}
         run: |
@@ -133,26 +115,12 @@ jobs:
           tar -C dist -czf "dist/$archive.tar.gz" "$archive"
           rm -rf "dist/$archive"
 
-      - name: Package headless release binary (Windows)
-        if: runner.os == 'Windows'
-        env:
-          PLATFORM: ${{ matrix.platform }}
-        shell: pwsh
-        run: |
-          $archive = "wanaku-server-headless-$env:VERSION-$env:PLATFORM"
-          New-Item -ItemType Directory -Path "dist/$archive" -Force
-          Copy-Item target/release/wanaku-server.exe "dist/$archive/wanaku-server.exe"
-          Copy-Item LICENSE, README.md, wanaku.yaml "dist/$archive/"
-          Compress-Archive -Path "dist/$archive" -DestinationPath "dist/$archive.zip"
-          Remove-Item -Recurse -Force "dist/$archive"
-
       - name: Upload release archive
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: wanaku-server-${{ matrix.platform }}
           path: |
             dist/*.tar.gz
-            dist/*.zip
           if-no-files-found: error
 
       - name: Login to container registry
@@ -252,7 +220,7 @@ jobs:
         uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0
         with:
           version: 1.26.0
-          arguments: full-release
+          arguments: full-release --reject-platform=windows-x86_64
 
       - name: Announce release in GitHub Discussions
         env:
