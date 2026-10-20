@@ -58,5 +58,9 @@ wanaku-feature-simulation = { workspace = true, features = ["openapi"] }
 nix = { version = "0.31.3", default-features = false, features = ["process", "signal", "user"] }
 tikv-jemallocator = "0.7.0"
 
+# Praxis needs OpenSSL. Windows runners and hosts have no OpenSSL dev install, so build it from source.
+[target.'cfg(windows)'.dependencies]
+openssl = { version = "0.10.81", features = ["vendored"] }
+
 [dev-dependencies]
 tempfile = "3"
