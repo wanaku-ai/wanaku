@@ -1321,9 +1321,13 @@ mod tests {
     #[tokio::test]
     async fn opa_unavailable_is_a_failure() {
         let state = EvaluatorState::new();
-        state
-            .load_opa_connections(&[opa_connection("http://127.0.0.1:9")])
-            .unwrap();
+        // Windows retries a refused connection for about two seconds, so the
+        // default 1s test timeout would report a timeout instead.
+        let connection = crate::config::OpaConnection {
+            timeout_ms: 5000,
+            ..opa_connection("http://127.0.0.1:9")
+        };
+        state.load_opa_connections(&[connection]).unwrap();
         let client = state.get_opa_client("remote").unwrap();
         let definition = crate::config::OpaDef {
             connection: "remote".into(),
