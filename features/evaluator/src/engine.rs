@@ -33,7 +33,7 @@ pub struct ExecutionContext {
     pub compiled_schema: Option<Arc<CompiledSchema>>,
     pub allow_side_effects: bool,
     pub mode: ExecutionMode,
-    pub limits: Option<SimulationLimits>,
+    pub limits: Option<ProcessorLimits>,
 }
 
 #[derive(Debug)]
@@ -62,7 +62,7 @@ impl ExecutionContext {
     }
 }
 
-fn store_limits(limits: Option<SimulationLimits>) -> wasmtime::StoreLimits {
+fn store_limits(limits: Option<ProcessorLimits>) -> wasmtime::StoreLimits {
     limits.map_or_else(
         || wasmtime::StoreLimitsBuilder::new().build(),
         |limits| {
@@ -77,15 +77,16 @@ fn store_limits(limits: Option<SimulationLimits>) -> wasmtime::StoreLimits {
     )
 }
 
-/// Resource limits for transient processor execution.
+/// Resource limits for one processor invocation.
+/// Production and simulation execution both use these limits.
 #[derive(Debug, Clone, Copy)]
-pub struct SimulationLimits {
+pub struct ProcessorLimits {
     pub fuel: u64,
     pub memory_bytes: usize,
     pub timeout_ms: u64,
 }
 
-impl Default for SimulationLimits {
+impl Default for ProcessorLimits {
     fn default() -> Self {
         Self {
             fuel: PROCESSOR_FUEL,
@@ -119,7 +120,7 @@ impl EpochTicker {
     fn start(engine: Engine) -> Result<Self, EvaluatorExecutionError> {
         let (stop, receiver) = std::sync::mpsc::channel();
         let worker = std::thread::Builder::new()
-            .name("simulation-wasm-budget".to_owned())
+            .name("wasm-processor-budget".to_owned())
             .spawn(move || {
                 while matches!(
                     receiver.recv_timeout(std::time::Duration::from_millis(10)),
@@ -197,7 +198,7 @@ impl CompiledEvaluator {
     fn configure_deadline(
         &self,
         store: &mut Store<HostState>,
-        limits: Option<SimulationLimits>,
+        limits: Option<ProcessorLimits>,
     ) -> Result<Option<EpochTicker>, EvaluatorExecutionError> {
         match limits {
             Some(limits) => {
@@ -206,7 +207,7 @@ impl CompiledEvaluator {
                     .ok_or(EvaluatorExecutionError::Instantiation)?;
                 store.epoch_deadline_callback(move |_| {
                     if std::time::Instant::now() >= deadline {
-                        Err(wasmtime::Error::msg("simulation_processor_timeout"))
+                        Err(wasmtime::Error::msg("processor_timeout"))
                     } else {
                         Ok(wasmtime::UpdateDeadline::Continue(1))
                     }
