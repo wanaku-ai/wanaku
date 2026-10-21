@@ -73,6 +73,8 @@ The logs show these two services:
 - **MCP endpoint:** `http://127.0.0.1:8081/default/mcp` (default namespace)
 - **Management API:** `http://0.0.0.0:8080/api/v1`
 
+> **Note:** To run Wanaku as a service on Linux, use the systemd unit in [`deploy/systemd/wanaku.service`](../deploy/systemd/wanaku.service). This file is a template for convenience. Review it and adapt it to your system before you use it.
+
 ### 4. Verify the Server
 
 Open another terminal. Use the CLI to list the tools:
