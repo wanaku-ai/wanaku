@@ -39,6 +39,8 @@ export function AgentModal({ agent, onClose, onSave }: AgentModalProps) {
         description,
         // Automatic discovery must follow later endpoint changes.
         cardAddress: cardOverride ? new URL(cardOverride).href : undefined,
+        // The modal does not edit labels. Keep the labels of the existing agent.
+        labels: agent?.labels,
       });
       onClose();
     } catch (cause) {

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,6 +18,10 @@ pub struct AgentEntry {
         skip_serializing_if = "Option::is_none"
     )]
     pub card_address: Option<String>,
+    /// Free-form labels, for example an ownership marker of the registering
+    /// runtime. A conditional delete can require them.
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub labels: HashMap<String, String>,
 }
 
 fn default_namespace() -> String {
@@ -31,6 +37,8 @@ pub struct AgentView {
     pub address: String,
     #[serde(rename = "cardAddress", skip_serializing_if = "Option::is_none")]
     pub card_address: Option<String>,
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub labels: HashMap<String, String>,
     #[serde(rename = "proxyUrl")]
     pub proxy_url: String,
 }
@@ -60,6 +68,7 @@ impl AgentEntry {
             namespace: self.namespace,
             address: self.address,
             card_address: self.card_address,
+            labels: self.labels,
             proxy_url,
         }
     }
@@ -133,5 +142,27 @@ mod tests {
             entry.view("https://proxy.example/").proxy_url,
             "https://proxy.example/default/a2a/worker"
         );
+    }
+
+    #[test]
+    fn labels_are_optional_and_round_trip() {
+        let plain: AgentEntry =
+            serde_json::from_str(r#"{"name":"worker","address":"http://backend/rpc"}"#)
+                .expect("entry");
+        assert!(plain.labels.is_empty());
+        let plain_json = serde_json::to_value(&plain).expect("json");
+        assert!(plain_json.get("labels").is_none());
+        assert!(serde_json::to_value(plain.view("http://p")).expect("view")["labels"].is_null());
+
+        let labeled: AgentEntry = serde_json::from_str(
+            r#"{"name":"worker","address":"http://backend/rpc","labels":{"cic.instance":"pod-a"}}"#,
+        )
+        .expect("labeled entry");
+        let json = serde_json::to_value(&labeled).expect("json");
+        assert_eq!(json["labels"]["cic.instance"], "pod-a");
+        let reparsed: AgentEntry = serde_json::from_value(json).expect("reparsed");
+        assert_eq!(reparsed.labels, labeled.labels);
+        let view = serde_json::to_value(labeled.view("http://p")).expect("view");
+        assert_eq!(view["labels"]["cic.instance"], "pod-a");
     }
 }

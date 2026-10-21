@@ -5,12 +5,14 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
+import type { WanakuResponseVecAgentViewDataItemLabels } from "./wanakuResponseVecAgentViewDataItemLabels";
 
 export type WanakuResponseVecAgentViewDataItem = {
   address: string;
   /** @nullable */
   cardAddress?: string | null;
   description: string;
+  labels?: WanakuResponseVecAgentViewDataItemLabels;
   name: string;
   namespace: string;
   proxyUrl: string;
