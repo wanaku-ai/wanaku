@@ -12,6 +12,17 @@ use wanaku_types::registry::{
     ToolRegistry, inject_request_id_arg,
 };
 
+/// Outcome of a remove operation guarded by a precondition.
+#[derive(Debug, Clone)]
+pub enum ConditionalRemoval<T> {
+    /// The entry existed, the precondition held, and the entry was removed.
+    Removed(T),
+    /// No entry exists with the given key.
+    NotFound,
+    /// The entry exists but the precondition failed. The entry was kept.
+    PreconditionFailed,
+}
+
 #[derive(Clone)]
 pub struct InMemoryRegistry {
     agents: Arc<DashMap<String, crate::agents::RegisteredAgent>>,
@@ -122,6 +133,28 @@ impl InMemoryRegistry {
             self.persist();
         }
         removed
+    }
+
+    /// Remove a forward only when `predicate` holds for the stored entry.
+    ///
+    /// The check and the removal run under one map write lock, so a
+    /// concurrent upsert of the same name cannot occur between them.
+    pub fn remove_forward_if(
+        &self,
+        name: &str,
+        predicate: impl FnOnce(&ForwardEntry) -> bool,
+    ) -> ConditionalRemoval<ForwardEntry> {
+        let outcome = match self.forwards.entry(name.to_owned()) {
+            dashmap::mapref::entry::Entry::Occupied(occupied) if predicate(occupied.get()) => {
+                ConditionalRemoval::Removed(occupied.remove())
+            }
+            dashmap::mapref::entry::Entry::Occupied(_) => ConditionalRemoval::PreconditionFailed,
+            dashmap::mapref::entry::Entry::Vacant(_) => ConditionalRemoval::NotFound,
+        };
+        if matches!(outcome, ConditionalRemoval::Removed(_)) {
+            self.persist();
+        }
+        outcome
     }
 
     pub fn enable_request_id_injection(&self) {
@@ -1246,6 +1279,84 @@ mod tests {
         assert!(registry.remove_binding("b1"));
         assert!(registry.get_binding("b1").is_none());
         assert!(!registry.remove_binding("b1"));
+    }
+
+    fn owned_forward(owner: &str) -> ForwardEntry {
+        let mut forward = sample_forward("owned", None);
+        forward.labels.insert("owner".to_owned(), owner.to_owned());
+        forward
+    }
+
+    fn owned_by(owner: &str) -> impl Fn(&ForwardEntry) -> bool + '_ {
+        move |forward| forward.labels.get("owner").map(String::as_str) == Some(owner)
+    }
+
+    #[test]
+    fn remove_forward_if_reports_each_outcome() {
+        let registry = InMemoryRegistry::new();
+        assert!(matches!(
+            registry.remove_forward_if("owned", owned_by("a")),
+            ConditionalRemoval::NotFound
+        ));
+        registry.register_forward(owned_forward("a"));
+        assert!(matches!(
+            registry.remove_forward_if("owned", owned_by("b")),
+            ConditionalRemoval::PreconditionFailed
+        ));
+        assert!(registry.get_forward("owned").is_some());
+        assert!(matches!(
+            registry.remove_forward_if("owned", owned_by("a")),
+            ConditionalRemoval::Removed(forward) if forward.labels["owner"] == "a"
+        ));
+        assert!(registry.get_forward("owned").is_none());
+    }
+
+    #[test]
+    fn remove_forward_if_keeps_upsert_made_after_owner_read() {
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(owned_forward("a"));
+        // Instance "a" reads its forward, then instance "b" replaces it.
+        assert!(registry.get_forward("owned").is_some());
+        registry.register_forward(owned_forward("b"));
+        // The conditional delete from "a" must not remove the forward of "b".
+        assert!(matches!(
+            registry.remove_forward_if("owned", owned_by("a")),
+            ConditionalRemoval::PreconditionFailed
+        ));
+        assert_eq!(
+            registry
+                .get_forward("owned")
+                .map(|f| f.labels["owner"].clone()),
+            Some("b".to_owned())
+        );
+    }
+
+    #[test]
+    fn remove_forward_if_is_atomic_with_concurrent_upsert() {
+        for _ in 0..200 {
+            let registry = InMemoryRegistry::new();
+            registry.register_forward(owned_forward("a"));
+            let outcome = std::thread::scope(|scope| {
+                let remover = scope.spawn(|| registry.remove_forward_if("owned", owned_by("a")));
+                scope.spawn(|| registry.register_forward(owned_forward("b")));
+                remover.join()
+            })
+            .expect("remover thread");
+            // Whatever the order, only the forward of "a" may be removed and
+            // the forward of "b" always survives.
+            let allowed = match &outcome {
+                ConditionalRemoval::Removed(forward) => forward.labels["owner"] == "a",
+                ConditionalRemoval::PreconditionFailed => true,
+                ConditionalRemoval::NotFound => false,
+            };
+            assert!(allowed, "unexpected outcome: {outcome:?}");
+            assert_eq!(
+                registry
+                    .get_forward("owned")
+                    .map(|f| f.labels["owner"].clone()),
+                Some("b".to_owned())
+            );
+        }
     }
 
     #[test]
