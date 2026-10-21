@@ -11,25 +11,23 @@
 //! or governance decision that triggered it. Correlation is a follow-up.
 
 use wanaku_infra::credentials::{CredentialAuditRecord, CredentialAuditSink, ResolutionOutcome};
-use wanaku_types::audit::{
-    AuditCategory, AuditDecision, AuditEvent, AuditStore, InMemoryAuditStore,
-};
+use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHandle, AuditStore};
 
 /// The filter name recorded on credential brokerage audit events.
 const CREDENTIAL_FILTER: &str = "wanaku_credentials";
 
 /// A [`CredentialAuditSink`] backed by the durable audit store.
 ///
-/// Wraps the shared [`InMemoryAuditStore`] and adapts each redacted
+/// Wraps the shared [`AuditHandle`] and adapts each redacted
 /// [`CredentialAuditRecord`] into an [`AuditEvent`] before recording it.
 pub struct CredentialAuditRecorder {
-    store: InMemoryAuditStore,
+    store: AuditHandle,
 }
 
 impl CredentialAuditRecorder {
     /// Build a recorder that writes into `store`.
     #[must_use]
-    pub const fn new(store: InMemoryAuditStore) -> Self {
+    pub const fn new(store: AuditHandle) -> Self {
         Self { store }
     }
 }
@@ -113,6 +111,8 @@ fn credential_audit_event(record: &CredentialAuditRecord) -> AuditEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
+    use wanaku_infra::audit::InMemoryAuditStore;
     use wanaku_infra::credentials::ExpiryCategory;
     use wanaku_types::audit::{AuditQuery, DEFAULT_AUDIT_CAPACITY};
     use wanaku_types::credentials::CredentialPurpose;
@@ -183,7 +183,7 @@ mod tests {
     #[test]
     fn recorder_writes_event_into_store() {
         let store = InMemoryAuditStore::new(DEFAULT_AUDIT_CAPACITY);
-        let recorder = CredentialAuditRecorder::new(store.clone());
+        let recorder = CredentialAuditRecorder::new(AuditHandle::new(Arc::new(store.clone())));
 
         recorder.record_credential_audit(&record(
             ResolutionOutcome::Resolved,

@@ -59,10 +59,9 @@ impl AuditPersistence for FileAuditPersistence {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wanaku_infra::audit::InMemoryAuditStore;
     use wanaku_types::TOOLS_CALL;
-    use wanaku_types::audit::{
-        AuditCategory, AuditDecision, AuditPersistence, AuditStore, InMemoryAuditStore,
-    };
+    use wanaku_types::audit::{AuditCategory, AuditDecision, AuditPersistence, AuditStore};
 
     #[test]
     fn events_survive_file_round_trip() {

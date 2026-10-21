@@ -11,8 +11,9 @@ pub use credential_recorder::CredentialAuditRecorder;
 use http::Response;
 use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 use std::sync::{Arc, RwLock};
+use wanaku_infra::audit::InMemoryAuditStore;
 use wanaku_infra::credentials::CredentialAuditSink;
-use wanaku_types::audit::{AuditPersistence, DEFAULT_AUDIT_CAPACITY, InMemoryAuditStore};
+use wanaku_types::audit::{AuditHandle, AuditPersistence, DEFAULT_AUDIT_CAPACITY};
 use wanaku_types::audit_redaction::{AuditRedactionRules, AuditRedactor};
 use wanaku_types::feature::{Feature, HttpContext};
 
@@ -53,7 +54,16 @@ impl AuditFeature {
     /// after every builder, or the sink writes into a discarded store.
     #[must_use]
     pub fn credential_audit_sink(&self) -> Arc<dyn CredentialAuditSink> {
-        Arc::new(CredentialAuditRecorder::new(self.store()))
+        Arc::new(CredentialAuditRecorder::new(self.audit_handle()))
+    }
+
+    /// A contract handle that audit producers use to record events.
+    ///
+    /// The handle wraps the current store. It does not expose semantic
+    /// ingestion, which stays inside this feature.
+    #[must_use]
+    pub fn audit_handle(&self) -> AuditHandle {
+        audit_handle(&self.store())
     }
 
     #[must_use]
@@ -137,12 +147,16 @@ impl Default for AuditFeature {
     }
 }
 
+fn audit_handle(store: &InMemoryAuditStore) -> AuditHandle {
+    AuditHandle::new(Arc::new(store.clone()))
+}
+
 struct AuditStoreExtension {
-    store: InMemoryAuditStore,
+    handle: AuditHandle,
 }
 impl PipelineExtension for AuditStoreExtension {
     fn prepare(&self, extensions: &mut RequestExtensions) {
-        extensions.insert(self.store.clone());
+        extensions.insert(self.handle.clone());
     }
 }
 
@@ -167,12 +181,11 @@ impl Feature for AuditFeature {
         self.store
             .read()
             .map(|store| {
+                let handle = audit_handle(&store);
                 let sink: Arc<dyn CredentialAuditSink> =
-                    Arc::new(CredentialAuditRecorder::new(store.clone()));
+                    Arc::new(CredentialAuditRecorder::new(handle.clone()));
                 vec![
-                    Box::new(AuditStoreExtension {
-                        store: store.clone(),
-                    }) as Box<dyn PipelineExtension>,
+                    Box::new(AuditStoreExtension { handle }) as Box<dyn PipelineExtension>,
                     Box::new(CredentialAuditSinkExtension { sink }) as Box<dyn PipelineExtension>,
                 ]
             })
