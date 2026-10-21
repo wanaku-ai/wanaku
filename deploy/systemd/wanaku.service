@@ -1,0 +1,52 @@
+# Template systemd unit for the Wanaku server.
+#
+# This file is a convenience template. Review it and adapt it to your system
+# before you use it.
+#
+# Install:
+#   sudo useradd --system --home-dir /var/lib/wanaku --shell /usr/sbin/nologin wanaku
+#   sudo install -m 0644 wanaku.service /etc/systemd/system/wanaku.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now wanaku
+#
+# Logs:
+#   journalctl -u wanaku -f
+
+[Unit]
+Description=Wanaku governed action proxy for AI agents
+Documentation=https://github.com/wanaku-ai/wanaku
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=wanaku
+Group=wanaku
+
+# systemd creates /var/lib/wanaku and /etc/wanaku with the correct ownership.
+StateDirectory=wanaku
+ConfigurationDirectory=wanaku
+WorkingDirectory=/var/lib/wanaku
+
+Environment=HOME=/var/lib/wanaku
+Environment=WANAKU_PERSIST_PATH=/var/lib/wanaku
+# Optional overrides. Put additional WANAKU_* variables in this file.
+EnvironmentFile=-/etc/wanaku/wanaku.env
+
+# The server ignores a missing --wanaku-config file and uses its defaults.
+# Add --pipeline-config /etc/wanaku/pipeline.yaml to use a custom pipeline.
+ExecStart=/usr/local/bin/wanaku-server --wanaku-config /etc/wanaku/wanaku.yaml
+
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
