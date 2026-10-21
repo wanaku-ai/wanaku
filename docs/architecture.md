@@ -279,13 +279,13 @@ pub trait Feature: Send + Sync {
 
 **Lifecycle:**
 
-1. The server creates feature instances in `main.rs`.
+1. `App::build` in `server/src/app.rs` creates the feature instances.
 2. The server calls `load_yaml_config` and `load_env_config`.
 3. The server calls `register_filters` to add filters to the pipeline.
 4. The server calls `pipeline_extensions` to get shared state, such as an LLM client.
 5. For each request, the server calls `handle_route` until a feature owns the route.
 
-**Registered features** (in `main.rs`):
+**Registered features** (in `server/src/app.rs`):
 
 1. **Metrics** (`features/metrics/`) — exposes an in-memory metrics snapshot
 2. **Intercept** (`features/intercept/`) — records request/response interactions for conversation history
@@ -295,6 +295,23 @@ pub trait Feature: Send + Sync {
 6. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
 
 See [Features](./features.md) for how to create your own.
+
+### Application Assembly
+
+`App::build` in `server/src/app.rs` assembles the production runtime graph. The binary and the server tests call the same function, so both use the same registry, policy, evaluator, and audit wiring.
+
+The function receives two inputs:
+
+- `AppSettings`: the resolved startup settings. These are the Praxis pipeline configuration, the parsed bootstrap YAML, the governance posture, and the plugin directory.
+- `AppResources`: the runtime resources. These are the optional persistence backends (`AppPersistence`) and the shared credential broker.
+
+The function creates the features, loads the bootstrap configuration, validates the features, registers the filters, and resolves the listener pipelines. It returns an `App` value. `App` exposes the shared registry, the audit store, the listener pipelines, and the management service. `WanakuManagementService::dispatch` runs one management request without a socket.
+
+`server/src/main.rs` is the startup adapter. It parses the command line, reads the environment, constructs the persistence backends and the credential broker, and calls `App::build`. Then it registers the listeners and the background services, and it starts the server. It stops the process when assembly fails.
+
+**Composition tests:** `server/tests/app_assembly.rs` builds an `App` from the embedded pipeline configuration with in-memory persistence. The tests send management requests through `app.management.dispatch` and run MCP requests through the `mcp` listener pipeline in process. To run a request, the tests pin the pipeline on a `PingoraRequestCtx`, build the filter context, and call `execute_http_request_body` with the complete body. This is the same sequence that the protocol layer uses for a `StreamBuffer` request. The tests open no ports, change no environment variables, and contact no external services. Each `App` has its own state, so the tests can run at the same time. Run them with `cargo test -p wanaku-server --test app_assembly`.
+
+These tests do not replace the Playwright suite or the external `wanaku-tests` suite.
 
 ### A2A proxy
 
