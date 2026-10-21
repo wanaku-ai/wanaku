@@ -56,6 +56,29 @@ impl EvaluationEngine {
             Self::Passthrough => "passthrough",
         }
     }
+
+    /// Whether the engine calls a service outside the Wanaku process.
+    ///
+    /// Basic audit skips external engines.
+    #[must_use]
+    pub const fn is_external(&self) -> bool {
+        match self {
+            Self::Llm(_) | Self::TypesafeSystemOne(_) | Self::Opa(_) => true,
+            Self::Passthrough => false,
+        }
+    }
+
+    /// Whether policy simulation can execute the engine offline within bounded limits.
+    ///
+    /// This is declared separately from [`Self::is_external`]: an engine that
+    /// performs no network request is not safe for simulation by that fact alone.
+    #[must_use]
+    pub const fn supports_offline_simulation(&self) -> bool {
+        match self {
+            Self::Llm(_) | Self::TypesafeSystemOne(_) | Self::Opa(_) => false,
+            Self::Passthrough => true,
+        }
+    }
 }
 
 /// What triggers this evaluator.
@@ -152,6 +175,38 @@ mod tests {
         });
         let result: Result<EvaluatorDef, _> = serde_json::from_value(json);
         assert!(result.is_err(), "legacy llm configuration must be rejected");
+    }
+
+    #[test]
+    fn every_engine_declares_execution_capabilities() {
+        let cases = [
+            (
+                serde_json::json!({"type": "llm", "operation": "classify", "prompt": "p", "connection": "c"}),
+                true,
+                false,
+            ),
+            (
+                serde_json::json!({"type": "typesafe-system-one", "connection": "c", "noul": {"id": "n", "instructions": "i"}}),
+                true,
+                false,
+            ),
+            (
+                serde_json::json!({"type": "opa", "connection": "c", "decision_path": "wanaku/allow"}),
+                true,
+                false,
+            ),
+            (serde_json::json!({"type": "passthrough"}), false, true),
+        ];
+        for (json, external, simulation) in cases {
+            let engine: EvaluationEngine = serde_json::from_value(json).expect("valid engine");
+            assert_eq!(engine.is_external(), external, "{}", engine.kind());
+            assert_eq!(
+                engine.supports_offline_simulation(),
+                simulation,
+                "{}",
+                engine.kind()
+            );
+        }
     }
 
     #[test]

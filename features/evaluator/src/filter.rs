@@ -231,7 +231,7 @@ fn is_governed_method(method: &str) -> bool {
 const fn skip_external(posture: &GovernancePosture, engine: &EvaluationEngine) -> bool {
     matches!(posture.mode, EnforcementMode::Audit)
         && matches!(posture.audit_level, AuditLevel::Basic)
-        && !matches!(engine, EvaluationEngine::Passthrough)
+        && engine.is_external()
 }
 
 struct RequestAudit<'a> {
@@ -1139,6 +1139,108 @@ mod tests {
             );
         }
         assert!(server.received_requests().await.unwrap().is_empty());
+    }
+
+    fn remote_engine_state(engine: &serde_json::Value) -> EvaluatorState {
+        let state = EvaluatorState::new();
+        state
+            .load_llm_connections(vec![crate::config::LlmConnection {
+                name: "remote".into(),
+                url: "http://127.0.0.1:1".into(),
+                model: "test".into(),
+                api_key: "secret".into(),
+            }])
+            .unwrap();
+        state
+            .load_system_one_connections(vec![crate::config::SystemOneConnection {
+                name: "remote".into(),
+                url: "http://127.0.0.1:1".into(),
+                model: "test".into(),
+                api_key: "secret".into(),
+            }])
+            .unwrap();
+        state
+            .load_opa_connections(&[opa_connection("http://127.0.0.1:1")])
+            .unwrap();
+        state.load_evaluators(vec![serde_json::from_value(serde_json::json!({"name":"remote","trigger":{"method":"tools/call"},"engine":engine,"processor":{"path":"missing.wasm"}})).unwrap()]);
+        state
+    }
+
+    /// Every engine type with its expected external execution capability.
+    const ENGINE_CASES: [(&str, bool); 4] = [
+        (
+            r#"{"type":"llm","connection":"remote","operation":"classify","prompt":"t"}"#,
+            true,
+        ),
+        (
+            r#"{"type":"typesafe-system-one","connection":"remote","noul":{"id":"t","instructions":"t"}}"#,
+            true,
+        ),
+        (
+            r#"{"type":"opa","connection":"remote","decision_path":"wanaku/allow"}"#,
+            true,
+        ),
+        (r#"{"type":"passthrough"}"#, false),
+    ];
+
+    /// Run one `tools/call` request without a registry extension. An executed
+    /// engine stops with `registry_unavailable` before any engine or processor call.
+    async fn posture_reason(
+        engine: &serde_json::Value,
+        mode: EnforcementMode,
+        audit_level: AuditLevel,
+    ) -> String {
+        let request = request();
+        let mut ctx = make_filter_context(&request);
+        ctx.set_metadata(wanaku_filters::MCP_METHOD_KEY, "tools/call");
+        let mut governance = GovernanceConfig::default();
+        governance.default.mode = mode;
+        governance.default.audit_level = audit_level;
+        ctx.extensions.insert(governance);
+        ctx.extensions.insert(remote_engine_state(engine));
+        let store = InMemoryAuditStore::new(10);
+        ctx.extensions.insert(store.clone());
+        let action = EvaluatorFilter {
+            max_body_bytes: 1024,
+        }
+        .handle_body(&mut ctx, &mut None)
+        .await
+        .unwrap();
+        assert_eq!(
+            matches!(action, FilterAction::Continue),
+            mode != EnforcementMode::Enforce
+        );
+        let events = store.query(&wanaku_types::audit::AuditQuery::default());
+        events.events[0].reason_code.clone()
+    }
+
+    #[tokio::test]
+    async fn engine_capabilities_select_execution_for_every_posture() {
+        let postures = [
+            (EnforcementMode::Enforce, AuditLevel::Basic),
+            (EnforcementMode::Audit, AuditLevel::Basic),
+            (EnforcementMode::Audit, AuditLevel::Full),
+            (EnforcementMode::Disabled, AuditLevel::Basic),
+        ];
+        for (engine, external) in ENGINE_CASES {
+            let engine: serde_json::Value = serde_json::from_str(engine).unwrap();
+            for (mode, audit_level) in postures {
+                let expected = match (mode, audit_level) {
+                    (EnforcementMode::Disabled, _) => "evaluator_disabled",
+                    (EnforcementMode::Audit, AuditLevel::Basic) if external => {
+                        "evaluator_external_evaluation_disabled"
+                    }
+                    (EnforcementMode::Enforce | EnforcementMode::Audit, _) => {
+                        "evaluator_registry_unavailable"
+                    }
+                };
+                assert_eq!(
+                    Box::pin(posture_reason(&engine, mode, audit_level)).await,
+                    expected,
+                    "engine {engine} with {mode:?}/{audit_level:?}"
+                );
+            }
+        }
     }
 
     fn opa_connection(url: &str) -> crate::config::OpaConnection {

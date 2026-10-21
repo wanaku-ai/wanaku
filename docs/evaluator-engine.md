@@ -101,6 +101,18 @@ for guest ABI compatibility.
 | `typesafe-system-one` | Calls a TypeSafe System One Noul primitive and provides a normalized typed result. |
 | `opa` | Queries an Open Policy Agent decision through the REST Data API and provides a normalized decision. See [Open Policy Agent](#open-policy-agent). |
 
+Each engine type declares two execution capabilities. Basic audit uses the
+external capability. Policy simulation uses the offline simulation capability.
+An engine without network calls does not get offline simulation support
+automatically.
+
+| Type | External execution | Offline simulation |
+|---|---|---|
+| `llm` | Yes | No |
+| `passthrough` | No | Yes |
+| `typesafe-system-one` | Yes | No |
+| `opa` | Yes | No |
+
 Use this configuration for a processor that needs the normalized request context:
 
 ```yaml
