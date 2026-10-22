@@ -129,7 +129,8 @@ Wanaku applies these rules when it loads the configuration:
 
 - Wanaku registers every binding before it runs forward discovery. A forward that references a discovery binding needs the binding to exist first. A missing discovery binding makes the discovery call fail closed.
 - Wanaku validates each binding before it registers the binding. A binding that fails validation is logged and skipped. The rest of the configuration still loads. Bearer and named-header mechanisms require exactly one secret reference. The Basic mechanism requires exactly two secret references.
-- The `origin` value must be the exact normalized origin: scheme, host, and explicit port. Use `https://api.example.com:443`, not `https://api.example.com`. The broker compares the binding origin to the normalized forward address, and an unnormalized origin does not match.
+- Each binding must have an `origin` value. A binding without an `origin` is logged and skipped. The origin is the scheme, host, and port of the forward address. For the address `http://host.docker.internal:3000/mcp`, use `http://host.docker.internal:3000`. Wanaku adds the default port when you omit it, so `https://api.example.com` becomes `https://api.example.com:443`.
+- Wanaku logs a warning for each unknown key in a forward or binding entry and ignores the key. For example, a forward with `credentialsBindings` instead of `credentialBindings` gets no credential bindings. Read the startup log for `ignoring unknown key in wanaku.yaml entry` warnings.
 - The `forwardId` of a binding must equal the `name` of the forward that references it. The broker rejects a binding that a different forward tries to use.
 
 Start the server with your configuration file:
