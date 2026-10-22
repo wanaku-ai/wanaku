@@ -589,7 +589,7 @@ spec:
         - name: config
           mountPath: /etc/wanaku
         - name: data
-          mountPath: /data
+          mountPath: /data/registry
       volumes:
       - name: config
         configMap:

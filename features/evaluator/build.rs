@@ -11,6 +11,10 @@ fn main() {
 
     std::fs::create_dir_all(&dist_dir).ok();
 
+    // The actions build against the canonical WIT in this crate.
+    let wit_file = Path::new(env!("CARGO_MANIFEST_DIR")).join("wit/evaluator.wit");
+    println!("cargo:rerun-if-changed={}", wit_file.display());
+
     let rust_actions = [
         ("safety-review", "safety_review_action.wasm"),
         ("assembly-filter", "assembly_filter_action.wasm"),
@@ -20,11 +24,9 @@ fn main() {
     for (crate_name, output_name) in &rust_actions {
         let crate_dir = actions_dir.join(crate_name);
         let src_file = crate_dir.join("src/lib.rs");
-        let wit_file = crate_dir.join("wit/evaluator.wit");
         let output = dist_dir.join(output_name);
 
         println!("cargo:rerun-if-changed={}", src_file.display());
-        println!("cargo:rerun-if-changed={}", wit_file.display());
         println!("cargo:rerun-if-changed={}", output.display());
 
         if output.exists() {

@@ -13,6 +13,10 @@ The Wanaku Server binary.
 
 **NOTE**: You can get the CLI, operator and other additional utilities from the [Wanaku Barn](https://github.com/wanaku-ai/wanaku-barn/releases) project.
 
+### Evaluators
+
+Prebuilt evaluator WASM actions, the WIT contract, and the JavaScript SDK typings (all platforms): [wanaku-evaluators-{{projectVersion}}.tar.gz](https://github.com/wanaku-ai/wanaku/releases/download/{{tagName}}/wanaku-evaluators-{{projectVersion}}.tar.gz)
+
 ### Container Images
 
 ```

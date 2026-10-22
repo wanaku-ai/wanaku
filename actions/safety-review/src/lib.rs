@@ -17,7 +17,13 @@ impl Guest for SafetyReview {
         );
         bindings::wanaku::evaluator::log::info(&details);
 
-        let (level, reason) = classify(&ctx.llm_result);
+        let Some((level, reason)) = classify(&ctx.llm_result) else {
+            bindings::wanaku::evaluator::log::warn("Unrecognized safety classification");
+            bindings::wanaku::evaluator::response::reject_malformed(
+                "unrecognized safety classification",
+            );
+            return;
+        };
 
         match level.as_str() {
             "red" => {
@@ -41,23 +47,24 @@ impl Guest for SafetyReview {
 ///
 /// A TypeSafe Noul result contains the probability that its safety condition
 /// is true. A probability below 0.5 blocks the request. An LLM result uses
-/// `{"level": "green|yellow|red", "reason": "..."}`.
-fn classify(engine_result: &str) -> (String, String) {
+/// `{"level": "green|yellow|red", "reason": "..."}` or a plain label. Any
+/// other result returns `None`, so the request is not passed by default.
+fn classify(engine_result: &str) -> Option<(String, String)> {
     if let Ok(value) = serde_json::from_str::<serde_json::Value>(engine_result) {
         if let Some(result) = classify_system_one(&value) {
-            return result;
+            return Some(result);
         }
         let level = value
             .get("level")
             .and_then(serde_json::Value::as_str)
-            .unwrap_or("green")
-            .to_string();
+            .map(|level| level.trim().to_lowercase())
+            .filter(|level| matches!(level.as_str(), "green" | "yellow" | "red"))?;
         let reason = value
             .get("reason")
             .and_then(serde_json::Value::as_str)
             .unwrap_or(engine_result)
             .to_string();
-        return (level, reason);
+        return Some((level, reason));
     }
 
     let lower = engine_result.to_lowercase();
@@ -65,10 +72,12 @@ fn classify(engine_result: &str) -> (String, String) {
         "red"
     } else if lower.contains("yellow") {
         "yellow"
-    } else {
+    } else if lower.contains("green") {
         "green"
+    } else {
+        return None;
     };
-    (level.to_string(), engine_result.to_string())
+    Some((level.to_string(), engine_result.to_string()))
 }
 
 fn classify_system_one(value: &serde_json::Value) -> Option<(String, String)> {
@@ -104,7 +113,8 @@ mod tests {
     fn blocks_when_system_one_marks_the_request_unsafe() {
         let (level, reason) = classify(
             r#"{"engine":"typesafe-system-one","primitive":{"type":"noul"},"answer":{"noul":0.05}}"#,
-        );
+        )
+        .unwrap();
         assert_eq!(level, "red");
         assert!(reason.contains("0.05"));
     }
@@ -113,7 +123,25 @@ mod tests {
     fn allows_when_system_one_marks_the_request_safe() {
         let (level, _) = classify(
             r#"{"engine":"typesafe-system-one","primitive":{"type":"noul"},"answer":{"noul":0.95}}"#,
-        );
+        )
+        .unwrap();
         assert_eq!(level, "green");
+    }
+
+    #[test]
+    fn rejects_unrecognized_results() {
+        assert!(classify(r#"{"level": "purple"}"#).is_none());
+        assert!(classify(r#"{"reason": "no level"}"#).is_none());
+        assert!(classify(
+            r#"{"engine":"typesafe-system-one","primitive":{"type":"noul"},"answer":{"noul":7}}"#
+        )
+        .is_none());
+        assert!(classify("I cannot answer that").is_none());
+    }
+
+    #[test]
+    fn accepts_plain_labels() {
+        assert_eq!(classify("green").unwrap().0, "green");
+        assert_eq!(classify("RED").unwrap().0, "red");
     }
 }

@@ -11,6 +11,7 @@ This guide is for developers who configure evaluators or write evaluator action 
 ## Contents
 
 - [YAML Configuration](#yaml-configuration)
+- [Bundled Evaluators](#bundled-evaluators)
 - [Complete Examples](#complete-examples)
 - [Writing Action Scripts in JavaScript](#writing-action-scripts-in-javascript)
 - [Writing Action Scripts in Rust](#writing-action-scripts-in-rust)
@@ -318,6 +319,36 @@ The WASM script can call `block()`, `pass()`, `warn()`, `filterTools()`, or `set
 - `governance.default.on_failure: deny` blocks requests after evaluator failures. This is the default.
 - Namespace overrides can change the failure behavior. See [Governance Posture](governance-posture.md).
 
+## Bundled Evaluators
+
+Wanaku ships three prebuilt action scripts, so you can use evaluators without a WASM toolchain.
+
+| File | Engine input | Behavior | Source |
+|------|--------------|----------|--------|
+| `safety_review_action.wasm` | `{"level": "green\|yellow\|red", "reason": "..."}` from an `llm` engine, or a TypeSafe System One result | Blocks `red`, warns on `yellow`, and passes `green`. For a TypeSafe System One result, blocks a probability below 0.5. Rejects any other result as malformed (`-32002`). | [`actions/safety-review`](../actions/safety-review/src/lib.rs) |
+| `assembly_filter_action.wasm` | A JSON array of tool names | Moves the named tools from the `default` namespace into the request namespace and limits the tool list to them. Skips tools from other namespaces. Passes all tools if the input is not a JSON array. | [`actions/assembly-filter`](../actions/assembly-filter/src/lib.rs) |
+| `opa_allow_action.wasm` | A normalized OPA decision from an `opa` engine | Passes only when the decision is `"allow": true`. Blocks all other input. | [`actions/opa-allow`](../actions/opa-allow/src/lib.rs) |
+
+The location of the files depends on how you install Wanaku:
+
+| Install method | Location | Example `processor.path` |
+|----------------|----------|--------------------------|
+| Release archive (`wanaku-server-<version>-<platform>`) | `evaluators/` next to the `wanaku-server` binary | `evaluators/safety_review_action.wasm` |
+| Container image (`quay.io/wanaku/wanaku-server`) | `/data/evaluators/` | `/data/evaluators/safety_review_action.wasm` |
+| Evaluator bundle (`wanaku-evaluators-<version>.tar.gz`) | `evaluators/` | Any path where you extract the files |
+| Source tree | `actions/dist/` after you build the actions | `actions/dist/safety_review_action.wasm` |
+
+The server resolves a relative `processor.path` against its working directory. Start the server from the directory that contains `evaluators/`, or use an absolute path.
+
+Each GitHub release also includes `wanaku-evaluators-<version>.tar.gz`. This archive is the same for all platforms. It contains:
+
+- `evaluators/`: the three `.wasm` files.
+- `wit/evaluator.wit`: the WIT interface for this Wanaku version. Use this file to build your own action scripts.
+- `sdk/js/wanaku-actions.d.ts`: the TypeScript definitions for JavaScript action scripts.
+- `examples/js/`: the JavaScript example sources. These examples are not compiled.
+
+In the container image, the bundled files are in `/data/evaluators/`. If you mount a volume on `/data`, the volume hides these files. Mount the persistence volume on `/data/registry` instead. To add your own action scripts, mount them on a different path, for example `/data/evaluators-custom/`.
+
 ## Complete Examples
 
 ### Example 1: Safety Classification
@@ -398,8 +429,8 @@ This example reuses the `local-llama` connection from Example 1.
 2. Engine sends conversation history + available tools to LLM
 3. LLM returns `["read-balance", "transfer-funds", "generate-report"]`
 4. Engine runs `assembly-filter.wasm` with that JSON in `ctx.llmResult`
-5. WASM script parses JSON, calls `copyToolToNamespace(name, ctx.namespace)` for each
-6. WASM calls `filterTools(approved)` to return only the assembled tools
+5. WASM script parses JSON. For each tool in the `default` namespace or in `ctx.namespace`, it calls `copyToolToNamespace(name, ctx.namespace)`. It skips tools from other namespaces.
+6. WASM calls `filterTools(assembled)` to return only the assembled tools
 7. User sees a curated tool list
 
 ## Writing Action Scripts in JavaScript
@@ -418,6 +449,8 @@ Install the TypeScript definitions to enable autocomplete:
 # Copy from the repo
 cp sdk/js/wanaku-actions.d.ts /path/to/your/action/
 ```
+
+The `wanaku-evaluators-<version>.tar.gz` release asset also contains this file in `sdk/js/` and the matching WIT interface in `wit/`. Use the files from the release that matches your server version.
 
 ### Step 1: Import Host Functions
 
@@ -489,7 +522,8 @@ rejectMalformed("LLM result missing required 'level' field");
 // Log a warning but allow the request to proceed
 warn("Elevated privilege operation detected");
 
-// Return a filtered tools/list response (only for tools/list triggers)
+// Return a filtered tools/list response (only for tools/list triggers).
+// The response contains only the named tools that are in the request namespace.
 filterTools(["tool-1", "tool-2", "tool-3"]);
 
 // Set metadata for downstream filters
@@ -633,7 +667,7 @@ npx @bytecodealliance/jco componentize safety-block.js \
 #### Assembly Filter (filter → populate namespace)
 
 ```javascript
-import { copyToolToNamespace } from 'wanaku:evaluator/registry';
+import { copyToolToNamespace, getTool } from 'wanaku:evaluator/registry';
 import { filterTools } from 'wanaku:evaluator/response';
 import { info, warn } from 'wanaku:evaluator/log';
 
@@ -643,7 +677,7 @@ export function evaluate(ctx) {
     approved = JSON.parse(ctx.llmResult);
   } catch (e) {
     warn('Failed to parse LLM result as tool name array, returning all tools');
-    return;  // Default behavior: pass, show all tools
+    return;
   }
 
   if (!Array.isArray(approved) || approved.length === 0) {
@@ -651,15 +685,25 @@ export function evaluate(ctx) {
     return;
   }
 
-  // Copy each approved tool into the target namespace
+  // Assemble only from the shared catalog or the request namespace, so the
+  // LLM result cannot pull in tools that belong to other namespaces.
+  const assembled = [];
   for (const name of approved) {
+    const tool = getTool(name);
+    if (!tool) {
+      continue;
+    }
+    const source = tool.namespace ?? 'default';
+    if (source !== 'default' && source !== ctx.namespace) {
+      warn(`Skipping tool '${name}' from namespace '${source}'`);
+      continue;
+    }
     copyToolToNamespace(name, ctx.namespace);
+    assembled.push(name);
   }
 
-  info(`Registered ${approved.length} tools into namespace '${ctx.namespace}'`);
-  
-  // Return only the approved tools in the tools/list response
-  filterTools(approved);
+  info(`Registered ${assembled.length} tools into namespace '${ctx.namespace}'`);
+  filterTools(assembled);
 }
 ```
 
@@ -715,6 +759,8 @@ Copy the WIT file into your crate:
 ```bash
 cp /path/to/wanaku/features/evaluator/wit/evaluator.wit wit/evaluator.wit
 ```
+
+You can also get `wit/evaluator.wit` from the `wanaku-evaluators-<version>.tar.gz` release asset. Use the WIT file that matches your server version.
 
 ### Step 2: Use wit-bindgen
 
