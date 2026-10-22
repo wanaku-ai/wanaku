@@ -489,13 +489,17 @@ fn dispatch_action(
                 return Ok(FilterAction::Continue);
             }
 
+            // Only tools in the request namespace are listed, so an action
+            // cannot expose another namespace's tools by name.
+            let namespace = ctx
+                .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
+                .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE)
+                .to_owned();
             let registry = ctx.extensions.get::<InMemoryRegistry>();
             let mcp_tools: Vec<serde_json::Value> = tool_names
                 .iter()
                 .filter_map(|name| {
-                    let tool = registry
-                        .and_then(|r| r.get_tool(name))
-                        .filter(|t| t.enabled);
+                    let tool = registry.and_then(|r| r.get_tool_in_namespace(&namespace, name));
                     tool.map(|t| {
                         serde_json::json!({
                             "name": t.name,
@@ -684,6 +688,45 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn filter_tools_lists_only_tools_in_the_request_namespace() {
+        let registry = InMemoryRegistry::new();
+        for (name, namespace) in [("shared", "curated"), ("private", "tenant-b")] {
+            registry.register_tool(
+                serde_json::from_value(serde_json::json!({
+                    "name": name, "description": "test", "uri": "test", "type": "mcp-forward",
+                    "inputSchema": {}, "namespace": namespace
+                }))
+                .unwrap(),
+            );
+        }
+        let request = request();
+        let mut ctx = make_filter_context(&request);
+        ctx.set_metadata(wanaku_types::NAMESPACE_METADATA_KEY, "curated");
+        ctx.extensions.insert(registry);
+        let action = ActionResult::FilterTools(vec!["shared".into(), "private".into()]);
+        let result = dispatch_action(
+            &mut ctx,
+            &mut None,
+            action,
+            wanaku_types::TOOLS_LIST,
+            "assembly",
+        )
+        .unwrap();
+        let body = match result {
+            FilterAction::Reject(rejection) => rejection.body,
+            _ => None,
+        };
+        let body: serde_json::Value = serde_json::from_slice(&body.unwrap()).unwrap();
+        let names: Vec<&str> = body["result"]["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|tool| tool["name"].as_str())
+            .collect();
+        assert_eq!(names, ["shared"]);
     }
 
     #[tokio::test]

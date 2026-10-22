@@ -59,7 +59,7 @@ fn audit_capabilities_prevent_real_processor_registry_writes() {
     registry.register_tool(
         serde_json::from_value(serde_json::json!({
             "name": "alpha", "description": "test", "uri": "test", "type": "mcp-forward",
-            "inputSchema": {}, "namespace": "source"
+            "inputSchema": {}, "namespace": "default"
         }))
         .unwrap(),
     );
@@ -240,4 +240,82 @@ fn evaluate_with_schema_passed_to_host() {
         matches!(result, ActionResult::Block(_)),
         "should still block with schema present, got: {result:?}"
     );
+}
+
+#[test]
+#[ignore = "requires actions/dist built with cargo-component"]
+fn assembly_action_skips_tools_from_other_namespaces() {
+    let path = action_path("assembly_filter_action.wasm");
+    let processor = CompiledEvaluator::from_file("assembly", &path).unwrap();
+    let registry = InMemoryRegistry::new();
+    for (name, namespace) in [("shared", "default"), ("private", "tenant-b")] {
+        registry.register_tool(
+            serde_json::from_value(serde_json::json!({
+                "name": name, "description": "test", "uri": "test", "type": "mcp-forward",
+                "inputSchema": {}, "namespace": namespace
+            }))
+            .unwrap(),
+        );
+    }
+    let mut ctx = eval_context("tools/list", r#"["shared", "private"]"#);
+    ctx.namespace = "curated".to_owned();
+    let result = processor
+        .evaluate(
+            wanaku_feature_evaluator::engine::ExecutionContext {
+                registry: registry.clone(),
+                interactions: InMemoryInteractionStore::new(10),
+                compiled_schema: None,
+                mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
+                limits: None,
+                allow_side_effects: true,
+            },
+            ctx,
+        )
+        .unwrap();
+    assert!(
+        matches!(&result.action, ActionResult::FilterTools(names) if names == &["shared".to_owned()]),
+        "only the shared tool should be assembled, got: {:?}",
+        result.action
+    );
+    assert_eq!(
+        registry.get_tool("private").unwrap().namespace.as_deref(),
+        Some("tenant-b")
+    );
+    assert_eq!(
+        registry.get_tool("shared").unwrap().namespace.as_deref(),
+        Some("curated")
+    );
+}
+
+#[test]
+#[ignore = "requires actions/dist built with cargo-component"]
+fn safety_action_rejects_unrecognized_result() {
+    let path = action_path("safety_review_action.wasm");
+    let compiled = CompiledEvaluator::from_file("safety-review", &path)
+        .expect("failed to compile safety-review WASM");
+
+    for llm_output in [
+        r#"{"level": "purple"}"#,
+        r#"{"reason": "no level"}"#,
+        "no idea",
+    ] {
+        let result = compiled
+            .evaluate(
+                wanaku_feature_evaluator::engine::ExecutionContext {
+                    registry: InMemoryRegistry::new(),
+                    interactions: InMemoryInteractionStore::new(100),
+                    compiled_schema: None,
+                    mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
+                    limits: None,
+                    allow_side_effects: true,
+                },
+                eval_context("tools/call", llm_output),
+            )
+            .expect("WASM evaluator execution failed")
+            .action;
+        assert!(
+            matches!(result, ActionResult::RejectMalformed(_)),
+            "safety-review should reject {llm_output}, got: {result:?}"
+        );
+    }
 }

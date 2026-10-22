@@ -381,8 +381,8 @@ Wanaku ships three prebuilt action scripts, so you can use evaluators without a 
 
 | File | Engine input | Behavior | Source |
 |------|--------------|----------|--------|
-| `safety_review_action.wasm` | `{"level": "green\|yellow\|red", "reason": "..."}` from an `llm` engine, or a TypeSafe System One result | Blocks `red`, warns on `yellow`, and passes `green`. For a TypeSafe System One result, blocks a probability below 0.5. | [`actions/safety-review`](../actions/safety-review/src/lib.rs) |
-| `assembly_filter_action.wasm` | A JSON array of tool names | Limits the tool list to the names in the array. Passes all tools if the input is not a JSON array. | [`actions/assembly-filter`](../actions/assembly-filter/src/lib.rs) |
+| `safety_review_action.wasm` | `{"level": "green\|yellow\|red", "reason": "..."}` from an `llm` engine, or a TypeSafe System One result | Blocks `red`, warns on `yellow`, and passes `green`. For a TypeSafe System One result, blocks a probability below 0.5. Rejects any other result as malformed (`-32002`). | [`actions/safety-review`](../actions/safety-review/src/lib.rs) |
+| `assembly_filter_action.wasm` | A JSON array of tool names | Moves the named tools from the `default` namespace into the request namespace and limits the tool list to them. Skips tools from other namespaces. Passes all tools if the input is not a JSON array. | [`actions/assembly-filter`](../actions/assembly-filter/src/lib.rs) |
 | `opa_allow_action.wasm` | A normalized OPA decision from an `opa` engine | Passes only when the decision is `"allow": true`. Blocks all other input. | [`actions/opa-allow`](../actions/opa-allow/src/lib.rs) |
 
 The location of the files depends on how you install Wanaku:
@@ -485,8 +485,8 @@ This example reuses the `local-llama` connection from Example 1.
 2. Engine sends conversation history + available tools to LLM
 3. LLM returns `["read-balance", "transfer-funds", "generate-report"]`
 4. Engine runs `assembly-filter.wasm` with that JSON in `ctx.llmResult`
-5. WASM script parses JSON, calls `copyToolToNamespace(name, ctx.namespace)` for each
-6. WASM calls `filterTools(approved)` to return only the assembled tools
+5. WASM script parses JSON. For each tool in the `default` namespace or in `ctx.namespace`, it calls `copyToolToNamespace(name, ctx.namespace)`. It skips tools from other namespaces.
+6. WASM calls `filterTools(assembled)` to return only the assembled tools
 7. User sees a curated tool list
 
 ## Writing Action Scripts in JavaScript
@@ -578,7 +578,8 @@ rejectMalformed("LLM result missing required 'level' field");
 // Log a warning but allow the request to proceed
 warn("Elevated privilege operation detected");
 
-// Return a filtered tools/list response (only for tools/list triggers)
+// Return a filtered tools/list response (only for tools/list triggers).
+// The response contains only the named tools that are in the request namespace.
 filterTools(["tool-1", "tool-2", "tool-3"]);
 
 // Set metadata for downstream filters
@@ -722,7 +723,7 @@ npx @bytecodealliance/jco componentize safety-block.js \
 #### Assembly Filter (filter → populate namespace)
 
 ```javascript
-import { copyToolToNamespace } from 'wanaku:evaluator/registry';
+import { copyToolToNamespace, getTool } from 'wanaku:evaluator/registry';
 import { filterTools } from 'wanaku:evaluator/response';
 import { info, warn } from 'wanaku:evaluator/log';
 
@@ -732,7 +733,7 @@ export function evaluate(ctx) {
     approved = JSON.parse(ctx.llmResult);
   } catch (e) {
     warn('Failed to parse LLM result as tool name array, returning all tools');
-    return;  // Default behavior: pass, show all tools
+    return;
   }
 
   if (!Array.isArray(approved) || approved.length === 0) {
@@ -740,15 +741,25 @@ export function evaluate(ctx) {
     return;
   }
 
-  // Copy each approved tool into the target namespace
+  // Assemble only from the shared catalog or the request namespace, so the
+  // LLM result cannot pull in tools that belong to other namespaces.
+  const assembled = [];
   for (const name of approved) {
+    const tool = getTool(name);
+    if (!tool) {
+      continue;
+    }
+    const source = tool.namespace ?? 'default';
+    if (source !== 'default' && source !== ctx.namespace) {
+      warn(`Skipping tool '${name}' from namespace '${source}'`);
+      continue;
+    }
     copyToolToNamespace(name, ctx.namespace);
+    assembled.push(name);
   }
 
-  info(`Registered ${approved.length} tools into namespace '${ctx.namespace}'`);
-  
-  // Return only the approved tools in the tools/list response
-  filterTools(approved);
+  info(`Registered ${assembled.length} tools into namespace '${ctx.namespace}'`);
+  filterTools(assembled);
 }
 ```
 
