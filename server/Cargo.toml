@@ -53,6 +53,7 @@ wanaku-feature-mcp-metadata = { workspace = true }
 wanaku-feature-metrics = { workspace = true }
 wanaku-feature-plugins = { workspace = true, features = ["openapi"] }
 wanaku-feature-simulation = { workspace = true, features = ["openapi"] }
+serde_ignored = "0.1.14"
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.31.3", default-features = false, features = ["process", "signal", "user"] }
