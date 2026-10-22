@@ -116,7 +116,10 @@ jobs:
           archive="wanaku-server-${VERSION}-${PLATFORM}"
           mkdir -p "dist/$archive"
           install -m 0755 target/release/wanaku-server "dist/$archive/wanaku-server"
-          cp LICENSE README.md wanaku.yaml "dist/$archive/"
+          cp LICENSE README.md "dist/$archive/"
+          mkdir -p "dist/$archive/evaluators"
+          install -m 0644 actions/dist/*.wasm "dist/$archive/evaluators/"
+          sed 's|actions/dist/|evaluators/|' wanaku.yaml > "dist/$archive/wanaku.yaml"
           tar -C dist -czf "dist/$archive.tar.gz" "$archive"
           rm -rf "dist/$archive"
 
@@ -129,7 +132,10 @@ jobs:
           $archive = "wanaku-server-$env:VERSION-$env:PLATFORM"
           New-Item -ItemType Directory -Path "dist/$archive" -Force
           Copy-Item target/release/wanaku-server.exe "dist/$archive/wanaku-server.exe"
-          Copy-Item LICENSE, README.md, wanaku.yaml "dist/$archive/"
+          Copy-Item LICENSE, README.md "dist/$archive/"
+          New-Item -ItemType Directory -Path "dist/$archive/evaluators" -Force
+          Copy-Item actions/dist/*.wasm "dist/$archive/evaluators/"
+          (Get-Content wanaku.yaml) -replace 'actions/dist/', 'evaluators/' | Set-Content "dist/$archive/wanaku.yaml"
           Compress-Archive -Path "dist/$archive" -DestinationPath "dist/$archive.zip"
           Remove-Item -Recurse -Force "dist/$archive"
 
@@ -144,7 +150,10 @@ jobs:
           archive="wanaku-server-headless-${VERSION}-${PLATFORM}"
           mkdir -p "dist/$archive"
           install -m 0755 target/release/wanaku-server "dist/$archive/wanaku-server"
-          cp LICENSE README.md wanaku.yaml "dist/$archive/"
+          cp LICENSE README.md "dist/$archive/"
+          mkdir -p "dist/$archive/evaluators"
+          install -m 0644 actions/dist/*.wasm "dist/$archive/evaluators/"
+          sed 's|actions/dist/|evaluators/|' wanaku.yaml > "dist/$archive/wanaku.yaml"
           tar -C dist -czf "dist/$archive.tar.gz" "$archive"
           rm -rf "dist/$archive"
 
@@ -157,9 +166,26 @@ jobs:
           $archive = "wanaku-server-headless-$env:VERSION-$env:PLATFORM"
           New-Item -ItemType Directory -Path "dist/$archive" -Force
           Copy-Item target/release/wanaku-server.exe "dist/$archive/wanaku-server.exe"
-          Copy-Item LICENSE, README.md, wanaku.yaml "dist/$archive/"
+          Copy-Item LICENSE, README.md "dist/$archive/"
+          New-Item -ItemType Directory -Path "dist/$archive/evaluators" -Force
+          Copy-Item actions/dist/*.wasm "dist/$archive/evaluators/"
+          (Get-Content wanaku.yaml) -replace 'actions/dist/', 'evaluators/' | Set-Content "dist/$archive/wanaku.yaml"
           Compress-Archive -Path "dist/$archive" -DestinationPath "dist/$archive.zip"
           Remove-Item -Recurse -Force "dist/$archive"
+
+      - name: Package evaluator bundle
+        # WASM components are platform-neutral, so one platform ships the bundle.
+        if: matrix.platform == 'linux-x86_64'
+        run: |
+          bundle="wanaku-evaluators-${VERSION}"
+          mkdir -p "dist/$bundle/evaluators" "dist/$bundle/wit" "dist/$bundle/sdk/js" "dist/$bundle/examples/js"
+          install -m 0644 actions/dist/*.wasm "dist/$bundle/evaluators/"
+          cp features/evaluator/wit/evaluator.wit "dist/$bundle/wit/"
+          cp sdk/js/wanaku-actions.d.ts "dist/$bundle/sdk/js/"
+          cp actions/js-examples/*.js "dist/$bundle/examples/js/"
+          cp LICENSE "dist/$bundle/"
+          tar -C dist -czf "dist/$bundle.tar.gz" "$bundle"
+          rm -rf "dist/$bundle"
 
       - name: Upload release archive
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

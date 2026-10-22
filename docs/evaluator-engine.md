@@ -11,6 +11,7 @@ This guide is for developers who configure evaluators or write evaluator action 
 ## Contents
 
 - [YAML Configuration](#yaml-configuration)
+- [Bundled Evaluators](#bundled-evaluators)
 - [Complete Examples](#complete-examples)
 - [Writing Action Scripts in JavaScript](#writing-action-scripts-in-javascript)
 - [Writing Action Scripts in Rust](#writing-action-scripts-in-rust)
@@ -317,6 +318,36 @@ The WASM script can call `block()`, `pass()`, `warn()`, `filterTools()`, or `set
 - `governance.default.on_failure: allow` permits requests after evaluator failures.
 - `governance.default.on_failure: deny` blocks requests after evaluator failures. This is the default.
 - Namespace overrides can change the failure behavior. See [Governance Posture](governance-posture.md).
+
+## Bundled Evaluators
+
+Wanaku ships three prebuilt action scripts, so you can use evaluators without a WASM toolchain.
+
+| File | Engine input | Behavior | Source |
+|------|--------------|----------|--------|
+| `safety_review_action.wasm` | `{"level": "green\|yellow\|red", "reason": "..."}` from an `llm` engine, or a TypeSafe System One result | Blocks `red`, warns on `yellow`, and passes `green`. For a TypeSafe System One result, blocks a probability below 0.5. | [`actions/safety-review`](../actions/safety-review/src/lib.rs) |
+| `assembly_filter_action.wasm` | A JSON array of tool names | Limits the tool list to the names in the array. Passes all tools if the input is not a JSON array. | [`actions/assembly-filter`](../actions/assembly-filter/src/lib.rs) |
+| `opa_allow_action.wasm` | A normalized OPA decision from an `opa` engine | Passes only when the decision is `"allow": true`. Blocks all other input. | [`actions/opa-allow`](../actions/opa-allow/src/lib.rs) |
+
+The location of the files depends on how you install Wanaku:
+
+| Install method | Location | Example `processor.path` |
+|----------------|----------|--------------------------|
+| Release archive (`wanaku-server-<version>-<platform>`) | `evaluators/` next to the `wanaku-server` binary | `evaluators/safety_review_action.wasm` |
+| Container image (`quay.io/wanaku/wanaku-server`) | `/data/evaluators/` | `/data/evaluators/safety_review_action.wasm` |
+| Evaluator bundle (`wanaku-evaluators-<version>.tar.gz`) | `evaluators/` | Any path where you extract the files |
+| Source tree | `actions/dist/` after you build the actions | `actions/dist/safety_review_action.wasm` |
+
+The server resolves a relative `processor.path` against its working directory. Start the server from the directory that contains `evaluators/`, or use an absolute path.
+
+Each GitHub release also includes `wanaku-evaluators-<version>.tar.gz`. This archive is the same for all platforms. It contains:
+
+- `evaluators/`: the three `.wasm` files.
+- `wit/evaluator.wit`: the WIT interface for this Wanaku version. Use this file to build your own action scripts.
+- `sdk/js/wanaku-actions.d.ts`: the TypeScript definitions for JavaScript action scripts.
+- `examples/js/`: the JavaScript example sources. These examples are not compiled.
+
+In the container image, the bundled files are in `/data/evaluators/`. If you mount a volume on `/data`, the volume hides these files. Mount the persistence volume on `/data/registry` instead. To add your own action scripts, mount them on a different path, for example `/data/evaluators-custom/`.
 
 ## Complete Examples
 
