@@ -15,5 +15,5 @@ serde_json = "1.0"
 package = "wanaku:assembly-filter"
 
 [package.metadata.component.target]
-path = "wit/evaluator.wit"
+path = "../../features/evaluator/wit/evaluator.wit"
 world = "evaluator-action"
