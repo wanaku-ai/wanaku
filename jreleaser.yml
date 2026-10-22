@@ -107,3 +107,9 @@ distributions:
         platform: osx-aarch_64
       - path: dist/wanaku-server-headless-{{projectVersion}}-windows-x86_64.zip
         platform: windows-x86_64
+
+# Platform-neutral assets: signed and listed in checksums_sha256.txt.
+files:
+  artifacts:
+    # Prebuilt evaluator WASM actions, the WIT contract, and the JS SDK typings.
+    - path: dist/wanaku-evaluators-{{projectVersion}}.tar.gz

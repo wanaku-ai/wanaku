@@ -6,3 +6,5 @@ target/
 !README.md
 wanaku.yaml
 wanaku.local*.yaml
+actions/*/target/
+actions/dist/
