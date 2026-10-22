@@ -106,7 +106,9 @@ evaluators:
           reason:
             type: string
         required: ["level", "reason"]
-    # Built via: cd actions/safety-review && cargo component build --release
-    #            && cp target/wasm32-wasip1/release/*.wasm ../dist/
+    # Release archives ship this action in evaluators/ and the container image
+    # in /data/evaluators/. In the source tree, build it via:
+    #   cd actions/safety-review && cargo component build --release
+    #   && cp target/wasm32-wasip1/release/*.wasm ../dist/
     processor:
       path: "actions/dist/safety_review_action.wasm"

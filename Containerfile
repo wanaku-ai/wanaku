@@ -19,17 +19,43 @@ RUN mkdir -p /ui/dist
 FROM ui-builder-${VARIANT} AS ui-builder
 
 # ------------------------------------------------------------------------------
-# Stage 2: Build Rust binary
+# Stage 2: Rust toolchain
 # ------------------------------------------------------------------------------
 
-FROM registry.fedoraproject.org/fedora:44 AS builder
-ARG VARIANT=full
+FROM registry.fedoraproject.org/fedora:44 AS rust-base
 
 RUN dnf install -y gcc gcc-c++ openssl-devel pkgconf-pkg-config cmake make \
     && dnf clean all
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.96.0
 ENV PATH="/root/.cargo/bin:${PATH}"
+
+# ------------------------------------------------------------------------------
+# Stage 2a: Build the bundled evaluator WASM actions
+# ------------------------------------------------------------------------------
+
+FROM rust-base AS actions-builder
+
+RUN rustup target add wasm32-wasip1 \
+    && cargo install cargo-component --version 0.21.1 --locked
+
+WORKDIR /src
+COPY features/evaluator/wit features/evaluator/wit
+COPY actions actions
+
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    mkdir -p /out \
+    && for action in safety-review assembly-filter opa-allow; do \
+      (cd "actions/$action" && cargo component build --release --locked) || exit 1; \
+      cp actions/$action/target/wasm32-wasip1/release/*.wasm /out/; \
+    done
+
+# ------------------------------------------------------------------------------
+# Stage 2b: Build the server binary
+# ------------------------------------------------------------------------------
+
+FROM rust-base AS builder
+ARG VARIANT=full
 
 WORKDIR /src
 
@@ -120,11 +146,15 @@ LABEL org.opencontainers.image.source="https://github.com/wanaku-ai/wanaku" \
 #   3. Not set fsGroup / runAsUser in the image — let OpenShift assign them.
 RUN microdnf install -y ca-certificates \
     && microdnf clean all \
-    && mkdir -p /etc/wanaku /data/registry \
-    && chown -R 0:0 /etc/wanaku /data/registry \
-    && chmod -R g=u  /etc/wanaku /data/registry
+    && mkdir -p /etc/wanaku /data/registry /data/evaluators \
+    && chown -R 0:0 /etc/wanaku /data \
+    && chmod -R g=u  /etc/wanaku /data
 
 ENV WANAKU_PERSIST_PATH=/data/registry
+
+# Bundled evaluator actions. Reference them in wanaku.yaml as
+# /data/evaluators/<name>.wasm.
+COPY --from=actions-builder --chown=root:root --chmod=0444 /out/*.wasm /data/evaluators/
 
 COPY --from=builder --chown=root:root --chmod=0555 \
     /usr/local/bin/wanaku-server /usr/local/bin/wanaku-server
