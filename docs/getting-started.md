@@ -75,6 +75,17 @@ The logs show these two services:
 
 > **Note:** To run Wanaku as a service on Linux, use the systemd unit in [`deploy/systemd/wanaku.service`](../deploy/systemd/wanaku.service). This file is a template for convenience. Review it and adapt it to your system before you use it.
 
+> **Note:** To install Wanaku as an RPM on Fedora 42 or later, use the spec in [`deploy/rpm/wanaku.spec`](../deploy/rpm/wanaku.spec). The spec is also a template for convenience. It packages the Linux release archive and the systemd unit. The package creates the `wanaku` system user. To build and install the package, run these commands:
+>
+> ```bash
+> sudo dnf install rpm-build systemd-rpm-macros
+> deploy/rpm/build-rpm.sh early-access
+> sudo dnf install deploy/rpm/build/RPMS/*/wanaku-*.rpm
+> sudo systemctl enable --now wanaku
+> ```
+>
+> The script uses the `v<version>` release by default. Put an optional configuration in `/etc/wanaku/wanaku.yaml`.
+
 ### 4. Verify the Server
 
 Open another terminal. Use the CLI to list the tools:
