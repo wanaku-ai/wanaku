@@ -6,8 +6,11 @@
  *
  * Usage:
  *   1. Place this file next to your action script
- *   2. Write your action in TypeScript
- *   3. Compile to WASM: javy compile action.ts -o action.wasm
+ *   2. Write your action in JavaScript, importing the host functions from
+ *      the `wanaku:evaluator/*` modules
+ *   3. Compile to WASM:
+ *      jco componentize action.js --wit evaluator.wit \
+ *        --world-name evaluator-action --disable all -o action.wasm
  *
  * @packageDocumentation
  */
@@ -101,6 +104,13 @@ export declare namespace response {
   /** Block the request with a JSON-RPC error. */
   function block(reason: string): void;
 
+  /**
+   * Signal that the request cannot be evaluated because the LLM result
+   * or input data is malformed. Distinct from block: this means
+   * "I cannot make a decision" rather than "I decided to reject."
+   */
+  function rejectMalformed(reason: string): void;
+
   /** Log a warning but allow the request to proceed. */
   function warn(message: string): void;
 
@@ -112,6 +122,19 @@ export declare namespace response {
 
   /** Set a metadata key on the filter context for downstream filters. */
   function setMetadata(key: string, value: string): void;
+}
+
+// -- Validation -------------------------------------------------------------
+
+/** Validate LLM results against the evaluator's declared schema. */
+export declare namespace validation {
+  /**
+   * Validate a raw string against the evaluator's declared result schema.
+   * Returns the validated string. Throws an error whose payload is the
+   * error description if validation fails. If no schema is declared,
+   * validation always succeeds.
+   */
+  function verifyLlmResult(raw: string): string;
 }
 
 // -- Logging ----------------------------------------------------------------

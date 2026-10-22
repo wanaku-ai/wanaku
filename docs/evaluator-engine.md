@@ -450,6 +450,8 @@ Install the TypeScript definitions to enable autocomplete:
 cp sdk/js/wanaku-actions.d.ts /path/to/your/action/
 ```
 
+The `wanaku-evaluators-<version>.tar.gz` release asset also contains this file in `sdk/js/` and the matching WIT interface in `wit/`. Use the files from the release that matches your server version.
+
 ### Step 1: Import Host Functions
 
 The host provides four namespaces. Import what you need:
@@ -746,6 +748,8 @@ Copy the WIT file into your crate:
 ```bash
 cp /path/to/wanaku/features/evaluator/wit/evaluator.wit wit/evaluator.wit
 ```
+
+You can also get `wit/evaluator.wit` from the `wanaku-evaluators-<version>.tar.gz` release asset. Use the WIT file that matches your server version.
 
 ### Step 2: Use wit-bindgen
 
