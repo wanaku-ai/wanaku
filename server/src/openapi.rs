@@ -273,6 +273,17 @@ const fn get_namespace() {}
 )]
 const fn create_namespace() {}
 
+/// Updates the namespace metadata. The path name replaces the body name.
+#[utoipa::path(put, path = "/api/v1/namespaces/{name}", tag = "Namespaces",
+    params(("name" = String, Path, description = "Namespace name")),
+    request_body = NamespaceEntry,
+    responses(
+        (status = 200, description = "Namespace updated", body = WanakuResponse<NamespaceEntry>),
+        (status = 400, description = "Invalid namespace name, malformed JSON, or missing body", body = ManagementErrorResponse),
+    )
+)]
+const fn update_namespace() {}
+
 #[utoipa::path(delete, path = "/api/v1/namespaces/{name}", tag = "Namespaces",
     params(("name" = String, Path, description = "Namespace name")),
     responses(
@@ -685,6 +696,7 @@ const fn delete_policy_replay() {}
         list_namespaces,
         get_namespace,
         create_namespace,
+        update_namespace,
         delete_namespace,
         list_bindings,
         get_binding,
@@ -949,6 +961,170 @@ mod tests {
                 .pointer("/components/schemas/AgentEntry/properties/cardAddress")
                 .is_some()
         );
+    }
+
+    async fn dispatch_namespace(
+        registry: &wanaku_infra::registry::InMemoryRegistry,
+        method: &str,
+        path: &str,
+        body: Option<&str>,
+    ) -> (u16, serde_json::Value) {
+        let headers = http::HeaderMap::new();
+        let ctx = wanaku_types::feature::HttpContext::new(method, path, None, body, &headers);
+        let broker = wanaku_infra::credentials::CredentialBroker::new(
+            wanaku_types::credentials::ResolverRegistry::new(),
+        );
+        let response = crate::management::dispatch(&ctx, registry, &broker, None, &[]).await;
+        let parsed = serde_json::from_slice(response.body()).unwrap_or_default();
+        (response.status().as_u16(), parsed)
+    }
+
+    fn schema_properties(value: &serde_json::Value, schema: &str) -> Vec<String> {
+        let mut properties: Vec<String> = value["components"]["schemas"][schema]["properties"]
+            .as_object()
+            .map(|properties| properties.keys().cloned().collect())
+            .unwrap_or_default();
+        properties.sort();
+        properties
+    }
+
+    fn body_keys(body: &serde_json::Value) -> Vec<String> {
+        let mut keys: Vec<String> = body
+            .as_object()
+            .map(|object| object.keys().cloned().collect())
+            .unwrap_or_default();
+        keys.sort();
+        keys
+    }
+
+    const TEAM: &str = r#"{"name":"team","labels":{"tier":"gold"}}"#;
+
+    const NAMESPACES: &str = "/api/v1/namespaces";
+    const NAMESPACE: &str = "/api/v1/namespaces/{name}";
+    const TEAM_PATH: &str = "/api/v1/namespaces/team";
+
+    /// Implemented namespace operations: method, documented path, runtime path, body.
+    /// The rows run in order against one registry.
+    const NAMESPACE_CRUD: [(&str, &str, &str, Option<&str>); 5] = [
+        ("post", NAMESPACES, NAMESPACES, Some(TEAM)),
+        ("get", NAMESPACES, NAMESPACES, None),
+        ("get", NAMESPACE, TEAM_PATH, None),
+        ("put", NAMESPACE, TEAM_PATH, Some(TEAM)),
+        ("delete", NAMESPACE, TEAM_PATH, None),
+    ];
+
+    #[test]
+    fn namespace_crud_methods_match_documented_operations() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        for (method, template, _, _) in NAMESPACE_CRUD {
+            assert!(
+                value["paths"][template].get(method).is_some(),
+                "{method} {template} is implemented but not documented"
+            );
+        }
+        for template in [NAMESPACES, NAMESPACE] {
+            for method in value["paths"][template]
+                .as_object()
+                .into_iter()
+                .flat_map(|item| item.keys())
+            {
+                assert!(
+                    NAMESPACE_CRUD
+                        .iter()
+                        .any(|row| row.0 == method && row.1 == template),
+                    "{method} {template} is documented but not implemented"
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn namespace_crud_methods_succeed_at_runtime() {
+        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        for (method, _, path, body) in NAMESPACE_CRUD {
+            let (status, _) =
+                dispatch_namespace(&registry, &method.to_uppercase(), path, body).await;
+            assert_eq!(status, 200, "{method} {path} failed at runtime");
+        }
+    }
+
+    #[test]
+    fn namespace_update_contract_is_published() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        let operation = &value["paths"][NAMESPACE]["put"];
+        assert_eq!(operation["requestBody"]["required"], true);
+        let schema_ref = |pointer: &str| operation.pointer(pointer).cloned().unwrap_or_default();
+        assert_eq!(
+            schema_ref("/requestBody/content/application~1json/schema/$ref"),
+            "#/components/schemas/NamespaceEntry"
+        );
+        assert_eq!(
+            schema_ref("/responses/200/content/application~1json/schema/$ref"),
+            "#/components/schemas/WanakuResponse_NamespaceEntry"
+        );
+        assert_eq!(
+            schema_ref("/responses/400/content/application~1json/schema/$ref"),
+            "#/components/schemas/ManagementErrorResponse"
+        );
+    }
+
+    #[tokio::test]
+    async fn namespace_update_response_matches_runtime() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let path = TEAM_PATH;
+        let body = r#"{"name":"other","labels":{"tier":"gold"},"audience":"api"}"#;
+        let (status, response) = dispatch_namespace(&registry, "PUT", path, Some(body)).await;
+        assert_eq!(status, 200);
+        let envelope = schema_properties(&value, "WanakuResponse_NamespaceEntry");
+        assert_eq!(body_keys(&response), envelope);
+        let documented = schema_properties(&value, "NamespaceEntry");
+        assert!(
+            body_keys(&response["data"])
+                .iter()
+                .all(|key| documented.contains(key))
+        );
+        assert_eq!(
+            response["data"]["name"], "team",
+            "path name takes precedence"
+        );
+        assert_eq!(response["data"]["audience"], "api");
+        let (_, stored) = dispatch_namespace(&registry, "GET", path, None).await;
+        assert_eq!(stored["data"], response["data"]);
+        let (status, _) =
+            dispatch_namespace(&registry, "GET", "/api/v1/namespaces/other", None).await;
+        assert_eq!(status, 404, "body name must not create a namespace");
+    }
+
+    #[tokio::test]
+    async fn namespace_update_rejects_bad_input_without_changes() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        let error_schema = schema_properties(&value, "ManagementErrorResponse");
+        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let path = TEAM_PATH;
+        dispatch_namespace(&registry, "PUT", path, Some(TEAM)).await;
+        let invalid = "/api/v1/namespaces/Bad_Name";
+        for (case, path, body) in [
+            ("malformed JSON", path, Some("{not json")),
+            ("missing name field", path, Some(r#"{"labels":{}}"#)),
+            ("missing body", path, None),
+            ("invalid path name", invalid, Some(r#"{"name":"bad"}"#)),
+        ] {
+            let (status, response) = dispatch_namespace(&registry, "PUT", path, body).await;
+            assert_eq!(status, 400, "{case}");
+            assert_eq!(body_keys(&response), error_schema, "{case}");
+            assert!(
+                response["error"].is_string() && response["data"].is_null(),
+                "{case}"
+            );
+        }
+        let (_, stored) = dispatch_namespace(&registry, "GET", path, None).await;
+        assert_eq!(
+            stored["data"]["labels"]["tier"], "gold",
+            "failed PUT keeps the entry"
+        );
+        let (status, _) = dispatch_namespace(&registry, "GET", invalid, None).await;
+        assert_eq!(status, 404, "invalid path name must not be stored");
     }
 
     #[test]

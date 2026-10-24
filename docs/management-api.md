@@ -138,6 +138,18 @@ curl -X POST http://localhost:8080/api/v1/namespaces \
 
 Namespace names can contain lowercase letters, numbers, and hyphens. They cannot start or end with a hyphen. The maximum length is 63 characters.
 
+### Update a Namespace
+
+Send the complete namespace entry to the namespace path:
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/namespaces/finance \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"finance","labels":{"team":"payments"}}'
+```
+
+The name in the path identifies the namespace. Wanaku ignores the `name` value in the body. An update cannot rename a namespace. An update does not remove the tools, forwards, or A2A agents in the namespace. A malformed body, a missing body, or an invalid path name returns `400` and does not change the stored entry. The admin UI uses this operation to save namespace edits.
+
 ### Create a Forward
 
 Use the Wanaku CLI:

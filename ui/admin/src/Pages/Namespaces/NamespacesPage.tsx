@@ -64,8 +64,9 @@ export const NamespacesPage: React.FC = () => {
       await updateNamespace(namespace);
       setErrorMessage(null);
       await refreshNamespaces();
-    } catch {
-      setErrorMessage('Error updating namespace.');
+    } catch (error) {
+      const reason = error instanceof Error ? `: ${error.message}` : '.';
+      setErrorMessage(`Error updating namespace ${namespace.name}${reason}`);
     } finally {
       handleModalClose();
     }
