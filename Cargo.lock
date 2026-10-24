@@ -6045,6 +6045,7 @@ dependencies = [
  "praxis-proxy-filter",
  "serde",
  "serde_json",
+ "tokio",
  "tracing",
  "wanaku-infra",
  "wanaku-types",
