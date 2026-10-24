@@ -159,6 +159,10 @@ impl ToolCallFilter {
                 ));
             };
             let address = forward.address.clone();
+            let invoker = match crate::invoker::invoker_from_extensions(ctx, &parsed.id) {
+                Ok(invoker) => invoker,
+                Err(action) => return Ok(action),
+            };
 
             let mut forward_headers = collect_forward_headers(&ctx.request.headers, &tool);
             if tool.inject_header_args() {
@@ -195,6 +199,7 @@ impl ToolCallFilter {
                 Err(action) => return Ok(action),
             };
             let exchange = crate::credentials::ForwardExchange {
+                invoker,
                 headers: forward_headers,
                 redactor,
             };
@@ -228,6 +233,7 @@ impl ToolCallFilter {
         tracking_id: &str,
     ) -> Result<FilterAction, FilterError> {
         let crate::credentials::ForwardExchange {
+            invoker,
             headers: forward_headers,
             redactor,
         } = exchange;
@@ -254,7 +260,8 @@ impl ToolCallFilter {
         // error path redacts it by exact match, even when it has no known shape.
         let forwarded_values = forwarded_header_values(&forward_headers);
 
-        match wanaku_infra::mcp_client::call_tool(address, tool_name, arguments, forward_headers)
+        match invoker
+            .call_tool(address, tool_name, arguments, forward_headers)
             .await
         {
             Ok(call_result) => {
@@ -1001,5 +1008,168 @@ mod tests {
             !detail.contains(leaked),
             "redacted detail must not leave a fragment of the longer secret: {detail}"
         );
+    }
+}
+
+/// Whole-filter tests with the recording invocation adapter. No test opens a
+/// network connection.
+#[cfg(test)]
+mod filter_tests {
+    use std::sync::Arc;
+
+    use praxis_filter::FilterAction;
+    use serde_json::{Value, json};
+    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_types::registry::{FORWARD_HEADERS_LABEL, ToolEntry, ToolRegistry};
+
+    use super::ToolCallFilter;
+    use crate::invoker::testing::{
+        ADDRESS, FORWARD_ID, RecordingInvoker, SECRET, filter_context, registry, request,
+        response_json,
+    };
+
+    const BODY: &str = r#"{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"echo","arguments":{"message":"hi"}}}"#;
+
+    /// A forwarded tool that forwards `x-client-token` and maps it, and the
+    /// `authorization` header, to arguments.
+    fn tool(forward_id: Option<&str>, enabled: bool) -> ToolEntry {
+        serde_json::from_value(json!({
+            "name": "echo",
+            "description": "echo",
+            "uri": "echo",
+            "type": "mcp-forward",
+            "inputSchema": {"type": "object", "properties": {
+                "message": {"type": "string"},
+                "client": {"type": "string", "x-mcp-header": "x-client-token"},
+                "auth": {"type": "string", "x-mcp-header": "authorization"}
+            }},
+            "labels": {FORWARD_HEADERS_LABEL: "x-client-token"},
+            "forwardId": forward_id,
+            "enabled": enabled
+        }))
+        .unwrap()
+    }
+
+    async fn run(registry: &InMemoryRegistry, invoker: &Arc<RecordingInvoker>) -> FilterAction {
+        let req = request(&[("x-client-token", "client-value")]);
+        let mut ctx = filter_context(&req, crate::TOOLS_CALL, registry, invoker);
+        ctx.set_metadata(crate::MCP_NAME_KEY, "echo");
+        let filter = ToolCallFilter {
+            max_body_bytes: 1024,
+        };
+        let mut body = Some(bytes::Bytes::from_static(BODY.as_bytes()));
+        filter.handle_body(&mut ctx, &mut body).await.unwrap()
+    }
+
+    /// Assert one call with the resolved address, target, mapped arguments, and
+    /// final headers.
+    fn assert_resolved_call(invoker: &RecordingInvoker) {
+        let calls = invoker.calls();
+        assert_eq!(calls.len(), 1);
+        let call = &calls[0];
+        assert_eq!(call.operation, crate::TOOLS_CALL);
+        assert_eq!(call.target, "echo");
+        assert_eq!(call.address, ADDRESS);
+        // The client header maps to an argument. The brokered credential is
+        // injected after the mapping, so it never becomes an argument.
+        let arguments = call.arguments.as_ref().unwrap();
+        assert_eq!(arguments["message"], "hi");
+        assert_eq!(arguments["client"], "client-value");
+        assert!(
+            arguments.get("auth").is_none(),
+            "credential leaked: {arguments}"
+        );
+        assert_eq!(call.headers.len(), 2);
+        assert_eq!(
+            call.headers[&http::HeaderName::from_static("x-client-token")],
+            "client-value"
+        );
+        assert_eq!(
+            call.headers[&http::header::AUTHORIZATION],
+            format!("Bearer {SECRET}")
+        );
+    }
+
+    #[tokio::test]
+    async fn success_invokes_once_with_resolved_call_and_credentials_after_mapping() {
+        let registry = registry(Some("b1"), Some("fake:token"));
+        registry.register_tool(tool(Some(FORWARD_ID), true));
+        let invoker = RecordingInvoker::succeeding(json!({
+            "content": [{"type": "text", "text": format!("echo {SECRET}")}]
+        }));
+
+        let response = response_json(run(&registry, &invoker).await);
+
+        assert_resolved_call(&invoker);
+
+        assert_eq!(response["id"], 7);
+        assert_eq!(response["result"]["content"][0]["text"], "echo <redacted>");
+        assert_eq!(response["result"]["isError"], false);
+    }
+
+    #[tokio::test]
+    async fn upstream_error_is_redacted_with_the_request_id() {
+        let registry = registry(Some("b1"), Some("fake:token"));
+        registry.register_tool(tool(Some(FORWARD_ID), true));
+        let invoker = RecordingInvoker::failing("rejected client-value and s3cr3t");
+
+        let response = response_json(run(&registry, &invoker).await);
+
+        assert_eq!(invoker.calls().len(), 1);
+        assert_eq!(response["id"], 7);
+        assert_eq!(
+            response["error"]["code"],
+            crate::response::JSONRPC_INTERNAL_ERROR
+        );
+        let message = response["error"]["message"].as_str().unwrap();
+        assert!(!message.contains("client-value"), "leaked: {message}");
+        assert!(!message.contains(SECRET), "leaked: {message}");
+    }
+
+    async fn assert_not_invoked(registry: &InMemoryRegistry, expected: &str) {
+        let invoker = RecordingInvoker::succeeding(Value::Null);
+        let response = response_json(run(registry, &invoker).await);
+        assert!(
+            invoker.calls().is_empty(),
+            "adapter invoked for: {expected}"
+        );
+        assert_eq!(response["id"], 7);
+        let message = response["error"]["message"].as_str().unwrap();
+        assert!(message.contains(expected), "unexpected error: {message}");
+    }
+
+    #[tokio::test]
+    async fn missing_provenance_does_not_invoke() {
+        let registry = registry(None, None);
+        registry.register_tool(tool(None, true));
+        assert_not_invoked(&registry, "no forwardId provenance").await;
+    }
+
+    #[tokio::test]
+    async fn missing_forward_does_not_invoke() {
+        let registry = registry(None, None);
+        registry.register_tool(tool(Some("fwd-missing"), true));
+        assert_not_invoked(&registry, "forward not found").await;
+    }
+
+    #[tokio::test]
+    async fn disabled_or_unknown_tool_does_not_invoke() {
+        let registry = registry(None, None);
+        assert_not_invoked(&registry, "tool not found").await;
+        registry.register_tool(tool(Some(FORWARD_ID), false));
+        assert_not_invoked(&registry, "tool not found").await;
+    }
+
+    #[tokio::test]
+    async fn failed_credential_resolution_does_not_invoke() {
+        // The forward references a binding that the registry does not hold.
+        let missing = registry(Some("b1"), None);
+        missing.register_tool(tool(Some(FORWARD_ID), true));
+        assert_not_invoked(&missing, "credential binding not found").await;
+
+        // The binding exists, but its secret reference does not resolve.
+        let unresolved = registry(Some("b1"), Some("fake:absent"));
+        unresolved.register_tool(tool(Some(FORWARD_ID), true));
+        assert_not_invoked(&unresolved, "credential brokerage failed").await;
     }
 }

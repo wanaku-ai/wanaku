@@ -225,12 +225,24 @@ On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On an o
 All tool execution in Wanaku happens via MCP forwarding. When a tool call arrives (`tools/call`), the tool_call filter:
 
 1. Looks up the tool in the registry by name
-2. Calls `mcp_client::call_tool(tool.uri, name, arguments)` to forward the request to the upstream MCP server
-3. Uses the `rmcp` crate to send an HTTP POST
-4. Upstream returns MCP `CallToolResult`
-5. Filter wraps it in JSON-RPC and returns
+2. Resolves the upstream address from the tool `forwardId` provenance
+3. Maps allowed client headers to arguments, then injects brokered credentials into the outbound headers
+4. Calls `McpInvoker::call_tool(address, name, arguments, headers)` to forward the request to the upstream MCP server
+5. Upstream returns MCP `CallToolResult`
+6. Filter wraps it in JSON-RPC and returns
 
-Tools have `type: "mcp-forward"` and a `uri` pointing at the upstream MCP server. This is the only execution model — there is no built-in gRPC or local tool execution.
+Tools have `type: "mcp-forward"` and a `forwardId` that identifies the owning forward. This is the only execution model — there is no built-in gRPC or local tool execution.
+
+**Invocation adapter:**
+
+The `tools/call`, `resources/read`, and `prompts/get` filters call upstream MCP servers only through the `McpInvoker` trait (`infra/src/mcp_client.rs`). The trait has three operations: `call_tool`, `read_resource`, and `get_prompt`. It uses only `serde_json` and `http` types. The rmcp types stay in the adapter.
+
+- The server inserts the production adapter, `RmcpInvoker`, into the request extensions as `Arc<dyn McpInvoker>` (`server/src/pipelines.rs`).
+- `RmcpInvoker` calls the existing `mcp_client` functions. The wiremock tests in `infra/src/mcp_client.rs` cover these functions.
+- If the request extensions do not contain an adapter, the filter returns a JSON-RPC internal error. The filter does not resolve credentials in this case.
+- Filter tests insert `RecordingInvoker` from `filters/src/invoker.rs`. This fake records each call and needs no network.
+
+Discovery, listing, LLM, and other outbound HTTP calls do not use this trait.
 
 **Forward discovery:**
 
