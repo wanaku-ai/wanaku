@@ -88,6 +88,22 @@ management API, including out of evaluator revision history. See
 
 Your system prompt tells the LLM what to do with that context.
 
+**LLM failures:** These conditions are failures. They follow `on_failure`, and the processor does not run. The default `on_failure` value is `deny`.
+
+| Condition | Audit reason code |
+|-----------|-------------------|
+| The LLM endpoint is not reachable | `evaluator_remote_unavailable` |
+| The LLM endpoint does not answer in the request timeout | `evaluator_remote_timeout` |
+| The LLM endpoint returns HTTP 401 or 403 | `evaluator_remote_auth_failed` |
+| The LLM endpoint returns another error status | `evaluator_llm_failed` |
+| The response is not JSON, has no `choices[0].message.content` string, or the content is blank | `evaluator_llm_failed` |
+| The result does not match `result_schema` after the correction retry | `evaluator_schema_invalid` |
+| The connection is not available at request time | `evaluator_connection_unavailable` |
+
+Wanaku sends the schema correction prompt only when the LLM returns content that does not match `result_schema`. Transport, status, and response format failures do not cause a correction retry. If the correction request fails, Wanaku uses the reason code of that failure. Error messages and audit events do not contain the API key or the upstream response body.
+
+The metrics store counts a call that returns missing or blank content as an empty result. Transport, status, and malformed JSON failures are call failures. They are not empty results.
+
 ### Evaluation Engines
 
 Set `engine.type` for each evaluator. The engine produces the string that the
