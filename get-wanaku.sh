@@ -39,7 +39,7 @@ resolve_release() {
         | grep -- "-${PLATFORM}\\.tar\\.gz$" \
         | head -n 1 || true)"
     CHECKSUMS_URL="$(printf '%s\n' "$urls" \
-        | grep -- '/checksums_sha256\.txt$' \
+        | grep -E -- '/checksums_sha256(_sha256)?\.txt$' \
         | head -n 1 || true)"
 
     [ -n "$DOWNLOAD_URL" ] || error "Release ${RELEASE_TAG} has no ${PLATFORM} archive"

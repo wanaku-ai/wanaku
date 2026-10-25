@@ -7,7 +7,6 @@ This configuration is for local development. It uses HTTP, development administr
 ## Prerequisites
 
 - Docker with Compose v2, or Podman with a Compose v2 provider.
-- Both CLIs from a wanaku-barn build that includes the fixes for [issue #2027](https://github.com/wanaku-ai/wanaku/issues/2027).
 - OpenSSL.
 - Available ports: `8543`, `8943`, `4180`, and `4181`.
 
@@ -125,7 +124,7 @@ wanaku mcp tool list --verbose --uri http://localhost:4181/default/mcp --token "
 wanaku tools list --verbose --host http://localhost:4180 --token "$TOKEN"
 ```
 
-Both commands must succeed. The MCP command names the `default` namespace explicitly in its endpoint. Replace `default` with the namespace you want to access. A new registry has no tools, so an empty list is expected.
+Both commands must succeed. The MCP command names the `default` namespace explicitly in its endpoint. Replace `default` with the namespace you want to access. A new registry has no tools, so an empty list is expected. The MCP command also shows `No tools found` when the tools are in a different namespace. `wanaku tools list` shows the tools of all namespaces with their namespace names.
 
 The shell variable does not update when a token expires. Run the token command again to refresh an expired stored token. Run `wanaku auth login` again if the refresh token has expired.
 
@@ -153,6 +152,8 @@ Keycloak does not update an existing realm from the import file. To test a chang
 | `unauthorized_client` during login | Use `--client-id mcp-client`. An older imported realm can have direct access grants disabled. |
 | HTTP 401 from either API | Capture a fresh token. Use a `wanaku` realm user and `mcp-client`. Do not use an `admin-cli` token. |
 | Logs appear in `TOKEN` | Upgrade the wanaku-barn CLI. Do not remove log lines with a shell filter. |
+| `No tools found` from `wanaku mcp tool list` | Make sure that the endpoint uses the namespace that contains the tools, for example `http://localhost:4181/employee/mcp`. |
+| `did not answer the 2026-07-28 protocol detection request` warning | The CLI waits 30 seconds, then uses an older MCP protocol version. The command still completes. |
 | Invalid MCP endpoint path | Use the exact MCP endpoint for the namespace, such as `http://localhost:4181/default/mcp`. |
 | Proxy exits at startup | Export both secrets in the shell that runs Compose. Inspect the proxy logs. |
 | Browser redirects to `keycloak:8080` | Rebuild the server. The public issuer must be `http://localhost:8543/realms/wanaku`; the upstream issuer uses the container address. |

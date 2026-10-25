@@ -135,7 +135,7 @@ USER 1001:0
 
 WORKDIR /etc/wanaku
 
-EXPOSE 8080 8081 8083
+EXPOSE 8080 8081 8083 8084
 
 HEALTHCHECK --interval=5s --timeout=3s --start-period=5s \
     CMD curl -sf http://127.0.0.1:8080/healthz || exit 1
