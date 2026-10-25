@@ -36,8 +36,9 @@ signing:
 
 # Preserve the checksum contract expected by get-wanaku.sh:
 # a single "checksums_sha256.txt" file in the sha256sum-compatible format.
+# JReleaser appends "_<algorithm>" to this name.
 checksum:
-  name: checksums_sha256.txt
+  name: checksums.txt
   individual: false
   algorithms:
     - SHA-256

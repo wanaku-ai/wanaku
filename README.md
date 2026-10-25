@@ -32,7 +32,7 @@ The project name comes from the origin of [guanaco](https://en.wikipedia.org/wik
 
 ### Install
 
-Download the latest early-access build on Linux or macOS:
+Download the latest early-access build on Linux or macOS. Early-access builds are development builds of the unreleased Wanaku 0.3.0, the first stable release of this server. If you need a slower cadence of changes, watch the [releases page](https://github.com/wanaku-ai/wanaku/releases) for it.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh | bash
@@ -40,21 +40,19 @@ curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh
 
 The installer detects the host platform, verifies the release checksum, and installs `wanaku-server` into `$HOME/bin`.
 
-Override the destination with `WANAKU_INSTALL_DIR`.
+Override the destination with `WANAKU_INSTALL_DIR`. To run Wanaku in a container or as a systemd service, read the [Getting Started](docs/getting-started.md) guide.
 
 Run `wanaku-server` and access <http://localhost:8080> to enter the dashboard:
 
 ![Wanaku Dashboard](docs/imgs/wanaku-dashboard.png)
 
-If you prefer a text interface, you may also download and use the Wanaku CLI from the[Wanaku Barn](https://github.com/wanaku-ai/wanaku-barn) project.
+If you prefer a text interface, you may also download and use the Wanaku CLI from the [Wanaku Barn](https://github.com/wanaku-ai/wanaku-barn) project.
 
 ### Learn Wanaku
 
 The easiest way to learn Wanaku is by following the **[guided tutorial](https://wanaku.ai/docs/demos/)**.
 
 The reference documentation, including the complete installation and configuration instructions, is available in the [usage guide](https://wanaku.ai/docs/version/).
-
-All tools from the remote server now appear in your local catalog. The client has no idea they're forwarded.
 
 ## Documentation
 
