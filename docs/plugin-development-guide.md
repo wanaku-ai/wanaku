@@ -8,6 +8,7 @@ This guide is for plugin developers and platform operators. It explains the runt
 
 - [Overview](#overview)
 - [Quick Start](#quick-start)
+- [Plugin Structure](#plugin-structure)
 - [Manifest Reference](#manifest-reference-pluginjson)
 - [Plugin Lifecycle](#plugin-lifecycle)
 - [PluginHost API Reference](#pluginhost-api-reference)
@@ -15,6 +16,8 @@ This guide is for plugin developers and platform operators. It explains the runt
 - [Complete Example](#complete-example)
 - [Using Carbon Design System](#using-carbon-design-system)
 - [Testing Locally](#testing-locally)
+- [Packaging a Plugin](#packaging-a-plugin)
+- [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
 
 ## Overview
@@ -23,8 +26,7 @@ Plugins are ES modules loaded at runtime. A plugin can:
 
 - Add navigation entries to the sidebar
 - Register new pages under custom routes
-- Call backend services through an authenticated proxy
-- Show notifications to users
+- Call backend services through a same-origin proxy
 
 The supported plugin contract is the host API. Plugins must keep DOM changes inside their page container. They must not read internal host state or call service URLs outside the configured proxy.
 
@@ -34,10 +36,10 @@ Plugins currently run as same-origin JavaScript. Wanaku does not sandbox them or
 
 Five steps to see a plugin running:
 
-1. **Create a plugin directory** under your plugins path (e.g., `/data/plugins/my-plugin/`)
+1. **Create a plugin directory** under your plugins path (e.g., `/tmp/plugins/my-plugin/`). The directory name must be equal to the manifest `id`.
 2. **Create `plugin.json`** with id, name, version, and entrypoint
-3. **Create `plugin.js`** with `activate` and `deactivate` exports
-4. **Start the server with `--plugins-path /data/plugins`**
+3. **Create `plugin.js`** with an `activate` export
+4. **Start the server with `--plugins-path /tmp/plugins`**
 5. **Open the admin UI** — your plugin page appears in the navigation
 
 The following example is the smallest working plugin:
@@ -74,11 +76,15 @@ export async function activate(host) {
 export function deactivate() {}
 ```
 
-Restart the server. The "My Page" link appears in the sidebar.
+Open the admin UI. The "My Page" link appears in the **Extensions** menu of the sidebar.
 
 ## Plugin Structure
 
-A plugin lives in its own directory under the plugins path. The plugins path is the value of `--plugins-path`. When you do not set `--plugins-path`, the plugins path is `<WANAKU_PERSIST_PATH>/plugins` (for example, `~/.wanaku/server/plugins`). The typical layout:
+A plugin lives in its own directory under the plugins path. The plugins path is the value of `--plugins-path`. When you do not set `--plugins-path`, the plugins path is `<WANAKU_PERSIST_PATH>/plugins` (for example, `~/.wanaku/server/plugins`, or `/data/registry/plugins` in the container image). When persistence is off (`WANAKU_PERSIST_BACKEND=none`) and you do not set `--plugins-path`, the server has no plugins path and loads no plugins.
+
+The directory name must be equal to the `id` in `plugin.json`. The server lists every valid manifest that it finds, but it serves plugin files from `<plugins-path>/<id>/`. If the names are different, the plugin appears in the list, but each file request returns 404 and the plugin does not load.
+
+The typical layout:
 
 ```text
 my-plugin/
@@ -89,7 +95,9 @@ my-plugin/
     └── logo.svg
 ```
 
-The manifest (`plugin.json`) tells the host what files to load. The entry point exports `activate()` and `deactivate()` functions. Styles and assets are optional — the host loads stylesheets declared in the manifest and serves assets at `/plugins/{pluginId}/{path}`.
+The manifest (`plugin.json`) tells the host what files to load. The entry point exports an `activate()` function. Styles and assets are optional — the host loads stylesheets declared in the manifest and serves assets at `/plugins/{pluginId}/{path}`.
+
+The server sets the `Content-Type` from the file extension. It knows `html`, `js`, `mjs`, `css`, `json`, `svg`, `png`, `jpg`, `jpeg`, `gif`, `webp`, `ico`, `woff`, `woff2`, `ttf`, and `wasm`. Other files use `application/octet-stream`.
 
 ## Manifest Reference (plugin.json)
 
@@ -98,11 +106,11 @@ The manifest is a JSON file with these fields:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `id` | string | yes | Unique plugin identifier (kebab-case, no spaces) |
-| `name` | string | yes | Human-readable name shown in error messages |
+| `name` | string | yes | Human-readable name shown in the Installed Plugins page and the server log |
 | `version` | string | yes | Semver version (e.g., "1.2.3") |
 | `entrypoint` | string | yes | Path to the JavaScript module (relative to plugin dir) |
 | `styles` | string[] | no | CSS files to load (relative to plugin dir) |
-| `requires.hostApi` | string | no | Required host API version (semver range, e.g., ">=1.0 <2.0") |
+| `requires.hostApi` | string | no | Required host API version (semver range, e.g., ">=1.0 <2.0"). Informational only: the host does not check it. |
 | `requires.services` | object[] | no | Backend services this plugin needs (see Backend Configuration) |
 | `permissions` | string[] | no | Declared capabilities (not enforced yet, reserved for future use) |
 
@@ -129,29 +137,29 @@ Example with all fields:
 }
 ```
 
-The manifest must be valid JSON. Missing `id`, `name`, `version`, or `entrypoint` will prevent the plugin from loading.
+The manifest must be valid JSON. Missing `id`, `name`, `version`, or `entrypoint` will prevent the plugin from loading. The server reads manifests only at startup. Restart the server after you add a plugin directory or change `plugin.json`.
 
 ## Plugin Lifecycle
 
-Plugins have two lifecycle hooks:
+Plugins have one lifecycle hook that the host calls: `activate(host)`.
 
 ### activate(host)
 
 Called when the plugin loads. The `host` parameter is the `PluginHost` object — your gateway to all platform capabilities. Use this function to register navigation entries, pages, and set up any runtime state.
 
-Returns `void` or `Promise<void>`. Errors thrown here prevent the plugin from loading. The host logs the error but continues loading other plugins.
+Returns `void` or `Promise<void>`. Errors thrown here prevent the plugin from loading. The host logs the error to the browser console but continues loading other plugins.
+
+The host loads the plugins one at a time when the admin UI starts. It waits for each `activate()` to finish before it loads the next plugin. It renders the admin UI only after all plugins are active. Thus, a slow `activate()` delays the complete admin UI. Do not wait for network calls in `activate()`. Load data in `mount()` instead.
+
+The host builds the navigation and the routes once, after all `activate()` calls finish. Register navigation entries and pages inside `activate()`, before it returns. A `navigation.add()` or `pages.register()` call after that time has no effect.
 
 ### deactivate()
 
-Called when the plugin is unloaded (currently only on page refresh). Clean up timers, event listeners, subscriptions, or other resources here.
-
-Returns `void` or `Promise<void>`. If you omit this export, the host assumes that the plugin has no resources to release.
-
-**Critical:** A plugin that does not release resources in `deactivate()` can leak memory or leave timers active. Dispose each resource that you register in `activate()`.
+The `PluginModule` type declares an optional `deactivate()` export, but the host does not call it. A browser page reload discards all plugin state. Release resources that belong to a page in the `Disposable` that `mount()` returns.
 
 ## PluginHost API Reference
 
-The `PluginHost` object has five capabilities. All registration methods return a `Disposable` — an object with a `dispose()` method you can call to remove the registration early (before `deactivate()` is called).
+The `PluginHost` object has five capabilities. The registration methods return a `Disposable` — an object with a `dispose()` method. The host reads registrations only when `activate()` returns. A later `dispose()` call does not change the navigation or the routes.
 
 ### host.version
 
@@ -163,7 +171,7 @@ console.log(`Running on host API ${host.version}`);
 
 ### host.navigation.add(entry)
 
-Adds a navigation entry to the sidebar. The `order` value controls its position. Lower values appear first. If multiple plugins use the same value, the host uses registration order.
+Adds a navigation entry to the sidebar. The host puts plugin entries in a sidebar menu with the `section` name. The default section is **Extensions**. The `order` value controls the position of the entry. Lower values appear first. If multiple plugins use the same value, the host uses registration order.
 
 **Parameters:**
 
@@ -172,8 +180,8 @@ Adds a navigation entry to the sidebar. The `order` value controls its position.
 | `id` | string | yes | Unique identifier for this nav entry |
 | `label` | string | yes | Text shown in the sidebar |
 | `route` | string | yes | Route to navigate to (must start with `/`) |
-| `icon` | string | no | Icon name (reserved for future use) |
-| `section` | string | no | Grouping hint (reserved for future use) |
+| `icon` | string | no | Icon name (not used) |
+| `section` | string | no | Sidebar menu for the entry (default: `"Extensions"`) |
 | `order` | number | no | Sort order (default: 0) |
 
 **Returns:** `Disposable`
@@ -181,15 +189,12 @@ Adds a navigation entry to the sidebar. The `order` value controls its position.
 **Example:**
 
 ```javascript
-const navDisposable = host.navigation.add({
+host.navigation.add({
   id: "customers",
   label: "Customers",
   route: "/customers",
   order: 100
 });
-
-// Later, remove the nav entry:
-// navDisposable.dispose();
 ```
 
 ### host.pages.register(page)
@@ -205,7 +210,7 @@ Registers a page that renders when the route matches. The host calls your `mount
 
 The `mount` function receives a container element. You can return:
 
-- `undefined` — the host assumes that the plugin releases resources in `deactivate()`
+- `undefined` — the host does not release anything when the route unmounts
 - A `Disposable` object — the host calls `dispose()` when the route unmounts
 
 **Returns:** `Disposable`
@@ -232,7 +237,7 @@ host.pages.register({
 });
 ```
 
-If you use a framework such as React, call its mount function inside `mount()`. Return a disposable that unmounts the page:
+If you use a framework such as React, call its mount function inside `mount()`. Return a disposable that unmounts the page. The host does not share its React instance with plugins. Bundle your own React and ReactDOM, and compile the JSX with a build step. Refer to [Bundling Approach](#bundling-approach).
 
 ```javascript
 import { createRoot } from "react-dom/client";
@@ -259,10 +264,12 @@ Makes HTTP requests to backend services. These methods route through the Rust ba
 
 **Why use this instead of `fetch()`?**
 
-- Authentication headers are injected automatically
 - CORS is handled (single origin)
 - The backend URL is configuration, not hardcoded in your plugin
-- Errors trigger redirect to login when auth expires
+
+**Authentication:** the host does not add authentication headers. The proxy forwards only the request method, path, query, body, and `Accept` header to the backend service. It sends a request body with `Content-Type: application/json`. It does not forward cookies or `Authorization`. If the backend service needs credentials, configure them on the service side.
+
+A 401 response from the backend service has the same effect as an expired admin UI session. The host reloads the admin UI. If a second 401 occurs within 10 seconds, the call fails with `Authentication redirect loop detected`. Do not return 401 from a plugin backend service for reasons other than an expired Wanaku session.
 
 **Signatures:**
 
@@ -279,7 +286,12 @@ host.http.delete<T>(service: string, path: string): Promise<T>
 - `path` — the path to append (must start with `/`)
 - `body` — JSON-serializable object (for POST/PUT)
 
-**Returns:** `Promise<T>` — the parsed JSON response
+**Returns:** `Promise<T>`. The value depends on the response:
+
+- A JSON response with a top-level `data` key: the value of `data`. Other top-level keys are discarded. For example, `{"data": [...], "total": 42}` returns only the array.
+- Other JSON responses: the parsed JSON.
+- A response that is not JSON: the response text.
+- A response with a status that is not 2xx: the promise rejects with an `ApiError`. Its `message` is the `error` field of the JSON body, or `Request failed with status <code>`. Its `status` is the HTTP status.
 
 **Example:**
 
@@ -309,7 +321,7 @@ You configure the mapping in the backend (see Backend Configuration below).
 
 ### host.notifications.show(message)
 
-Displays a toast notification at the top-right of the screen. Notifications auto-dismiss after a few seconds.
+**Not implemented:** the host writes the message to the browser console with `console.info`. No toast appears in the UI. Show messages inside your page container until the host implements notifications.
 
 **Parameters:**
 
@@ -338,9 +350,9 @@ host.notifications.show({
 
 To call backend services via `host.http`, you need to map logical service IDs to physical URLs. Two options:
 
-### Option 1: Environment Variable + YAML Config
+### Option 1: wanaku.yaml
 
-Start the server with `--plugins-path` and create a `wanaku.yaml` file with a `plugins` section:
+Add a `plugins` section to the Wanaku bootstrap configuration. The server reads this file from `--wanaku-config` (default: `wanaku.yaml` in the working directory). The server reads only `id` and `services.<name>.target`. It ignores other keys.
 
 ```yaml
 plugins:
@@ -354,15 +366,23 @@ plugins:
 
 The backend reads this on startup and registers the mappings.
 
-### Option 2: Management API
+### Option 2: Admin UI or Management API
 
-You can dynamically register service mappings via the management API (not yet implemented — this is a placeholder for future capability).
+Open **Installed Plugins** in the admin UI and select **Configure** for the plugin. The **Configure Services** dialog sets the target URL of each service. The dialog calls `PUT /api/v1/plugins/{pluginId}/config`:
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/plugins/my-plugin/config \
+  -H 'Content-Type: application/json' \
+  -d '{"services": {"customer-api": {"target": "http://customer-service:8080"}}}'
+```
+
+The new mappings apply immediately. A save replaces all mappings for that plugin. When persistence is on, the server saves the mappings in `<WANAKU_PERSIST_PATH>/plugins-config.json`. At startup, the saved mappings override the `wanaku.yaml` mappings for the same plugin and service.
 
 **Key point:** The plugin does not know the backend URL. The platform resolves it. The same plugin can run in development, staging, and production without a code change.
 
 ## Complete Example
 
-The following example shows the `hello-world` plugin from the examples directory:
+The following example shows the `hello-world` plugin in [`examples/hello-world`](../examples/hello-world/):
 
 **plugin.json:**
 
@@ -422,8 +442,7 @@ export async function activate(host) {
   });
 }
 
-// The deactivate function is called when the plugin unloads.
-// Clean up timers, listeners, subscriptions, etc. here.
+// The host does not call deactivate() at this time.
 export function deactivate() {
   // Nothing to clean up in this example.
 }
@@ -435,7 +454,7 @@ To run it:
 cargo run -- --plugins-path /path/to/examples
 ```
 
-Open `http://localhost:8080` (or your admin UI URL). Click "Hello Plugin" in the sidebar.
+Run this command from the Wanaku repository root. The server loads each subdirectory of `examples` that has a `plugin.json`. Open `http://localhost:8080/admin/` (or your admin UI URL). Open the **Extensions** menu in the sidebar and click "Hello Plugin".
 
 ## Using Carbon Design System
 
@@ -448,7 +467,9 @@ Plugins are ES modules that load at runtime. Bundle npm dependencies with a tool
 **Example with esbuild:**
 
 ```bash
+npm init -y
 npm install @carbon/web-components
+npm install --save-dev esbuild
 ```
 
 **src/plugin.js:**
@@ -473,12 +494,46 @@ export function deactivate() {}
 **Build:**
 
 ```bash
-esbuild src/plugin.js --bundle --format=esm --outfile=plugin.js
+npx esbuild src/plugin.js --bundle --format=esm --outfile=plugin.js
 ```
 
 Now `plugin.js` includes the Carbon button component. The browser can load it as a single ES module.
 
-**Caveat:** Carbon React components require React and ReactDOM. Include these dependencies in the plugin bundle. This increases the plugin size. For React-based plugins, use a build tool such as Vite to produce optimized ES modules with code splitting.
+**Caveat:** Carbon React components require React and ReactDOM. The host does not share its React instance. Include these dependencies in the plugin bundle. This increases the plugin size.
+
+**Example with React and esbuild:**
+
+```bash
+npm install react react-dom
+```
+
+**src/plugin.jsx:**
+
+```javascript
+import { createRoot } from "react-dom/client";
+
+function HelloPage() {
+  return <h2>Hello from React</h2>;
+}
+
+export async function activate(host) {
+  host.navigation.add({ id: "react-hello", label: "React Hello", route: "/react-hello" });
+  host.pages.register({
+    route: "/react-hello",
+    mount(container) {
+      const root = createRoot(container);
+      root.render(<HelloPage />);
+      return { dispose: () => root.unmount() };
+    }
+  });
+}
+```
+
+**Build:**
+
+```bash
+npx esbuild src/plugin.jsx --bundle --format=esm --jsx=automatic --define:process.env.NODE_ENV='"production"' --outfile=plugin.js
+```
 
 ## Testing Locally
 
@@ -490,16 +545,10 @@ Step-by-step process to test a plugin:
    mkdir -p /tmp/plugins/my-plugin
    ```
 
-2. Enter the plugin directory:
+2. Write the manifest:
 
    ```bash
-   cd /tmp/plugins/my-plugin
-   ```
-
-3. Write the manifest:
-
-   ```bash
-   cat > plugin.json <<EOF
+   cat > /tmp/plugins/my-plugin/plugin.json <<EOF
    {
      "id": "my-plugin",
      "name": "My Plugin",
@@ -509,10 +558,10 @@ Step-by-step process to test a plugin:
    EOF
    ```
 
-4. Write the plugin code:
+3. Write the plugin code:
 
    ```bash
-   cat > plugin.js <<EOF
+   cat > /tmp/plugins/my-plugin/plugin.js <<'EOF'
    export async function activate(host) {
      host.navigation.add({
        id: "test",
@@ -532,60 +581,102 @@ Step-by-step process to test a plugin:
    EOF
    ```
 
-5. Run the server:
+4. Run the server from the Wanaku repository root:
 
    ```bash
    cargo run -- --plugins-path /tmp/plugins
    ```
 
-6. Open `http://localhost:8080`.
+   The first build also builds the admin UI and needs Node.js and Yarn. Refer to [Contributing](contributing.md). With a released server binary, run `wanaku-server --plugins-path /tmp/plugins` instead.
 
-7. Select **Test Page** in the sidebar. The page shows **It works!**.
+5. Open `http://localhost:8080/admin/`.
 
-**Hot reload:** The server does not monitor plugin files for changes. Restart the server after you edit a plugin.
+6. Open the **Extensions** menu in the sidebar and select **Test Page**. The page shows **It works!**.
+
+**Reload:** The server reads plugin files from disk on each request. After you edit `plugin.js` or a stylesheet, reload the browser page. After you add a plugin directory or change `plugin.json`, restart the server.
+
+## Packaging a Plugin
+
+The installer (the **Install** action in **Plugin Catalog** and **Installed Plugins**, or `POST /api/v1/plugins/install`) accepts only ZIP archives. Put `plugin.json` at the root of the archive, or in one top-level folder. The installer extracts the files into `<plugins-path>/<id>/`.
+
+Create the archive from the plugin directory:
+
+```bash
+cd /tmp/plugins/my-plugin
+zip -r ../my-plugin-1.0.0.zip .
+```
+
+To test the install, serve the archive over HTTP:
+
+```bash
+cd /tmp/plugins
+python3 -m http.server 9090
+```
+
+Then install it with the management API:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/plugins/install \
+  -H 'Content-Type: application/json' \
+  -d '{"id": "my-plugin", "version": "1.0.0", "url": "http://localhost:9090/my-plugin-1.0.0.zip"}'
+```
+
+The `id` must be equal to the `id` in `plugin.json`. Otherwise, the install fails with HTTP 400. The installer does not check `version`. A `.tar.gz` file or another format fails with HTTP 422 `invalid zip archive`. If the server cannot download the archive, the install fails with HTTP 502. If the server has no plugins path, the install fails with HTTP 400. Refer to [Plugin Structure](#plugin-structure).
+
+The server adds the installed plugin to the plugin list immediately. Reload the admin UI to load it.
+
+## Troubleshooting
+
+The admin UI does not show plugin errors. Look in the server log and in the browser console.
+
+| Symptom | Cause | Where to look |
+|---|---|---|
+| The plugin is not in **Installed Plugins**. | The manifest is not valid JSON, or `id` or `entrypoint` is missing. The server skips the plugin. | Server log: `failed to parse plugin manifest` or `plugin manifest missing required fields`. |
+| The plugin is listed, but its menu entry does not appear. | The directory name is not equal to `id`, so the module request returns 404. Or the module import or `activate()` failed. | Browser console: `Failed to load plugin "<id>"`. |
+| The menu entry appears, but the page is empty. | `mount()` threw an error. | Browser console: `Plugin "<id>" mount failed`. |
+| `host.http` calls return 404 `service ... not found for plugin ...`. | No service mapping exists for this plugin and service. | Refer to [Backend Configuration](#backend-configuration). |
+| **Plugin Catalog** shows an error. | One catalog entry is not valid. The server rejects the complete catalog with HTTP 502. | Server log: `failed to load plugin catalog`. |
 
 ## Best Practices
 
-### Clean Up Resources in deactivate()
+### Clean Up Resources in the Page Disposable
 
-If you create timers, event listeners, subscriptions, or other stateful resources in `activate()`, dispose them in `deactivate()`. The host cannot dispose resources that the plugin does not return.
+The host does not call `deactivate()`. Create timers, event listeners, and subscriptions in `mount()`, and release them in the `Disposable` that `mount()` returns. The host calls `dispose()` when the user leaves the page.
 
 **Bad:**
 
 ```javascript
 export async function activate(host) {
   setInterval(() => console.log("ping"), 1000);
-}
-
-export function deactivate() {
-  // Timer keeps running — memory leak
+  // Timer runs until the browser page reloads
 }
 ```
 
 **Good:**
 
 ```javascript
-let timer;
-
-export async function activate(host) {
-  timer = setInterval(() => console.log("ping"), 1000);
-}
-
-export function deactivate() {
-  clearInterval(timer);
-}
+host.pages.register({
+  route: "/status",
+  mount(container) {
+    const timer = setInterval(() => console.log("ping"), 1000);
+    return {
+      dispose() {
+        clearInterval(timer);
+      }
+    };
+  }
+});
 ```
 
 ### Use host.http Instead of Raw fetch
 
-Always use `host.http` for backend calls. It handles authentication, CORS, and service resolution.
+Always use `host.http` for backend calls. It handles CORS and service resolution.
 
 **Bad:**
 
 ```javascript
 await fetch("http://customer-service:8080/customers");
 // Hard-coded URL, breaks in different environments
-// No auth headers, fails if backend requires authentication
 // CORS issues if backend is on a different origin
 ```
 
@@ -594,7 +685,6 @@ await fetch("http://customer-service:8080/customers");
 ```javascript
 await host.http.get("customer-api", "/customers");
 // Resolves to the right backend for this environment
-// Automatically includes auth headers
 // Routes through the host (same origin, no CORS issues)
 ```
 
@@ -649,21 +739,10 @@ mount(container) {
 }
 ```
 
-### Use the Disposable Pattern for All Registrations
+### Register Everything in activate()
 
-Each `host.navigation.add()` and `host.pages.register()` call returns a `Disposable`. Store it. Call `dispose()` when the registration is no longer necessary.
-
-**Why?** If you need to unregister something before the plugin unloads (e.g., a dynamic nav entry based on user permissions), you can:
-
-```javascript
-const disposable = host.navigation.add({ id: "admin", label: "Admin", route: "/admin" });
-
-// Later, when the user logs out:
-disposable.dispose();
-```
-
-The navigation entry disappears immediately. The plugin does not have to unload first.
+The host reads navigation entries and pages once, after all plugins finish `activate()`. Decide in `activate()` which entries to register. A `dispose()` call or a registration after `activate()` returns does not change the sidebar or the routes.
 
 ---
 
-**That's the guide.** You now know how to build, configure, and test a plugin for Wanaku. Start with the Quick Start example, experiment with the host APIs, and check the `examples/hello-plugin/` directory for a working reference implementation.
+**That's the guide.** You now know how to build, configure, and test a plugin for Wanaku. Start with the Quick Start example, experiment with the host APIs, and check the [`examples/hello-world`](../examples/hello-world/) directory for a working reference implementation.

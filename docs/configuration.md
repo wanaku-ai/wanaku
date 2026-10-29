@@ -712,7 +712,7 @@ Invalid evaluator configuration stops startup by default. Set the top-level `eva
 
 ### Plugin catalog
 
-The default catalog is the JSON file embedded from `features/plugins/plugin-catalog.json`. It contains the curated Wanaku Barn entry.
+The default catalog is the JSON file embedded from `features/plugins/plugin-catalog.json`. It contains the curated Wanaku Barn and Deployment Debugger entries.
 
 Set `WANAKU_PLUGIN_CATALOG_PATH` to load a local JSON file. Set `WANAKU_PLUGIN_CATALOG_URL` to load a JSON file from an HTTP or HTTPS URL. A local path takes precedence over a URL. Each custom source replaces the complete embedded catalog. Custom sources can contain plugins from multiple publishers and archive hosts.
 

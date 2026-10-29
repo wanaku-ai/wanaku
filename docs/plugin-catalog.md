@@ -22,10 +22,10 @@ Catalog requests do not download plugin archives. The server downloads an archiv
 
 ## Add a plugin
 
-1. Create a plugin archive as described in the [Plugin Development Guide](plugin-development-guide.md).
+1. Create a ZIP plugin archive as described in [Packaging a Plugin](plugin-development-guide.md#packaging-a-plugin). The installer accepts only ZIP archives.
 2. Publish the archive at an HTTP or HTTPS URL.
 3. Add an entry to a catalog JSON array.
-4. Set the entry `id` and `version` to the values in the archive `plugin.json` file.
+4. Set the entry `id` and `version` to the values in the archive `plugin.json` file. The installer rejects an archive whose `plugin.json` `id` is different from the entry `id`. It does not check `version`.
 5. Copy the required host API and service versions from the plugin manifest.
 6. Write a short description of the plugin.
 7. Configure the catalog source.
@@ -66,7 +66,22 @@ Use one entry per plugin ID. Select the supported version for that entry. The fo
 
 Each entry must contain `id`, `name`, `version`, and `url`. The ID must be a single path segment. The URL must use HTTP or HTTPS. Optional fields are `description`, `publisher`, `license`, `dependencies`, `requires`, and `metadata`. Each dependency has `id` and `version`. The `requires` field uses the plugin manifest format. The `metadata` field is a JSON object.
 
+The admin UI only shows `dependencies` and `requires`. The installer does not install dependencies and does not check versions.
+
+If one entry is not valid, the server rejects the complete catalog with HTTP 502. The server log shows the cause after `failed to load plugin catalog`.
+
 Required backend services are separate deployments. Installing a UI plugin does not install its backend services. Deploy each required service. Configure its URL in the plugin configuration dialog.
+
+## Install a plugin
+
+The install needs a plugins path. The server uses `--plugins-path`, or `<WANAKU_PERSIST_PATH>/plugins` when persistence is on. Without a plugins path, the install fails with HTTP 400.
+
+1. Open **Plugin Catalog** in the admin UI.
+2. Select **Install** for the plugin. The server downloads the archive and extracts it into `<plugins-path>/<id>/`.
+3. If the plugin requires backend services, set their URLs in the **Configure Services** dialog. The mappings apply immediately.
+4. Reload the admin UI in the browser. The host loads plugins when the admin UI starts.
+
+To install a plugin that is not in the catalog, open **Installed Plugins** and select **Install Plugin**. Enter the plugin ID, the version, and the archive download URL.
 
 ## Use a custom catalog
 
@@ -88,4 +103,4 @@ Open **Plugin Catalog** in the admin UI. Confirm that your entries appear. Use *
 
 ## Contribute to the default catalog
 
-Add your entry to `features/plugins/plugin-catalog.json`. Keep the array valid JSON. Submit a pull request to Wanaku with the archive URL, plugin metadata, and required service information. The archive can use a publisher-controlled host. A change to the default catalog becomes available in builds that include that change.
+Add your entry to `features/plugins/plugin-catalog.json`. Keep the array valid JSON. The unit tests in `features/plugins/src/catalog.rs` check the number of embedded entries (`embedded_catalog_has_curated_barn_metadata`). Update the expected count, and add a test for your entry. Submit a pull request to Wanaku with the archive URL, plugin metadata, and required service information. The archive can use a publisher-controlled host. A change to the default catalog becomes available in builds that include that change.
