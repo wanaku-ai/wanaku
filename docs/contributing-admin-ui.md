@@ -605,8 +605,10 @@ To run the tests, build the admin UI and the evaluator actions first. Refer to [
 ```bash
 cd tests/e2e/ui
 yarn install --frozen-lockfile
-npx playwright install chromium
+npx playwright install --with-deps chromium
 ```
+
+The `--with-deps` option also installs the system libraries that Chromium needs on Linux. CI uses the same command. On Linux, this step can ask for `sudo`.
 
 Run the tests:
 
