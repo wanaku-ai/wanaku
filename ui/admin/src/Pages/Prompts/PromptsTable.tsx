@@ -1,5 +1,6 @@
 import {
   DataTable,
+  Pagination,
   Table,
   TableBody,
   TableCell,
@@ -9,12 +10,14 @@ import {
   TableRow,
   TableToolbar,
   TableToolbarContent,
+  TableToolbarSearch,
 } from '@carbon/react';
 import { FunctionComponent, memo } from 'react';
 import { PromptEntry } from '../../models';
 import { getNamespacePathById } from '../../hooks/api/use-namespaces';
 import { TableEmptyState } from '../EmptyTableState';
 import { EnabledToggle } from '../../components/EnabledToggle';
+import { PAGE_SIZES, useSearchPagination } from '../../hooks/search-pagination';
 
 interface PromptsListProps {
   fetchedData: PromptEntry[];
@@ -31,8 +34,16 @@ const formatArguments = (args?: any[]) => {
   return args.map((arg) => `${arg.name}${arg.required ? '*' : ''}`).join(', ');
 };
 
+const promptSearchableText = (prompt: PromptEntry) => [
+  prompt.name,
+  prompt.description,
+  getNamespacePathById(prompt.namespace ?? undefined),
+];
+
 export const PromptsTable: FunctionComponent<PromptsListProps> = memo(
   ({ fetchedData, onSetEnabled }) => {
+    const { searchTerm, setSearchTerm, page, pageSize, onPageChange, pageItems, filteredCount } =
+      useSearchPagination(fetchedData, promptSearchableText);
     const headers = [
       { key: 'name', header: 'Name' },
       { key: 'description', header: 'Description' },
@@ -44,7 +55,7 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = memo(
     ];
 
     function promptsToRows() {
-      return fetchedData.map((prompt: PromptEntry, index: number) => ({
+      return pageItems.map((prompt: PromptEntry, index: number) => ({
         id: prompt.name || `prompt-${index}`,
         name: prompt.name,
         description: prompt.description,
@@ -56,63 +67,90 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = memo(
     }
 
     return (
-      <DataTable headers={headers} rows={promptsToRows()}>
-        {({ headers, rows, getTableProps, getHeaderProps, getRowProps }) => {
-          return (
-            <TableContainer>
-              <TableToolbar>
-                <TableToolbarContent />
-              </TableToolbar>
-              <Table {...getTableProps()} aria-label="Prompts table">
-                <TableHead>
-                  <TableRow>
-                    {headers.map((header) => (
-                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rows.map((row) => {
-                    const prompt = fetchedData.find((item) => item.name === row.id);
-                    return (
-                      <TableRow {...getRowProps({ row })}>
-                        {row.cells.map((cell) => {
-                          if (cell.info.header === 'arguments') {
-                            return (
-                              <TableCell key={cell.id} style={{ fontSize: '14px' }}>
-                                {cell.value}
-                              </TableCell>
-                            );
-                          }
-                          if (cell.info.header === 'enabled' && prompt) {
-                            return (
-                              <TableCell key={cell.id}>
-                                <EnabledToggle
-                                  name={prompt.name}
-                                  enabled={prompt.enabled !== false}
-                                  onSetEnabled={onSetEnabled}
-                                />
-                              </TableCell>
-                            );
-                          }
-                          return <TableCell key={cell.id}>{cell.value}</TableCell>;
-                        })}
-                      </TableRow>
-                    );
-                  })}
-                  {fetchedData.length == 0 && (
-                    <TableEmptyState
-                      colSpan={headers.length}
-                      title="No prompts discovered yet"
-                      body="Register a forwarded MCP server to auto-discover prompts"
+      <>
+        <DataTable headers={headers} rows={promptsToRows()}>
+          {({ headers, rows, getTableProps, getHeaderProps, getRowProps }) => {
+            return (
+              <TableContainer>
+                <TableToolbar>
+                  <TableToolbarContent>
+                    <TableToolbarSearch
+                      persistent
+                      placeholder="Search prompts"
+                      value={searchTerm}
+                      onChange={(event) =>
+                        setSearchTerm(typeof event === 'string' ? event : event.target.value)
+                      }
                     />
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          );
-        }}
-      </DataTable>
+                  </TableToolbarContent>
+                </TableToolbar>
+                <Table {...getTableProps()} aria-label="Prompts table">
+                  <TableHead>
+                    <TableRow>
+                      {headers.map((header) => (
+                        <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {rows.map((row) => {
+                      const prompt = fetchedData.find((item) => item.name === row.id);
+                      return (
+                        <TableRow {...getRowProps({ row })}>
+                          {row.cells.map((cell) => {
+                            if (cell.info.header === 'arguments') {
+                              return (
+                                <TableCell key={cell.id} style={{ fontSize: '14px' }}>
+                                  {cell.value}
+                                </TableCell>
+                              );
+                            }
+                            if (cell.info.header === 'enabled' && prompt) {
+                              return (
+                                <TableCell key={cell.id}>
+                                  <EnabledToggle
+                                    name={prompt.name}
+                                    enabled={prompt.enabled !== false}
+                                    onSetEnabled={onSetEnabled}
+                                  />
+                                </TableCell>
+                              );
+                            }
+                            return <TableCell key={cell.id}>{cell.value}</TableCell>;
+                          })}
+                        </TableRow>
+                      );
+                    })}
+                    {fetchedData.length == 0 && (
+                      <TableEmptyState
+                        colSpan={headers.length}
+                        title="No prompts discovered yet"
+                        body="Register a forwarded MCP server to auto-discover prompts"
+                      />
+                    )}
+                    {fetchedData.length > 0 && filteredCount == 0 && (
+                      <TableEmptyState
+                        colSpan={headers.length}
+                        title="No matching prompts"
+                        body="No prompts match the current search."
+                      />
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            );
+          }}
+        </DataTable>
+        {filteredCount > 0 && (
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            pageSizes={PAGE_SIZES}
+            totalItems={filteredCount}
+            onChange={onPageChange}
+          />
+        )}
+      </>
     );
   },
 );

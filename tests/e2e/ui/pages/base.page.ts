@@ -49,4 +49,16 @@ export class BasePage {
   rowWithText(text: string): Locator {
     return this.page.locator(Carbon.tableRow, { hasText: text });
   }
+
+  async searchTable(term: string) {
+    await this.page.locator(Carbon.tableToolbar).getByRole('searchbox').fill(term);
+  }
+
+  pagination(): Locator {
+    return this.page.locator(Carbon.pagination);
+  }
+
+  async goToNextPage() {
+    await this.page.locator(Carbon.paginationNext).click();
+  }
 }

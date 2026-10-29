@@ -35,4 +35,31 @@ test.describe('Prompts', () => {
     await expect(toggle).toHaveAttribute('aria-checked', 'true');
     expect(calls).toEqual([`disable:${entry.name}`, `enable:${entry.name}`]);
   });
+
+  test('paginates and filters prompts', async ({ page }) => {
+    const entries = Array.from({ length: 30 }, (_, index) => ({
+      ...promptData({ name: `e2e-paged-prompt-${String(index).padStart(2, '0')}` }),
+      forwardId: 'e2e-forward',
+      namespace: 'default',
+      enabled: true,
+    }));
+    await mockRegistryEntries(page, 'prompts', entries);
+
+    await prompts.goto();
+
+    await expect(prompts.tableRows()).toHaveCount(25);
+    await expect(prompts.pagination()).toContainText('1–25 of 30 items');
+
+    await prompts.goToNextPage();
+    await expect(prompts.tableRows()).toHaveCount(5);
+    await expect(prompts.rowWithText('e2e-paged-prompt-29')).toBeVisible();
+
+    await prompts.searchTable('prompt-07');
+    await expect(prompts.tableRows()).toHaveCount(1);
+    await expect(prompts.rowWithText('e2e-paged-prompt-07')).toBeVisible();
+
+    await prompts.searchTable('no-such-prompt');
+    await expect(prompts.tableRows()).toHaveCount(1);
+    await expect(prompts.tableRows()).toContainText('No matching prompts');
+  });
 });

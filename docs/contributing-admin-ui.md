@@ -365,6 +365,28 @@ import { EmptyTableState } from '../../components/EmptyTableState';
 )}
 ```
 
+### Search and Pagination
+
+The Tools, Resources, and Prompts tables have a search field and pagination. The filter and the page split occur in the browser. The management API returns the full list.
+
+Use the `useSearchPagination` hook from `src/hooks/search-pagination.ts` to add the same behavior to a table. The hook takes the list and a function. The function returns the text values that the search term can match. The search does not use letter case.
+
+Define the function outside the component. The hook memoizes the filtered list, so the function must keep the same reference across renders.
+
+```tsx
+import { Pagination, TableToolbarSearch } from '@carbon/react';
+import { PAGE_SIZES, useSearchPagination } from '../../hooks/search-pagination';
+
+const toolSearchableText = (tool: ToolEntry) => [tool.name, tool.description];
+
+const { searchTerm, setSearchTerm, page, pageSize, onPageChange, pageItems, filteredCount } =
+  useSearchPagination(tools, toolSearchableText);
+```
+
+Build the table rows from `pageItems`. Connect `searchTerm` and `setSearchTerm` to a `TableToolbarSearch`. Give `page`, `pageSize`, `PAGE_SIZES`, `filteredCount`, and `onPageChange` to a Carbon `Pagination` below the table. The default page size is 25. A new search term resets the table to page 1.
+
+When the list has items but no item matches the search term, show a `TableEmptyState` that tells the user that no item matches.
+
 ## Styling
 
 The UI uses Carbon theme tokens, not hardcoded colors.

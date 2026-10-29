@@ -2,6 +2,8 @@ export const Carbon = {
   dataTable: '.cds--data-table',
   tableRow: 'table tbody tr',
   tableToolbar: '.cds--table-toolbar',
+  pagination: '.cds--pagination',
+  paginationNext: '.cds--pagination button[aria-label="Next page"]',
 
   modal: '.cds--modal.is-visible',
   modalHeading: '.cds--modal-header__heading',
