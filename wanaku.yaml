@@ -1,3 +1,8 @@
+# Development sample. `cargo run` loads this file from the repository root.
+# It registers test forwards on localhost and needs the example evaluator
+# actions in actions/dist/ (built by features/evaluator/build.rs when
+# cargo-component is installed). Without them, startup stops.
+# For a complete annotated configuration, see examples/governed-mcp.
 forwards:
   - name: "echo-mcp"
     address: "http://localhost:9090/mcp"
@@ -26,7 +31,11 @@ governance:
 #
 #     # Apply matching policies and evaluators. Deny requests on failure.
 #     # Each filter permits unmatched actions. A denial from either filter
-#     # still blocks the request.
+#     # still blocks the request. Note: the action-policy filter and the
+#     # evaluator filter apply no_match independently. With no_match: deny,
+#     # a request needs an allowing action-policy rule AND a matching
+#     # evaluator. This file has no action_policy section, so with the
+#     # overrides commented out, every tools/call is denied with -32003.
 #     test-ns:
 #       mode: enforce
 #       on_failure: deny
@@ -52,7 +61,7 @@ llm_connections:
     api_key: ""
   - name: "openrouter"
     model: "poolside/laguna-s-2.1:free"
-    url: "https://openrouter.ai/api"
+    url: "https://openrouter.ai/api/v1"   # Wanaku appends only /chat/completions
     api_key: ""
 
 # TypeSafe System One connections are also config-only. Set an API key here.
@@ -71,6 +80,8 @@ opa_connections:
     # timeout_ms: 2000          # Default 2000, maximum 30000
     # ca_cert: "/etc/wanaku/opa-ca.pem"  # Optional PEM CA certificate for https URLs
 
+# Only the first evaluator whose trigger matches runs. This evaluator has no
+# trigger.namespace, so it matches every namespace and hides later entries.
 evaluators:
   - name: "safety-gate"
     trigger:

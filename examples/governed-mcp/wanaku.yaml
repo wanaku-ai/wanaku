@@ -1,0 +1,110 @@
+# Wanaku configuration for the governed MCP example. See README.md.
+#
+# The sections appear in the order in which the parts depend on each other:
+# forwards use bindings, evaluators use connections, and governance decides
+# what happens when no action-policy rule or evaluator matches.
+
+# 1. Forwards: the upstream MCP servers. Wanaku discovers their tools,
+#    resources, and prompts at startup. The namespace sets the agent endpoint:
+#    http://<host>:8081/tickets/mcp
+forwards:
+  - name: "tickets-mcp"
+    address: "http://127.0.0.1:3000/mcp"
+    namespace: "tickets"
+    # Map each purpose to a binding id from the bindings section.
+    credentialBindings:
+      discovery: tickets-token
+      invocation: tickets-token
+
+# 2. Credential bindings: how Wanaku authenticates to the upstream. The agent
+#    never sees the token. The forwardId must equal the forward name, and the
+#    origin must be the scheme, host, and port of the forward address.
+bindings:
+  - id: tickets-token
+    forwardId: tickets-mcp
+    origin: "http://127.0.0.1:3000"
+    mechanism:
+      type: bearer
+    secretRefs:
+      - "env:TICKETS_TOKEN"        # Read from the server environment
+    allowedPurposes:
+      - discovery
+      - invocation
+    revision: 1
+
+# 3. Connections: config-only, never exposed through the management API.
+#    The url includes /v1, because Wanaku appends only /chat/completions.
+#    Every env: reference here must resolve at startup, also for a connection
+#    that no evaluator uses.
+llm_connections:
+  - name: "local-llama"
+    model: "llama3.2"
+    url: "http://localhost:11434/v1"
+
+# 4. Evaluators: only the first evaluator whose trigger matches runs, so put
+#    namespace-scoped evaluators before evaluators without a namespace.
+evaluators:
+  - name: "tickets-safety-gate"
+    trigger:
+      method: "tools/call"
+      namespace: "tickets"
+    engine:
+      type: llm
+      operation: classify
+      prompt: |
+        You are a strict safety classifier for a ticketing system. Classify this tool call as:
+        - green: read-only operations
+        - yellow: changes to one ticket
+        - red: bulk changes or deletions
+
+        Respond with ONLY a JSON object: {"level": "green|yellow|red", "reason": "brief explanation"}
+      connection: "local-llama"
+      result_schema:
+        type: object
+        properties:
+          level:
+            type: string
+            enum: ["green", "yellow", "red"]
+          reason:
+            type: string
+        required: ["level", "reason"]
+    processor:
+      # Relative paths resolve against the server working directory.
+      path: "actions/dist/safety_review_action.wasm"
+
+# 5. Action policy: deterministic rules. Rules are checked before evaluators.
+action_policy:
+  rules:
+    - id: deny-ticket-deletion
+      effect: deny
+      selectors:
+        namespace: tickets
+        operation: tools/call
+        target_type: tool
+        target_name:
+          matcher: glob
+          value: "delete-*"
+      reason_code: ticket_deletion_denied
+      message: Ticket deletion is not permitted through agents.
+    - id: allow-ticket-tools
+      effect: allow
+      selectors:
+        namespace: tickets
+        operation: tools/call
+
+# 6. Governance: the fail-safe defaults deny unmatched actions and failures.
+#    The action-policy filter and the evaluator filter apply no_match
+#    independently. In the tickets namespace, a tool call therefore needs the
+#    allow rule above AND the matching evaluator. resources/read and
+#    prompts/get match neither, so both filters deny them.
+governance:
+  default:
+    mode: enforce
+    no_match: deny
+    on_failure: deny
+    audit_level: basic
+  namespaces:
+    # A sandbox namespace that only observes. Audit mode records decisions
+    # and lets every request continue.
+    sandbox:
+      mode: audit

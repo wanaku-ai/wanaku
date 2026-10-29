@@ -170,7 +170,9 @@ curl -X POST http://localhost:8080/api/v1/forwards \
   }'
 ```
 
-Wanaku stores the forward even if discovery fails. In that case, the response reports zero discovered entries and the forward records the error in `status_message`.
+Wanaku stores the forward even if discovery fails. In that case, the response reports zero discovered entries and the forward records the error in `statusMessage`.
+
+The request body can also contain `credentialBindings`, a map from purpose (`discovery`, `invocation`) to binding id. The bindings themselves must exist in `wanaku.yaml`, because the management API cannot create bindings. See [Credential Brokerage](credential-brokerage.md#attaching-a-binding-to-a-forward).
 
 ### Inspect a Credential Binding
 

@@ -11,7 +11,7 @@ Wanaku uses environment variables and two optional YAML files. It does not use a
 ## Configuration Sources (Precedence Order)
 
 1. **Environment variables** — highest priority, always win
-2. **Runtime YAML files** — loaded from CLI args (e.g., `wanaku-server --pipeline-config praxis.yaml --wanaku-config wanaku.yaml`)
+2. **Runtime YAML files** — loaded from CLI args (e.g., `wanaku-server --pipeline-config pipeline.yaml --wanaku-config wanaku.yaml`)
 3. **Embedded defaults** — compiled into the binary
 
 ## Core Environment Variables
@@ -327,15 +327,17 @@ forwards — a request to `/v1/chat/completions` on port 8083 reaches
 custom-`--pipeline-config` caveat applies: this requires a `path_rewrite`
 filter with `add_prefix` on the `inference_proxy` chain.
 
-## Pipeline Config File (praxis.yaml)
+## Pipeline Config File (pipeline.yaml)
 
-The pipeline configuration defines listeners, filter chains, and filter-specific settings. This YAML file uses the native Praxis configuration format.
+The pipeline configuration defines listeners, filter chains, and filter-specific settings. This YAML file uses the native Praxis configuration format. This documentation calls the file `pipeline.yaml`. The server accepts any file name.
 
 **Override:** Pass with `--pipeline-config`:
 
 ```bash
-wanaku-server --pipeline-config /path/to/custom-praxis.yaml
+wanaku-server --pipeline-config /path/to/pipeline.yaml
 ```
+
+A custom file replaces the complete embedded pipeline. Start from [`server/src/default.yaml`](../server/src/default.yaml), which is the embedded default, and change only what you need.
 
 **Format:**
 
@@ -352,6 +354,7 @@ filter_chains:
         allow_origins: ["*"]
       - filter: mcp
         on_invalid: continue
+      - filter: wanaku_mcp_id
       - filter: wanaku_namespace
       - filter: wanaku_well_known
       - filter: wanaku_mcp_init
@@ -364,7 +367,14 @@ filter_chains:
       - filter: wanaku_prompt_list
       - filter: wanaku_prompt_get
       - filter: static_response
+        status: 200
+        headers:
+          - name: content-type
+            value: application/json
+        body: '{"jsonrpc":"2.0","error":{"code":-32601,"message":"method not supported"},"id":null}'
 ```
+
+The `cors` filter requires `allow_origins`. The `static_response` filter requires `status`. Praxis rejects unknown keys in both filters, so the server does not start if a key is missing or misspelled.
 
 ### Listener Configuration
 
@@ -419,12 +429,11 @@ The `on_invalid: continue` setting allows OPTIONS requests (which have no body) 
 
 ```yaml
 - filter: wanaku_custom_feature
-  enabled: true
-  config:
-    some_option: value
+  some_option: value
+  other_option: 42
 ```
 
-Feature filters read their config from this section. The exact schema depends on the feature.
+Put the filter options at the same level as the `filter` key. Do not nest them under a `config` key. A filter that is in the chain is active, so there is no `enabled` key. The exact options depend on the filter.
 
 ### Filter Ordering
 
@@ -434,8 +443,9 @@ The order in `filters:` matters. The pipeline executes filters top-to-bottom.
 
 1. Put CORS first. Otherwise, error responses do not contain CORS headers.
 2. **MCP must be before wanaku_namespace** — namespace filter reads `mcp.method` metadata
-3. **wanaku_namespace must be before tool/resource/prompt filters** — they all read `wanaku.namespace`
-4. **static_response must be last** — catch-all for unhandled requests
+3. **wanaku_mcp_id must be before the governance filters** — it records the JSON-RPC request ID, so that synthetic error responses carry the correct `id`
+4. **wanaku_namespace must be before tool/resource/prompt filters** — they all read `wanaku.namespace`
+5. **static_response must be last** — catch-all for unhandled requests
 
 If you reorder filters and requests start failing, check the logs. The filter that needed metadata will error with "missing metadata key".
 
@@ -446,8 +456,14 @@ The Wanaku configuration bootstraps core registry entries and feature settings a
 **Location:** Pass with `--wanaku-config`:
 
 ```bash
-wanaku-server --pipeline-config /path/to/praxis.yaml --wanaku-config /path/to/wanaku.yaml
+wanaku-server --pipeline-config /path/to/pipeline.yaml --wanaku-config /path/to/wanaku.yaml
 ```
+
+The default value of `--wanaku-config` is `wanaku.yaml`. The server resolves this relative path against its working directory. In the container image, the working directory is `/etc/wanaku`.
+
+If the file does not exist, the server logs the warning `wanaku config not found, using defaults` and starts with the fail-safe defaults. This also applies when you give the path explicitly. Check the startup log if your configuration seems to have no effect. A file that the server cannot read, or that is not valid YAML, stops startup.
+
+For a complete annotated file that combines forwards, credential bindings, connections, evaluators, action policies, and governance, see [`examples/governed-mcp`](../examples/governed-mcp/README.md).
 
 **Format:**
 
@@ -470,10 +486,16 @@ Wanaku loads these top-level sections from `wanaku.yaml`:
 - `typesafe_system_one_connections` — named TypeSafe System One connections for evaluators; config-only, never exposed via the management API
 - `opa_connections` — named Open Policy Agent connections (url/token/timeout_ms/ca_cert) for evaluators; config-only, never exposed via the management API. See [Open Policy Agent](./evaluator-engine.md#open-policy-agent)
 - `evaluators` — evaluator feature configuration
-- `action_policy` — declarative action-policy rules
+- `evaluator_startup_failure` — `abort` (default) or `deny`. See [Evaluator governance startup](#evaluator-governance-startup)
+- `action_policy` — declarative action-policy rules. See [Action Policies](./action-policies.md)
 - `simulation` — policy validation, simulation, and replay limits. See [Policy Simulation](policy-simulation.md#resource-limits)
 - `governance` — global governance posture and namespace overrides
+- `audit` — audit retention, payload capture, and redaction. See [Governance audit trail](audit-trail.md)
 - `plugins` — plugin service mappings owned by the plugins feature
+
+There is no top-level `namespaces` key. A forward sets its namespace with its own `namespace` field. Namespace governance overrides go under `governance.namespaces`.
+
+The server ignores unknown top-level keys without a warning. For example, a misspelled `evaluator:` key has no effect. The server logs a warning for an unknown key inside a `forwards` or `bindings` entry. The `governance` section, the evaluator definitions, and `opa_connections` reject unknown keys and stop startup. The entries of `llm_connections` and `typesafe_system_one_connections`, and the `trigger` and `processor` objects of an evaluator, ignore unknown keys without a warning. For example, a misspelled `trigger.namespace` key makes the evaluator match every namespace.
 
 The [Governance Posture](./governance-posture.md) model defines fail-safe defaults and namespace overrides. Wanaku validates the section during startup. Invalid governance configuration stops startup.
 
@@ -491,7 +513,8 @@ evaluators:
   - name: "safety-gate"
     trigger:
       method: "tools/call"
-    llm:
+    engine:
+      type: llm
       operation: classify
       prompt: "Classify this tool call..."
       connection: "local-llama"
@@ -502,8 +525,16 @@ evaluators:
           reason: { type: string }
         required: ["level", "reason"]
     processor:
-      path: "/wasm/safety-gate.wasm"
+      path: "actions/dist/safety_review_action.wasm"
 ```
+
+Each evaluator sets an `engine` object with a `type`. The earlier top-level `llm:` key is not accepted. A configuration that contains it stops startup with `configuration_invalid`.
+
+**LLM connections:**
+
+- The `url` is the base URL of an OpenAI-compatible API, including the version path. Wanaku appends only `/chat/completions`. For example, use `http://localhost:11434/v1` for Ollama and `https://openrouter.ai/api/v1` for OpenRouter.
+- `model`, `url`, and `name` are required. `api_key` is optional. When `api_key` is empty, Wanaku sends no `Authorization` header.
+- Each LLM request has a fixed timeout of 10 seconds. A timeout follows the governance `on_failure` behavior.
 
 Set `llm_connections[].api_key` to `env:VARIABLE_NAME` to read the key from an environment variable. For example:
 
@@ -517,6 +548,8 @@ llm_connections:
 
 Wanaku resolves the reference when it loads the connections at startup. The variable name and value must not be empty. The variable must exist and contain a valid Unicode value. An invalid reference rejects the complete connection set. Error messages do not include the key value. Other API key strings remain literal values. Omit `api_key` or use an empty string for a connection that does not require authentication.
 
+Wanaku resolves every `env:` reference in every connection at startup, also for a connection that no evaluator uses. One missing variable rejects the complete connection set and stops startup with `connection_configuration_invalid`. Remove connections that you do not use, or set their variables.
+
 Set `typesafe_system_one_connections[].api_key` to `env:VARIABLE_NAME` to read the TypeSafe System One key from an environment variable:
 
 ```yaml
@@ -528,6 +561,8 @@ typesafe_system_one_connections:
 ```
 
 Wanaku resolves the reference once when it loads the connections at startup. The variable name and value must not be empty. The variable must exist and contain a valid Unicode value. An invalid reference rejects the complete TypeSafe System One connection set. Error messages do not include the key value. Other API key strings remain literal values.
+
+For TypeSafe System One connections, `api_key` is required. `model` defaults to `jev-latest`. `url` defaults to `https://api.typesafe.ai`. Wanaku appends `/v1/systemone` to the URL. Each request has a fixed timeout of 10 seconds. Wanaku always sends the `Authorization: Bearer` header, also when the key is empty.
 
 When `result_schema` is set, the host validates LLM output against the schema and retries once with a correction prompt on mismatch.
 
@@ -544,6 +579,8 @@ wanaku-server
 
 ### Kubernetes
 
+For production installs on Kubernetes or OpenShift, use the Wanaku Operator. See [Production Deployment on Kubernetes or OpenShift](./getting-started.md#production-deployment-on-kubernetes-or-openshift). The manifests below show a plain `Deployment` for a small installation.
+
 **ConfigMap:**
 
 ```yaml
@@ -552,23 +589,40 @@ kind: ConfigMap
 metadata:
   name: wanaku-config
 data:
-  praxis.yaml: |
-    listeners:
-      - name: mcp
-        address: "0.0.0.0:8081"
-        filter_chains: [mcp_router]
-    filter_chains:
-      - name: mcp_router
-        filters:
-          - filter: cors
-          - filter: mcp
-            on_invalid: continue
-          # ... rest of pipeline
-
   wanaku.yaml: |
     forwards:
       - name: "upstream-mcp"
         address: "http://upstream:8080/mcp"
+        credentialBindings:
+          discovery: upstream-token
+          invocation: upstream-token
+    bindings:
+      - id: upstream-token
+        forwardId: upstream-mcp
+        origin: "http://upstream:8080"
+        mechanism:
+          type: bearer
+        secretRefs:
+          - "env:UPSTREAM_TOKEN"
+        allowedPurposes:
+          - discovery
+          - invocation
+```
+
+The working directory of the image is `/etc/wanaku`, so the server reads `/etc/wanaku/wanaku.yaml` without a command-line argument.
+
+**Secret:**
+
+Each `env:` reference in `wanaku.yaml` reads an environment variable of the server process. Put the values in a Secret and pass them as environment variables:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wanaku-secrets
+type: Opaque
+stringData:
+  UPSTREAM_TOKEN: "<token>"
 ```
 
 **Deployment:**
@@ -590,7 +644,7 @@ spec:
     spec:
       containers:
       - name: wanaku
-        image: wanaku-server:latest
+        image: quay.io/wanaku/wanaku-server:early-access
         env:
         - name: WANAKU_MGMT_LISTEN
           value: "0.0.0.0:8080"
@@ -598,11 +652,14 @@ spec:
           value: "file"
         - name: WANAKU_PERSIST_PATH
           value: "/data/registry"
+        envFrom:
+        - secretRef:
+            name: wanaku-secrets
         volumeMounts:
         - name: config
           mountPath: /etc/wanaku
         - name: data
-          mountPath: /data
+          mountPath: /data/registry
       volumes:
       - name: config
         configMap:
@@ -610,6 +667,12 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: wanaku-registry
+```
+
+To use a custom pipeline, add a `pipeline.yaml` key to the ConfigMap and pass it to the server. The server does not read a pipeline file without this argument:
+
+```yaml
+        args: ["--pipeline-config", "/etc/wanaku/pipeline.yaml"]
 ```
 
 ## Debugging Configuration

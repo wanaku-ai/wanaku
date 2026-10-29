@@ -53,10 +53,12 @@ evaluators:
 
 | Field | Type | Purpose |
 |-------|------|---------|
-| `name` | string | Unique identifier referenced by an evaluator's `llm.connection` |
-| `model` | string | Model name (passed to `/v1/chat/completions`) |
-| `url` | string | OpenAI-compatible endpoint URL |
-| `api_key` | string | Optional bearer token for the LLM endpoint |
+| `name` | string | Unique identifier referenced by an evaluator's `engine.connection` |
+| `model` | string | Model name sent in the request body |
+| `url` | string | Base URL of an OpenAI-compatible API, including the version path (for example `http://localhost:11434/v1` or `https://openrouter.ai/api/v1`). Wanaku appends only `/chat/completions`. |
+| `api_key` | string | Optional bearer token for the LLM endpoint, or `env:VARIABLE_NAME`. When it is empty, Wanaku sends no `Authorization` header. |
+
+Each LLM request has a fixed timeout of 10 seconds. Wanaku resolves every `env:` reference at startup, also for a connection that no evaluator uses. One missing variable stops startup. See [Configuration](configuration.md#wanaku-config-file-wanakuyaml).
 
 The server loads connections once at startup from `wanaku.yaml`. No API can create,
 update, or read a connection's `api_key`. This design keeps credentials out of the
@@ -69,6 +71,10 @@ management API, including out of evaluator revision history. See
 |-------|------|---------|
 | `method` | string | MCP method to match (e.g., `tools/call`, `tools/list`, `resources/read`) |
 | `namespace` | string | Optional. Only trigger for this namespace (extracted from URL path `/finance/mcp` → `finance`) |
+
+The `trigger` object ignores unknown keys. A misspelled `namespace` key, for example `namepsace`, makes the evaluator match the method in every namespace.
+
+For each request, Wanaku runs only the first evaluator in the list whose trigger matches. It does not run the other matching evaluators. Put namespace-scoped evaluators before an evaluator without a `namespace`, because an evaluator without a `namespace` matches every namespace and hides the evaluators after it.
 
 ### LLM Fields
 
@@ -405,7 +411,7 @@ evaluators:
             type: string
         required: ["level", "reason"]
     processor:
-      path: "/wasm/safety_review_action.wasm"
+      path: "actions/dist/safety_review_action.wasm"
 ```
 
 **What happens:**
@@ -949,13 +955,15 @@ curl http://localhost:8080/api/v1/evaluators
   "data": [
     {
       "name": "safety-gate",
-      "trigger": {"method": "tools/call"},
-      "llm": {
+      "trigger": {"method": "tools/call", "namespace": null},
+      "engine": {
+        "type": "llm",
         "operation": "classify",
         "prompt": "...",
-        "connection": "local-llama"
+        "connection": "local-llama",
+        "result_schema": null
       },
-      "processor": {"path": "/wasm/safety-gate.wasm"}
+      "processor": {"path": "actions/dist/safety_review_action.wasm"}
     }
   ],
   "error": null
@@ -964,9 +972,20 @@ curl http://localhost:8080/api/v1/evaluators
 
 This response has no `model`, `url`, or `api_key` field. Those fields live only in
 `llm_connections` in `wanaku.yaml`. They never transit the management API. The
-`llm.connection` field names the connection the evaluator uses.
+`engine.connection` field names the connection the evaluator uses.
 
 ### Update Evaluators (Hot-Reload)
+
+Use the `wanaku` CLI from wanaku-barn. The command reads a YAML or JSON file. The file can contain a list of evaluator definitions or an object with an `evaluators` list, so you can pass a `wanaku.yaml` file directly. The command ignores other top-level keys:
+
+```bash
+wanaku evaluators update evaluators.yaml
+wanaku evaluators update evaluators.yaml --expected-revision 4
+```
+
+See [Managing Evaluators](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/usage.md#managing-evaluators) in the CLI documentation for the revision and rollback commands.
+
+The CLI sends this request to the management API:
 
 ```bash
 curl -X PUT http://localhost:8080/api/v1/evaluators \
@@ -976,29 +995,51 @@ curl -X PUT http://localhost:8080/api/v1/evaluators \
       {
         "name": "safety-gate",
         "trigger": {"method": "tools/call"},
-        "llm": {
+        "engine": {
+          "type": "llm",
           "operation": "classify",
           "prompt": "You are a safety classifier...",
           "connection": "local-llama"
         },
-        "processor": {"path": "/wasm/safety-gate.wasm"}
+        "processor": {"path": "actions/dist/safety_review_action.wasm"}
       }
-    ]
+    ],
+    "expected_revision": 4
   }'
 ```
 
+`expected_revision` is optional. When it is set and a different revision is active, the server rejects the update with `409 Conflict`.
+
 **What happens:** The engine:
 
-1. Parses the config
-2. Validates that `llm.connection` names a connection already loaded from `wanaku.yaml` — an unknown name rejects the whole update with `422` and leaves the previous evaluators active
-3. Compiles all WASM files (expensive — do this at startup or infrequently)
-4. Replaces the active evaluators
-5. Returns the new config in `{"data": [...], "error": null}`
+1. Parses the request. A malformed body, or an unknown key in an evaluator definition, returns `400`.
+2. Validates the evaluator names, the triggers, and the engine connection references. An unknown connection name returns `422`.
+3. Compiles all WASM files and result schemas. If one file is missing or does not compile, the server rejects the complete update with `422`. It does not load the other evaluators.
+4. Records a new revision and replaces the active evaluators.
+5. Returns the new revision:
 
-**If a WASM file fails to compile:** That evaluator is skipped, the rest are loaded, and you get a warning in the response.
+```json
+{
+  "data": {
+    "revision": {
+      "id": 5,
+      "created_at": "2026-10-29T14:00:00Z",
+      "activated_at": "2026-10-29T14:00:00Z",
+      "status": "active",
+      "checksum": "...",
+      "origin": "api",
+      "actor": null,
+      "failure_reason": null
+    },
+    "evaluators": [ ... ]
+  },
+  "error": null
+}
+```
 
-**Legacy payloads:** a request with `model`/`url`/`api_key` inline under `llm` (the
-pre-connection shape) is rejected with `400` rather than silently dropping those fields.
+A rejected update does not change the active evaluators. The server records the rejected configuration as a revision with the `rejected` status and the failure reason.
+
+**Legacy payloads:** a request with a top-level `llm` key, or with `model`/`url`/`api_key` inline in the engine, is rejected with `400` rather than silently dropping those fields.
 
 ### List LLM Connections
 
@@ -1069,6 +1110,12 @@ wanaku forwards add --service="http://<your-mcp-server>/mcp" --name my-mcp-serve
 
 Replace `restart-database` in the script below with a tool name discovered from your forward. Run `wanaku tools list --no-auth` to see the available tools.
 
+The script also needs:
+
+- The `local-llama` connection in `llm_connections` in the `wanaku.yaml` that the server loaded at startup. The management API cannot create connections.
+- The built `actions/dist/safety_review_action.wasm` file.
+- A governance posture that lets the call reach the evaluator. With the default `no_match: deny` and no action policy, the action-policy filter denies the call with `-32003` before the evaluator runs. For a local test, set `governance.namespaces.default.no_match: allow`.
+
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
@@ -1083,11 +1130,11 @@ curl -sf -X PUT $MGMT/api/v1/evaluators -H "Content-Type: application/json" \
     "evaluators": [{
       "name": "js-safety",
       "trigger": {"method": "tools/call"},
-      "llm": {
+      "engine": {
+        "type": "llm",
         "operation": "classify",
         "prompt": "You are a safety classifier. You MUST classify every tool call as exactly one of: green, yellow, or red. Restarting any database is ALWAYS red. Respond with ONLY a JSON object, no other text: {\"level\": \"green|yellow|red\", \"reason\": \"brief\"}",
-        "model": "llama3.2",
-        "url": "http://localhost:11434/v1"
+        "connection": "local-llama"
       },
       "processor": {"path": "'"$WASM"'"}
     }]
@@ -1169,8 +1216,8 @@ You do not need these internal details to use the engine. Use them to diagnose e
 2. **Namespace filter** sets `wanaku.namespace` metadata from URL path
 3. **Evaluator filter** (`wanaku_evaluator` in the pipeline):
    - Reads metadata to get method, namespace, tool name, arguments
-   - Finds matching evaluators (trigger.method matches, optional namespace/binding checks)
-   - For each match:
+   - Finds the first evaluator in the list whose trigger matches (trigger.method matches, optional namespace check). Later evaluators do not run.
+   - For that evaluator:
      - Selects the configured evaluation engine
      - Produces a normalized result for the processor
      - The LLM engine builds a context prompt, calls the LLM, and validates `result_schema` when configured
