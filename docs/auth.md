@@ -29,7 +29,7 @@ Set `WANAKU_AUTH_ISSUER` to the issuer URL that clients can reach. Set `WANAKU_A
 
 For the Compose setup, clients use `http://localhost:8543/realms/wanaku`; the server container uses `http://keycloak:8080/realms/wanaku` for token requests. This keeps public discovery metadata and browser redirects usable from the host.
 
-When `WANAKU_AUTH_ISSUER` is set, Wanaku serves OAuth protected-resource metadata for MCP endpoints. When it is unset, these metadata routes return 404.
+Wanaku always serves OAuth protected-resource metadata for MCP endpoints at `/.well-known/oauth-protected-resource/{namespace}/mcp`. When `WANAKU_AUTH_ISSUER` is set, the `authorization_servers` list contains the Wanaku host. When it is unset, the route returns HTTP 200 with an empty `authorization_servers` list. The OpenID discovery, `/authorize`, `/token`, and `/register` routes are active only when `WANAKU_AUTH_ISSUER` is set.
 
 ## Proxy behavior
 

@@ -478,7 +478,7 @@ spec:
     enabled: true
     image: quay.io/wanaku/wanaku-barn-backend:latest
   praxis:
-    image: quay.io/wanaku/wanaku-praxis:latest
+    image: quay.io/wanaku/wanaku-server:early-access
 ```
 
 The operator creates deployments, services, and ingress/routes for both components.
@@ -504,7 +504,7 @@ spec:
     spec:
       containers:
       - name: wanaku
-        image: quay.io/wanaku/wanaku-praxis:latest
+        image: quay.io/wanaku/wanaku-server:early-access
         ports:
         - containerPort: 8080  # Management API
         - containerPort: 8081  # MCP endpoint
@@ -513,7 +513,7 @@ spec:
           value: "/data/registry"
         volumeMounts:
         - name: data
-          mountPath: /data
+          mountPath: /data/registry
       volumes:
       - name: data
         persistentVolumeClaim:

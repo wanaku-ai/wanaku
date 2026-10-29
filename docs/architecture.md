@@ -444,9 +444,9 @@ Deploy Wanaku as a `Deployment` with:
 - **Service:** ClusterIP for MCP endpoint (port 8081)
 - **Service:** LoadBalancer for management API (port 8080)
 - **ConfigMap:** `wanaku.yaml` bootstrap config
-- **Secret:** evaluator LLM connection credentials, mounted into `wanaku.yaml`
+- **Secret:** credential values, passed to the container as environment variables. `wanaku.yaml` refers to them with `env:VARIABLE_NAME` (in `llm_connections[].api_key`, `typesafe_system_one_connections[].api_key`, and `bindings[].secretRefs`). Do not put secret values in `wanaku.yaml`. See [Configuration](./configuration.md#kubernetes)
 
-Mount `WANAKU_PERSIST_PATH` to a `PersistentVolume` for registry persistence across restarts.
+Mount a `PersistentVolume` on `WANAKU_PERSIST_PATH` (`/data/registry` in the image) for registry persistence across restarts.
 
 ## Performance Characteristics
 
@@ -482,7 +482,7 @@ Users authenticate via oauth2-proxy's browser-based login flow (PKCE). CLI clien
 
 **Wanaku-side metadata:**
 
-The `features/mcp-metadata/` crate exposes RFC 9728 OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. This read-only endpoint returns the OIDC issuer URL configured through `WANAKU_AUTH_ISSUER`.
+The `features/mcp-metadata/` crate exposes RFC 9728 OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. When `WANAKU_AUTH_ISSUER` is set, the `authorization_servers` list of this read-only endpoint contains the Wanaku host, which proxies the OAuth routes to the issuer. When it is unset, the list is empty.
 
 When auth is disabled:
 
@@ -491,12 +491,13 @@ When auth is disabled:
 
 **CORS:**
 
-CORS is enabled by default via the `cors` filter (allows all origins). Restrict origins in `server/src/default.yaml`:
+CORS is enabled by default via the `cors` filter (allows all origins). To restrict the origin, set `WANAKU_CORS_ORIGIN`:
 
-```yaml
-- filter: cors
-  allow_origins: ["https://app.example.com"]
+```bash
+export WANAKU_CORS_ORIGIN=https://app.example.com
 ```
+
+The variable applies to the embedded pipeline configuration. A custom `--pipeline-config` file must set `allow_origins` in its own `cors` filters. See [Configuration](./configuration.md#filter-configuration).
 
 ## What's Not Here (Yet)
 

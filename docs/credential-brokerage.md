@@ -30,7 +30,7 @@ A `CredentialBinding` is a top-level resource, owned by exactly one forward. It 
 | `allowedPurposes` | array of strings | The purposes this binding may serve: `discovery`, `invocation`, or both. |
 | `restrictions` | object, optional | Additional scope restrictions. See [Scope and Restrictions](#scope-and-restrictions). |
 | `cache` | object, optional | Cache rules for resolved credentials. See [Caching and Invalidation](#caching-and-invalidation). |
-| `revision` | integer | A monotonic counter. Any change to the binding must increment it. |
+| `revision` | integer, optional | A counter that is part of the credential cache key. The default is `0`. Wanaku does not compare revisions or require an increment. Increment it when you change a binding, so that the broker does not reuse credentials that it cached for the earlier revision. |
 
 You author bindings in the `wanaku.yaml` configuration file, under the top-level `bindings` key. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml). The following binding injects a Bearer token that is read from the `API_TOKEN` environment variable:
 
@@ -132,6 +132,8 @@ Wanaku applies these rules when it loads the configuration:
 - Each binding must have an `origin` value. A binding without an `origin` is logged and skipped. The origin is the scheme, host, and port of the forward address. For the address `http://host.docker.internal:3000/mcp`, use `http://host.docker.internal:3000`. Wanaku adds the default port when you omit it, so `https://api.example.com` becomes `https://api.example.com:443`.
 - Wanaku logs a warning for each unknown key in a forward or binding entry and ignores the key. For example, a forward with `credentialsBindings` instead of `credentialBindings` gets no credential bindings. Read the startup log for `ignoring unknown key in wanaku.yaml entry` warnings.
 - The `forwardId` of a binding must equal the `name` of the forward that references it. The broker rejects a binding that a different forward tries to use.
+- Wanaku does not check the references between forwards and bindings at load time. A binding that no forward references in `credentialBindings` has no effect, even if its `forwardId` names a forward. A forward that references a binding id that does not exist fails closed when it uses the binding. Discovery then fails with `credential binding not found`.
+- The binding `origin` keeps only the scheme, host, and port. Wanaku drops a path, so `https://api.example.com/mcp/` and `https://api.example.com:443` are the same origin.
 
 Start the server with your configuration file:
 
@@ -145,7 +147,7 @@ cargo run -- --wanaku-config wanaku.yaml
 <!-- -->
 
 > [!WARNING]
-> Configuration is additive over the persisted snapshot. Wanaku restores the snapshot first, then applies the `bindings` from `wanaku.yaml` on top, matched by id. If you delete a binding from `wanaku.yaml` on a deployment that uses persistence, Wanaku still restores that binding from the snapshot on the next start. To remove a binding on a persistent deployment, you must also remove it from the registry snapshot. On a deployment without persistence, the configuration is the full source of truth.
+> Configuration is additive over the persisted snapshot. Wanaku restores the snapshot first, then applies the `forwards` and `bindings` from `wanaku.yaml` on top, matched by name and id. If you delete a forward or a binding from `wanaku.yaml` on a deployment that uses persistence, Wanaku still restores it from the snapshot on the next start. To remove a forward, delete it with `DELETE /api/v1/forwards/{name}` or the `wanaku forwards remove` command. To remove a binding on a persistent deployment, you must also remove it from the registry snapshot. On a deployment without persistence, the configuration is the full source of truth.
 
 ## Example: GitHub MCP Server
 
@@ -202,6 +204,17 @@ If the upstream server rejects discovery, Wanaku marks the forward as unavailabl
 | `requires authentication (HTTP 401). Add a credential binding for discovery to this forward in wanaku.yaml` | The forward has no discovery binding. | Add a binding as shown above. You cannot add credentials through the admin UI or the management API. |
 | `requires authentication (HTTP 401)` | The forward has a discovery binding, but the upstream rejected the credential. | Make sure that the secret is set and that the token is valid. |
 | `rejected the credential: insufficient scope (HTTP 403)` | The token does not have the scopes that the upstream requires. | Give the token the necessary scopes. |
+| `discovery credential brokerage failed: credential binding not found` | The forward references a discovery binding id that is not registered. The binding is missing, or Wanaku skipped it because it is not valid. | Check the binding id. Read the startup log for `skipping invalid credential binding` and `skipping credential binding with an invalid origin` warnings. |
+| `discovery credential brokerage failed: credential brokerage failed` | The broker denied the binding or could not resolve the secret. | See the causes below. |
+| `discovery credential brokerage failed: invalid brokered credential header value` | The resolved secret is not a valid HTTP header value, for example because it ends with a line break. | Remove the line break or other control characters from the secret. |
+
+The status message `credential brokerage failed` does not name the cause. The audit trail records the cause. Query the credential events with `GET /api/v1/audit/events` and read the `reason_code` of the event whose `target` is the forward name. The server log also shows the reason in the `discovery credential brokerage failed; skipping discovery` warning. These are the common causes:
+
+- The environment variable in `secretRefs` is not set in the server process, or its value is empty.
+- The binding `origin` does not match the scheme, host, and port of the forward `address`.
+- The binding `allowedPurposes` does not contain `discovery`.
+- The binding `restrictions` deny the discovery call. See [Scope and Restrictions](#scope-and-restrictions).
+- The binding `forwardId` is not the forward name.
 
 ## Injection Mechanisms
 
@@ -212,6 +225,39 @@ Wanaku supports a deliberately small set of injection mechanisms. There is no qu
 | Bearer | `bearer` | 1 | `Authorization: Bearer <token>` |
 | Named header | `named_header` | 1 | A static header you name (for example `X-Api-Key: <value>`) |
 | Basic | `basic` | 2 (username, then password) | `Authorization: Basic <base64(username:password)>` |
+
+A named-header binding sets the header name in `mechanism.header`:
+
+```yaml
+bindings:
+  - id: api-key
+    forwardId: upstream-mcp
+    origin: "https://api.example.com:443"
+    mechanism:
+      type: named_header
+      header: X-Api-Key
+    secretRefs:
+      - "env:UPSTREAM_API_KEY"
+    allowedPurposes:
+      - invocation
+```
+
+A Basic binding has two secret references. The first is the username. The second is the password:
+
+```yaml
+bindings:
+  - id: basic-auth
+    forwardId: upstream-mcp
+    origin: "https://api.example.com:443"
+    mechanism:
+      type: basic
+    secretRefs:
+      - "env:UPSTREAM_USER"
+      - "env:UPSTREAM_PASSWORD"
+    allowedPurposes:
+      - discovery
+      - invocation
+```
 
 A named header cannot use a hop-by-hop or routing-sensitive header name. Wanaku rejects `connection`, `keep-alive`, `proxy-authenticate`, `proxy-connection`, `te`, `trailer`, `transfer-encoding`, `upgrade`, `host`, `content-length`, `forwarded`, `x-forwarded-for`, `x-forwarded-host`, and `x-forwarded-proto`.
 
@@ -246,7 +292,22 @@ Beyond the origin, a binding can carry `restrictions`, four independent dimensio
 | Operations | `operations` | The listed MCP operations |
 | Identities | `identities` | The listed authenticated actor or workload identities |
 
-An empty array on any dimension means no restriction on that dimension. A non-empty array means the request's value for that dimension must appear in the list, or the broker denies the request.
+An empty array on any dimension means no restriction on that dimension. A non-empty array means the request's value for that dimension must appear in the list, or the broker denies the request. A request that has no value for a restricted dimension is denied.
+
+The broker compares these values:
+
+| Dimension | Value for invocation | Value for discovery |
+| --- | --- | --- |
+| `namespaces` | The namespace of the request, for example `finance` for `/finance/mcp` | The `namespace` of the forward. A forward without a `namespace` has no value. |
+| `governed_items` | The tool name, the prompt name, or the resource URI from the request | No value |
+| `operations` | `tools/call`, `resources/read`, or `prompts/get` | No value |
+| `identities` | No value. This release does not set an identity. | No value |
+
+Because of this, some restrictions deny every request:
+
+- `governed_items` or `operations` on a binding that serves `discovery` deny all discovery calls. Use separate bindings for discovery and invocation if you need these restrictions.
+- `namespaces` on a discovery binding deny discovery when the forward has no `namespace`. Set the forward `namespace`.
+- A non-empty `identities` list denies every request in this release. Leave it empty.
 
 ## Caching and Invalidation
 

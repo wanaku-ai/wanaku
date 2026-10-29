@@ -154,7 +154,7 @@ The container image runs the same server as the binary. The image uses these pat
 | A2A listener | `8084` | |
 | User | UID `1001`, GID `0` | Mounted files must be readable by this user. |
 
-The server can start without a `wanaku.yaml` file, but it then uses the fail-safe governance defaults. Discovery works, but the server denies every tool call, resource read, and prompt request that no action policy or evaluator allows. This is sufficient for a first try. For real use, write your own configuration. Start from the [minimal wanaku.yaml](#minimal-wanakuyaml) and read [Governance Posture](./governance-posture.md).
+The server can start without a `wanaku.yaml` file, but it then uses the fail-safe governance defaults. Discovery works, but the server denies every tool call, resource read, and prompt request. Without an action policy and an evaluator, nothing allows these requests. This is sufficient for a first try. For real use, write your own configuration. Start from the [minimal wanaku.yaml](#minimal-wanakuyaml) and read [Governance Posture](./governance-posture.md).
 
 Podman and Docker do not create a file for a bind mount, so create the file before you start the container:
 
@@ -248,12 +248,19 @@ bindings:
 governance:
   namespaces:
     default:
-      # Permit actions that no action policy or evaluator matches.
+      # Permit actions that no action-policy rule or evaluator matches.
       # Remove this override when you add policies for the namespace.
       no_match: allow
 ```
 
-The `no_match: allow` override removes the default-deny baseline for the `default` namespace. Use it only to get started. Before you expose Wanaku to agents, define [action policies](./action-policies.md) or [evaluators](./evaluator-engine.md), and remove the override.
+The `no_match: allow` override removes the default-deny baseline for the `default` namespace. It applies to `tools/call`, `resources/read`, and `prompts/get`. Use it only to get started.
+
+The action-policy filter and the evaluator filter apply `no_match` independently. Each filter must allow a request. When you remove the override and keep `no_match: deny`, a governed request needs both of these:
+
+- An [action-policy](./action-policies.md) rule that allows it.
+- An [evaluator](./evaluator-engine.md) whose trigger matches it, and whose processor passes it.
+
+If only one of the filters matches, the other filter denies the request with its no-match error. For a complete example, see [`examples/governed-mcp`](../examples/governed-mcp/README.md).
 
 Start the container with `-e MY_MCP_TOKEN` to pass the token. Remove the `credentialBindings` and `bindings` keys if the upstream server does not require a token.
 
@@ -405,9 +412,9 @@ wanaku-server --pipeline-config /path/to/custom-praxis.yaml \
 ```
 
 - **`--pipeline-config`:** Praxis filter pipeline config (listeners, filter chains)
-- **`--wanaku-config`:** Wanaku bootstrap config (forwards, namespaces)
+- **`--wanaku-config`:** Wanaku bootstrap config (forwards, bindings, connections, evaluators, action policies, governance). The default is `wanaku.yaml` in the working directory.
 
-You can omit both files. The server then uses its embedded defaults.
+You can omit both files. The server then uses its embedded defaults. If the `--wanaku-config` file does not exist, the server logs `wanaku config not found, using defaults` and starts with the fail-safe defaults, also when you give the path explicitly.
 
 ### Environment Variables
 
