@@ -503,6 +503,14 @@ The [Governance Posture](./governance-posture.md) model defines fail-safe defaul
 
 Wanaku discovers tools, resources, and prompts from the configured forwards.
 
+**Key names:**
+
+All keys in `wanaku.yaml` use `snake_case`, for example `llm_connections`, `api_key`, `audit_level`, and `credential_bindings`.
+
+The `forwards` and `bindings` entries also accept `camelCase` keys, for example `credentialBindings`, `forwardId`, `secretRefs`, `allowedPurposes`, `governedItems`, and `maxTtlSeconds`. These keys are aliases for compatibility with the management API, which uses `camelCase` field names in its JSON bodies. The two spellings have the same effect. Use one spelling in each entry.
+
+The other sections accept only `snake_case` keys. For example, the server does not read `apiKey` in an `llm_connections` entry.
+
 **Evaluator configuration** (see [Evaluator Engine](./evaluator-engine.md) for full details):
 
 ```yaml
@@ -595,18 +603,18 @@ data:
     forwards:
       - name: "upstream-mcp"
         address: "http://upstream:8080/mcp"
-        credentialBindings:
+        credential_bindings:
           discovery: upstream-token
           invocation: upstream-token
     bindings:
       - id: upstream-token
-        forwardId: upstream-mcp
+        forward_id: upstream-mcp
         origin: "http://upstream:8080"
         mechanism:
           type: bearer
-        secretRefs:
+        secret_refs:
           - "env:UPSTREAM_TOKEN"
-        allowedPurposes:
+        allowed_purposes:
           - discovery
           - invocation
 ```

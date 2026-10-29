@@ -453,7 +453,7 @@ Deploy Wanaku as a `Deployment` with:
 - **Service:** ClusterIP for the MCP endpoint (port 8081). Expose it outside the cluster only through an authenticating proxy, such as oauth2-proxy.
 - **Service:** ClusterIP for the management API (port 8080). The management API has no built-in authentication. Do not expose it with a LoadBalancer Service.
 - **ConfigMap:** `wanaku.yaml` bootstrap config
-- **Secret:** credential values, passed to the container as environment variables. `wanaku.yaml` refers to them with `env:VARIABLE_NAME` (in `llm_connections[].api_key`, `typesafe_system_one_connections[].api_key`, and `bindings[].secretRefs`). Do not put secret values in `wanaku.yaml`. See [Configuration](./configuration.md#kubernetes)
+- **Secret:** credential values, passed to the container as environment variables. `wanaku.yaml` refers to them with `env:VARIABLE_NAME` (in `llm_connections[].api_key`, `typesafe_system_one_connections[].api_key`, and `bindings[].secret_refs`). Do not put secret values in `wanaku.yaml`. See [Configuration](./configuration.md#kubernetes)
 
 Mount a `PersistentVolume` on `WANAKU_PERSIST_PATH` (`/data/registry` in the image) for registry persistence across restarts. Refer to [Configuration](./configuration.md#kubernetes) for the complete manifests.
 
