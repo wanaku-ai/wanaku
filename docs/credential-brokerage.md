@@ -23,11 +23,11 @@ A `CredentialBinding` is a top-level resource, owned by exactly one forward. It 
 | Field | Type | Description |
 | --- | --- | --- |
 | `id` | string | Stable, non-secret binding identifier. |
-| `forwardId` | string | The stable identifier of the owning forward. This is the forward name. |
+| `forward_id` | string | The stable identifier of the owning forward. This is the forward name. |
 | `origin` | string | The exact normalized upstream origin: scheme, host, and explicit port (for example `https://api.example.com:443`). Normalization lower-cases the scheme and host and makes the port explicit. |
 | `mechanism` | object | The outbound injection mechanism. See [Injection Mechanisms](#injection-mechanisms). |
-| `secretRefs` | array of strings | Opaque secret references in `scheme:path` form (for example `env:API_TOKEN`). A binding never stores an inline secret value. |
-| `allowedPurposes` | array of strings | The purposes this binding may serve: `discovery`, `invocation`, or both. |
+| `secret_refs` | array of strings | Opaque secret references in `scheme:path` form (for example `env:API_TOKEN`). A binding never stores an inline secret value. |
+| `allowed_purposes` | array of strings | The purposes this binding may serve: `discovery`, `invocation`, or both. |
 | `restrictions` | object, optional | Additional scope restrictions. See [Scope and Restrictions](#scope-and-restrictions). |
 | `cache` | object, optional | Cache rules for resolved credentials. See [Caching and Invalidation](#caching-and-invalidation). |
 | `revision` | integer, optional | A counter that is part of the credential cache key. The default is `0`. Wanaku does not compare revisions or require an increment. Increment it when you change a binding, so that the broker does not reuse credentials that it cached for the earlier revision. |
@@ -37,24 +37,24 @@ You author bindings in the `wanaku.yaml` configuration file, under the top-level
 ```yaml
 bindings:
   - id: b1
-    forwardId: upstream-mcp
+    forward_id: upstream-mcp
     origin: "https://api.example.com:443"
     mechanism:
       type: bearer
-    secretRefs:
+    secret_refs:
       - "env:API_TOKEN"
-    allowedPurposes:
+    allowed_purposes:
       - invocation
     restrictions:
       namespaces:
         - finance
     cache:
-      maxTtlSeconds: 3600
+      max_ttl_seconds: 3600
     revision: 1
 ```
 
 > [!NOTE]
-> The `restrictions` object uses snake_case keys (`governed_items`, not `governedItems`), unlike the top-level binding fields, which use camelCase. Use the exact key when you author or read a binding.
+> Binding keys in `wanaku.yaml` use `snake_case`. Wanaku also accepts the `camelCase` spelling of each key, for example `forwardId`, `secretRefs`, `allowedPurposes`, `governedItems`, and `maxTtlSeconds`. The management API uses the `camelCase` names `forwardId`, `secretRefs`, `allowedPurposes`, and `cache.maxTtlSeconds` in its JSON responses. See [Key names](./configuration.md#wanaku-config-file-wanakuyaml).
 
 ## Purposes
 
@@ -63,32 +63,32 @@ A credential purpose declares what the credential is for. Wanaku keeps two purpo
 - **`discovery`** — authenticated forward discovery and refresh (the upstream calls Wanaku makes to learn a forward's tools, resources, and prompts).
 - **`invocation`** — authenticated tool calls, resource reads, and prompt retrieval.
 
-A binding declares which purposes it may serve through `allowedPurposes`. A binding scoped only to `discovery` cannot be used to authenticate a tool call, and vice versa.
+A binding declares which purposes it may serve through `allowed_purposes`. A binding scoped only to `discovery` cannot be used to authenticate a tool call, and vice versa.
 
 ## Attaching a Binding to a Forward
 
-A forward references its bindings through the `credentialBindings` field: a map from purpose to binding id. You configure the forward in the same `wanaku.yaml` file, under the top-level `forwards` key.
+A forward references its bindings through the `credential_bindings` field: a map from purpose to binding id. You configure the forward in the same `wanaku.yaml` file, under the top-level `forwards` key.
 
 ```yaml
 forwards:
   - name: upstream-mcp
     address: "https://api.example.com/mcp"
     namespace: finance
-    credentialBindings:
+    credential_bindings:
       discovery: b-discovery
       invocation: b1
 ```
 
-The `credentialBindings` map holds only the binding id, not the binding itself. You must also declare each referenced binding under the `bindings` key. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml).
+The `credential_bindings` map holds only the binding id, not the binding itself. You must also declare each referenced binding under the `bindings` key. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml).
 
 Tools, resources, and prompts carry no secret or binding reference of their own. They inherit the invocation binding through their `forwardId`. This keeps the credential surface in one place: change the binding on the forward, and every tool, resource, and prompt that forward exposes picks up the change on its next use.
 
 > [!NOTE]
-> The admin UI forward form shows a binding selector for each purpose. The selector lists only the bindings that this forward owns. A binding is owned by one forward, so its `forwardId` must equal the forward name. Type the exact forward name in the form. If no binding matches the forward name and the purpose, the selector shows an empty state. Author the binding in `wanaku.yaml` with a `forwardId` that equals the forward name.
+> The admin UI forward form shows a binding selector for each purpose. The selector lists only the bindings that this forward owns. A binding is owned by one forward, so its `forward_id` must equal the forward name. Type the exact forward name in the form. If no binding matches the forward name and the purpose, the selector shows an empty state. Author the binding in `wanaku.yaml` with a `forward_id` that equals the forward name.
 
 ## Configuring Credentials in wanaku.yaml
 
-You author forwards and their credential bindings in the `wanaku.yaml` configuration file. Wanaku reads the top-level `forwards` and `bindings` keys at startup. A binding is a separate top-level resource, so you declare it under `bindings` and then reference it by id from a forward's `credentialBindings` map.
+You author forwards and their credential bindings in the `wanaku.yaml` configuration file. Wanaku reads the top-level `forwards` and `bindings` keys at startup. A binding is a separate top-level resource, so you declare it under `bindings` and then reference it by id from a forward's `credential_bindings` map.
 
 The following example configures one forward and the two bindings it uses. One binding serves discovery. The other binding serves invocation.
 
@@ -97,30 +97,30 @@ forwards:
   - name: upstream-mcp
     address: "https://api.example.com/mcp"
     namespace: finance
-    credentialBindings:
+    credential_bindings:
       discovery: b-discovery
       invocation: b1
 
 bindings:
   - id: b-discovery
-    forwardId: upstream-mcp
+    forward_id: upstream-mcp
     origin: "https://api.example.com:443"
     mechanism:
       type: bearer
-    secretRefs:
+    secret_refs:
       - "env:DISCOVERY_TOKEN"
-    allowedPurposes:
+    allowed_purposes:
       - discovery
     revision: 1
 
   - id: b1
-    forwardId: upstream-mcp
+    forward_id: upstream-mcp
     origin: "https://api.example.com:443"
     mechanism:
       type: bearer
-    secretRefs:
+    secret_refs:
       - "env:API_TOKEN"
-    allowedPurposes:
+    allowed_purposes:
       - invocation
     revision: 1
 ```
@@ -130,9 +130,9 @@ Wanaku applies these rules when it loads the configuration:
 - Wanaku registers every binding before it runs forward discovery. A forward that references a discovery binding needs the binding to exist first. A missing discovery binding makes the discovery call fail closed.
 - Wanaku validates each binding before it registers the binding. A binding that fails validation is logged and skipped. The rest of the configuration still loads. Bearer and named-header mechanisms require exactly one secret reference. The Basic mechanism requires exactly two secret references.
 - Each binding must have an `origin` value. A binding without an `origin` is logged and skipped. The origin is the scheme, host, and port of the forward address. For the address `http://host.docker.internal:3000/mcp`, use `http://host.docker.internal:3000`. Wanaku adds the default port when you omit it, so `https://api.example.com` becomes `https://api.example.com:443`.
-- Wanaku logs a warning for each unknown key in a forward or binding entry and ignores the key. For example, a forward with `credentialsBindings` instead of `credentialBindings` gets no credential bindings. Read the startup log for `ignoring unknown key in wanaku.yaml entry` warnings.
-- The `forwardId` of a binding must equal the `name` of the forward that references it. The broker rejects a binding that a different forward tries to use.
-- Wanaku does not check the references between forwards and bindings at load time. A binding that no forward references in `credentialBindings` has no effect, even if its `forwardId` names a forward. A forward that references a binding id that does not exist fails closed when it uses the binding. Discovery then fails with `credential binding not found`.
+- Wanaku logs a warning for each unknown key in a forward or binding entry and ignores the key. For example, a forward with `credentials_bindings` instead of `credential_bindings` gets no credential bindings. Read the startup log for `ignoring unknown key in wanaku.yaml entry` warnings.
+- The `forward_id` of a binding must equal the `name` of the forward that references it. The broker rejects a binding that a different forward tries to use.
+- Wanaku does not check the references between forwards and bindings at load time. A binding that no forward references in `credential_bindings` has no effect, even if its `forward_id` names a forward. A forward that references a binding id that does not exist fails closed when it uses the binding. Discovery then fails with `credential binding not found`.
 - The binding `origin` keeps only the scheme, host, and port. Wanaku drops a path, so `https://api.example.com/mcp/` and `https://api.example.com:443` are the same origin.
 
 Start the server with your configuration file:
@@ -169,19 +169,19 @@ Wanaku does not do the OAuth flow that the GitHub MCP server offers. Use a GitHu
      - name: github
        address: "https://api.githubcopilot.com/mcp/"
        namespace: github
-       credentialBindings:
+       credential_bindings:
          discovery: github-pat
          invocation: github-pat
 
    bindings:
      - id: github-pat
-       forwardId: github
+       forward_id: github
        origin: "https://api.githubcopilot.com:443"
        mechanism:
          type: bearer
-       secretRefs:
+       secret_refs:
          - "env:GITHUB_PAT"
-       allowedPurposes:
+       allowed_purposes:
          - discovery
          - invocation
        revision: 1
@@ -210,11 +210,11 @@ If the upstream server rejects discovery, Wanaku marks the forward as unavailabl
 
 The status message `credential brokerage failed` does not name the cause. The audit trail records the cause. Query the credential events with `GET /api/v1/audit/events` and read the `reason_code` of the event whose `target` is the forward name. The server log also shows the reason in the `discovery credential brokerage failed; skipping discovery` warning. These are the common causes:
 
-- The environment variable in `secretRefs` is not set in the server process, or its value is empty.
+- The environment variable in `secret_refs` is not set in the server process, or its value is empty.
 - The binding `origin` does not match the scheme, host, and port of the forward `address`.
-- The binding `allowedPurposes` does not contain `discovery`.
+- The binding `allowed_purposes` does not contain `discovery`.
 - The binding `restrictions` deny the discovery call. See [Scope and Restrictions](#scope-and-restrictions).
-- The binding `forwardId` is not the forward name.
+- The binding `forward_id` is not the forward name.
 
 ## Injection Mechanisms
 
@@ -231,14 +231,14 @@ A named-header binding sets the header name in `mechanism.header`:
 ```yaml
 bindings:
   - id: api-key
-    forwardId: upstream-mcp
+    forward_id: upstream-mcp
     origin: "https://api.example.com:443"
     mechanism:
       type: named_header
       header: X-Api-Key
-    secretRefs:
+    secret_refs:
       - "env:UPSTREAM_API_KEY"
-    allowedPurposes:
+    allowed_purposes:
       - invocation
 ```
 
@@ -247,14 +247,14 @@ A Basic binding has two secret references. The first is the username. The second
 ```yaml
 bindings:
   - id: basic-auth
-    forwardId: upstream-mcp
+    forward_id: upstream-mcp
     origin: "https://api.example.com:443"
     mechanism:
       type: basic
-    secretRefs:
+    secret_refs:
       - "env:UPSTREAM_USER"
       - "env:UPSTREAM_PASSWORD"
-    allowedPurposes:
+    allowed_purposes:
       - discovery
       - invocation
 ```
@@ -311,7 +311,7 @@ Because of this, some restrictions deny every request:
 
 ## Caching and Invalidation
 
-The broker caches a resolved credential only when it has an expiry: either the resolver supplies one, or the binding sets `cache.maxTtlSeconds`. When both are present, Wanaku uses the earlier of the two. When neither is present, Wanaku resolves the secret fresh on every use and never caches it.
+The broker caches a resolved credential only when it has an expiry: either the resolver supplies one, or the binding sets `cache.max_ttl_seconds`. When both are present, Wanaku uses the earlier of the two. When neither is present, Wanaku resolves the secret fresh on every use and never caches it.
 
 The cache key includes the binding id, the binding revision, the resolver scheme, the secret reference, the purpose, the forward id, the origin, and every scope dimension from the request (namespace, identity, governed item, operation) — whether or not the binding restricts that dimension. A cached credential is therefore never shared across scopes, origins, or purposes.
 

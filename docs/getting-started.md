@@ -216,7 +216,7 @@ A missing variable has different results:
 For credential bindings, also check these items:
 
 - Each binding must have an `origin` with the scheme, host, and port of the forward address.
-- The forward field is `credentialBindings`. When the server finds an unknown key in a forward or binding entry, it logs `ignoring unknown key in wanaku.yaml entry`. Look for this message in the startup log.
+- The forward field is `credential_bindings`. When the server finds an unknown key in a forward or binding entry, it logs `ignoring unknown key in wanaku.yaml entry`. Look for this message in the startup log.
 
 Read [Credential Brokerage](./credential-brokerage.md) for the complete binding reference.
 
@@ -229,19 +229,19 @@ forwards:
   - name: "my-mcp-server"
     address: "http://host.containers.internal:3000/mcp"
     namespace: "default"
-    credentialBindings:
+    credential_bindings:
       discovery: my-mcp-token
       invocation: my-mcp-token
 
 bindings:
   - id: my-mcp-token
-    forwardId: my-mcp-server
+    forward_id: my-mcp-server
     origin: "http://host.containers.internal:3000"
     mechanism:
       type: bearer
-    secretRefs:
+    secret_refs:
       - "env:MY_MCP_TOKEN"
-    allowedPurposes:
+    allowed_purposes:
       - discovery
       - invocation
 
@@ -262,7 +262,7 @@ The action-policy filter and the evaluator filter apply `no_match` independently
 
 If only one of the filters matches, the other filter denies the request with its no-match error. For a complete example, see [`examples/governed-mcp`](../examples/governed-mcp/README.md).
 
-Start the container with `-e MY_MCP_TOKEN` to pass the token. Remove the `credentialBindings` and `bindings` keys if the upstream server does not require a token.
+Start the container with `-e MY_MCP_TOKEN` to pass the token. Remove the `credential_bindings` and `bindings` keys if the upstream server does not require a token.
 
 ## Run as a systemd Service
 

@@ -143,6 +143,8 @@ See [docs/configuration.md](docs/configuration.md) for environment variables, pi
 
 Core env vars are defined in `types/src/config.rs`. Feature-specific env vars are owned by their respective feature crates.
 
+**Key naming:** configuration keys (`wanaku.yaml` and the feature config structs that read it) use `snake_case` by default. Do not add new `camelCase` keys. When a type is also a management API body that already uses `camelCase` (`ForwardEntry`, `CredentialBinding`), keep the API name with `#[serde(rename = "...")]` and add the other spelling with `#[serde(alias = "...")]`, so both spellings deserialize. Every field of such a type must accept both spellings. Document the `snake_case` key in config docs and examples.
+
 ## Evaluator
 
 See [docs/evaluator-engine.md](docs/evaluator-engine.md) for YAML config, WIT contract, host imports, response variants, action script development (JS and Rust), and testing.

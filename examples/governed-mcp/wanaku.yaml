@@ -12,22 +12,22 @@ forwards:
     address: "http://127.0.0.1:3000/mcp"
     namespace: "tickets"
     # Map each purpose to a binding id from the bindings section.
-    credentialBindings:
+    credential_bindings:
       discovery: tickets-token
       invocation: tickets-token
 
 # 2. Credential bindings: how Wanaku authenticates to the upstream. The agent
-#    never sees the token. The forwardId must equal the forward name, and the
+#    never sees the token. The forward_id must equal the forward name, and the
 #    origin must be the scheme, host, and port of the forward address.
 bindings:
   - id: tickets-token
-    forwardId: tickets-mcp
+    forward_id: tickets-mcp
     origin: "http://127.0.0.1:3000"
     mechanism:
       type: bearer
-    secretRefs:
+    secret_refs:
       - "env:TICKETS_TOKEN"        # Read from the server environment
-    allowedPurposes:
+    allowed_purposes:
       - discovery
       - invocation
     revision: 1

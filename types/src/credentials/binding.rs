@@ -109,7 +109,11 @@ pub struct BindingRestrictions {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub namespaces: Vec<String>,
     /// Governed item identifiers this binding may be used for.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(
+        default,
+        skip_serializing_if = "Vec::is_empty",
+        alias = "governedItems"
+    )]
     pub governed_items: Vec<String>,
     /// MCP operations this binding may be used for.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -137,7 +141,8 @@ pub struct CacheRules {
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
-        rename = "maxTtlSeconds"
+        rename = "maxTtlSeconds",
+        alias = "max_ttl_seconds"
     )]
     pub max_ttl_seconds: Option<u64>,
 }
@@ -388,5 +393,38 @@ mod tests {
             )
             .is_ok()
         );
+    }
+
+    #[test]
+    fn binding_accepts_snake_case_and_camel_case_keys() {
+        let snake: CredentialBinding = serde_yaml::from_str(
+            r"
+id: b1
+forward_id: fwd-a
+origin: https://api.example.com:443
+mechanism: { type: bearer }
+secret_refs: [env:API_TOKEN]
+allowed_purposes: [invocation]
+restrictions: { governed_items: [search] }
+cache: { max_ttl_seconds: 60 }
+",
+        )
+        .unwrap();
+        let camel: CredentialBinding = serde_yaml::from_str(
+            r"
+id: b1
+forwardId: fwd-a
+origin: https://api.example.com:443
+mechanism: { type: bearer }
+secretRefs: [env:API_TOKEN]
+allowedPurposes: [invocation]
+restrictions: { governedItems: [search] }
+cache: { maxTtlSeconds: 60 }
+",
+        )
+        .unwrap();
+        assert_eq!(snake, camel);
+        assert_eq!(snake.restrictions.governed_items, vec!["search".to_owned()]);
+        assert_eq!(snake.cache.max_ttl_seconds, Some(60));
     }
 }

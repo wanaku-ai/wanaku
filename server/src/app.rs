@@ -448,6 +448,7 @@ fn load_bindings(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
 mod tests {
     use super::{CredentialBinding, ForwardEntry, deserialize_with_unknown_keys, load_bindings};
     use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_types::credentials::CredentialPurpose;
     use wanaku_types::registry::BindingRegistry;
 
     #[test]
@@ -575,6 +576,57 @@ cache:
             deserialize_with_unknown_keys(&value).unwrap();
 
         assert!(unknown_keys.is_empty());
+    }
+
+    #[test]
+    fn snake_case_forward_keys_are_not_reported() {
+        let value: serde_yaml::Value = serde_yaml::from_str(
+            r#"
+name: my-forward
+address: "http://127.0.0.1:3000/mcp"
+credential_bindings:
+  discovery: my-binding
+"#,
+        )
+        .unwrap();
+
+        let (forward, unknown_keys): (ForwardEntry, _) =
+            deserialize_with_unknown_keys(&value).unwrap();
+
+        assert!(unknown_keys.is_empty());
+        assert_eq!(
+            forward.binding_for(CredentialPurpose::Discovery),
+            Some("my-binding")
+        );
+    }
+
+    #[test]
+    fn snake_case_binding_keys_are_not_reported() {
+        let value: serde_yaml::Value = serde_yaml::from_str(
+            r#"
+id: my-binding
+forward_id: my-forward
+origin: "http://127.0.0.1:3000"
+mechanism:
+  type: bearer
+secret_refs:
+  - "env:API_TOKEN"
+allowed_purposes:
+  - discovery
+restrictions:
+  governed_items:
+    - search
+cache:
+  max_ttl_seconds: 60
+"#,
+        )
+        .unwrap();
+
+        let (binding, unknown_keys): (CredentialBinding, _) =
+            deserialize_with_unknown_keys(&value).unwrap();
+
+        assert!(unknown_keys.is_empty());
+        assert_eq!(binding.cache.max_ttl_seconds, Some(60));
     }
 
     #[test]
