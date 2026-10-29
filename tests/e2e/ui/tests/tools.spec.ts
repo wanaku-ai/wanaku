@@ -35,4 +35,31 @@ test.describe('Tools', () => {
     await expect(toggle).toHaveAttribute('aria-checked', 'true');
     expect(calls).toEqual([`disable:${entry.name}`, `enable:${entry.name}`]);
   });
+
+  test('paginates and filters tools', async ({ page }) => {
+    const entries = Array.from({ length: 30 }, (_, index) => ({
+      ...toolData({ name: `e2e-paged-tool-${String(index).padStart(2, '0')}`, type: 'mcp-forward' }),
+      forwardId: 'e2e-forward',
+      namespace: 'default',
+      enabled: true,
+    }));
+    await mockRegistryEntries(page, 'tools', entries);
+
+    await tools.goto();
+
+    await expect(tools.tableRows()).toHaveCount(25);
+    await expect(tools.pagination()).toContainText('1–25 of 30 items');
+
+    await tools.goToNextPage();
+    await expect(tools.tableRows()).toHaveCount(5);
+    await expect(tools.rowWithText('e2e-paged-tool-29')).toBeVisible();
+
+    await tools.searchTable('tool-07');
+    await expect(tools.tableRows()).toHaveCount(1);
+    await expect(tools.rowWithText('e2e-paged-tool-07')).toBeVisible();
+
+    await tools.searchTable('no-such-tool');
+    await expect(tools.tableRows()).toHaveCount(1);
+    await expect(tools.tableRows()).toContainText('No matching tools');
+  });
 });

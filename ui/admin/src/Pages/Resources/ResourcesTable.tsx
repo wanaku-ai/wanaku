@@ -1,6 +1,7 @@
 import React, { RefObject, memo, useEffect, useImperativeHandle, useState } from 'react';
 import {
   DataTable,
+  Pagination,
   DataTableSkeleton,
   Table,
   TableBody,
@@ -11,6 +12,7 @@ import {
   TableRow,
   TableToolbar,
   TableToolbarContent,
+  TableToolbarSearch,
 } from '@carbon/react';
 import { ResourceEntry } from '../../models';
 import { getNamespacePathById } from '../../hooks/api/use-namespaces';
@@ -18,6 +20,7 @@ import { useResources } from '../../hooks/api/use-resources';
 import { TableEmptyState } from '../EmptyTableState';
 import { getErrorMessage } from '../../utils/error';
 import { EnabledToggle } from '../../components/EnabledToggle';
+import { PAGE_SIZES, useSearchPagination } from '../../hooks/search-pagination';
 
 export interface RefreshHandle {
   refresh: () => void;
@@ -29,11 +32,22 @@ interface ResourcesTableProps {
   ref?: RefObject<RefreshHandle>;
 }
 
+const resourceSearchableText = (resource: ResourceEntry) => [
+  resource.name,
+  resource.location,
+  resource.type,
+  resource.mimeType,
+  resource.description,
+  getNamespacePathById(resource.namespace ?? undefined),
+];
+
 export const ResourcesTable: React.FC<ResourcesTableProps> = memo(
   ({ onSetEnabled, onError, ref }) => {
     const [resources, setResources] = useState<ResourceEntry[]>([]);
     const [isLoading, setLoading] = useState(true);
     const { listResources } = useResources();
+    const { searchTerm, setSearchTerm, page, pageSize, onPageChange, pageItems, filteredCount } =
+      useSearchPagination(resources, resourceSearchableText);
 
     useEffect(() => {
       (async () => {
@@ -74,7 +88,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = memo(
     ];
 
     function resourcesToRows() {
-      return resources.map((resource: ResourceEntry, index: number) => ({
+      return pageItems.map((resource: ResourceEntry, index: number) => ({
         id: resource.name || resource.id || `resource-${index}`,
         name: resource.name,
         location: resource.location,
@@ -108,39 +122,66 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = memo(
     return isLoading ? (
       <DataTableSkeleton />
     ) : (
-      <DataTable headers={headers} rows={resourcesToRows()}>
-        {({ headers, rows, getTableProps, getHeaderProps, getRowProps, getToolbarProps }) => (
-          <TableContainer>
-            <TableToolbar {...getToolbarProps()}>
-              <TableToolbarContent />
-            </TableToolbar>
-            <Table {...getTableProps()}>
-              <TableHead>
-                <TableRow>
-                  {headers.map((header) => (
-                    <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row) => {
-                  const resource = resources.find((item) => (item.name || item.id) === row.id);
-                  if (resource) {
-                    return <TableRow {...getRowProps({ row })}>{tableCells(resource)}</TableRow>;
-                  }
-                })}
-                {resources.length == 0 && (
-                  <TableEmptyState
-                    colSpan={headers.length}
-                    title="No resources discovered yet"
-                    body="Register a forwarded MCP server to auto-discover resources"
+      <>
+        <DataTable headers={headers} rows={resourcesToRows()}>
+          {({ headers, rows, getTableProps, getHeaderProps, getRowProps, getToolbarProps }) => (
+            <TableContainer>
+              <TableToolbar {...getToolbarProps()}>
+                <TableToolbarContent>
+                  <TableToolbarSearch
+                    persistent
+                    placeholder="Search resources"
+                    value={searchTerm}
+                    onChange={(event) =>
+                      setSearchTerm(typeof event === 'string' ? event : event.target.value)
+                    }
                   />
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableToolbarContent>
+              </TableToolbar>
+              <Table {...getTableProps()}>
+                <TableHead>
+                  <TableRow>
+                    {headers.map((header) => (
+                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rows.map((row) => {
+                    const resource = resources.find((item) => (item.name || item.id) === row.id);
+                    if (resource) {
+                      return <TableRow {...getRowProps({ row })}>{tableCells(resource)}</TableRow>;
+                    }
+                  })}
+                  {resources.length == 0 && (
+                    <TableEmptyState
+                      colSpan={headers.length}
+                      title="No resources discovered yet"
+                      body="Register a forwarded MCP server to auto-discover resources"
+                    />
+                  )}
+                  {resources.length > 0 && filteredCount == 0 && (
+                    <TableEmptyState
+                      colSpan={headers.length}
+                      title="No matching resources"
+                      body="No resources match the current search."
+                    />
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DataTable>
+        {filteredCount > 0 && (
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            pageSizes={PAGE_SIZES}
+            totalItems={filteredCount}
+            onChange={onPageChange}
+          />
         )}
-      </DataTable>
+      </>
     );
   },
 );

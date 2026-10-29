@@ -2,6 +2,7 @@ import { View } from '@carbon/icons-react';
 import {
   Button,
   DataTable,
+  Pagination,
   Table,
   TableBody,
   TableCell,
@@ -11,6 +12,7 @@ import {
   TableRow,
   TableToolbar,
   TableToolbarContent,
+  TableToolbarSearch,
 } from '@carbon/react';
 import React, { FunctionComponent, memo, useState } from 'react';
 import { ToolEntry } from '../../models';
@@ -18,15 +20,26 @@ import { getNamespacePathById } from '../../hooks/api/use-namespaces';
 import { InputSchemaModal } from './InputSchemaModal';
 import { TableEmptyState } from '../EmptyTableState';
 import { EnabledToggle } from '../../components/EnabledToggle';
+import { PAGE_SIZES, useSearchPagination } from '../../hooks/search-pagination';
 
 interface ToolListProps {
   fetchedData: ToolEntry[];
   onSetEnabled: (toolName: string, enabled: boolean) => void;
 }
 
+const toolSearchableText = (tool: ToolEntry) => [
+  tool.name,
+  tool.type,
+  tool.description,
+  tool.uri,
+  getNamespacePathById(tool.namespace ?? undefined),
+];
+
 export const ToolsTable: FunctionComponent<ToolListProps> = memo(
   ({ fetchedData, onSetEnabled }) => {
     const [schemaModalTool, setSchemaModalTool] = useState<ToolEntry | null>(null);
+    const { searchTerm, setSearchTerm, page, pageSize, onPageChange, pageItems, filteredCount } =
+      useSearchPagination(fetchedData, toolSearchableText);
     const headers = [
       { key: 'name', header: 'Name' },
       { key: 'type', header: 'Type' },
@@ -38,7 +51,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = memo(
     ];
 
     function toolsToRows() {
-      return fetchedData.map((tool: ToolEntry, index: number) => ({
+      return pageItems.map((tool: ToolEntry, index: number) => ({
         ...tool,
         id: tool.name || tool.id || `tool-${index}`,
       }));
@@ -87,7 +100,16 @@ export const ToolsTable: FunctionComponent<ToolListProps> = memo(
           {({ headers, rows, getTableProps, getHeaderProps, getRowProps, getToolbarProps }) => (
             <TableContainer>
               <TableToolbar {...getToolbarProps()}>
-                <TableToolbarContent />
+                <TableToolbarContent>
+                  <TableToolbarSearch
+                    persistent
+                    placeholder="Search tools"
+                    value={searchTerm}
+                    onChange={(event) =>
+                      setSearchTerm(typeof event === 'string' ? event : event.target.value)
+                    }
+                  />
+                </TableToolbarContent>
               </TableToolbar>
               <Table {...getTableProps()}>
                 <TableHead>
@@ -111,11 +133,27 @@ export const ToolsTable: FunctionComponent<ToolListProps> = memo(
                       body="Register a forwarded MCP server to auto-discover tools"
                     />
                   )}
+                  {fetchedData.length > 0 && filteredCount == 0 && (
+                    <TableEmptyState
+                      colSpan={headers.length}
+                      title="No matching tools"
+                      body="No tools match the current search."
+                    />
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
           )}
         </DataTable>
+        {filteredCount > 0 && (
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            pageSizes={PAGE_SIZES}
+            totalItems={filteredCount}
+            onChange={onPageChange}
+          />
+        )}
         {schemaModalTool && (
           <InputSchemaModal
             inputSchema={schemaModalTool.inputSchema as any}

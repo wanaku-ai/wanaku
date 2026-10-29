@@ -35,4 +35,31 @@ test.describe('Resources', () => {
     await expect(toggle).toHaveAttribute('aria-checked', 'true');
     expect(calls).toEqual([`disable:${entry.name}`, `enable:${entry.name}`]);
   });
+
+  test('paginates and filters resources', async ({ page }) => {
+    const entries = Array.from({ length: 30 }, (_, index) => ({
+      ...resourceData({ name: `e2e-paged-resource-${String(index).padStart(2, '0')}`, type: 'mcp-forward' }),
+      forwardId: 'e2e-forward',
+      namespace: 'default',
+      enabled: true,
+    }));
+    await mockRegistryEntries(page, 'resources', entries);
+
+    await resources.goto();
+
+    await expect(resources.tableRows()).toHaveCount(25);
+    await expect(resources.pagination()).toContainText('1–25 of 30 items');
+
+    await resources.goToNextPage();
+    await expect(resources.tableRows()).toHaveCount(5);
+    await expect(resources.rowWithText('e2e-paged-resource-29')).toBeVisible();
+
+    await resources.searchTable('resource-07');
+    await expect(resources.tableRows()).toHaveCount(1);
+    await expect(resources.rowWithText('e2e-paged-resource-07')).toBeVisible();
+
+    await resources.searchTable('no-such-resource');
+    await expect(resources.tableRows()).toHaveCount(1);
+    await expect(resources.tableRows()).toContainText('No matching resources');
+  });
 });
