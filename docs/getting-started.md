@@ -66,7 +66,9 @@ You can use `docker` instead of `podman` in all commands. Read [Run in a Contain
 
 ### 2. Download the CLI
 
-The Wanaku CLI is a separate package. Download the latest `wanaku` binary from the [wanaku-barn early access release page](https://github.com/wanaku-ai/wanaku-barn/releases/tag/early-access).
+The Wanaku CLI is a separate package. Download the latest `wanaku` binary from the [wanaku-barn release page](https://github.com/wanaku-ai/wanaku-barn/releases/).
+
+The full variant of the server also has a **CLI Downloads** page in the admin UI. After you start the server in step 3, go to `http://localhost:8080` and select **CLI Downloads** in the side navigation. The headless variant does not include the admin UI.
 
 ```bash
 chmod +x wanaku
@@ -87,10 +89,14 @@ wanaku --version
 wanaku-server
 ```
 
-The server starts these two services on all network interfaces:
+The server listens on these ports on all network interfaces:
 
-- **MCP endpoint:** port `8081`, for example `http://localhost:8081/default/mcp` (default namespace)
-- **Management API and admin UI:** port `8080`, for example `http://localhost:8080/api/v1`
+- `8080`: management API and admin UI
+- `8081`: MCP endpoint
+- `8083`: inference proxy
+- `8084`: A2A listener
+
+The next steps use ports `8080` and `8081`. Read [Endpoints](#endpoints) for the addresses.
 
 To run Wanaku as a container or as a systemd service, read [Run in a Container](#run-in-a-container) or [Run as a systemd Service](#run-as-a-systemd-service). For a production system on Kubernetes or OpenShift, read [Production Deployment on Kubernetes or OpenShift](#production-deployment-on-kubernetes-or-openshift).
 

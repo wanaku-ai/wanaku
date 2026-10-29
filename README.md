@@ -32,17 +32,17 @@ The project name comes from the origin of [guanaco](https://en.wikipedia.org/wik
 
 ### Install
 
-Download the latest early-access build on Linux or macOS. Early-access builds are development builds of the unreleased Wanaku 0.3.0, the first stable release of this server. If you need a slower cadence of changes, watch the [releases page](https://github.com/wanaku-ai/wanaku/releases) for it.
+On Linux or macOS, use this command to install the latest early-access build. Early-access builds are development builds of the unreleased Wanaku 0.3.0.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh | bash
 ```
 
-The installer detects the host platform, verifies the release checksum, and installs `wanaku-server` into `$HOME/bin`.
+The installer puts `wanaku-server` in `$HOME/bin`.
 
-Override the destination with `WANAKU_INSTALL_DIR`. To run Wanaku in a container or as a systemd service, read the [Getting Started](docs/getting-started.md) guide.
+Other install methods are available. You can download the archive manually, use a container image, run Wanaku as a systemd service, or deploy it on Kubernetes or OpenShift. Read the [Getting Started](docs/getting-started.md) guide for the details of each method.
 
-Run `wanaku-server` and access <http://localhost:8080> to enter the dashboard:
+Run `wanaku-server`. Open <http://localhost:8080> to see the dashboard:
 
 ![Wanaku Dashboard](docs/imgs/wanaku-dashboard.png)
 
