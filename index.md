@@ -25,7 +25,7 @@ features:
     link: ./docs/features
   - title: Admin UI
     details: React and Carbon Design System frontend development
-    link: ./docs/admin-ui
+    link: ./docs/contributing-admin-ui
   - title: Contributing
     details: Learn how to contribute to Wanaku
     link: ./docs/contributing.md

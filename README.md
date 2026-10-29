@@ -52,7 +52,7 @@ If you prefer a text interface, you may also download and use the Wanaku CLI fro
 
 The easiest way to learn Wanaku is by following the **[guided tutorial](https://wanaku.ai/docs/demos/)**.
 
-The reference documentation, including the complete installation and configuration instructions, is available in the [usage guide](https://wanaku.ai/docs/version/).
+The reference documentation, including the complete installation and configuration instructions, is available in the [usage guide](https://wanaku.ai/docs/version/wanaku-main/).
 
 ## Documentation
 

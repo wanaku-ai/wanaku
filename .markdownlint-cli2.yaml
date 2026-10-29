@@ -12,8 +12,9 @@ config:
 globs:
   - "docs/**/*.md"
   - "*.md"
-  - "core/README.md"
-  - "capabilities/README.md"
+  - "deploy/**/README.md"
+  - "examples/**/README.md"
+  - "sdk/**/README.md"
 
 ignores:
   - ".oss-ai-helper-rules/**"
