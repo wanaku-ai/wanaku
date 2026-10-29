@@ -705,20 +705,17 @@ plugin identity
        +-- configuration
 ```
 
-Example server-side configuration. The current loader reads only `id` and `services.<name>.target`. The `manifest` and `permissions` keys show a possible future design. The loader ignores them.
+Example server-side configuration. The current loader reads only `id` and `services.<name>.target`:
 
 ```yaml
 plugins:
   - id: customer-management
-    manifest: https://plugins.example.com/customer/1.4.0/plugin.json  # not read
     services:
       customer-api:
         target: http://customer-service:8080
-    permissions:  # not read
-      - navigation
-      - pages
-      - service:customer-api:read
 ```
+
+A possible future design adds a `manifest` URL and a `permissions` list to each entry. The loader does not support these keys. Do not add them to `wanaku.yaml`.
 
 This environment-specific configuration belongs to the platform, not the plugin bundle.
 
