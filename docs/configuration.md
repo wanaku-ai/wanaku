@@ -24,7 +24,7 @@ These control core server behavior:
 | `WANAKU_A2A_LISTEN` | `0.0.0.0:8084` | Registered A2A agents listen address in the embedded pipeline. |
 | `WANAKU_A2A_PUBLIC_URL` | `http://127.0.0.1:8084/` | Public HTTP or HTTPS origin for registered agent proxy URLs and Agent Cards. |
 | `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Upstream for the inference-proxy pipeline (port 8083), an OpenAI-compatible passthrough. Clients call this port directly and supply their own bearer token. |
-| `WANAKU_PERSIST_BACKEND` | `file` | File-based registry persistence. Set to `"none"` to disable persistence. |
+| `WANAKU_PERSIST_BACKEND` | `file` | File-based registry persistence. Only the exact value `none` disables persistence. Any other value uses file persistence. |
 | `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | Directory where Wanaku reads and writes `registry.json`. The default plugins path is `<WANAKU_PERSIST_PATH>/plugins`. |
 | `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override (use for local dev) |
 | `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on all HTTP responses (management API, MCP endpoint, inference proxy, and CORS preflight) |
@@ -486,7 +486,7 @@ Wanaku loads these top-level sections from `wanaku.yaml`:
 - `typesafe_system_one_connections` — named TypeSafe System One connections for evaluators; config-only, never exposed via the management API
 - `opa_connections` — named Open Policy Agent connections (url/token/timeout_ms/ca_cert) for evaluators; config-only, never exposed via the management API. See [Open Policy Agent](./evaluator-engine.md#open-policy-agent)
 - `evaluators` — evaluator feature configuration
-- `evaluator_startup_failure` — `abort` (default) or `deny`. See [Evaluator governance startup](#evaluator-governance-startup)
+- `evaluator_startup_failure` — `abort` (default) or `deny`. Use a string value. Another value, for example a boolean, marks the evaluator runtime invalid with `startup_policy_invalid`. See [Evaluator governance startup](#evaluator-governance-startup)
 - `action_policy` — declarative action-policy rules. See [Action Policies](./action-policies.md)
 - `simulation` — policy validation, simulation, and replay limits. See [Policy Simulation](policy-simulation.md#resource-limits)
 - `governance` — global governance posture and namespace overrides

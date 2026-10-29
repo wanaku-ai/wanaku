@@ -52,8 +52,8 @@ governance:
 # Both audit levels let requests continue through these governance filters.
 
 # Sample evaluator configuration. See docs/evaluator-engine.md for the full guide.
-# LLM connections are config-only: they can't be set or read through the
-# management API, only here.
+# LLM connections are config-only: set them here. The management API lists
+# only their names (GET /api/v1/evaluators/llm-connections).
 llm_connections:
   - name: "local-llama"
     model: "llama3.2:latest"

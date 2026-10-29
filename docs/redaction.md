@@ -59,22 +59,51 @@ feature preserves the completion ID and the model name as envelope metadata.
 The feature still redacts a credential inside a `content` value when the value
 matches a sensitive field name, a configured JSON Pointer path, a configured
 marker or prefix, or a built-in credential token format (for example, `sk-` or a
-JWT). Add a `sensitive_json_pointer` to redact a credential in a known content
-location that the default rules do not detect.
+JWT). Add an entry to `sensitive_json_pointers` to redact a credential in a known
+content location that the default rules do not detect.
 
 ## Configure redaction
 
-You configure the intercept sink and the audit sink separately.
+You configure the intercept sink and the audit sink separately. Both sinks accept
+the same redaction keys: `include_default_redaction_rules`, `sensitive_fields`,
+`sensitive_json_pointers`, `credential_markers`, and `token_prefixes`. The list keys
+use the plural form.
 
-- Configure the intercept sink in the pipeline filter node. See the intercept
-  section in [Configuration](./configuration.md).
-- Configure the audit sink in `wanaku.yaml`. See
-  [Governance audit trail](./audit-trail.md).
+The two sinks have different capture defaults. The intercept sink captures payloads
+by default (`capture_payloads: true`). The audit sink does not capture payloads by
+default (`capture_payloads: false`).
 
-Both sinks accept the same redaction controls: `include_default_redaction_rules`,
-`sensitive_fields`, `sensitive_json_pointers`, `credential_markers`, and
-`token_prefixes`. Add a `sensitive_json_pointer` for a field that the default rules
-do not detect.
+Configure the intercept sink in the `wanaku_intercept` filter node of the pipeline
+configuration. See the intercept section in [Configuration](./configuration.md).
+
+```yaml
+- filter: wanaku_intercept
+  capture_payloads: true
+  sensitive_fields:
+    - private_value
+  sensitive_json_pointers:
+    - /messages/0/content
+  credential_markers:
+    - "credential="
+  token_prefixes:
+    - custom_
+```
+
+Configure the audit sink in the `audit` section of `wanaku.yaml`. See
+[Governance audit trail](./audit-trail.md).
+
+```yaml
+audit:
+  capture_payloads: true
+  sensitive_fields:
+    - private_value
+  sensitive_json_pointers:
+    - /params/arguments/customer/token
+  credential_markers:
+    - "credential="
+  token_prefixes:
+    - custom_
+```
 
 ## Limitations
 
@@ -82,8 +111,9 @@ The redaction boundary has limits. Review these limits before you enable payload
 capture or share logs.
 
 - **Custom-shaped secrets.** The default rules detect common credential formats. A
-  secret with a custom format can pass the default rules. Add a `credential_marker`,
-  a `token_prefix`, or a `sensitive_json_pointer` for a custom format.
+  secret with a custom format can pass the default rules. Add an entry to
+  `credential_markers`, `token_prefixes`, or `sensitive_json_pointers` for a custom
+  format.
 - **Upstream error text.** Wanaku redacts a forwarded tool-call error before the
   error reaches the client or the log. Wanaku removes each forwarded header value.
   Wanaku also removes each token segment of a forwarded value. This step covers an

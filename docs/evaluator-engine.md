@@ -177,7 +177,7 @@ evaluators:
           "true": "The request is read-only and low impact."
           "false": "The request changes systems or has a high impact."
     processor:
-      path: "/wasm/tool-safety.wasm"
+      path: "actions/dist/safety_review_action.wasm"
 ```
 
 Set `TYPESAFE_API_KEY` in the server environment before startup. Wanaku resolves `env:VARIABLE_NAME` once when it loads connections. The variable must exist and contain a non-empty Unicode value. An empty variable name or invalid value rejects the complete connection set. Error messages do not include the key value. API keys without the `env:` prefix remain literal values. See [Configuration](configuration.md) for the connection settings.
@@ -870,23 +870,37 @@ processor:
 
 ### Complete Rust Example
 
-Full `src/lib.rs` for a safety gate. The action reads the LLM classification
-from `ctx.llm_result` and maps the level to a response: `red` blocks, `yellow`
-warns, and any other level passes. The LLM is expected to return a JSON object
-of the form `{"level": "green|yellow|red", "reason": "..."}`. When the result
-is not valid JSON, the level is inferred from the raw text.
+Full `src/lib.rs` for a safety gate. This file is the shipped
+[`actions/safety-review/src/lib.rs`](../actions/safety-review/src/lib.rs) without
+its tests. The action reads the engine result from `ctx.llm_result` and maps the
+level to a response: `red` blocks, `yellow` warns, and any other level passes.
+The action accepts two result formats:
+
+- A TypeSafe System One Noul result. A probability below 0.5 is `red`. Other
+  probabilities are `green`.
+- An LLM result of the form `{"level": "green|yellow|red", "reason": "..."}`.
+  When the result is not valid JSON, the action infers the level from the raw text.
 
 ```rust
 #[allow(warnings)]
 mod bindings;
 
-use bindings::wanaku::evaluator::types::EvaluationContext;
 use bindings::Guest;
+use bindings::wanaku::evaluator::types::EvaluationContext;
 
 struct SafetyReview;
 
 impl Guest for SafetyReview {
     fn evaluate(ctx: EvaluationContext) {
+        let details = format!(
+            "Safety review triggered by method {} for tool name {} in namespace {} for conversation id {}",
+            ctx.method,
+            ctx.tool_name.clone().unwrap_or_default(),
+            ctx.namespace,
+            ctx.conversation_id.clone().unwrap_or_default()
+        );
+        bindings::wanaku::evaluator::log::info(&details);
+
         let (level, reason) = classify(&ctx.llm_result);
 
         match level.as_str() {
@@ -907,8 +921,16 @@ impl Guest for SafetyReview {
     }
 }
 
-fn classify(llm_result: &str) -> (String, String) {
-    if let Ok(value) = serde_json::from_str::<serde_json::Value>(llm_result) {
+/// Extract the safety `level` and `reason` from the engine result.
+///
+/// A TypeSafe Noul result contains the probability that its safety condition
+/// is true. A probability below 0.5 blocks the request. An LLM result uses
+/// `{"level": "green|yellow|red", "reason": "..."}`.
+fn classify(engine_result: &str) -> (String, String) {
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(engine_result) {
+        if let Some(result) = classify_system_one(&value) {
+            return result;
+        }
         let level = value
             .get("level")
             .and_then(serde_json::Value::as_str)
@@ -917,12 +939,12 @@ fn classify(llm_result: &str) -> (String, String) {
         let reason = value
             .get("reason")
             .and_then(serde_json::Value::as_str)
-            .unwrap_or(llm_result)
+            .unwrap_or(engine_result)
             .to_string();
         return (level, reason);
     }
 
-    let lower = llm_result.to_lowercase();
+    let lower = engine_result.to_lowercase();
     let level = if lower.contains("red") {
         "red"
     } else if lower.contains("yellow") {
@@ -930,7 +952,30 @@ fn classify(llm_result: &str) -> (String, String) {
     } else {
         "green"
     };
-    (level.to_string(), llm_result.to_string())
+    (level.to_string(), engine_result.to_string())
+}
+
+fn classify_system_one(value: &serde_json::Value) -> Option<(String, String)> {
+    let is_noul = value.get("engine").and_then(serde_json::Value::as_str)
+        == Some("typesafe-system-one")
+        && value
+            .pointer("/primitive/type")
+            .and_then(serde_json::Value::as_str)
+            == Some("noul");
+    if !is_noul {
+        return None;
+    }
+    let probability = value
+        .pointer("/answer/noul")
+        .and_then(serde_json::Value::as_f64)?;
+    if !(0.0..=1.0).contains(&probability) {
+        return None;
+    }
+    let level = if probability < 0.5 { "red" } else { "green" };
+    Some((
+        level.to_string(),
+        format!("TypeSafe Noul safety probability: {probability:.2}"),
+    ))
 }
 
 bindings::export!(SafetyReview with_types_in bindings);

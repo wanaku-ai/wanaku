@@ -16,7 +16,7 @@ Each posture has four independent settings.
 | `mode` | `enforce`, `audit`, `disabled` | `enforce` | Controls whether governance decisions affect traffic. |
 | `no_match` | `allow`, `deny` | `deny` | Controls the result when no policy or evaluator matches an action. |
 | `on_failure` | `allow`, `deny` | `deny` | Controls the result when governance cannot produce a decision. |
-| `audit_level` | `basic`, `full` | `basic` | Controls whether audit mode calls an LLM. |
+| `audit_level` | `basic`, `full` | `basic` | Controls whether audit mode calls an external evaluator engine. It changes evaluation only when `mode: audit`. |
 
 The defaults are fail-safe. Wanaku denies an unmatched action or a failed governance decision unless the operator explicitly selects `allow`.
 
@@ -24,7 +24,7 @@ The defaults are fail-safe. Wanaku denies an unmatched action or a failed govern
 
 `enforce` applies governance decisions to traffic.
 
-`audit` observes traffic without enforcement. The `basic` audit level does not call an LLM. The `full` audit level permits LLM calls so that Wanaku can produce complete would-be decisions. Full audit is an explicit opt-in because it adds LLM cost and latency.
+`audit` observes traffic without enforcement. `audit_level` has an effect on evaluation only in this mode. In `enforce` and `disabled` modes, the value does not change evaluation. Wanaku still records it in the evaluator audit record. The `basic` audit level does not call an LLM. The `full` audit level permits LLM calls so that Wanaku can produce complete would-be decisions. Full audit is an explicit opt-in because it adds LLM cost and latency.
 
 `disabled` intentionally bypasses governance for the applicable scope. A disabled posture must include a non-empty `disabled_reason`. Validation rejects a disabled posture without this reason.
 
