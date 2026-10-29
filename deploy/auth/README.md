@@ -9,6 +9,14 @@ This configuration is for local development. It uses HTTP, development administr
 - Docker with Compose v2, or Podman with a Compose v2 provider.
 - OpenSSL.
 - Available ports: `8543`, `8943`, `4180`, and `4181`.
+- The `wanaku` and `wanaku-keycloak-admin` CLIs on your `PATH`.
+
+The wanaku-barn [releases](https://github.com/wanaku-ai/wanaku-barn/releases) page publishes both CLIs. Download these archives:
+
+- `wanaku-cli-<version>-linux-x86_64.zip` or `wanaku-cli-<version>-osx-aarch_64.zip` (native).
+- `wanaku-keycloak-admin-<version>-linux-x86_64.zip` or `wanaku-keycloak-admin-<version>-osx-aarch_64.zip` (native).
+
+Extract each archive and add its `bin` directory to `PATH`. On other platforms, use the JVM archives (`wanaku-cli-<version>.zip` and `wanaku-keycloak-admin-<version>.zip`). They need Java 21 or later. Make sure that `wanaku --version` and `wanaku-keycloak-admin --help` run before you continue.
 
 Run the commands from the Wanaku repository root. Use the same shell for all steps. For Podman, replace `docker compose` with `podman compose`.
 
@@ -140,7 +148,23 @@ The admin UI logout defect is tracked separately in [issue #2026](https://github
 docker compose -p wanaku-auth -f deploy/auth/docker-compose-auth.yml down
 ```
 
-This command preserves the Keycloak and Wanaku data volumes. Keycloak retains users and client credentials. In a new shell, repeat the secret capture and cookie generation commands before you start the proxies. A new cookie secret invalidates existing browser cookies.
+This command preserves the Keycloak and Wanaku data volumes. Keycloak retains users and client credentials.
+
+To start the deployment again, start Keycloak first. The secret capture needs a running Keycloak.
+
+1. Start Keycloak:
+
+   ```bash
+   docker compose -p wanaku-auth -f deploy/auth/docker-compose-auth.yml up -d --wait keycloak
+   ```
+
+2. In a new shell, repeat the secret capture and cookie generation commands from [step 2](#2-capture-the-proxy-secrets). A new cookie secret invalidates existing browser cookies.
+
+3. Start Wanaku and the proxies:
+
+   ```bash
+   docker compose -p wanaku-auth -f deploy/auth/docker-compose-auth.yml up -d --wait
+   ```
 
 Keycloak does not update an existing realm from the import file. To test a changed realm from a clean state, use a new Compose project name and stop the previous project first. The new project creates separate data volumes.
 

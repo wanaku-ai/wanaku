@@ -83,6 +83,43 @@ Use one source for each configuration. Specify the corresponding base revision f
 
 Use the action-policy schema from [Action Policies](action-policies.md). Use the evaluator schema from [Evaluator Engine](evaluator-engine.md). Do not include connection credentials in a candidate.
 
+`inline_policy` is the policy object itself, with a top-level `rules` list. Do not wrap it in an `action_policy` or `policy` key. `inline_evaluators` is the evaluator list itself, a JSON array. Do not wrap it in an `evaluators` key. A wrapped value fails with `policy_schema_invalid` or `evaluator_schema_invalid`. An inline value or patch without its base revision fails with `candidate_base_revision_required`.
+
+Get the active base revisions:
+
+```bash
+curl -sS http://localhost:8080/api/v1/action-policies/revisions/active | jq '.data.revision.id'
+curl -sS http://localhost:8080/api/v1/evaluators/revisions/active | jq '.data.revision.id'
+```
+
+A route returns `404` when no stored revision exists. Use revision `0` in that case. Revision `0` is the empty base: no policy rules and no evaluators.
+
+This example tests one deny rule and no evaluators against a server with no stored revisions:
+
+```json
+{
+  "candidate": {
+    "base_policy_revision": 0,
+    "inline_policy": {
+      "rules": [
+        {
+          "id": "deny-delete-tools",
+          "effect": "deny",
+          "selectors": {
+            "operation": "tools/call",
+            "target_type": "tool",
+            "target_name": {"matcher": "glob", "value": "delete-*"}
+          },
+          "reason_code": "delete_tools_denied"
+        }
+      ]
+    },
+    "base_evaluator_revision": 0,
+    "inline_evaluators": []
+  }
+}
+```
+
 ## Validate without activation
 
 Validate the active configuration:
@@ -119,6 +156,8 @@ curl --fail-with-body -sS \
     }
   }'
 ```
+
+Replace `get_weather` and its arguments with a tool from your server. `GET /api/v1/tools` lists the registered tools and their namespaces. An unknown tool does not match name selectors.
 
 A simulation report includes policy and evaluator identity, checksums for candidates, normalized operation, safe target metadata, effective posture, stage decisions, matching identifiers, stable reason codes, final decision, baseline and failure behavior use, redaction metadata, and duration. The report does not contain the request body or proposed response body.
 
@@ -159,6 +198,8 @@ Create `replay.json`:
 }
 ```
 
+Replace `summary` with a prompt from your server. `GET /api/v1/prompts` lists the registered prompts.
+
 Start the job:
 
 ```bash
@@ -169,13 +210,21 @@ curl --fail-with-body -sS \
 replay_id=$(jq -er '.data.id' replay-start.json)
 ```
 
-Get the report:
+The start request returns `202 Accepted` with `status: "running"`. The job runs in the background. Poll the job until its status is not `running`:
 
 ```bash
-curl --fail-with-body -sS \
-  "http://localhost:8080/api/v1/policy-simulations/replays/$replay_id" \
-  > replay-result.json
+while :; do
+  curl --fail-with-body -sS \
+    "http://localhost:8080/api/v1/policy-simulations/replays/$replay_id" \
+    > replay-result.json
+  status=$(jq -r '.data.status' replay-result.json)
+  [ "$status" != "running" ] && break
+  sleep 1
+done
+echo "replay status: $status"
 ```
+
+The terminal statuses are `completed`, `failed`, and `cancelled`.
 
 The report contains job status, policy identity, staleness, aggregate counts, bounded per-action details, skipped audit IDs, a safe failure reason, and duration. Each detail contains active and candidate reports.
 
@@ -191,6 +240,17 @@ The report contains job status, policy identity, staleness, aggregate counts, bo
 `access_expansion` highlights `deny_to_allow`. `compatibility_impact` highlights `allow_to_deny`. Review both categories before activation.
 
 ### Explicit audit input
+
+Replay needs events with captured request payloads. Payload capture is disabled by default. To get usable events:
+
+1. Set `capture_payloads: true` in the `audit` section of `wanaku.yaml`, or set `WANAKU_AUDIT_CAPTURE_PAYLOADS=true`. Restart the server.
+2. Send MCP traffic through Wanaku.
+3. List the decision events and their IDs:
+
+   ```bash
+   curl -sS 'http://localhost:8080/api/v1/audit/events?category=decision&operation=tools/call&limit=20' \
+     | jq -r '.data.events[] | [.event_id, .namespace, .target] | @tsv'
+   ```
 
 Set `audit_event_ids` to the IDs of events that you select for replay:
 
@@ -229,7 +289,7 @@ jq -e '.data.valid == true and .data.stale == false and
   validation.json
 ```
 
-Poll the replay route until the job reaches a terminal status. Set a CI timeout. Check the complete report before activation. For example, reject access expansion and incomplete comparisons:
+Poll the replay route until the job reaches a terminal status, as shown in [Replay and compare](#replay-and-compare). Set a CI timeout. Check the complete report before activation. For example, reject access expansion and incomplete comparisons:
 
 ```bash
 jq -e '.data.status == "completed" and .data.stale == false and

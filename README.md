@@ -71,6 +71,8 @@ Contributors working on the project may want to refer to the development documen
 - [Evaluator Engine](docs/evaluator-engine.md) - WASM-based evaluator
 - [Action Policies](docs/action-policies.md) - Deterministic MCP action rules
 - [Governance Posture](docs/governance-posture.md) - Enforcement modes and fail-safe behavior
+- [Credential Brokerage](docs/credential-brokerage.md) - Scoped upstream credentials for forwards
+- [FAQ](docs/faq.md) - Common problems and answers
 - [Contributing](CONTRIBUTING.md) - Contribution guidelines
 - [Security](SECURITY.md) - Security policy
 

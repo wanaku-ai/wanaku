@@ -2,7 +2,7 @@
 
 The management API lets operators inspect and change Wanaku at runtime. It listens on port 8080 by default. Set `WANAKU_MGMT_LISTEN` to use a different address.
 
-The server uses Pingora's `ServeHttp` trait. Core routes run first. Feature routes run after core routes. Core routes match complete path segments. For example, `/api/v1/tools-export` does not match the `/api/v1/tools` route, so a feature can own that path. If no route matches, the server returns `404`.
+The server uses Pingora's `ServeHttp` trait. The A2A agent routes run first. The other core routes run next. Feature routes run after core routes. Core routes match complete path segments. For example, `/api/v1/tools-export` does not match the `/api/v1/tools` route, so a feature can own that path. If no route matches, the server returns `404`.
 
 ## Access and Response Format
 
@@ -37,10 +37,6 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `GET` | `/health` | Get the server health. |
 | `GET` | `/healthz` | Get the server health. |
 | `GET` | `/openapi.json` | Get the OpenAPI document. |
-| `GET` | `/api/v1/audit/events` | List audit events with pagination and filters. |
-| `GET` | `/api/v1/audit/events/{id}` | Get one audit event. |
-| `GET` | `/api/v1/audit/schema` | Get the audit schema version. |
-| `GET` | `/api/v1/audit/health` | Get audit-store health and the dropped-event count. |
 | `GET` | `/api/v1/management/info` | Get the server name and version. |
 | `GET` | `/api/v1/management/statistics` | Get registry counts. |
 | `GET` | `/api/v1/tools` | List tools. |
@@ -86,7 +82,7 @@ A disabled entry stays in the management API. `GET /api/v1/tools` and the other 
 
 Wanaku keeps the state when it discovers the entries of a forward again. A forward refresh or a reconnect does not enable a disabled entry.
 
-Do not delete a tool, resource, or prompt. The next discovery adds it again. Disable the entry instead:
+Do not delete a tool, resource, or prompt. The next discovery adds it again. Disable the entry instead. The examples use the tool name `get_weather`. Use a name from `GET /api/v1/tools`:
 
 ```bash
 curl -X PUT http://localhost:8080/api/v1/tools/get_weather/disable
@@ -117,6 +113,14 @@ The name and namespace identify the agent. Both values must use valid identifier
 Agent responses contain `name`, `namespace`, `description`, `address`, optional `cardAddress`, and `proxyUrl`. The proxy URL comes from the configured public A2A origin. It is not an editable agent field.
 
 Creating an existing agent returns `409`. Getting, updating, or deleting an unknown agent returns `404`. Invalid configuration returns `400`. An invalid update does not change the existing entry. An update does not change the namespace and name in the route.
+
+An update sends the complete agent entry. The body must contain `name` and `namespace`, and both must be equal to the values in the route. A missing `namespace` defaults to `default`. If the route has a different namespace, the server returns `400`. The body accepts only `name`, `namespace`, `description`, `address`, and `cardAddress`. Unknown keys return `400`. Thus, do not send a `GET` response without changes: remove `proxyUrl` first.
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/agents/default/assistant \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"assistant","namespace":"default","description":"Team assistant","address":"http://localhost:9000/"}'
+```
 
 Agent changes use the configured registry persistence backend. They affect subsequent proxy requests without a restart. See [A2A Proxy](./a2a.md) for the admin UI, listener configuration, policy, and supported protocol operations.
 
@@ -170,7 +174,30 @@ curl -X POST http://localhost:8080/api/v1/forwards \
   }'
 ```
 
-Wanaku stores the forward even if discovery fails. In that case, the response reports zero discovered entries and the forward records the error in `statusMessage`.
+A successful request returns `200` with the forward and the discovered entry counts:
+
+```json
+{
+  "data": {
+    "forward": {"name": "upstream-mcp", "address": "http://upstream-server:8080/mcp", "namespace": "finance", "available": true},
+    "tools_discovered": 3,
+    "resources_discovered": 0,
+    "prompts_discovered": 1
+  },
+  "error": null
+}
+```
+
+The `forward` object also contains other forward fields. Wanaku stores the forward even if discovery fails. In that case, the response is also `200`. The counts are zero, `forward.available` is `false`, and `forward.statusMessage` contains the error. Thus, `curl --fail` does not detect a discovery failure. Check `forward.available`:
+
+```bash
+curl -sS -X POST http://localhost:8080/api/v1/forwards \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"upstream-mcp","address":"http://upstream-server:8080/mcp","namespace":"finance"}' \
+  | jq -e '.data.forward.available' >/dev/null || echo "discovery failed"
+```
+
+`POST /api/v1/forwards/{name}/refreshes` returns a different shape: `refreshed` (the forward name) and the three counts. It does not return the forward. After a refresh, use `GET /api/v1/forwards/{name}` to check `available` and `statusMessage`.
 
 The request body can also contain `credentialBindings`, a map from purpose (`discovery`, `invocation`) to binding id. The bindings themselves must exist in `wanaku.yaml`, because the management API cannot create bindings. See [Credential Brokerage](credential-brokerage.md#attaching-a-binding-to-a-forward).
 
@@ -201,9 +228,23 @@ The binding routes are read-only. They return only non-secret binding metadata â
 curl http://localhost:8080/api/v1/bindings/b1
 ```
 
+Replace `b1` with a binding ID from `GET /api/v1/bindings`.
+
 There is no create, update, or delete route for bindings in this release. Bindings are part of the registry snapshot. See [Credential Brokerage](credential-brokerage.md) for the binding schema and the brokerage flow.
 
 ## Feature Routes
+
+### Audit
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/audit/events` | List audit events with pagination and filters. |
+| `GET` | `/api/v1/audit/events/{id}` | Get one audit event. |
+| `GET` | `/api/v1/audit/schema` | Get the audit schema version. |
+| `GET` | `/api/v1/audit/health` | Get audit-store health and the dropped-event count. |
+| `POST` | `/api/v1/audit/semantic` | Accept one semantic audit event from an external producer, such as WSR. |
+
+`POST /api/v1/audit/semantic` returns `404` unless `WANAKU_AUDIT_INGESTION_ENABLED=true`. See [Governance Audit Trail](audit-trail.md).
 
 ### Metrics
 
@@ -227,12 +268,16 @@ There is no create, update, or delete route for bindings in this release. Bindin
 | `GET` | `/api/v1/evaluators/revisions/{id}` | Get one evaluator revision. |
 | `POST` | `/api/v1/evaluators/revisions/{id}/activate` | Activate a prior evaluator configuration as a new revision. |
 
-Use this body to bind a namespace:
+The `PUT /api/v1/evaluators` body is `{"evaluators": [...], "expected_revision": N}`. `expected_revision` is optional. Unknown keys return `400`. A revision mismatch returns `409`. A configuration that does not validate or compile returns `422`, and the active revision does not change. See [Update Evaluators](evaluator-engine.md#update-evaluators-hot-reload) for an example.
 
-```json
-{
-  "conversation_id": "conversation-123"
-}
+The `activate` body is optional. To prevent a lost update, send `{"expected_revision": N}`. A mismatch returns `409`.
+
+Bind a namespace to a conversation:
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/evaluators/namespaces/finance \
+  -H 'Content-Type: application/json' \
+  -d '{"conversation_id": "conversation-123"}'
 ```
 
 See [Evaluator Engine](evaluator-engine.md) for the evaluator configuration schema.
@@ -299,6 +344,12 @@ When you set `WANAKU_AUTH_ISSUER`, the MCP metadata feature exposes OAuth Protec
 GET /.well-known/oauth-protected-resource/{namespace}/mcp
 ```
 
+The MCP listener (port 8081) serves this route, not the management API. For example:
+
+```bash
+curl http://localhost:8081/.well-known/oauth-protected-resource/default/mcp
+```
+
 MCP clients use this document to find the authorization server. An external authentication proxy enforces access to the MCP endpoint. See [Authentication](auth.md).
 
 ### Web UI Plugins
@@ -316,6 +367,9 @@ The endpoint returns HTTP 502 if the selected source is unavailable or invalid. 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/v1/plugins` | List discovered UI plugin manifests. |
+| `GET` | `/api/v1/plugins/catalog` | List the plugins in the selected catalog. |
+| `POST` | `/api/v1/plugins/install` | Download a ZIP archive and install a plugin. The body is `{"id": "...", "version": "...", "url": "..."}`. |
+| `PUT` | `/api/v1/plugins/{pluginId}/config` | Replace the backend service mappings of a plugin. The body is `{"services": {"<serviceId>": {"target": "<url>"}}}`. |
 | `GET` | `/plugins/{pluginId}/{path}` | Get a static plugin file. |
 | Any HTTP method | `/api/plugins/{pluginId}/{serviceId}/{path}` | Send a request through a configured plugin service mapping. |
 
@@ -323,7 +377,7 @@ The plugin proxy accepts only plugin and service IDs that Wanaku loaded from con
 
 ## Persistence
 
-Wanaku enables file persistence by default. It writes registry snapshots to `$HOME/.wanaku/server` when the process shuts down in an orderly manner.
+Wanaku enables file persistence by default. It stores registry snapshots in `$HOME/.wanaku/server`. After each registry change, Wanaku queues a snapshot and writes it in the background. On an orderly shutdown, Wanaku waits up to 10 seconds for the last write to finish.
 
 Set `WANAKU_PERSIST_BACKEND=none` to disable persistence. Set `WANAKU_PERSIST_PATH` to use a different directory.
 
@@ -334,9 +388,17 @@ File persistence supports one writer. Do not run multiple replicas against the s
 The API uses these status codes:
 
 - `200 OK`: The request succeeded. Core delete routes return a JSON confirmation in the standard envelope.
+- `202 Accepted`: The server started an asynchronous job, for example a policy simulation replay.
 - `400 Bad Request`: The request body is missing or invalid.
 - `404 Not Found`: The route or requested entry does not exist.
+- `408 Request Timeout`: A policy simulation exceeded its time limit.
+- `409 Conflict`: An `expected_revision` does not match the active revision, an entry already exists, or a label precondition failed.
+- `413 Payload Too Large`: The request body is larger than 1 MiB, or a simulation exceeded a size limit.
+- `422 Unprocessable Entity`: The configuration or candidate is well-formed but does not validate, or a plugin archive is not valid.
+- `429 Too Many Requests`: All simulation permits are in use, or the external audit capacity is full.
 - `500 Internal Server Error`: The server could not complete the request.
+- `502 Bad Gateway`: A plugin catalog, a plugin archive download, or a plugin service request failed.
+- `503 Service Unavailable`: The audit store or the simulation store is not available.
 
 Plugin file and proxy routes can return other status codes from file handling or the upstream service.
 
@@ -349,6 +411,8 @@ Set a specific origin in production:
 ```bash
 export WANAKU_CORS_ORIGIN=https://app.example.com
 ```
+
+The management API sets only the `Access-Control-Allow-Origin` header. It does not answer `OPTIONS` preflight requests. Thus, a browser on another origin can send simple `GET` requests, but a cross-origin JSON `POST` or `PUT` request fails the preflight. Serve browser clients from the same origin as the management API, or put a reverse proxy in front of it that handles preflight requests.
 
 The MCP endpoint (port 8081) and the inference proxy (port 8083) each use their own pipeline CORS filter, set from the same `WANAKU_CORS_ORIGIN` value.
 
