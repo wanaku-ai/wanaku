@@ -7,6 +7,7 @@ on:
     paths:
       - '**/*.md'
       - '.lycheeignore'
+      - '.markdownlint-cli2.yaml'
       - '.github/workflows/lychee-links.yml'
   pull_request:
     branches:
@@ -14,6 +15,7 @@ on:
     paths:
       - '**/*.md'
       - '.lycheeignore'
+      - '.markdownlint-cli2.yaml'
       - '.github/workflows/lychee-links.yml'
 
 permissions:
@@ -36,3 +38,28 @@ jobs:
             --exclude-path CONTRIBUTING.md
             '**/*.md'
           fail: true
+
+      # Report-only until the open documentation accuracy PRs merge (#2209 P0).
+      - name: Check link fragments
+        continue-on-error: true
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --no-progress
+            --include-fragments
+            --exclude-path .claude
+            --exclude-path .specify
+            --exclude-path .oss-ai-helper-rules
+            --exclude-path CONTRIBUTING.md
+            '**/*.md'
+          fail: true
+
+  markdownlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Report-only until the open documentation accuracy PRs merge (#2209 P0).
+      - name: Lint Markdown
+        continue-on-error: true
+        uses: DavidAnson/markdownlint-cli2-action@696eb3f2509270d7b882d2aa68347bc676e7af34 # v25.0.0
