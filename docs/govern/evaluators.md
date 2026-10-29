@@ -73,7 +73,7 @@ management API, including out of evaluator revision history. See
 | `method` | string | MCP method to match (e.g., `tools/call`, `tools/list`, `resources/read`) |
 | `namespace` | string | Optional. Only trigger for this namespace (extracted from URL path `/finance/mcp` → `finance`) |
 
-The `trigger` object ignores unknown keys. A misspelled `namespace` key, for example `namepsace`, makes the evaluator match the method in every namespace.
+The `trigger` and `processor` objects reject unknown keys. A misspelled `namespace` key, for example `namepsace`, stops startup. In a `PUT /api/v1/evaluators` request, it returns `400`.
 
 For each request, Wanaku runs only the first evaluator in the list whose trigger matches. It does not run the other matching evaluators. Put namespace-scoped evaluators before an evaluator without a `namespace`, because an evaluator without a `namespace` matches every namespace and hides the evaluators after it.
 

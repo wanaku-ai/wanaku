@@ -22,6 +22,20 @@ use crate::manifest::PluginManifest;
 use crate::persistence::{FilePluginConfigPersistence, PluginConfigPersistence};
 use crate::routes::{PluginRoute, resolve_plugin_route};
 
+/// One entry of the `plugins` section of `wanaku.yaml`.
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct PluginConfig {
+    pub id: String,
+    #[serde(default)]
+    pub services: HashMap<String, PluginServiceConfig>,
+}
+
+/// A plugin service mapping in `wanaku.yaml`.
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct PluginServiceConfig {
+    pub target: String,
+}
+
 pub struct PluginsFeature {
     plugins_path: Option<PathBuf>,
     manifests: RwLock<Vec<PluginManifest>>,
@@ -32,6 +46,23 @@ pub struct PluginsFeature {
 }
 
 impl PluginsFeature {
+    fn register_configured_services(&self, plugins: Vec<PluginConfig>) {
+        let Ok(mut guard) = self.service_map.write() else {
+            return;
+        };
+        for plugin in plugins {
+            for (service_id, service) in plugin.services {
+                tracing::info!(
+                    plugin = %plugin.id,
+                    service = %service_id,
+                    target = %service.target,
+                    "registered plugin service from config"
+                );
+                guard.insert((plugin.id.clone(), service_id), service.target);
+            }
+        }
+    }
+
     #[must_use]
     pub fn new(plugins_path: Option<PathBuf>) -> Self {
         let manifests = match &plugins_path {
@@ -237,44 +268,11 @@ impl Feature for PluginsFeature {
         })
     }
 
-    #[expect(
-        clippy::too_many_lines,
-        reason = "YAML config parsing with nested plugin/service structure"
-    )]
     fn load_yaml_config(&self, root: &serde_yaml::Value) {
         if let Some(plugins_val) = root.get("plugins") {
-            if let Some(plugins_seq) = plugins_val.as_sequence() {
-                for plugin_val in plugins_seq {
-                    let Some(id) = plugin_val.get("id").and_then(|v| v.as_str()) else {
-                        continue;
-                    };
-                    let Some(services_val) = plugin_val.get("services") else {
-                        continue;
-                    };
-                    let Some(services_map) = services_val.as_mapping() else {
-                        continue;
-                    };
-
-                    for (svc_key, svc_val) in services_map {
-                        let Some(svc_id) = svc_key.as_str() else {
-                            continue;
-                        };
-                        let Some(target) = svc_val.get("target").and_then(|v| v.as_str()) else {
-                            continue;
-                        };
-
-                        if let Ok(mut guard) = self.service_map.write() {
-                            guard.insert((id.to_owned(), svc_id.to_owned()), target.to_owned());
-                        }
-
-                        tracing::info!(
-                            plugin = %id,
-                            service = %svc_id,
-                            target = %target,
-                            "registered plugin service from config"
-                        );
-                    }
-                }
+            match serde_yaml::from_value::<Vec<PluginConfig>>(plugins_val.clone()) {
+                Ok(plugins) => self.register_configured_services(plugins),
+                Err(error) => tracing::warn!(error = %error, "invalid plugins configuration"),
             }
         }
 
@@ -293,4 +291,35 @@ impl Feature for PluginsFeature {
     }
 
     fn load_env_config(&self) {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::PluginsFeature;
+    use wanaku_types::feature::Feature;
+
+    #[test]
+    fn load_yaml_config_registers_plugin_services() {
+        let feature = PluginsFeature::new(None);
+        let root: serde_yaml::Value = serde_yaml::from_str(
+            r#"
+plugins:
+  - id: customer-management
+    services:
+      customer-api:
+        target: "http://customer-service:8080"
+"#,
+        )
+        .unwrap();
+
+        feature.load_yaml_config(&root);
+
+        let services = feature.service_map.read().unwrap();
+        assert_eq!(
+            services
+                .get(&("customer-management".to_owned(), "customer-api".to_owned()))
+                .map(String::as_str),
+            Some("http://customer-service:8080")
+        );
+    }
 }

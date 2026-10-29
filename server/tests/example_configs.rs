@@ -18,25 +18,10 @@ use wanaku_feature_evaluator::config::{
     EvaluationEngine, EvaluatorDef, EvaluatorsConfig, LlmConnection, OpaConnection,
     SystemOneConnection,
 };
+use wanaku_server::config_keys::reject_unknown_keys;
 use wanaku_types::credentials::{CredentialBinding, NormalizedOrigin};
 use wanaku_types::governance::GovernanceConfig;
 use wanaku_types::registry::ForwardEntry;
-
-/// Top-level keys that a Wanaku feature reads. The server ignores other keys.
-const KNOWN_TOP_LEVEL_KEYS: &[&str] = &[
-    "forwards",
-    "bindings",
-    "llm_connections",
-    "typesafe_system_one_connections",
-    "opa_connections",
-    "evaluators",
-    "evaluator_startup_failure",
-    "action_policy",
-    "simulation",
-    "governance",
-    "audit",
-    "plugins",
-];
 
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -59,35 +44,21 @@ fn committed_configs() -> Vec<PathBuf> {
     configs
 }
 
-/// Deserialize a section and fail on keys that serde would silently ignore.
-fn strict<T: DeserializeOwned>(path: &Path, section: &str, value: &Value) -> T {
-    let mut ignored = Vec::new();
-    let parsed = serde_ignored::deserialize(value.clone(), |key| ignored.push(key.to_string()))
-        .unwrap_or_else(|error| panic!("{}: invalid `{section}`: {error}", path.display()));
-    assert!(
-        ignored.is_empty(),
-        "{}: unknown keys in `{section}`: {ignored:?}",
-        path.display()
-    );
-    parsed
+/// Deserialize a section. `reject_unknown_keys` has already checked its keys.
+fn parse<T: DeserializeOwned>(path: &Path, section: &str, value: &Value) -> T {
+    serde_yaml::from_value(value.clone())
+        .unwrap_or_else(|error| panic!("{}: invalid `{section}`: {error}", path.display()))
 }
 
 fn section<T: DeserializeOwned>(path: &Path, root: &Value, name: &str) -> Option<T> {
-    root.get(name).map(|value| strict(path, name, value))
+    root.get(name).map(|value| parse(path, name, value))
 }
 
 fn check_config(path: &Path) {
     let content = std::fs::read_to_string(path).expect("readable config");
     let root: Value = serde_yaml::from_str(&content).expect("valid YAML");
 
-    for key in root.as_mapping().expect("top-level mapping").keys() {
-        let key = key.as_str().expect("string key");
-        assert!(
-            KNOWN_TOP_LEVEL_KEYS.contains(&key),
-            "{}: unknown top-level key `{key}`",
-            path.display()
-        );
-    }
+    reject_unknown_keys(&root).unwrap_or_else(|error| panic!("{}: {error}", path.display()));
 
     if let Some(governance) = section::<GovernanceConfig>(path, &root, "governance") {
         governance

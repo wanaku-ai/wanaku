@@ -86,6 +86,7 @@ impl EvaluationEngine {
 /// What triggers this evaluator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
 pub struct TriggerDef {
     pub method: String,
     #[serde(default)]
@@ -95,6 +96,7 @@ pub struct TriggerDef {
 /// Reference to a WASM processor module.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
 pub struct ProcessorRef {
     #[cfg_attr(feature = "openapi", schema(value_type = String))]
     pub path: PathBuf,

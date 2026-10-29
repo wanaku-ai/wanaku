@@ -1,6 +1,7 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 pub mod app;
+pub mod config_keys;
 pub mod http_response;
 pub mod management;
 pub mod openapi;

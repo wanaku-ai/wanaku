@@ -449,6 +449,8 @@ let features: Vec<Box<dyn Feature>> = vec![
 
 The explicit list makes feature registration visible. Read `server/src/app.rs` to identify the enabled features.
 
+The server rejects unknown keys in `wanaku.yaml`. If your feature reads a new top-level section, add the section and its configuration type to `reject_unknown_keys` in `server/src/config_keys.rs`. Otherwise, the server does not start when the section is present.
+
 ## Feature Lifecycle
 
 1. **Creation:** `App::build` in `server/src/app.rs` constructs each feature.
