@@ -10,7 +10,9 @@ The audience is Wanaku maintainers and plugin platform designers. Plugin authors
 
 This document contains both current behavior and design requirements. Unless a section says **Implemented**, treat its `must` and `should` statements as requirements for future platform work, not as claims about the current release.
 
-**Implemented:** filesystem discovery, manifest loading, ES module activation and deactivation, navigation entries, pages, notifications, static plugin files, and configured backend service proxy mappings.
+**Implemented:** filesystem discovery, manifest loading, ES module activation, navigation entries, pages, static plugin files, configured backend service proxy mappings, the plugin catalog, plugin installation from a ZIP archive, and service configuration from the admin UI.
+
+**Declared but not implemented:** `deactivate()` (the host does not call it) and notifications (`host.notifications.show` writes to the browser console only).
 
 **Declared but not enforced:** manifest permissions and host API compatibility ranges. Wanaku currently loads plugins as trusted, same-origin JavaScript. It does not provide a security sandbox.
 
@@ -97,7 +99,7 @@ plugin.js
   └── loads plugin.wasm
 ```
 
-The host should only care that the plugin implements the supported ES module contract.
+The host should only care that the plugin implements the supported ES module contract. The server serves `.wasm` files with `Content-Type: application/wasm`, so `WebAssembly.instantiateStreaming` can load them.
 
 ### 1.3 Plugins must use explicit extension points
 
@@ -235,7 +237,7 @@ Example:
     "services": [
       {
         "id": "customer-api",
-        "version": "v1"
+        "version": "1.0"
       }
     ]
   },
@@ -467,7 +469,7 @@ The platform resolves the logical name.
 ```text
 Browser
   |
-  | /api/plugins/customer-management/customers
+  | /api/plugins/customer-management/customer-api/customers
   v
 Rust backend
   |
@@ -703,16 +705,16 @@ plugin identity
        +-- configuration
 ```
 
-Example server-side configuration:
+Example server-side configuration. The current loader reads only `id` and `services.<name>.target`. The `manifest` and `permissions` keys show a possible future design. The loader ignores them.
 
 ```yaml
 plugins:
   - id: customer-management
-    manifest: https://plugins.example.com/customer/1.4.0/plugin.json
+    manifest: https://plugins.example.com/customer/1.4.0/plugin.json  # not read
     services:
       customer-api:
         target: http://customer-service:8080
-    permissions:
+    permissions:  # not read
       - navigation
       - pages
       - service:customer-api:read

@@ -252,9 +252,37 @@ fn mime_for_path(path: &str) -> &'static str {
         Some("json") => "application/json",
         Some("svg") => "image/svg+xml",
         Some("png") => "image/png",
+        Some("jpg" | "jpeg") => "image/jpeg",
+        Some("gif") => "image/gif",
+        Some("webp") => "image/webp",
         Some("ico") => "image/x-icon",
         Some("woff2") => "font/woff2",
         Some("woff") => "font/woff",
+        Some("ttf") => "font/ttf",
+        Some("wasm") => "application/wasm",
         _ => "application/octet-stream",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::mime_for_path;
+
+    #[test]
+    fn mime_for_path_serves_wasm_for_streaming_instantiation() {
+        assert_eq!(
+            mime_for_path("/plugins/demo/module.wasm"),
+            "application/wasm"
+        );
+    }
+
+    #[test]
+    fn mime_for_path_maps_common_assets() {
+        assert_eq!(mime_for_path("logo.jpg"), "image/jpeg");
+        assert_eq!(mime_for_path("logo.jpeg"), "image/jpeg");
+        assert_eq!(mime_for_path("logo.gif"), "image/gif");
+        assert_eq!(mime_for_path("logo.webp"), "image/webp");
+        assert_eq!(mime_for_path("font.ttf"), "font/ttf");
+        assert_eq!(mime_for_path("data.bin"), "application/octet-stream");
     }
 }

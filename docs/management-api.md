@@ -303,7 +303,7 @@ MCP clients use this document to find the authorization server. An external auth
 
 ### Web UI Plugins
 
-Open **Plugin Catalog** in the admin UI to browse available plugins. Select **Info** to view the metadata and required services. Select **Install** to download and install the archive. Set the service URLs in the configuration dialog when the plugin requires backend services. Restart the server after installation to load the plugin. The UI shows **Not specified** or **None** when the source has no value for a field.
+Open **Plugin Catalog** in the admin UI to browse available plugins. Select **Info** to view the metadata and required services. Select **Install** to download and install the archive. Set the service URLs in the configuration dialog when the plugin requires backend services. Reload the admin UI after installation to load the plugin. The server adds the plugin to the list without a restart. The UI shows **Not specified** or **None** when the source has no value for a field.
 
 `GET /api/v1/plugins/catalog` returns available plugins in the standard `data` response field. Each entry contains `id`, `name`, `version`, `description`, `publisher`, `license`, `dependencies`, `requires`, `metadata`, and `url`. The `url` field identifies the installation archive. The `requires.services` field lists the backend services that the plugin needs.
 

@@ -67,7 +67,7 @@ Contributors working on the project may want to refer to the development documen
 - [Admin UI](docs/contributing-admin-ui.md) - Admin dashboard development
 - [Features / Plugins](docs/features.md) - Feature crate system
 - [Plugin Catalog](docs/plugin-catalog.md) - Publish and configure available UI plugins
-- [Plugin Development](docs/plugin-development-guide.md) - Guide for writing new feature crates
+- [Plugin Development](docs/plugin-development-guide.md) - Guide for writing admin UI plugins
 - [Evaluator Engine](docs/evaluator-engine.md) - WASM-based evaluator
 - [Action Policies](docs/action-policies.md) - Deterministic MCP action rules
 - [Governance Posture](docs/governance-posture.md) - Enforcement modes and fail-safe behavior
