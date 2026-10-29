@@ -16,8 +16,8 @@ Under the hood, Wanaku is an HTTP filter pipeline. Actions flow through a chain 
 │         Wanaku — Governed Action Proxy (Port 8081)          │
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │           Governance Pipeline (Praxis)                 │ │
-│  │  CORS → MCP Parse → Namespace → Evaluator →            │ │
-│  │  Tool List/Call → Resource → Prompt → Static Response  │ │
+│  │  CORS → MCP Parse → Namespace → Action Policy →        │ │
+│  │  Evaluator → Tool/Resource/Prompt → Static Response    │ │
 │  └────────────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │              In-Memory Registry (DashMap)              │ │
@@ -37,14 +37,14 @@ Under the hood, Wanaku is an HTTP filter pipeline. Actions flow through a chain 
 **Action flow:**
 
 1. Agent sends an MCP action (tool call, resource read, prompt get) to `/{namespace}/mcp`
-2. Governance pipeline intercepts: identity, policy, namespace isolation
+2. Governance pipeline intercepts: namespace resolution, action policy, evaluators. An external oauth2-proxy handles identity before the request reaches Wanaku
 3. Filters query the in-memory registry for tools/resources/prompts
 4. For tool calls: the proxy forwards the action to the backend system registered as the tool's forward address — the agent never reaches the backend directly
 5. Response flows back through filters, wrapped in JSON-RPC
 
 ## The Filter Pipeline
 
-Filters are the heart of Praxis. Each request passes through a chain of filters defined in `server/src/default.yaml`:
+Filters are the heart of Praxis. Each request passes through a chain of filters defined in `server/src/default.yaml`. This listing shows the filter order of the `mcp_router` chain. It leaves out the filter options. Refer to [`server/src/default.yaml`](../server/src/default.yaml) for the complete configuration:
 
 ```yaml
 filter_chains:
@@ -53,6 +53,7 @@ filter_chains:
       - filter: cors                    # Add CORS headers
       - filter: mcp                     # Parse JSON-RPC, set metadata
         on_invalid: continue
+      - filter: wanaku_mcp_id           # Read the JSON-RPC request ID
       - filter: wanaku_namespace        # Extract namespace from path
       - filter: wanaku_well_known       # RFC 9728 OAuth metadata (feature)
       - filter: wanaku_mcp_init         # Initialize MCP context
@@ -64,7 +65,7 @@ filter_chains:
       - filter: wanaku_resource_read    # Handle resources/read
       - filter: wanaku_prompt_list      # Handle prompts/list
       - filter: wanaku_prompt_get       # Handle prompts/get
-      - filter: static_response         # Catch-all (404)
+      - filter: static_response         # Catch-all: HTTP 200 with JSON-RPC error -32601
 ```
 
 ### Filter Execution Model
@@ -183,8 +184,11 @@ The registry is the source of truth for tools, resources, prompts, namespaces, a
 
 **Data structures:**
 
+This listing shows the main maps. Refer to `infra/src/registry.rs` for the complete struct.
+
 ```rust
 pub struct InMemoryRegistry {
+    agents: Arc<DashMap<String, RegisteredAgent>>,
     tools: Arc<DashMap<String, ToolEntry>>,
     resources: Arc<DashMap<String, ResourceEntry>>,
     prompts: Arc<DashMap<String, PromptEntry>>,
@@ -218,7 +222,7 @@ export WANAKU_PERSIST_BACKEND=file
 export WANAKU_PERSIST_PATH=/data/registry
 ```
 
-On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. On an orderly shutdown, it writes the current registry. Set `WANAKU_PERSIST_BACKEND=none` to disable persistence. File persistence supports one writer; it is not a shared production database.
+On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. After each registry change, the server queues a snapshot and writes it in the background. On an orderly shutdown, it waits up to 10 seconds for the last write. Set `WANAKU_PERSIST_BACKEND=none` to disable persistence. File persistence supports one writer; it is not a shared production database.
 
 ## The Audit Store
 
@@ -284,9 +288,9 @@ The management API:
 
 1. Registers the forward
 2. Calls `mcp_client::list_tools(address)` to discover tools
-3. Auto-registers each tool with `type: "mcp-forward"` and `uri: <forward.address>`
+3. Auto-registers each tool with `type: "mcp-forward"` and a `forwardId` that identifies the forward
 
-Now when an LLM calls one of those tools, Wanaku forwards the request to the upstream server transparently.
+Now when an LLM calls one of those tools, Wanaku resolves the owning forward from `forwardId` and forwards the request to its address.
 
 **Refreshing:**
 
@@ -324,12 +328,14 @@ pub trait Feature: Send + Sync {
 
 **Registered features** (in `server/src/app.rs`):
 
-1. **Metrics** (`features/metrics/`) — exposes an in-memory metrics snapshot
-2. **Intercept** (`features/intercept/`) — records request/response interactions for conversation history
-3. **MCP Metadata** (`features/mcp-metadata/`) — RFC 9728 OAuth Protected Resource Metadata and well-known endpoints
-4. **Action policy** (`features/action-policy/`) — deterministic allow and deny rules for MCP actions
-5. **Evaluator** (`features/evaluator/`) — WASM-based LLM evaluation engine for trigger→evaluate→act pipelines
-6. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
+1. **Audit** (`features/audit/`) — governance audit store, audit routes, and semantic audit ingestion
+2. **Metrics** (`features/metrics/`) — exposes an in-memory metrics snapshot
+3. **Intercept** (`features/intercept/`) — records LLM request/response interactions on the inference proxy (port 8083) for conversation history
+4. **MCP Metadata** (`features/mcp-metadata/`) — RFC 9728 OAuth Protected Resource Metadata and well-known endpoints
+5. **Action policy** (`features/action-policy/`) — deterministic allow and deny rules for MCP actions
+6. **Evaluator** (`features/evaluator/`) — WASM-based LLM evaluation engine for trigger→evaluate→act pipelines
+7. **Policy simulation** (`features/simulation/`) — validates candidates and compares decisions without activation
+8. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
 
 See [Features](./features.md) for how to create your own.
 
@@ -388,8 +394,8 @@ Core routes use a guard pattern defined in `routes.rs`:
 pub(super) enum ToolRoute {
     List,
     GetByName(String),
-    Create,
     Delete(String),
+    SetEnabled(String, bool),
     NotFound,
 }
 
@@ -400,8 +406,11 @@ pub(super) fn resolve_tool_route(method: &str, path: &str) -> ToolRoute {
     match (method, name) {
         ("GET", None) => ToolRoute::List,
         ("GET", Some(n)) => ToolRoute::GetByName(n.to_owned()),
-        ("POST", None | Some("payloads")) => ToolRoute::Create,
         ("DELETE", Some(n)) => ToolRoute::Delete(n.to_owned()),
+        ("PUT", Some(n)) => match resolve_set_enabled(n) {
+            Some((name, enabled)) => ToolRoute::SetEnabled(name, enabled),
+            None => ToolRoute::NotFound,
+        },
         _ => ToolRoute::NotFound,
     }
 }
@@ -413,17 +422,17 @@ Feature routes follow the same pattern but live entirely inside the feature crat
 
 ## Admin UI
 
-The admin UI is a React 19 + TypeScript app built with Vite and embedded into the server binary via `rust_embed`. When you visit `http://localhost:8080`, the server serves static files from the embedded `ui/admin/dist` directory.
+The admin UI is a React 19 + TypeScript app built with Vite and embedded into the server binary via `rust_embed`. The server serves the UI under `/admin/` and redirects `/` to `/admin/`. When you visit `http://localhost:8080/admin/`, the server serves static files from the embedded `ui/admin/dist` directory. A headless build (`--no-default-features`) has no admin UI.
 
 **API integration:**
 
-The UI uses Orval to generate a TypeScript client from the OpenAPI spec (not yet implemented, currently hand-coded). All API calls go through `src/api/wanaku-router-api.ts` and use the `customFetch` wrapper for error handling.
+The UI uses Orval to generate a TypeScript client from the committed OpenAPI spec (`yarn run generate-api`). All API calls go through `src/api/wanaku-router-api.ts` and use the `customFetch` wrapper for error handling. `customFetch` removes the server `{"data": ..., "error": ...}` envelope.
 
 **Data access pattern:**
 
 ```typescript
-const result = await getTools();  // Orval-generated function
-const tools = result.data.data;   // Unwrap: result.data (fetch wrapper) -> .data (server wrapper)
+const result = await listTools();  // Orval-generated function
+const tools = result.data;         // customFetch already removed the server envelope
 ```
 
 See [Contributing: Admin UI](./contributing-admin-ui.md) for development details.
@@ -441,12 +450,14 @@ Run Wanaku as a standalone proxy. Tools are registered via the management API or
 
 Deploy Wanaku as a `Deployment` with:
 
-- **Service:** ClusterIP for MCP endpoint (port 8081)
-- **Service:** LoadBalancer for management API (port 8080)
+- **Service:** ClusterIP for the MCP endpoint (port 8081). Expose it outside the cluster only through an authenticating proxy, such as oauth2-proxy.
+- **Service:** ClusterIP for the management API (port 8080). The management API has no built-in authentication. Do not expose it with a LoadBalancer Service.
 - **ConfigMap:** `wanaku.yaml` bootstrap config
 - **Secret:** credential values, passed to the container as environment variables. `wanaku.yaml` refers to them with `env:VARIABLE_NAME` (in `llm_connections[].api_key`, `typesafe_system_one_connections[].api_key`, and `bindings[].secretRefs`). Do not put secret values in `wanaku.yaml`. See [Configuration](./configuration.md#kubernetes)
 
-Mount a `PersistentVolume` on `WANAKU_PERSIST_PATH` (`/data/registry` in the image) for registry persistence across restarts.
+Mount a `PersistentVolume` on `WANAKU_PERSIST_PATH` (`/data/registry` in the image) for registry persistence across restarts. Refer to [Configuration](./configuration.md#kubernetes) for the complete manifests.
+
+All listeners bind to all interfaces by default: the management API (8080), MCP (8081), the inference proxy (8083), and A2A (8084).
 
 ## Performance Characteristics
 
@@ -475,8 +486,10 @@ Wanaku delegates authentication to [oauth2-proxy](https://github.com/oauth2-prox
 
 Two oauth2-proxy instances with a shared cookie provide SSO across both endpoints:
 
-- **oauth2-proxy-mgmt** (port 4180 → 8080) — protects admin UI and REST API, requires `admin` role
-- **oauth2-proxy-mcp** (port 4181 → 8081) — protects MCP endpoints, requires `mcp-user` role
+- **oauth2-proxy-mgmt** (port 4180 → 8080) — protects admin UI and REST API
+- **oauth2-proxy-mcp** (port 4181 → 8081) — protects MCP endpoints
+
+The shipped configuration accepts each authenticated user of the realm. It does not require a role. To restrict the management proxy to a role, set `OAUTH2_PROXY_ALLOWED_ROLES` (commented out in `deploy/auth/oauth2-proxy-mgmt.env`). See [Authentication](./auth.md).
 
 Users authenticate via oauth2-proxy's browser-based login flow (PKCE). CLI clients obtain tokens from Keycloak and pass them as `Authorization: Bearer <token>` headers — oauth2-proxy validates them before proxying to Wanaku.
 

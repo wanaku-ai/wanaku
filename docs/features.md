@@ -6,7 +6,25 @@ Think of features as plugins. The core server provides the infrastructure (filte
 
 ## Built-in Features
 
-Wanaku includes these built-in features:
+Wanaku includes these built-in features. `build_features` in `server/src/app.rs` registers eight features: audit, metrics, intercept, MCP metadata, action policy, evaluator, policy simulation, and plugins.
+
+### Audit Feature (`features/audit/`)
+
+Creates the governance audit store. The action-policy, evaluator, simulation, and credential brokerage components write their decisions to this store.
+
+**Management API routes:** `GET /api/v1/audit/events`, `GET /api/v1/audit/events/{id}`, `GET /api/v1/audit/schema`, `GET /api/v1/audit/health`, and `POST /api/v1/audit/semantic` (only when `WANAKU_AUDIT_INGESTION_ENABLED=true`).
+
+**Configuration:** the top-level `audit` section in `wanaku.yaml`. See [Governance Audit Trail](./audit-trail.md).
+
+### Action Policy Feature (`features/action-policy/`)
+
+Applies deterministic allow and deny rules to MCP and A2A actions before the evaluator runs.
+
+**Filters:** `wanaku_action_policy` and `wanaku_a2a`
+
+**Management API prefix:** `/api/v1/action-policies`
+
+**Configuration:** the top-level `action_policy` section in `wanaku.yaml`. See [Action Policies](./action-policies.md).
 
 ### Metrics Feature (`features/metrics/`)
 
@@ -16,9 +34,9 @@ Collects in-memory filter, evaluator, LLM, and WASM metrics.
 
 ### Intercept Feature (`features/intercept/`)
 
-Records MCP request/response interactions in an in-memory store. Other features — especially the evaluator engine — use this history to provide conversation context to LLM operations.
+Records LLM request/response interactions in an in-memory store. Other features — especially the evaluator engine — use this history to provide conversation context to LLM operations.
 
-**Filter:** `wanaku_intercept` (runs in the inference proxy pipeline)
+**Filter:** `wanaku_intercept`. The filter runs only in the inference proxy pipeline (port 8083). It does not record MCP traffic on port 8081. It reads OpenAI-style chat requests with a `messages` array. It can insert a system message into the request before Wanaku forwards it.
 
 **Configuration:**
 
@@ -32,9 +50,10 @@ Exposes RFC 9728 OAuth Protected Resource Metadata to advertise authentication r
 
 **How it works:**
 
-1. MCP client queries `GET /.well-known/oauth-protected-resource/{namespace}/mcp`
-2. Wanaku returns JSON metadata with the OIDC issuer URL configured via `WANAKU_AUTH_ISSUER`
-3. MCP client uses the issuer URL to discover the authorization server and token endpoints
+1. An MCP client queries `GET /.well-known/oauth-protected-resource/{namespace}/mcp` on the MCP listener (port 8081).
+2. Wanaku returns the protected resource metadata. When `WANAKU_AUTH_ISSUER` is set, `authorization_servers` contains the Wanaku host itself.
+3. The MCP client reads `/.well-known/openid-configuration` or `/.well-known/oauth-authorization-server` from the Wanaku host. Wanaku serves this discovery document. Its endpoints point to Wanaku.
+4. Wanaku redirects `/authorize` and `/register` to the issuer, and proxies `/token` to the issuer.
 
 **Configuration:**
 
@@ -44,15 +63,15 @@ Set the OIDC issuer URL:
 export WANAKU_AUTH_ISSUER=http://localhost:8543/realms/wanaku
 ```
 
-If `WANAKU_AUTH_ISSUER` is unset, the metadata endpoint returns a 404 (feature disabled).
+If `WANAKU_AUTH_ISSUER` is unset, the metadata route still returns 200, with an empty `authorization_servers` list. The discovery documents, `/authorize`, `/token`, and `/register` are not served.
 
-**Example response:**
+**Example response** (issuer set):
 
 ```json
 {
-  "issuer": "http://localhost:8543/realms/wanaku",
-  "authorization_endpoint": "http://localhost:8543/realms/wanaku/protocol/openid-connect/auth",
-  "token_endpoint": "http://localhost:8543/realms/wanaku/protocol/openid-connect/token"
+  "resource": "http://localhost:8081/mcp",
+  "authorization_servers": ["http://localhost:8081"],
+  "bearer_methods_supported": ["header"]
 }
 ```
 
@@ -72,6 +91,9 @@ A WASM-based evaluation engine that lets you build trigger→evaluate→act pipe
 
 - `GET /api/v1/evaluators` — list configured evaluators
 - `PUT /api/v1/evaluators` — hot-reload evaluator configuration
+- `GET /api/v1/evaluators/status` — runtime readiness, revision, and effective posture
+- `GET /api/v1/evaluators/llm-connections` — configured LLM connection names
+- `GET /api/v1/evaluators/revisions` and related routes — revision history and rollback (see [Management API](./management-api.md#evaluators))
 - `GET /api/v1/evaluators/namespaces` — list namespace-to-conversation bindings
 - `PUT /api/v1/evaluators/namespaces/{namespace}` — bind a namespace to a conversation ID
 - `DELETE /api/v1/evaluators/namespaces/{namespace}` — unbind
@@ -272,6 +294,16 @@ Add to `server/Cargo.toml`:
 wanaku-feature-tool-stats = { workspace = true }
 ```
 
+Add the crate to the cache-build stage of `Containerfile`. Otherwise, `cargo build-image` fails. The stage has three lists. Add one entry to each list:
+
+```dockerfile
+COPY features/tool-stats/Cargo.toml features/tool-stats/Cargo.toml
+# In the RUN mkdir -p list:
+    features/tool-stats/src
+# In the stub list:
+    && echo '//! stub' > features/tool-stats/src/lib.rs \
+```
+
 Add the feature to the vector returned by `build_features` in `server/src/app.rs`:
 
 ```rust
@@ -281,11 +313,17 @@ let features: Vec<Box<dyn Feature>> = vec![
 ];
 ```
 
-Add filter to `server/src/default.yaml` (after `wanaku_evaluator`, before `wanaku_tool_list`):
+Add the filter to the `mcp_router` chain in `server/src/default.yaml`, after `wanaku_namespace` and before `wanaku_well_known`:
 
 ```yaml
+      - filter: wanaku_namespace
       - filter: wanaku_tool_stats
+      - filter: wanaku_well_known
 ```
+
+The filter must run before `wanaku_action_policy` and `wanaku_evaluator`. A rejection in those filters skips all filters after them. With the default governance posture (`no_match: deny`), the action policy rejects a call that no rule allows. A filter after it does not see that call.
+
+`default.yaml` is embedded with `include_str!`. Touch `server/src/lib.rs` after you edit it, so that `cargo build` picks up the change.
 
 ### 5. Test It
 
@@ -294,7 +332,7 @@ cargo build
 cargo run
 ```
 
-Call a tool:
+Call a tool. The tool does not need to exist. The filter counts each `tools/call` request:
 
 ```bash
 curl -X POST http://localhost:8081/default/mcp \
@@ -313,6 +351,8 @@ Expected response:
 ```json
 {"data": {"tool_calls": 1}, "error": null}
 ```
+
+The tool call itself returns a JSON-RPC error. On a server without forwards and with the default posture, the action policy denies it with `-32003`. The count still increases, because the new filter runs first.
 
 ## Feature Patterns
 
@@ -374,11 +414,15 @@ Use `LlmClient` from `wanaku_infra::llm` for OpenAI-compatible LLM calls:
 ```rust
 use wanaku_infra::llm::LlmClient;
 
-let client = LlmClient::new("http://localhost:11434/v1", "llama3.1:8b", "")?;
+// `new` returns `None` when the HTTP client cannot be built.
+let Some(client) = LlmClient::new("http://localhost:11434/v1", "llama3.1:8b", "") else {
+    return Err(MyError::LlmClient);
+};
+// `chat` returns `Result<String, LlmError>`.
 let response = client.chat("You are a concise assistant.", user_prompt).await?;
 ```
 
-See `features/evaluator/src/llm_op.rs` for a full example.
+`LlmClient` appends `/chat/completions` to the base URL. See `features/evaluator/src/engines/llm.rs` for a full example.
 
 ### Management API Response Helpers
 
