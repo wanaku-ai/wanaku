@@ -26,7 +26,7 @@ These control core server behavior:
 | `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Upstream for the inference-proxy pipeline (port 8083), an OpenAI-compatible passthrough. Clients call this port directly and supply their own bearer token. |
 | `WANAKU_PERSIST_BACKEND` | `file` | File-based registry persistence. Only the exact value `none` disables persistence. Any other value uses file persistence. |
 | `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | Directory where Wanaku reads and writes `registry.json`. The default plugins path is `<WANAKU_PERSIST_PATH>/plugins`. |
-| `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override (use for local dev) |
+| `WANAKU_UI_PATH` | _(unset = embedded)_ | Filesystem path to admin UI override (use for local dev). No effect in the headless build. |
 | `WANAKU_CORS_ORIGIN` | `*` | Value for `Access-Control-Allow-Origin` on all HTTP responses (management API, MCP endpoint, inference proxy, and CORS preflight) |
 | `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | OIDC issuer URL for RFC 9728 metadata endpoint |
 | `WANAKU_AUTH_UPSTREAM_ISSUER` | `WANAKU_AUTH_ISSUER` | Internal OIDC issuer URL for token requests |
@@ -147,7 +147,9 @@ Wanaku writes the file after each revision change. Wanaku validates and installs
 
 ### Admin UI Override
 
-The admin UI is embedded in the binary. To serve UI files from a directory on disk instead of the embedded bundle:
+The admin UI is embedded in the binary. Wanaku serves it at `http://localhost:8080/admin/`, and `/` redirects to `/admin/`. The headless build (`--no-default-features`) does not include the UI, and it ignores `WANAKU_UI_PATH`.
+
+To serve UI files from a directory on disk instead of the embedded bundle:
 
 ```bash
 export WANAKU_UI_PATH=/absolute/path/to/ui/dist
@@ -156,7 +158,7 @@ wanaku-server
 
 The server serves files from the specified directory instead of the embedded bundle.
 
-**Warning:** Relative paths do not work. Use an absolute path.
+A relative path resolves against the working directory of the server process. For example, `./ui/admin/dist` works when you start the server from the repository root. In the container image, the working directory is `/etc/wanaku`. Use an absolute path in a deployment.
 
 ### Header Forwarding
 
@@ -642,16 +644,16 @@ spec:
       labels:
         app: wanaku-server
     spec:
+      securityContext:
+        fsGroup: 0  # Plain Kubernetes only. Remove on OpenShift, which assigns its own fsGroup.
       containers:
       - name: wanaku
         image: quay.io/wanaku/wanaku-server:early-access
-        env:
-        - name: WANAKU_MGMT_LISTEN
-          value: "0.0.0.0:8080"
-        - name: WANAKU_PERSIST_BACKEND
-          value: "file"
-        - name: WANAKU_PERSIST_PATH
-          value: "/data/registry"
+        ports:
+        - name: management
+          containerPort: 8080
+        - name: mcp
+          containerPort: 8081
         envFrom:
         - secretRef:
             name: wanaku-secrets
@@ -667,6 +669,35 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: wanaku-registry
+```
+
+The image sets `WANAKU_PERSIST_PATH=/data/registry`, and file persistence is on by default. The Deployment does not set these values again.
+
+The image runs as user `1001` in group `0`. A new PersistentVolume on plain Kubernetes is often owned by `root` and is not writable by group `0`. The `fsGroup: 0` setting makes Kubernetes give group `0` write access to the volume. Without it, the first registry write can fail with a permission error.
+
+**Service:**
+
+The Service below makes the MCP listener available inside the cluster. It does not expose the management API, because the management API has no authentication. To expose Wanaku outside the cluster, put an authenticating proxy in front of it. See [Authentication with oauth2-proxy](#authentication-with-oauth2-proxy).
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: wanaku-server
+spec:
+  type: ClusterIP
+  selector:
+    app: wanaku-server
+  ports:
+  - name: mcp
+    port: 8081
+    targetPort: mcp
+```
+
+MCP clients in the cluster use `http://wanaku-server:8081/<namespace>/mcp`. To use the management API or the admin UI from your workstation, forward the port:
+
+```bash
+kubectl port-forward deployment/wanaku-server 8080:8080
 ```
 
 To use a custom pipeline, add a `pipeline.yaml` key to the ConfigMap and pass it to the server. The server does not read a pipeline file without this argument:

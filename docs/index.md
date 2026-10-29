@@ -1,6 +1,6 @@
 # Wanaku Documentation
 
-Wanaku is a governed action proxy for AI agents. It sits between agents and the systems they act on, intercepting tool calls, agent-to-agent messages, and inference traffic. Integration developers build Apache Camel routes and publish them as tools; agents call those tools with parameters, but Wanaku runs the actual work — the agent never touches backend systems directly. Policy, identity, data controls, and audit happen in the proxy, not in the agent.
+Wanaku is a governed action proxy for AI agents. It sits between agents and the systems they act on, intercepting tool calls, agent-to-agent messages, and inference traffic. Wanaku forwards tool calls to upstream MCP servers, for example a Camel-based server that publishes Apache Camel routes as tools. The agent never touches backend systems directly. Policy, data controls, and audit happen in the proxy, not in the agent. An authenticating proxy such as oauth2-proxy handles identity in front of Wanaku.
 
 ## Why Rust?
 
@@ -12,16 +12,16 @@ Wanaku shares the same MCP protocol and management API as classic Wanaku.
 
 - **Agent isolation** — agents call tools through the proxy; they never reach backend systems directly
 - **Policy enforcement** — LLM-powered evaluators + WASM action scripts classify, filter, and block tool calls
-- **Identity & auth** — oauth2-proxy + Keycloak, enforced before actions reach backends
+- **Identity & auth** — oauth2-proxy + Keycloak in front of Wanaku, enforced before actions reach backends
 - **MCP endpoint** (port 8081) — JSON-RPC over HTTP, compatible with any MCP client
 - **Management API** (port 8080) — REST API for tools, resources, prompts, namespaces
 - **Admin UI** — React-based web interface embedded in the binary
 - **Namespace isolation** — different tools visible to different namespaces per team, tenant, or environment
-- **Tool discovery** — auto-discover tools from upstream MCP servers; integration developers publish Camel routes as tools
+- **Tool discovery** — auto-discover tools from upstream MCP servers, for example a Camel-based MCP server that publishes Camel routes as tools
 - **Feature system** — pluggable filters for evaluation, interaction tracking
 - **File persistence** — registry snapshots enabled by default to preserve data across restarts
 
-All in a single binary with no runtime dependencies (except libc).
+All in a single binary that needs only libc.
 
 ## Quick Links
 
@@ -37,6 +37,10 @@ All in a single binary with no runtime dependencies (except libc).
 - **[Semantic Routing](./semantic-routing.md)** — Barn authoring, WSR deployment, and governed MCP acceptance checks
 - **[Policy Simulation](./policy-simulation.md)** — validate candidates and compare action decisions before activation
 - **[Redaction Boundary](./redaction.md)** — where Wanaku removes credentials and PII before logs, errors, and stored data
+- **[Evaluator Engine](./evaluator-engine.md)** — LLM classification and WASM action scripts for policy enforcement
+- **[Governance Audit Trail](./audit-trail.md)** — audit events, redaction rules, and retention
+- **[A2A](./a2a.md)** — governed agent-to-agent traffic
+- **[Container Build](./container-build.md)** — build the container images locally
 - **[FAQ](./faq.md)** — common issues and troubleshooting
 
 ### Understanding the System
@@ -47,7 +51,11 @@ All in a single binary with no runtime dependencies (except libc).
 
 ### Contributing
 
+- **[Contributing](./contributing.md)** — development workflow, checks, and pull requests
 - **[Admin UI Development](./contributing-admin-ui.md)** — React + Carbon Design System frontend development
+- **[Plugin Development](./plugin-development-guide.md)** — write and package admin UI plugins
+- **[Plugin Catalog](./plugin-catalog.md)** — publish and install available UI plugins
+- **[Web UI Plugin Guidelines](./extensible-web-ui-plugin-guidelines.md)** — design rules for admin UI plugins
 
 ## Who This Is For
 
@@ -73,8 +81,8 @@ These are solvable, but they're not in scope for the initial release.
                ▼
 ┌────────────────────────────────────────────┐
 │     Wanaku — Governed Action Proxy          │
-│  Identity → Policy → Namespace →            │
-│  Evaluator → Tool/Resource/Prompt          │
+│  Namespace → Policy → Evaluator →           │
+│  Tool/Resource/Prompt                      │
 └──────────────┬─────────────────────────────┘
                │
           Action forwarding
@@ -86,7 +94,7 @@ These are solvable, but they're not in scope for the initial release.
         └──────────┘
 ```
 
-Agents send tool calls through Wanaku. The proxy intercepts every action, enforces identity and policy, resolves the target namespace, and forwards the action to the appropriate backend system. The agent never reaches backends directly — governance is enforced in the proxy layer.
+Agents send tool calls through Wanaku. The proxy intercepts every action, resolves the target namespace, enforces policy, and forwards the action to the appropriate upstream MCP server. Authentication happens before Wanaku, in an authenticating proxy such as oauth2-proxy. The agent never reaches backends directly — governance is enforced in the proxy layer.
 
 See [Architecture](./architecture.md) for the full story.
 
@@ -108,7 +116,7 @@ Filters are middleware that processes requests. Each filter hooks into the Praxi
 
 The registry is the source of truth for tools, resources, prompts, namespaces, and forwards. An in-memory `DashMap` shares this data between the filter pipeline and management API.
 
-**Persistence:** File persistence is enabled by default. Wanaku writes `registry.json` under `$HOME/.wanaku/server` on shutdown. Set `WANAKU_PERSIST_BACKEND=none` to use an in-memory registry without persistence.
+**Persistence:** File persistence is enabled by default. Wanaku writes `registry.json` under `$HOME/.wanaku/server` after each registry change. Set `WANAKU_PERSIST_BACKEND=none` to use an in-memory registry without persistence.
 
 ### Namespaces
 
@@ -116,7 +124,7 @@ Namespaces isolate tools. A tool registered with `namespace: "finance"` only app
 
 ### Tool Routing
 
-Tools execute via MCP forwarding. When an LLM calls a tool, Wanaku forwards the request to the upstream MCP server specified in the tool's `uri` field. The upstream server handles actual execution and returns the result, which Wanaku wraps in a JSON-RPC response.
+Tools execute via MCP forwarding. When an LLM calls a tool, Wanaku forwards the request to the address of the forward that owns the tool (`forwardId`). The upstream server handles actual execution and returns the result, which Wanaku wraps in a JSON-RPC response.
 
 ### Features
 
@@ -137,10 +145,12 @@ Download `wanaku-server` from the [early access release page](https://github.com
 wanaku-server
 ```
 
-Server starts on:
+Connect clients to these URLs:
 
-- MCP: `http://127.0.0.1:8081/default/mcp`
-- Management API: `http://0.0.0.0:8080/api/v1`
+- MCP: `http://localhost:8081/default/mcp`
+- Management API: `http://localhost:8080/api/v1`
+
+The server listens on all network interfaces. It also opens port 8083 (inference proxy) and port 8084 (A2A). None of these ports require authentication by default. Do not expose them on an untrusted network without an authenticating proxy.
 
 ### Register a Forward
 
@@ -152,43 +162,11 @@ Using the [Wanaku CLI](https://github.com/wanaku-ai/wanaku-barn/releases/tag/ear
 wanaku forwards add --service="http://echo-mcp:8080/mcp" --name echo-server --namespace default --no-auth
 ```
 
-This automatically discovers and registers all tools exposed by the upstream MCP server.
+This automatically discovers and registers all tools exposed by the upstream MCP server. The host in this example is a placeholder. For a procedure that you can run end to end, see [Try a Forward](./migration-from-classic.md#try-a-forward).
 
 ### Deploy to Kubernetes
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: wanaku-server
-spec:
-  replicas: 1  # File snapshots support one writer. Do not share this volume across replicas.
-  selector:
-    matchLabels:
-      app: wanaku-server
-  template:
-    metadata:
-      labels:
-        app: wanaku-server
-    spec:
-      containers:
-      - name: wanaku
-        image: wanaku-server:latest
-        env:
-        - name: WANAKU_PERSIST_BACKEND
-          value: "file"
-        - name: WANAKU_PERSIST_PATH
-          value: "/data/registry"
-        volumeMounts:
-        - name: data
-          mountPath: /data
-      volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: wanaku-registry
-```
-
-See [Configuration](./configuration.md) for details.
+For production installs, use the Wanaku Operator. See [Production Deployment on Kubernetes or OpenShift](./getting-started.md#production-deployment-on-kubernetes-or-openshift). For plain manifests (ConfigMap, Secret, Deployment, and Service), see [Configuration: Kubernetes](./configuration.md#kubernetes).
 
 ## Deployment Patterns
 
@@ -216,7 +194,7 @@ Deploy Wanaku as a `Deployment` with a `PersistentVolume` for the registry. Use 
 | **Governance pipeline** | — | ✅ Composable filter chain with policy enforcement |
 | **WASM evaluators** | — | ✅ LLM + WASM action scripts for policy gates |
 | **Feature crates** | — | ✅ Pluggable Rust crates |
-| **Service catalogs** | ✅ Yes | ❌ Not yet |
+| **Service catalogs** | ✅ Yes | ⚠️ Served by Wanaku Barn, which runs next to Wanaku |
 | **Camel routes as tools** | ✅ Direct | ⚠️ Via MCP forward to Camel-based upstream |
 | **OIDC/OAuth** | ✅ Keycloak | ✅ oauth2-proxy + Keycloak |
 | **Persistence** | ✅ Infinispan | ⚠️ File snapshots only |
@@ -226,7 +204,7 @@ Deploy Wanaku as a `Deployment` with a `PersistentVolume` for the registry. Use 
 
 Wanaku is built on Pingora (Cloudflare's proxy framework) and uses async I/O throughout. The filter pipeline adds minimal overhead to each request. Actual throughput and latency depend on your downstream services (upstream MCP servers, LLM endpoints).
 
-The binary is a single statically-linked executable with low memory footprint.
+The binary is a single executable that needs only libc, with a low memory footprint.
 
 ## Debugging
 
@@ -258,9 +236,12 @@ Wanaku is open source (Apache 2.0). Contributions welcome.
 1. Create a new crate under `features/<name>/`
 2. Implement the `Feature` trait
 3. Wire it into `build_features` in `server/src/app.rs`
-4. Add filter to `server/src/default.yaml` if needed
-5. Write tests
-6. Update docs
+4. Add the crate to the cache-build stage of `Containerfile`
+5. Add filter to `server/src/default.yaml` if needed
+6. Write tests
+7. Update docs
+
+See [Features](./features.md) for the full tutorial.
 
 ## Support and Community
 

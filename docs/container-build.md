@@ -29,6 +29,13 @@ The tag is always suffixed with the host architecture, for example:
 
 - `quay.io/wanaku/wanaku-server:latest-x86_64` on an x86_64 machine
 - `quay.io/wanaku/wanaku-server:latest-aarch64` on a Linux ARM64 machine
+- `quay.io/wanaku/wanaku-server:latest-arm64` on a macOS ARM64 machine (`uname -m` returns `arm64`)
+
+Run the locally built image with its suffixed tag:
+
+```bash
+docker run --rm -p 8080:8080 -p 8081:8081 quay.io/wanaku/wanaku-server:latest-x86_64
+```
 
 Pass `--push` to push the image to the registry after the build. Without `--push`,
 the image is built locally and the command exits. Exception: the `minikube` target
@@ -47,6 +54,15 @@ cargo build-image-headless --push   # build and push to the registry
 This is a shorthand for `cargo build-image --variant headless`. The same arch-suffix
 and `--push` behaviour applies.
 
+The headless variant uses the same default tag as the full image,
+`quay.io/wanaku/wanaku-server:latest`. With `--push` and no `--tag`, the headless image
+overwrites the full image tag in the registry. Always set a separate tag for the headless
+variant:
+
+```bash
+cargo build-image-headless --push --tag quay.io/wanaku/wanaku-server-headless:latest
+```
+
 ### `cargo build-image-manifest`
 
 Assemble a multi-arch manifest list from existing arch-specific images.
@@ -56,7 +72,9 @@ cargo build-image-manifest --tag quay.io/wanaku/wanaku-server:myrelease
 ```
 
 This command requires that both `<tag>-aarch64` and `<tag>-x86_64` are already
-in the registry. It assembles them into a manifest list at `<tag>` using
+in the registry. An image built on macOS ARM64 has the `-arm64` suffix, so the command
+does not find it. Build the ARM64 image on Linux, or retag it to `<tag>-aarch64` before
+you push it. It assembles them into a manifest list at `<tag>` using
 `podman manifest create` + `podman manifest push --all`.
 
 `podman` must be on `PATH`. The `minikube` target is not supported for manifest assembly.
