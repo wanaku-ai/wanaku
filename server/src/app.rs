@@ -95,10 +95,14 @@ impl App {
     ///
     /// # Errors
     ///
-    /// Returns an error when a feature rejects the startup configuration or
-    /// when pipeline construction fails.
+    /// Returns an error when the bootstrap configuration has an unknown key,
+    /// when a feature rejects the startup configuration, or when pipeline
+    /// construction fails.
     #[expect(clippy::too_many_lines, reason = "runtime assembly is sequential")]
     pub fn build(settings: &AppSettings<'_>, resources: AppResources) -> Result<Self, String> {
+        if let Some(config) = settings.wanaku_config {
+            crate::config_keys::reject_unknown_keys(config)?;
+        }
         let AppResources {
             persistence,
             broker,
@@ -317,7 +321,7 @@ fn load_core_config(
     let mut forwards = Vec::new();
     if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
         for fwd_value in fwd_list {
-            match from_config_entry::<ForwardEntry>(fwd_value, "forward") {
+            match serde_yaml::from_value::<ForwardEntry>(fwd_value.clone()) {
                 Ok(mut fwd) => {
                     fwd.available = false;
                     info!(forward = %fwd.name, address = %fwd.address, "registered forward from config");
@@ -359,39 +363,6 @@ fn load_core_config(
     }
 }
 
-/// Deserialize one `forwards` or `bindings` entry of the wanaku configuration.
-///
-/// Serde ignores unknown keys, so a misspelled key (for example
-/// `credentialsBindings`) would silently drop configuration. Log a warning for
-/// each unknown key so the operator can see the typo.
-fn from_config_entry<T: serde::de::DeserializeOwned>(
-    value: &serde_yaml::Value,
-    kind: &str,
-) -> Result<T, serde_yaml::Error> {
-    let name = value
-        .get("name")
-        .or_else(|| value.get("id"))
-        .and_then(serde_yaml::Value::as_str)
-        .unwrap_or("<unnamed>");
-    let (entry, unknown_keys) = deserialize_with_unknown_keys(value)?;
-    for key in unknown_keys {
-        tracing::warn!(kind, name, key, "ignoring unknown key in wanaku.yaml entry");
-    }
-    Ok(entry)
-}
-
-/// Deserialize a configuration entry and return the paths of the keys that
-/// serde ignored.
-fn deserialize_with_unknown_keys<T: serde::de::DeserializeOwned>(
-    value: &serde_yaml::Value,
-) -> Result<(T, Vec<String>), serde_yaml::Error> {
-    let mut unknown_keys = Vec::new();
-    let entry = serde_ignored::deserialize(value.clone(), |path| {
-        unknown_keys.push(path.to_string());
-    })?;
-    Ok((entry, unknown_keys))
-}
-
 /// Register the credential bindings declared under the top-level `bindings`
 /// key of the wanaku configuration.
 ///
@@ -404,7 +375,7 @@ fn load_bindings(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
         return;
     };
     for binding_value in binding_list {
-        match from_config_entry::<CredentialBinding>(binding_value, "binding") {
+        match serde_yaml::from_value::<CredentialBinding>(binding_value.clone()) {
             Ok(mut binding) => {
                 // The configured origin must be the exact normalized origin the
                 // broker compares against. Normalize it here so an operator who
@@ -446,9 +417,8 @@ fn load_bindings(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
 
 #[cfg(test)]
 mod tests {
-    use super::{CredentialBinding, ForwardEntry, deserialize_with_unknown_keys, load_bindings};
+    use super::load_bindings;
     use wanaku_infra::registry::InMemoryRegistry;
-    use wanaku_types::credentials::CredentialPurpose;
     use wanaku_types::registry::BindingRegistry;
 
     #[test]
@@ -529,104 +499,6 @@ bindings:
 
         assert!(registry.get_binding("bad-binding").is_none());
         assert_eq!(registry.binding_count(), 0);
-    }
-
-    #[test]
-    fn misspelled_forward_key_is_reported_as_unknown() {
-        let value: serde_yaml::Value = serde_yaml::from_str(
-            r#"
-name: my-forward
-address: "http://127.0.0.1:3000/mcp"
-credentialsBindings:
-  discovery: my-binding
-"#,
-        )
-        .unwrap();
-
-        let (forward, unknown_keys): (ForwardEntry, _) =
-            deserialize_with_unknown_keys(&value).unwrap();
-
-        assert!(forward.credential_bindings.is_empty());
-        assert_eq!(unknown_keys, vec!["credentialsBindings".to_owned()]);
-    }
-
-    #[test]
-    fn known_binding_keys_are_not_reported() {
-        let value: serde_yaml::Value = serde_yaml::from_str(
-            r#"
-id: my-binding
-forwardId: my-forward
-origin: "http://127.0.0.1:3000"
-mechanism:
-  type: bearer
-secretRefs:
-  - "env:API_TOKEN"
-allowedPurposes:
-  - discovery
-restrictions:
-  namespaces:
-    - my-ns
-cache:
-  maxTtlSeconds: 60
-"#,
-        )
-        .unwrap();
-
-        let (_, unknown_keys): (CredentialBinding, _) =
-            deserialize_with_unknown_keys(&value).unwrap();
-
-        assert!(unknown_keys.is_empty());
-    }
-
-    #[test]
-    fn snake_case_forward_keys_are_not_reported() {
-        let value: serde_yaml::Value = serde_yaml::from_str(
-            r#"
-name: my-forward
-address: "http://127.0.0.1:3000/mcp"
-credential_bindings:
-  discovery: my-binding
-"#,
-        )
-        .unwrap();
-
-        let (forward, unknown_keys): (ForwardEntry, _) =
-            deserialize_with_unknown_keys(&value).unwrap();
-
-        assert!(unknown_keys.is_empty());
-        assert_eq!(
-            forward.binding_for(CredentialPurpose::Discovery),
-            Some("my-binding")
-        );
-    }
-
-    #[test]
-    fn snake_case_binding_keys_are_not_reported() {
-        let value: serde_yaml::Value = serde_yaml::from_str(
-            r#"
-id: my-binding
-forward_id: my-forward
-origin: "http://127.0.0.1:3000"
-mechanism:
-  type: bearer
-secret_refs:
-  - "env:API_TOKEN"
-allowed_purposes:
-  - discovery
-restrictions:
-  governed_items:
-    - search
-cache:
-  max_ttl_seconds: 60
-"#,
-        )
-        .unwrap();
-
-        let (binding, unknown_keys): (CredentialBinding, _) =
-            deserialize_with_unknown_keys(&value).unwrap();
-
-        assert!(unknown_keys.is_empty());
-        assert_eq!(binding.cache.max_ttl_seconds, Some(60));
     }
 
     #[test]

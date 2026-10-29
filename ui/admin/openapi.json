@@ -4695,7 +4695,8 @@
           "path": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "PromptArgument": {
         "type": "object",
@@ -5785,7 +5786,8 @@
               "null"
             ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "UnbindNamespaceResponse": {
         "type": "object",

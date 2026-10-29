@@ -497,7 +497,13 @@ Wanaku loads these top-level sections from `wanaku.yaml`:
 
 There is no top-level `namespaces` key. A forward sets its namespace with its own `namespace` field. Namespace governance overrides go under `governance.namespaces`.
 
-The server ignores unknown top-level keys without a warning. For example, a misspelled `evaluator:` key has no effect. The server logs a warning for an unknown key inside a `forwards` or `bindings` entry. The `governance` section, the evaluator definitions, and `opa_connections` reject unknown keys and stop startup. The entries of `llm_connections` and `typesafe_system_one_connections`, and the `trigger` and `processor` objects of an evaluator, ignore unknown keys without a warning. For example, a misspelled `trigger.namespace` key makes the evaluator match every namespace.
+The server rejects unknown keys at all levels of `wanaku.yaml`. An unknown key stops startup. This rule applies to the top-level keys and to the keys in every section. For example, a misspelled `evaluator:` top-level key or a misspelled `trigger.namepsace` key stops startup. The server prints one error that names each unknown key with its path:
+
+```text
+fatal: unknown keys in wanaku configuration: evaluator, forwards.0.credentials_bindings
+```
+
+The server checks the keys before it loads the sections. The feature that owns a section validates the values in that section.
 
 The [Governance Posture](../govern/governance-posture.md) model defines fail-safe defaults and namespace overrides. Wanaku validates the section during startup. Invalid governance configuration stops startup.
 

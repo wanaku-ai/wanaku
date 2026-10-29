@@ -6,6 +6,7 @@ mod credential_recorder;
 pub mod persistence;
 mod routes;
 
+pub use config::AuditConfig;
 pub use credential_recorder::CredentialAuditRecorder;
 
 use http::Response;

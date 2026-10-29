@@ -216,7 +216,7 @@ A missing variable has different results:
 For credential bindings, also check these items:
 
 - Each binding must have an `origin` with the scheme, host, and port of the forward address.
-- The forward field is `credential_bindings`. When the server finds an unknown key in a forward or binding entry, it logs `ignoring unknown key in wanaku.yaml entry`. Look for this message in the startup log.
+- The forward field is `credential_bindings`. An unknown key in a forward or binding entry stops startup. The error names the key, for example `forwards.0.credentials_bindings`.
 
 Read [Credential Brokerage](../govern/credential-brokerage.md) for the complete binding reference.
 
