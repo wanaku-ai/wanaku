@@ -26,4 +26,4 @@ These pages are for policy authors. They follow the path of a request through Wa
 ## Next steps
 
 - [Getting Started with Wanaku](../get-started/quickstart.md): run a server to try these rules on.
-- [Configuration](../reference/configuration.md): find where each governance setting goes in `wanaku.yaml`.
+- [Wanaku configuration file](../reference/wanaku-yaml.md): find where each governance setting goes in `wanaku.yaml`.

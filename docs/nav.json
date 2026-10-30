@@ -13,6 +13,8 @@
       "text": "Deploy and operate",
       "link": "operate/",
       "items": [
+        { "text": "Deploy on Kubernetes and OpenShift", "link": "operate/kubernetes" },
+        { "text": "Persist state", "link": "operate/persistence" },
         { "text": "Authentication", "link": "operate/authentication" },
         { "text": "Troubleshooting", "link": "operate/troubleshooting" }
       ]
@@ -22,6 +24,7 @@
       "link": "connect/",
       "items": [
         { "text": "A2A proxy", "link": "connect/a2a" },
+        { "text": "Inference proxy", "link": "connect/inference-proxy" },
         { "text": "Semantic routing", "link": "connect/semantic-routing" }
       ]
     },
@@ -53,6 +56,10 @@
       "link": "reference/",
       "items": [
         { "text": "Configuration", "link": "reference/configuration" },
+        { "text": "Environment variables", "link": "reference/environment-variables" },
+        { "text": "wanaku.yaml", "link": "reference/wanaku-yaml" },
+        { "text": "pipeline.yaml", "link": "reference/pipeline-yaml" },
+        { "text": "Ports and endpoints", "link": "reference/ports-and-endpoints" },
         { "text": "Management API", "link": "reference/management-api" }
       ]
     },

@@ -27,6 +27,13 @@ The local realm enables the password grant for `mcp-client`. Use this grant only
 
 Set `WANAKU_AUTH_ISSUER` to the issuer URL that clients can reach. Set `WANAKU_AUTH_UPSTREAM_ISSUER` when the server must use a different URL to reach Keycloak. The upstream variable defaults to `WANAKU_AUTH_ISSUER`.
 
+| Variable | Default | Purpose |
+|---|---|---|
+| `WANAKU_AUTH_ISSUER` | _(unset = disabled)_ | Public OIDC issuer URL (for example, `http://localhost:8543/realms/wanaku`) |
+| `WANAKU_AUTH_UPSTREAM_ISSUER` | `WANAKU_AUTH_ISSUER` | Internal OIDC issuer URL for token requests (for example, `http://keycloak:8080/realms/wanaku`) |
+
+The public issuer URL must be accessible to clients and browsers. Wanaku uses this URL in discovery metadata, authorization redirects, registration redirects, and the JWKS URL. Set `WANAKU_AUTH_UPSTREAM_ISSUER` when Wanaku must use a different address to reach the same issuer. Only the `/token` proxy uses this internal address. An unset or empty upstream issuer uses the public issuer URL.
+
 For the Compose setup, clients use `http://localhost:8543/realms/wanaku`; the server container uses `http://keycloak:8080/realms/wanaku` for token requests. This keeps public discovery metadata and browser redirects usable from the host.
 
 Wanaku always serves OAuth protected-resource metadata for MCP endpoints at `/.well-known/oauth-protected-resource/{namespace}/mcp`. When `WANAKU_AUTH_ISSUER` is set, the `authorization_servers` list contains the Wanaku host. When it is unset, the route returns HTTP 200 with an empty `authorization_servers` list. The OpenID discovery, `/authorize`, `/token`, and `/register` routes are active only when `WANAKU_AUTH_ISSUER` is set.

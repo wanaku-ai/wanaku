@@ -166,7 +166,7 @@ This automatically discovers and registers all tools exposed by the upstream MCP
 
 ### Deploy to Kubernetes
 
-For production installs, use the Wanaku Operator. See [Production Deployment on Kubernetes or OpenShift](./get-started/quickstart.md#production-deployment-on-kubernetes-or-openshift). For plain manifests (ConfigMap, Secret, Deployment, and Service), see [Configuration: Kubernetes](./reference/configuration.md#kubernetes).
+For production installs, use the Wanaku Operator. See [Production Deployment on Kubernetes or OpenShift](./get-started/quickstart.md#production-deployment-on-kubernetes-or-openshift). For plain manifests (ConfigMap, Secret, Deployment, and Service), see [Configuration: Kubernetes](./operate/kubernetes.md).
 
 ## Deployment Patterns
 

@@ -621,5 +621,5 @@ npx playwright test
 ## Related Docs
 
 - [Architecture](../get-started/architecture.md) — how the UI is embedded in the server
-- [Configuration](../reference/configuration.md) — `WANAKU_UI_PATH` for local dev
+- [Wanaku environment variables](../reference/environment-variables.md#admin-ui-override) — `WANAKU_UI_PATH` for local dev
 - [Management API](../reference/management-api.md) — API routes the UI consumes

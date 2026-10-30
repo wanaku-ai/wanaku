@@ -333,7 +333,7 @@ curl -X POST http://localhost:8083/v1/chat/completions \
   }'
 ```
 
-See [Configuration](configuration.md#inference-proxy) for how to set the
+See [Configuration](../connect/inference-proxy.md) for how to set the
 upstream.
 
 ### OAuth Metadata
@@ -419,7 +419,7 @@ The MCP endpoint (port 8081) and the inference proxy (port 8083) each use their 
 ## Related Docs
 
 - [Architecture](../get-started/architecture.md) — See how the management API fits into the server.
-- [Configuration](configuration.md) — Configure the listen address, persistence, and CORS.
+- [Wanaku environment variables](environment-variables.md) — Configure the listen address, persistence, and CORS.
 - [Features](../extend/feature-crates.md) — Add management routes through the feature system.
 - [Authentication](../operate/authentication.md) — Put the management API behind oauth2-proxy.
 - [Credential Brokerage](../govern/credential-brokerage.md) — Scoped, fail-closed upstream authentication for forwards.

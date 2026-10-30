@@ -59,7 +59,7 @@ evaluators:
 | `url` | string | Base URL of an OpenAI-compatible API, including the version path (for example `http://localhost:11434/v1` or `https://openrouter.ai/api/v1`). Wanaku appends only `/chat/completions`. |
 | `api_key` | string | Optional bearer token for the LLM endpoint, or `env:VARIABLE_NAME`. When it is empty, Wanaku sends no `Authorization` header. |
 
-Each LLM request has a fixed timeout of 10 seconds. Wanaku resolves every `env:` reference at startup, also for a connection that no evaluator uses. One missing variable stops startup. See [Configuration](../reference/configuration.md#wanaku-config-file-wanakuyaml).
+Each LLM request has a fixed timeout of 10 seconds. Wanaku resolves every `env:` reference at startup, also for a connection that no evaluator uses. One missing variable stops startup. See [Configuration](../reference/wanaku-yaml.md).
 
 The server loads connections once at startup from `wanaku.yaml`. No API can create,
 update, or read a connection's `api_key`. This design keeps credentials out of the
@@ -181,7 +181,7 @@ evaluators:
       path: "actions/dist/safety_review_action.wasm"
 ```
 
-Set `TYPESAFE_API_KEY` in the server environment before startup. Wanaku resolves `env:VARIABLE_NAME` once when it loads connections. The variable must exist and contain a non-empty Unicode value. An empty variable name or invalid value rejects the complete connection set. Error messages do not include the key value. API keys without the `env:` prefix remain literal values. See [Configuration](../reference/configuration.md) for the connection settings.
+Set `TYPESAFE_API_KEY` in the server environment before startup. Wanaku resolves `env:VARIABLE_NAME` once when it loads connections. The variable must exist and contain a non-empty Unicode value. An empty variable name or invalid value rejects the complete connection set. Error messages do not include the key value. API keys without the `env:` prefix remain literal values. See [Wanaku configuration file](../reference/wanaku-yaml.md) for the connection settings.
 
 The Noul primitive returns the probability that its answer is true. Wanaku
 passes this stable JSON object to `ctx.llmResult`:
@@ -1345,7 +1345,7 @@ Your system prompt tells the LLM what to extract from that context. The engine s
 
 Evaluator execution uses the shared [governance posture](governance-posture.md). The `on_error` field is no longer accepted.
 
-Users of earlier 0.3.0 pre-release builds must update both startup configuration and persisted evaluator revisions. See [Update an earlier pre-release configuration](../reference/configuration.md#update-an-earlier-pre-release-configuration).
+Users of earlier 0.3.0 pre-release builds must update both startup configuration and persisted evaluator revisions. See [Update an earlier pre-release configuration](../operate/persistence.md#update-an-earlier-pre-release-configuration).
 
 - LLM, TypeSafe, and OPA failures follow `on_failure`.
 - Empty engine output is a failure.
@@ -1355,6 +1355,12 @@ Users of earlier 0.3.0 pre-release builds must update both startup configuration
 - Invalid startup configuration stops startup by default. The `evaluator_startup_failure: deny` option retains an explicit invalid runtime instead.
 - Invalid management updates do not replace the working revision.
 - Audit mode does not block traffic or apply processor mutations. Basic audit skips external engines. Full audit permits external calls only by explicit opt-in.
+
+### Evaluator governance startup
+
+Evaluator execution uses the global and namespace [governance posture](governance-posture.md). The default failure behavior is `deny`. The evaluator `on_error` field is not accepted.
+
+Invalid evaluator configuration stops startup by default. Set the top-level `evaluator_startup_failure: deny` option to start with an invalid runtime that blocks evaluation in enforce mode. Valid management updates can replace this invalid runtime. Audit and disabled modes retain their configured behavior.
 
 ## Common Patterns
 
@@ -1511,7 +1517,7 @@ This re-compiles all WASM files referenced in the config.
 - **LLM prompts can be attacked** — sanitize user input, use system prompts that are robust to injection, and fail open if unsure.
 - **WASM actions are deterministic** — the same input always produces the same output. Use this property to test your logic thoroughly.
 - **Namespace bindings are ephemeral** — they live in memory, not persisted. If the server restarts, you lose bindings.
-- **Evaluator revisions persist when persistence is enabled** — revision history and the active revision survive a restart. The server writes `evaluator-revisions.json` after every change and restores the active revision at startup. See [Evaluator Revision Persistence](../reference/configuration.md#evaluator-revision-persistence). When persistence is disabled, revisions live only in memory and the server rebuilds the active revision from `wanaku.yaml` on each restart.
+- **Evaluator revisions persist when persistence is enabled** — revision history and the active revision survive a restart. The server writes `evaluator-revisions.json` after every change and restores the active revision at startup. See [Evaluator Revision Persistence](../operate/persistence.md#evaluator-revision-persistence). When persistence is disabled, revisions live only in memory and the server rebuilds the active revision from `wanaku.yaml` on each restart.
 - **OPA connection credentials never transit the management API.** The `url`, `token`, and `ca_cert` fields live only in `opa_connections` in `wanaku.yaml`. The OPA input document does not contain headers or credentials.
 - **LLM credentials never transit the management API.** `model`, `url`, and `api_key` live only in `llm_connections` in `wanaku.yaml`, loaded once at startup. Evaluators refer to a connection by name. No route can set, update, or read an `api_key`, not on evaluator create or update, and not in evaluator revision history. To rotate a credential, edit `wanaku.yaml` and restart the server.
 

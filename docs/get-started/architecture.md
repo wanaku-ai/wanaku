@@ -453,9 +453,9 @@ Deploy Wanaku as a `Deployment` with:
 - **Service:** ClusterIP for the MCP endpoint (port 8081). Expose it outside the cluster only through an authenticating proxy, such as oauth2-proxy.
 - **Service:** ClusterIP for the management API (port 8080). The management API has no built-in authentication. Do not expose it with a LoadBalancer Service.
 - **ConfigMap:** `wanaku.yaml` bootstrap config
-- **Secret:** credential values, passed to the container as environment variables. `wanaku.yaml` refers to them with `env:VARIABLE_NAME` (in `llm_connections[].api_key`, `typesafe_system_one_connections[].api_key`, and `bindings[].secret_refs`). Do not put secret values in `wanaku.yaml`. See [Configuration](../reference/configuration.md#kubernetes)
+- **Secret:** credential values, passed to the container as environment variables. `wanaku.yaml` refers to them with `env:VARIABLE_NAME` (in `llm_connections[].api_key`, `typesafe_system_one_connections[].api_key`, and `bindings[].secret_refs`). Do not put secret values in `wanaku.yaml`. See [Configuration](../operate/kubernetes.md)
 
-Mount a `PersistentVolume` on `WANAKU_PERSIST_PATH` (`/data/registry` in the image) for registry persistence across restarts. Refer to [Configuration](../reference/configuration.md#kubernetes) for the complete manifests.
+Mount a `PersistentVolume` on `WANAKU_PERSIST_PATH` (`/data/registry` in the image) for registry persistence across restarts. Refer to [Configuration](../operate/kubernetes.md) for the complete manifests.
 
 All listeners bind to all interfaces by default: the management API (8080), MCP (8081), the inference proxy (8083), and A2A (8084).
 
@@ -510,7 +510,7 @@ CORS is enabled by default via the `cors` filter (allows all origins). To restri
 export WANAKU_CORS_ORIGIN=https://app.example.com
 ```
 
-The variable applies to the embedded pipeline configuration. A custom `--pipeline-config` file must set `allow_origins` in its own `cors` filters. See [Configuration](../reference/configuration.md#filter-configuration).
+The variable applies to the embedded pipeline configuration. A custom `--pipeline-config` file must set `allow_origins` in its own `cors` filters. See [Configuration](../reference/pipeline-yaml.md#filter-configuration).
 
 ## What's Not Here (Yet)
 

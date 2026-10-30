@@ -1,0 +1,141 @@
+---
+title: Wanaku configuration file (wanaku.yaml)
+description: Reference for the Wanaku wanaku.yaml file: top-level sections, key names, unknown-key behavior, evaluator configuration, and connections.
+---
+
+# Wanaku configuration file (wanaku.yaml)
+
+The Wanaku configuration bootstraps core registry entries and feature settings at startup. This file is optional. If you omit it, Wanaku can still restore the registry from the default file snapshot. If no snapshot exists, the registry starts empty.
+
+**Location:** Pass with `--wanaku-config`:
+
+```bash
+wanaku-server --pipeline-config /path/to/pipeline.yaml --wanaku-config /path/to/wanaku.yaml
+```
+
+The default value of `--wanaku-config` is `wanaku.yaml`. The server resolves this relative path against its working directory. In the container image, the working directory is `/etc/wanaku`.
+
+If the file does not exist, the server logs the warning `wanaku config not found, using defaults` and starts with the fail-safe defaults. This also applies when you give the path explicitly. Check the startup log if your configuration seems to have no effect. A file that the server cannot read, or that is not valid YAML, stops startup.
+
+For a complete annotated file that combines forwards, credential bindings, connections, evaluators, action policies, and governance, see [`examples/governed-mcp`](../../examples/governed-mcp/README.md).
+
+**Format:**
+
+```yaml
+forwards:
+  - name: "upstream-mcp"
+    address: "http://upstream:8080/mcp"
+plugins:
+  - id: "customer-management"
+    services:
+      customer-api:
+        target: "http://customer-service:8080"
+```
+
+Wanaku loads these top-level sections from `wanaku.yaml`:
+
+- `forwards` — core forward bootstrap configuration
+- `bindings` — credential bindings that forwards reference for brokered authentication. See [Credential Brokerage](../govern/credential-brokerage.md#configuring-credentials-in-wanakuyaml)
+- `llm_connections` — named LLM connections (model/url/api_key) for evaluators; config-only, never exposed via the management API
+- `typesafe_system_one_connections` — named TypeSafe System One connections for evaluators; config-only, never exposed via the management API
+- `opa_connections` — named Open Policy Agent connections (url/token/timeout_ms/ca_cert) for evaluators; config-only, never exposed via the management API. See [Open Policy Agent](../govern/evaluators.md#open-policy-agent)
+- `evaluators` — evaluator feature configuration
+- `evaluator_startup_failure` — `abort` (default) or `deny`. Use a string value. Another value, for example a boolean, marks the evaluator runtime invalid with `startup_policy_invalid`. See [Evaluator governance startup](../govern/evaluators.md#evaluator-governance-startup)
+- `action_policy` — declarative action-policy rules. See [Action Policies](../govern/action-policies.md)
+- `simulation` — policy validation, simulation, and replay limits. See [Policy Simulation](../govern/policy-simulation.md#resource-limits)
+- `governance` — global governance posture and namespace overrides
+- `audit` — audit retention, payload capture, and redaction. See [Governance audit trail](../govern/audit-trail.md)
+- `plugins` — plugin service mappings owned by the plugins feature
+
+There is no top-level `namespaces` key. A forward sets its namespace with its own `namespace` field. Namespace governance overrides go under `governance.namespaces`.
+
+The server rejects unknown keys at all levels of `wanaku.yaml`. An unknown key stops startup. This rule applies to the top-level keys and to the keys in every section. For example, a misspelled `evaluator:` top-level key or a misspelled `trigger.namepsace` key stops startup. The server prints one error that names each unknown key with its path:
+
+```text
+fatal: unknown keys in wanaku configuration: evaluator, forwards.0.credentials_bindings
+```
+
+The server checks the keys before it loads the sections. The feature that owns a section validates the values in that section.
+
+The [Governance Posture](../govern/governance-posture.md) model defines fail-safe defaults and namespace overrides. Wanaku validates the section during startup. Invalid governance configuration stops startup.
+
+Wanaku discovers tools, resources, and prompts from the configured forwards.
+
+**Key names:**
+
+All keys in `wanaku.yaml` use `snake_case`, for example `llm_connections`, `api_key`, `audit_level`, and `credential_bindings`.
+
+The `forwards` and `bindings` entries also accept `camelCase` keys, for example `credentialBindings`, `forwardId`, `secretRefs`, `allowedPurposes`, `governedItems`, and `maxTtlSeconds`. These keys are aliases for compatibility with the management API, which uses `camelCase` field names in its JSON bodies. The two spellings have the same effect. Use one spelling in each entry.
+
+The other sections accept only `snake_case` keys. For example, the server does not read `apiKey` in an `llm_connections` entry.
+
+**Evaluator configuration** (see [Evaluator Engine](../govern/evaluators.md) for full details):
+
+```yaml
+llm_connections:
+  - name: "local-llama"
+    model: "llama3.2"
+    url: "http://localhost:11434/v1"
+
+evaluators:
+  - name: "safety-gate"
+    trigger:
+      method: "tools/call"
+    engine:
+      type: llm
+      operation: classify
+      prompt: "Classify this tool call..."
+      connection: "local-llama"
+      result_schema:              # Optional JSON Schema for LLM output validation
+        type: object
+        properties:
+          level: { type: string }
+          reason: { type: string }
+        required: ["level", "reason"]
+    processor:
+      path: "actions/dist/safety_review_action.wasm"
+```
+
+Each evaluator sets an `engine` object with a `type`. The earlier top-level `llm:` key is not accepted. A configuration that contains it stops startup with `configuration_invalid`.
+
+**LLM connections:**
+
+- The `url` is the base URL of an OpenAI-compatible API, including the version path. Wanaku appends only `/chat/completions`. For example, use `http://localhost:11434/v1` for Ollama and `https://openrouter.ai/api/v1` for OpenRouter.
+- `model`, `url`, and `name` are required. `api_key` is optional. When `api_key` is empty, Wanaku sends no `Authorization` header.
+- Each LLM request has a fixed timeout of 10 seconds. A timeout follows the governance `on_failure` behavior.
+
+Set `llm_connections[].api_key` to `env:VARIABLE_NAME` to read the key from an environment variable. For example:
+
+```yaml
+llm_connections:
+  - name: "remote-llm"
+    model: "remote-model"
+    url: "https://llm.example.com/v1"
+    api_key: "env:LLM_API_KEY"
+```
+
+Wanaku resolves the reference when it loads the connections at startup. The variable name and value must not be empty. The variable must exist and contain a valid Unicode value. An invalid reference rejects the complete connection set. Error messages do not include the key value. Other API key strings remain literal values. Omit `api_key` or use an empty string for a connection that does not require authentication.
+
+Wanaku resolves every `env:` reference in every connection at startup, also for a connection that no evaluator uses. One missing variable rejects the complete connection set and stops startup with `connection_configuration_invalid`. Remove connections that you do not use, or set their variables.
+
+Set `typesafe_system_one_connections[].api_key` to `env:VARIABLE_NAME` to read the TypeSafe System One key from an environment variable:
+
+```yaml
+typesafe_system_one_connections:
+  - name: "typesafe"
+    model: "jev-latest"
+    url: "https://api.typesafe.ai"
+    api_key: "env:TYPESAFE_API_KEY"
+```
+
+Wanaku resolves the reference once when it loads the connections at startup. The variable name and value must not be empty. The variable must exist and contain a valid Unicode value. An invalid reference rejects the complete TypeSafe System One connection set. Error messages do not include the key value. Other API key strings remain literal values.
+
+For TypeSafe System One connections, `api_key` is required. `model` defaults to `jev-latest`. `url` defaults to `https://api.typesafe.ai`. Wanaku appends `/v1/systemone` to the URL. Each request has a fixed timeout of 10 seconds. Wanaku always sends the `Authorization: Bearer` header, also when the key is empty.
+
+When `result_schema` is set, the host validates LLM output against the schema and retries once with a correction prompt on mismatch.
+
+## Next steps
+
+- [Governance Posture](../govern/governance-posture.md): configure the `governance` section.
+- [Evaluator Engine](../govern/evaluators.md): find the complete evaluator configuration.
+- [Pipeline configuration file](pipeline-yaml.md): configure listeners and filters.

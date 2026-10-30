@@ -76,7 +76,7 @@ The `sandbox` namespace uses `mode: audit`. Wanaku records the governance decisi
 
 ## Related Docs
 
-- [Configuration](../../docs/reference/configuration.md#wanaku-config-file-wanakuyaml)
+- [Configuration](../../docs/reference/wanaku-yaml.md)
 - [Governance Posture](../../docs/govern/governance-posture.md)
 - [Action Policies](../../docs/govern/action-policies.md)
 - [Credential Brokerage](../../docs/govern/credential-brokerage.md)

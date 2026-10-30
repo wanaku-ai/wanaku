@@ -79,7 +79,7 @@ If `WANAKU_AUTH_ISSUER` is unset, the metadata route still returns 200, with an 
 
 Wanaku does not validate tokens or enforce authentication. [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) provides these controls. It runs as a reverse proxy in front of the MCP port (8081) and management API port (8080).
 
-For deployment details, see `deploy/auth/README.md` and [Configuration](../reference/configuration.md#authentication-with-oauth2-proxy).
+For deployment details, see `deploy/auth/README.md` and [Configuration](../operate/authentication.md).
 
 ### Evaluator Feature (`features/evaluator/`)
 
@@ -474,7 +474,7 @@ No env var or config flag. Features are compile-time dependencies.
 ## Related Docs
 
 - [Architecture](../get-started/architecture.md) — how features fit into the filter pipeline
-- [Configuration](../reference/configuration.md) — feature-specific env vars
+- [Wanaku environment variables](../reference/environment-variables.md#feature-specific-environment-variables) — feature-specific env vars
 - [Management API](../reference/management-api.md) — feature routes follow the same patterns
 
 ### Startup validation
