@@ -1,6 +1,6 @@
 # Wanaku — A Governed Action Proxy for AI Agents
 
-[Documentation](https://wanaku.ai/docs/) · [Releases](https://github.com/wanaku-ai/wanaku/releases) · [Discussions](https://github.com/wanaku-ai/wanaku/discussions)
+[Documentation](https://wanaku.ai/docs/next/) · [Releases](https://github.com/wanaku-ai/wanaku/releases) · [Discussions](https://github.com/wanaku-ai/wanaku/discussions)
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Build](https://img.shields.io/github/actions/workflow/status/wanaku-ai/wanaku/main-build.yml?branch=main)](https://github.com/wanaku-ai/wanaku/actions)
@@ -53,14 +53,14 @@ If you prefer a text interface, you may also download and use the Wanaku CLI fro
 
 ## Documentation
 
-The full documentation is on the [Wanaku website](https://wanaku.ai/docs/). The same pages are in the [`docs/`](docs/index.md) folder of this repository:
+The full documentation for this version is on the [Wanaku website](https://wanaku.ai/docs/next/). The same pages are in the [`docs/`](docs/index.md) folder of this repository:
 
-- [Get started](docs/get-started/index.md): install Wanaku, run your first governed MCP proxy, and learn the architecture.
-- [Deploy and operate](docs/operate/index.md): run Wanaku on Kubernetes, persist state, add authentication, and secure the deployment.
-- [Connect agents and backends](docs/connect/index.md): proxy A2A traffic, inference requests, and semantic routers.
-- [Govern agent actions](docs/govern/index.md): control agent actions with posture, action policies, evaluators, credentials, and audit.
-- [Extend Wanaku](docs/extend/index.md): write evaluator actions, feature crates, and Admin UI plugins.
-- [Reference](docs/reference/index.md): environment variables, configuration files, ports, and the management API.
+- [Get started](https://wanaku.ai/docs/next/get-started/): install Wanaku, run your first governed MCP proxy, and learn the architecture.
+- [Deploy and operate](https://wanaku.ai/docs/next/operate/): run Wanaku on Kubernetes, persist state, add authentication, and secure the deployment.
+- [Connect agents and backends](https://wanaku.ai/docs/next/connect/): proxy A2A traffic, inference requests, and semantic routers.
+- [Govern agent actions](https://wanaku.ai/docs/next/govern/): control agent actions with posture, action policies, evaluators, credentials, and audit.
+- [Extend Wanaku](https://wanaku.ai/docs/next/extend/): write evaluator actions, feature crates, and Admin UI plugins.
+- [Reference](https://wanaku.ai/docs/next/reference/): environment variables, configuration files, ports, and the management API.
 
 To learn Wanaku step by step, follow the [guided tutorial](https://wanaku.ai/docs/demos/). To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md). To report a vulnerability, read [SECURITY.md](SECURITY.md).
 
