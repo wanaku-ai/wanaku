@@ -93,7 +93,8 @@ The action-policy filter and the evaluator filter apply `no_match` independently
 
 If only one of the filters matches, the other filter denies the request with its no-match error. For a complete example, see [Govern an MCP server](../govern/govern-an-mcp-server.md).
 
-> **Note:** The `wanaku.yaml` file in the repository root is a sample for development. It registers test forwards on `localhost`. Do not use it as a start point for a deployment.
+> [!NOTE]
+> The `wanaku.yaml` file in the repository root is a sample for development. It registers test forwards on `localhost`. Do not use it as a start point for a deployment.
 
 ### 4. Run the Server
 

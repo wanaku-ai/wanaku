@@ -99,7 +99,8 @@ wanaku-server
 
 On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. After each registry change, a background writer saves a full snapshot. On an orderly shutdown (SIGTERM, SIGINT), the server waits up to 10 seconds for a pending snapshot.
 
-> **Note:** If the process stops because of SIGKILL or an out-of-memory error, changes since the latest completed snapshot are lost. File persistence supports one writer. See [Registry Persistence](persistence.md#registry-persistence).
+> [!NOTE]
+> If the process stops because of SIGKILL or an out-of-memory error, changes since the latest completed snapshot are lost. File persistence supports one writer. See [Registry Persistence](persistence.md#registry-persistence).
 
 To disable persistence, set `WANAKU_PERSIST_BACKEND=none`.
 
