@@ -39,7 +39,8 @@ Set `WANAKU_INSTALL_DIR` to install in a different directory. To run Wanaku as a
 curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh | sudo WANAKU_INSTALL_DIR=/usr/local/bin bash
 ```
 
-> **Note:** The wanaku-barn repository has a different `get-wanaku.sh` script. That script installs the Wanaku CLI, not the server.
+> [!NOTE]
+> The wanaku-barn repository has a different `get-wanaku.sh` script. That script installs the Wanaku CLI, not the server.
 
 ### Download the archive manually
 
@@ -81,7 +82,8 @@ Verify the CLI installation:
 wanaku --version
 ```
 
-> **Note:** The Wanaku CLI supports the Java-based Wanaku router and the Rust-based engine. Add the `--no-auth` flag when the router does not require authentication.
+> [!NOTE]
+> The Wanaku CLI supports the Java-based Wanaku router and the Rust-based engine. Add the `--no-auth` flag when the router does not require authentication.
 
 ## Next steps
 

@@ -112,6 +112,7 @@ lychee --offline --include-fragments --exclude-path .claude --exclude-path .spec
 - Each page has a `title` and a `description` of the correct length, and no other page has the same values.
 - No relative link leaves `docs/`.
 - No page has a "Related Docs" heading.
+- No page uses a bold callout such as `> **Note:**`. Use GitHub alert syntax.
 - Each `docs/redirects.txt` target has a page.
 
 ## Next steps

@@ -194,7 +194,8 @@ The plain tag (no arch suffix) is used so the image is immediately available to 
 kubectl run wanaku --image=quay.io/wanaku/wanaku-server:latest --image-pull-policy=Never
 ```
 
-> **Note:** `cargo build-image-manifest` does not support the `minikube` target.
+> [!NOTE]
+> `cargo build-image-manifest` does not support the `minikube` target.
 > Minikube's internal daemon serves a single-arch cluster; a multi-arch manifest is not
 > meaningful there.
 

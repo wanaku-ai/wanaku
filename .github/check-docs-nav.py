@@ -67,6 +67,8 @@ for page in pages:
         seen[value] = page
     if re.search(r"^#+ Related Docs", body, re.M | re.I):
         errors.append(f"{page}: has a 'Related Docs' heading, use 'Next steps'")
+    if re.search(r"^> \*\*(Note|Tip|Important|Warning):\*\*", body, re.M):
+        errors.append(f"{page}: has a bold callout, use GitHub alert syntax such as '> [!NOTE]'")
     for target in re.findall(r"\]\(([^)#\s]+)", body):
         if re.match(r"[a-z]+:", target):
             continue
