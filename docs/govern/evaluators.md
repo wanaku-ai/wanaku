@@ -166,7 +166,7 @@ wanaku evaluators update evaluators.yaml
 wanaku evaluators update evaluators.yaml --expected-revision 4
 ```
 
-See [Managing Evaluators](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/usage.md#managing-evaluators) in the CLI documentation for the revision and rollback commands.
+See [Manage evaluators](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/cli/evaluators.md) in the CLI documentation for the revision and rollback commands.
 
 The CLI sends this request to the management API:
 
