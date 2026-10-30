@@ -16,6 +16,8 @@
         { "text": "Deploy on Kubernetes and OpenShift", "link": "operate/kubernetes" },
         { "text": "Persist state", "link": "operate/persistence" },
         { "text": "Authentication", "link": "operate/authentication" },
+        { "text": "Secure a deployment", "link": "operate/secure-a-deployment" },
+        { "text": "Admin UI", "link": "operate/admin-ui" },
         { "text": "Troubleshooting", "link": "operate/troubleshooting" }
       ]
     },

@@ -37,44 +37,7 @@ Please include the following information in your report:
 
 ## Security Best Practices
 
-When deploying Wanaku, please follow these security best practices:
-
-### Authentication and Authorization
-
-- Always use Keycloak or another OIDC provider for authentication
-- Change default admin passwords immediately after setup
-- Regenerate client secrets for the `wanaku-service` client in production
-- Use strong, unique passwords for all service accounts
-
-### Network Security
-
-- Enable TLS/HTTPS for all external endpoints in production
-- Configure CORS appropriately for your environment
-- Use network policies to restrict access between services
-- Never expose Keycloak or the router backend directly to the internet without proper security controls
-
-### Secret Management
-
-- Never commit secrets, passwords, or API keys to version control
-- Use Kubernetes Secrets, Sealed Secrets, or external secret management tools
-- Rotate secrets regularly
-- Use environment-specific secrets for development and production
-
-### Container Security
-
-- Always use the latest stable version of Wanaku images
-- Scan container images for vulnerabilities regularly
-- Run containers with minimal privileges
-- Use read-only file systems where possible
-
-### Monitoring and Auditing
-
-- Enable access logging for the router backend
-- Monitor authentication failures and unusual access patterns
-- Review audit logs regularly
-- Set up alerts for suspicious activity
-
-For more security configuration options, see the [Configuration Guide](docs/reference/configuration.md).
+To secure a Wanaku deployment, follow the checklist in [Secure a Wanaku deployment](docs/operate/secure-a-deployment.md).
 
 ## Acknowledgments
 
