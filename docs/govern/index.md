@@ -1,9 +1,9 @@
 ---
-title: Govern agent actions
+title: "Govern AI agent tool calls: policies, posture and audit"
 description: Control what AI agents can do through Wanaku with governance posture, action policies, evaluators, credentials, redaction, and audit.
 ---
 
-# Govern agent actions
+# Govern AI agent tool calls: policies, posture and audit
 
 These pages are for policy authors. They follow the path of a request through Wanaku: the rules that decide it, the credentials and data controls that apply to it, and the evidence that it leaves.
 

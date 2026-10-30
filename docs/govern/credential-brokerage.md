@@ -1,9 +1,9 @@
 ---
-title: Credential brokerage
+title: Keep API keys away from AI agents with credential brokerage
 description: "Keep API keys away from AI agents: Wanaku resolves credentials from bindings, injects them into upstream requests, and redacts responses."
 ---
 
-# Credential Brokerage
+# Keep API keys away from AI agents with credential brokerage
 
 Agents that call tools through Wanaku never see the credentials those tools need. An upstream API key, a service-account bearer token, a Basic-auth password — none of it crosses the agent boundary. Wanaku resolves the credential, injects it into the outbound request, and hands the agent only the result. This is credential brokerage.
 

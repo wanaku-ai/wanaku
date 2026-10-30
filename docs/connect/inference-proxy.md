@@ -1,9 +1,9 @@
 ---
-title: Inference proxy
+title: Proxy OpenAI-compatible inference traffic
 description: Send OpenAI-compatible inference traffic through the Wanaku inference proxy on port 8083, and use it from the LLM Chat page of the Debugger plugin.
 ---
 
-# Inference proxy
+# Proxy OpenAI-compatible inference traffic
 
 The inference proxy is a raw, transparent reverse proxy (port 8083) to an
 OpenAI-compatible backend. It forwards requests as-is, including the caller's

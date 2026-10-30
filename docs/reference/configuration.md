@@ -1,9 +1,9 @@
 ---
-title: Configure Wanaku
+title: "Configure the proxy: files, variables and precedence"
 description: How Wanaku reads its configuration from environment variables, pipeline.yaml, and wanaku.yaml, which source wins, and which file to change.
 ---
 
-# Configuration
+# Configure the proxy: files, variables and precedence
 
 Wanaku uses environment variables and two optional YAML files. It does not use a properties file. Set environment variables in the container orchestrator or systemd unit. Specify configuration files only when you need custom settings.
 

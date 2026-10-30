@@ -1,9 +1,9 @@
 ---
-title: A2A proxy
+title: Proxy and govern A2A (Agent2Agent) traffic
 description: Register upstream A2A (Agent2Agent) agents in Wanaku, proxy requests to them, and apply action policies to agent-to-agent traffic.
 ---
 
-# A2A Proxy
+# Proxy and govern A2A (Agent2Agent) traffic
 
 Wanaku can register upstream A2A agents and proxy requests to them. The admin UI lets operators manage agents without editing a pipeline file. The proxy uses the Praxis A2A filter and the existing Wanaku action-policy engine.
 
