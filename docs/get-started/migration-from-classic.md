@@ -189,7 +189,7 @@ wanaku namespaces create finance --no-auth
 3. Re-register forwards with the new namespace names
 4. Update MCP client configurations: replace slot-based URLs (`/ns-3/mcp/sse`) with name-based URLs (`/finance/mcp`) on port `8081`
 
-**The `public` namespace does not exist in Wanaku.** If you used unauthenticated public access, create a regular namespace and leave authentication disabled (the default).
+**The `public` namespace does not exist in Wanaku.** A namespace named `public` is a regular namespace and has no special meaning. When authentication is enabled, it requires a token. If you used unauthenticated public access, create a regular namespace and leave authentication disabled (the default).
 
 **The 10-namespace limit is gone.** You can create as many namespaces as you need in Wanaku.
 

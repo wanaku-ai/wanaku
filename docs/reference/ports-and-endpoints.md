@@ -12,7 +12,7 @@ Wanaku serves each kind of traffic on its own port. All listeners bind to all in
 | Listener | Default address | Set with | Paths |
 |---|---|---|---|
 | Management API and Admin UI | `0.0.0.0:8080` | `WANAKU_MGMT_LISTEN` | `/api/v1/...`, `/healthz`, `/admin/` (`/` redirects to `/admin/`) |
-| MCP | `0.0.0.0:8081` | the `mcp` listener in `pipeline.yaml` | `/{namespace}/mcp`, for example `/default/mcp` and `/public/mcp` |
+| MCP | `0.0.0.0:8081` | the `mcp` listener in `pipeline.yaml` | `/{namespace}/mcp`, for example `/default/mcp` and `/finance/mcp` |
 | Inference proxy | `0.0.0.0:8083` | the `inference` listener in `pipeline.yaml` | OpenAI-compatible paths, for example `/v1/chat/completions` |
 | A2A | `0.0.0.0:8084` | `WANAKU_A2A_LISTEN` | Registered A2A agent proxy URLs |
 
