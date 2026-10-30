@@ -19,9 +19,10 @@ These pages are for developers who add features to Wanaku.
 
 ## Admin UI plugins
 
-- [Wanaku Plugin Development Guide](plugin-development-guide.md): write, package, and test an Admin UI plugin.
+- [Build an Admin UI plugin](plugin-development-guide.md): write, package, and test an Admin UI plugin.
+- [Plugin reference](plugin-reference.md): read the manifest fields, the host API, and the backend configuration.
 - [Plugin Catalog](plugin-catalog.md): publish and install Admin UI plugins.
-- [Extensible Web UI Plugin Architecture](extensible-web-ui-plugin-guidelines.md): read the design rules for Admin UI plugins.
+- [Admin UI plugin architecture](extensible-web-ui-plugin-guidelines.md): read the design rules for Admin UI plugins.
 
 ## Next steps
 
