@@ -145,7 +145,9 @@ curl -X POST http://localhost:8080/api/v1/namespaces \
   -d '{"name":"finance"}'
 ```
 
-Namespace names can contain lowercase letters, numbers, and hyphens. They cannot start or end with a hyphen. The maximum length is 63 characters.
+Namespace names can contain lowercase letters, numbers, and hyphens. They cannot start or end with a hyphen. The maximum length is 63 characters. An invalid name returns `400`.
+
+If the namespace already exists, the request returns `409` and does not change the stored entry. Use `PUT /api/v1/namespaces/{name}` to change an existing namespace.
 
 ### Update a Namespace
 
@@ -179,6 +181,12 @@ curl -X POST http://localhost:8080/api/v1/forwards \
   }'
 ```
 
+Wanaku validates the request before discovery:
+
+- An invalid `namespace` name returns `400`. Wanaku does not create the forward or the namespace.
+- An `address` without an `http` or `https` scheme and a host returns `400`.
+- A forward with the same name returns `409` and does not change the stored forward or its discovered entries. To replace the forward, add the `replace=true` query parameter (`POST /api/v1/forwards?replace=true`). To discover the capabilities of a forward again, use `POST /api/v1/forwards/{name}/refreshes`.
+
 A successful request returns `200` with the forward and the discovered entry counts:
 
 ```json
@@ -208,7 +216,7 @@ The request body can also contain `credentialBindings`, a map from purpose (`dis
 
 ### Delete a Forward Conditionally
 
-A runtime that registers its own forward can mark the forward with a label, such as `cic.instance`. A replacement instance can register the same forward name before the old instance stops. To prevent the old instance from deleting the new forward, send the label as a precondition:
+A runtime that registers its own forward can mark the forward with a label, such as `cic.instance`. A replacement instance can register the same forward name with `replace=true` before the old instance stops. To prevent the old instance from deleting the new forward, send the label as a precondition:
 
 ```bash
 curl -X DELETE 'http://localhost:8080/api/v1/forwards/upstream-mcp?label.cic.instance=pod-a'
@@ -249,6 +257,8 @@ There is no create, update, or delete route for bindings in this release. Bindin
 | `GET` | `/api/v1/audit/health` | Get audit-store health and the dropped-event count. |
 | `POST` | `/api/v1/audit/semantic` | Accept one semantic audit event from an external producer, such as WSR. |
 
+`GET /api/v1/audit/events` returns `400` when `category`, `decision`, `offset`, or `limit` has an invalid value.
+
 `POST /api/v1/audit/semantic` returns `404` unless `WANAKU_AUDIT_INGESTION_ENABLED=true`. See [Ingest Camel semantic audit records](../connect/semantic-audit-ingestion.md).
 
 ### Metrics
@@ -284,6 +294,8 @@ curl -X PUT http://localhost:8080/api/v1/evaluators/namespaces/finance \
   -H 'Content-Type: application/json' \
   -d '{"conversation_id": "conversation-123"}'
 ```
+
+`DELETE /api/v1/evaluators/namespaces/{namespace}` returns `404` when the namespace has no binding.
 
 See [Evaluator Engine](../govern/evaluators.md) for the evaluator configuration schema.
 

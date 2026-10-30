@@ -269,6 +269,7 @@ const fn get_namespace() {}
     responses(
         (status = 200, description = "Namespace registered", body = NamespaceEntry),
         (status = 400, description = "Invalid namespace name"),
+        (status = 409, description = "Namespace already exists. Use PUT to update it", body = ManagementErrorResponse),
     )
 )]
 const fn create_namespace() {}
@@ -326,8 +327,13 @@ const fn list_forwards() {}
 const fn get_forward() {}
 
 #[utoipa::path(post, path = "/api/v1/forwards", tag = "Forwards",
+    params(("replace" = Option<bool>, Query, description = "Set to `true` to replace an existing forward with the same name. Without it, an existing name returns 409")),
     request_body = ForwardEntry,
-    responses((status = 200, description = "Forward created and tools discovered", body = serde_json::Value))
+    responses(
+        (status = 200, description = "Forward created and tools discovered", body = serde_json::Value),
+        (status = 400, description = "Invalid forward JSON, namespace name or address", body = ManagementErrorResponse),
+        (status = 409, description = "Forward already exists and `replace=true` is not set", body = ManagementErrorResponse),
+    )
 )]
 const fn create_forward() {}
 
@@ -392,7 +398,10 @@ const fn ingest_semantic_audit() {}
         ("offset" = Option<usize>, Query),
         ("limit" = Option<usize>, Query),
     ),
-    responses((status = 200, description = "Audit event page", body = WanakuResponse<AuditPage>))
+    responses(
+        (status = 200, description = "Audit event page", body = WanakuResponse<AuditPage>),
+        (status = 400, description = "Invalid category, decision, offset or limit", body = ManagementErrorResponse),
+    )
 )]
 const fn list_audit_events() {}
 
@@ -471,7 +480,10 @@ const fn bind_evaluator_namespace() {}
 
 #[utoipa::path(delete, path = "/api/v1/evaluators/namespaces/{namespace}", tag = "Evaluators",
     params(("namespace" = String, Path)),
-    responses((status = 200, description = "Namespace unbound from evaluator", body = WanakuResponse<UnbindNamespaceResponse>))
+    responses(
+        (status = 200, description = "Namespace unbound from evaluator", body = WanakuResponse<UnbindNamespaceResponse>),
+        (status = 404, description = "Namespace has no evaluator binding", body = ManagementErrorResponse),
+    )
 )]
 const fn unbind_evaluator_namespace() {}
 
@@ -1129,6 +1141,26 @@ mod tests {
         );
         let (status, _) = dispatch_namespace(&registry, "GET", invalid, None).await;
         assert_eq!(status, 404, "invalid path name must not be stored");
+    }
+
+    #[test]
+    fn create_and_filter_routes_document_validation_errors() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        let error = "#/components/schemas/ManagementErrorResponse";
+        for (path, method, status) in [
+            ("/api/v1/namespaces", "post", "409"),
+            ("/api/v1/forwards", "post", "400"),
+            ("/api/v1/forwards", "post", "409"),
+            ("/api/v1/audit/events", "get", "400"),
+            ("/api/v1/evaluators/namespaces/{namespace}", "delete", "404"),
+        ] {
+            assert_eq!(
+                value["paths"][path][method]["responses"][status]["content"]["application/json"]["schema"]
+                    ["$ref"],
+                error,
+                "{method} {path} {status}"
+            );
+        }
     }
 
     #[test]

@@ -84,6 +84,8 @@ export const useEvaluators = () => {
         namespace,
         options,
       );
+      if (response.status !== 200)
+        throw new Error(`Failed to unbind namespace (${response.status})`);
       return response;
     },
     [],

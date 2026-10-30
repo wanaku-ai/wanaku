@@ -733,6 +733,16 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid category, decision, offset or limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1155,6 +1165,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Namespace has no evaluator binding",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1390,6 +1410,17 @@
           "Forwards"
         ],
         "operationId": "create_forward",
+        "parameters": [
+          {
+            "name": "replace",
+            "in": "query",
+            "description": "Set to `true` to replace an existing forward with the same name. Without it, an existing name returns 409",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1406,6 +1437,26 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid forward JSON, namespace name or address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Forward already exists and `replace=true` is not set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
               }
             }
           }
@@ -1620,6 +1671,16 @@
           },
           "400": {
             "description": "Invalid namespace name"
+          },
+          "409": {
+            "description": "Namespace already exists. Use PUT to update it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
           }
         }
       }
