@@ -5,10 +5,14 @@ description: Deploy, secure, and run Wanaku, with Kubernetes manifests, persiste
 
 # Deploy and operate Wanaku
 
-These pages are for operators who deploy and run Wanaku. The install, container, and systemd procedures are in the [quickstart](../get-started/quickstart.md) for now.
+These pages are for operators who deploy and run Wanaku.
 
 ## Pages in this section
 
+- [Install the Wanaku server and CLI](install.md): choose a variant and install it with the installer, an archive, or a container image.
+- [Run Wanaku in a container](container.md): start the image with Podman or Docker, and fix common container problems.
+- [Run Wanaku as a systemd service](systemd.md): run the binary as a service on Linux.
+- [Pass secrets to the Wanaku server](secrets.md): give the server the variables that `wanaku.yaml` refers to.
 - [Deploy Wanaku on Kubernetes and OpenShift](kubernetes.md): run Wanaku with plain manifests, or use the Wanaku Operator.
 - [Persist registry and revision state](persistence.md): keep the registry and the revision histories across restarts.
 - [Authentication](authentication.md): put oauth2-proxy and Keycloak in front of Wanaku.

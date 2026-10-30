@@ -13,6 +13,10 @@
       "text": "Deploy and operate",
       "link": "operate/",
       "items": [
+        { "text": "Install", "link": "operate/install" },
+        { "text": "Run in a container", "link": "operate/container" },
+        { "text": "Run as a systemd service", "link": "operate/systemd" },
+        { "text": "Pass secrets", "link": "operate/secrets" },
         { "text": "Deploy on Kubernetes and OpenShift", "link": "operate/kubernetes" },
         { "text": "Persist state", "link": "operate/persistence" },
         { "text": "Authentication", "link": "operate/authentication" },
@@ -25,6 +29,8 @@
       "text": "Connect agents and backends",
       "link": "connect/",
       "items": [
+        { "text": "Forwards", "link": "connect/forwards" },
+        { "text": "Namespaces", "link": "connect/namespaces" },
         { "text": "A2A proxy", "link": "connect/a2a" },
         { "text": "Inference proxy", "link": "connect/inference-proxy" },
         { "text": "Semantic routing", "link": "connect/semantic-routing" },
