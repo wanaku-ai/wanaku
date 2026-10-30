@@ -74,7 +74,7 @@ by default (`capture_payloads: true`). The audit sink does not capture payloads 
 default (`capture_payloads: false`).
 
 Configure the intercept sink in the `wanaku_intercept` filter node of the pipeline
-configuration. See the intercept section in [Configuration](./configuration.md).
+configuration. See the intercept section in [Configuration](../reference/configuration.md).
 
 ```yaml
 - filter: wanaku_intercept
@@ -143,6 +143,6 @@ capture or share logs.
 
 ## Related Docs
 
-- [Configuration](./configuration.md) — intercept redaction settings and environment variables
+- [Configuration](../reference/configuration.md) — intercept redaction settings and environment variables
 - [Governance audit trail](./audit-trail.md) — audit redaction rule reference
-- [Evaluator engine](./evaluator-engine.md) — how intent analysis uses conversation history
+- [Evaluator engine](./evaluators.md) — how intent analysis uses conversation history

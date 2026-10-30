@@ -30,7 +30,7 @@ Default configs: `server/src/default.yaml` (embedded, pipeline), `wanaku.yaml` (
 
 **Workspace:** `types/` (shared types, traits, Feature trait, context structs — zero heavy deps), `infra/` (infra: LLM client, MCP client, metrics, persistence, registry impl), `filters/` (core MCP filters), `features/` (self-contained feature crates: mcp-metadata, evaluator, intercept, chat), `server/` (binary, pipeline, mgmt API), `ui/admin/` (React embedded UI).
 
-Feature crates that only need `Feature`/`HttpContext`/registry traits depend on `wanaku-types`; crates needing concrete infra (LLM calls, MCP forwarding, metrics counters, file persistence) also depend on `wanaku-infra`. See [docs/architecture.md](docs/architecture.md) for the full boundary.
+Feature crates that only need `Feature`/`HttpContext`/registry traits depend on `wanaku-types`; crates needing concrete infra (LLM calls, MCP forwarding, metrics counters, file persistence) also depend on `wanaku-infra`. See [docs/get-started/architecture.md](docs/get-started/architecture.md) for the full boundary.
 
 **Context structs** (`types/src/`): group related parameters to keep function signatures under the clippy `too-many-arguments-threshold` (5). Use `Type::new(...)` to construct:
 
@@ -42,7 +42,7 @@ Feature crates that only need `Feature`/`HttpContext`/registry traits depend on 
 
 ### Filter Pipeline
 
-See [docs/architecture.md](docs/architecture.md) for filter order, metadata contract, and execution model.
+See [docs/get-started/architecture.md](docs/get-started/architecture.md) for filter order, metadata contract, and execution model.
 
 **Implementation notes for filter authors:**
 
@@ -66,13 +66,13 @@ See [docs/architecture.md](docs/architecture.md) for filter order, metadata cont
 
 ### Tool Routing
 
-See [docs/architecture.md](docs/architecture.md) for tool routing and forward discovery flow.
+See [docs/get-started/architecture.md](docs/get-started/architecture.md) for tool routing and forward discovery flow.
 
 All tools execute via MCP forwarding through the `McpInvoker` request extension (production adapter `RmcpInvoker` wraps `mcp_client::call_tool`). Non-MCP-forward types error.
 
 ### Management API (Port 8080)
 
-See [docs/management-api.md](docs/management-api.md) for full route reference and response format.
+See [docs/reference/management-api.md](docs/reference/management-api.md) for full route reference and response format.
 
 **Implementation notes:**
 
@@ -83,7 +83,7 @@ See [docs/management-api.md](docs/management-api.md) for full route reference an
 
 ## Admin UI
 
-See [docs/contributing-admin-ui.md](docs/contributing-admin-ui.md) for stack, conventions, page patterns, API client, and styling.
+See [docs/contributing/admin-ui.md](docs/contributing/admin-ui.md) for stack, conventions, page patterns, API client, and styling.
 
 **OpenAPI updates required:** When you add or change a management API route, request, response, or schema, update the Utoipa declarations and tests in `server/src/openapi.rs`. Then regenerate the committed OpenAPI document and admin UI client:
 
@@ -139,7 +139,7 @@ Namespace filter uses `on_request_body` (not `on_request`) because the MCP filte
 
 ## Configuration
 
-See [docs/configuration.md](docs/configuration.md) for environment variables, pipeline config, wanaku.yaml, and evaluator config.
+See [docs/reference/configuration.md](docs/reference/configuration.md) for environment variables, pipeline config, wanaku.yaml, and evaluator config.
 
 Core env vars are defined in `types/src/config.rs`. Feature-specific env vars are owned by their respective feature crates.
 
@@ -147,11 +147,11 @@ Core env vars are defined in `types/src/config.rs`. Feature-specific env vars ar
 
 ## Evaluator
 
-See [docs/evaluator-engine.md](docs/evaluator-engine.md) for YAML config, WIT contract, host imports, response variants, action script development (JS and Rust), and testing.
+See [docs/govern/evaluators.md](docs/govern/evaluators.md) for YAML config, WIT contract, host imports, response variants, action script development (JS and Rust), and testing.
 
 ## Common Tasks
 
-**Add feature:** See [docs/features.md](docs/features.md) for the full tutorial. Key patterns: `body_filter_boilerplate!`, `json_rpc_error`, `NAMESPACE_METADATA_KEY`, `llm::{LlmClient, HotSwap}`, `HttpContext`, `McpContext`.
+**Add feature:** See [docs/extend/feature-crates.md](docs/extend/feature-crates.md) for the full tutorial. Key patterns: `body_filter_boilerplate!`, `json_rpc_error`, `NAMESPACE_METADATA_KEY`, `llm::{LlmClient, HotSwap}`, `HttpContext`, `McpContext`.
 
 **Add core filter:**
 
@@ -160,7 +160,7 @@ See [docs/evaluator-engine.md](docs/evaluator-engine.md) for YAML config, WIT co
 3. Register in `server/src/lib.rs::register_wanaku_filters`
 4. Add to `server/src/default.yaml`
 
-**Test locally / namespace isolation:** See [docs/getting-started.md](docs/getting-started.md).
+**Test locally / namespace isolation:** See [docs/get-started/quickstart.md](docs/get-started/quickstart.md).
 
 ## Known Gotchas
 
@@ -190,7 +190,7 @@ Pin to a specific `rev` — HEAD may break.
 
 ## Debugging
 
-See [docs/configuration.md](docs/configuration.md) for trace log options. Filter-specific pattern:
+See [docs/reference/configuration.md](docs/reference/configuration.md) for trace log options. Filter-specific pattern:
 
 ```rust
 tracing::debug!(method = ?ctx.get_metadata("mcp.method"), namespace = ?ctx.get_metadata("wanaku.namespace"), "filter context");
@@ -198,7 +198,7 @@ tracing::debug!(method = ?ctx.get_metadata("mcp.method"), namespace = ?ctx.get_m
 
 ## Extensibility
 
-See [docs/features.md](docs/features.md) for the Feature trait, lifecycle, and creating custom features. See [docs/architecture.md](docs/architecture.md) for how features fit into the pipeline.
+See [docs/extend/feature-crates.md](docs/extend/feature-crates.md) for the Feature trait, lifecycle, and creating custom features. See [docs/get-started/architecture.md](docs/get-started/architecture.md) for how features fit into the pipeline.
 
 **Shared LLM:** `infra/src/llm.rs` — `LlmClient` (OpenAI `/chat/completions`), `HotSwap<T>` (runtime config), `sanitize()`/`strip_markdown_fences()`/`extract_content()` utilities.
 
@@ -210,7 +210,7 @@ cargo test -p wanaku-infra  # single crate
 cargo test -- --nocapture          # tracing output
 ```
 
-Unit tests in modules (`#[cfg(test)]`). Composition tests in `server/tests/app_assembly.rs` build the production graph with `wanaku_server::app::App::build` (see [docs/architecture.md](docs/architecture.md#application-assembly)).
+Unit tests in modules (`#[cfg(test)]`). Composition tests in `server/tests/app_assembly.rs` build the production graph with `wanaku_server::app::App::build` (see [docs/get-started/architecture.md](docs/get-started/architecture.md#application-assembly)).
 
 ## Acceptance Criteria
 

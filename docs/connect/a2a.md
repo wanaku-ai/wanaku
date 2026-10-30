@@ -88,7 +88,7 @@ Unknown or deleted agent routes do not dispatch a request. Registering an agent 
 
 For a fixed upstream, you can still use an explicit `--pipeline-config` file. A custom pipeline replaces the embedded pipeline. Include the MCP, inference, and managed A2A listeners in that file if the deployment also requires them. Registering an agent through the UI does not add a managed listener to a custom pipeline.
 
-Use [examples/a2a.yaml](../examples/a2a.yaml) as a starting point. Set its upstream endpoint, `Host` header, and `public_url` for the deployment. The example binds the A2A listener to `127.0.0.1:8084` and forwards to `127.0.0.1:9000`.
+Use [examples/a2a.yaml](../../examples/a2a.yaml) as a starting point. Set its upstream endpoint, `Host` header, and `public_url` for the deployment. The example binds the A2A listener to `127.0.0.1:8084` and forwards to `127.0.0.1:9000`.
 
 Start the server with the pipeline and policy configuration:
 

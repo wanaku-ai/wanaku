@@ -1,10 +1,10 @@
 # Configuration
 
-For registered A2A agents, the managed listener, and static proxy configuration, see [A2A Proxy](./a2a.md).
+For registered A2A agents, the managed listener, and static proxy configuration, see [A2A Proxy](../connect/a2a.md).
 
 ## Audit configuration
 
-Use the `audit` section to configure audit retention, optional payload capture, payload size, and redaction rules. Payload capture is disabled by default. The default retention limit is 10,000 events. See [Governance audit trail](audit-trail.md) for the configuration fields, environment overrides, persistence behavior, and management API.
+Use the `audit` section to configure audit retention, optional payload capture, payload size, and redaction rules. Payload capture is disabled by default. The default retention limit is 10,000 events. See [Governance audit trail](../govern/audit-trail.md) for the configuration fields, environment overrides, persistence behavior, and management API.
 
 Wanaku uses environment variables and two optional YAML files. It does not use a properties file. Set environment variables in the container orchestrator or systemd unit. Specify configuration files only when you need custom settings.
 
@@ -143,7 +143,7 @@ The server stops at startup if legacy fields remain in the revision file. `evalu
 
 Action-policy revision history uses the same persistence settings. Wanaku writes `action-policy-revisions.json` in `WANAKU_PERSIST_PATH`. The action-policy stream is independent from the evaluator stream.
 
-Wanaku writes the file after each revision change. Wanaku validates and installs the persisted active policy during startup. See [Action Policies](./action-policies.md) for the policy schema and lifecycle.
+Wanaku writes the file after each revision change. Wanaku validates and installs the persisted active policy during startup. See [Action Policies](../govern/action-policies.md) for the policy schema and lifecycle.
 
 ### Admin UI Override
 
@@ -220,7 +220,7 @@ The evaluator runs production WASM processors on a bounded runner. These variabl
 | `WANAKU_EVALUATOR_PROCESSOR_MEMORY_BYTES` | `67108864` | Linear memory limit for one invocation. |
 | `WANAKU_EVALUATOR_PROCESSOR_FUEL` | `10000000` | Fuel budget for one invocation. |
 
-Runner failures follow the governance `on_failure` behavior. See [Processor Resource Limits](evaluator-engine.md#processor-resource-limits).
+Runner failures follow the governance `on_failure` behavior. See [Processor Resource Limits](../govern/evaluators.md#processor-resource-limits).
 
 ### Authentication with oauth2-proxy
 
@@ -235,7 +235,7 @@ When `WANAKU_AUTH_ISSUER` is set, the endpoint `/.well-known/oauth-protected-res
 
 The public issuer URL must be accessible to clients and browsers. Wanaku uses this URL in discovery metadata, authorization redirects, registration redirects, and the JWKS URL. Set `WANAKU_AUTH_UPSTREAM_ISSUER` when Wanaku must use a different address to reach the same issuer. Only the `/token` proxy uses this internal address. An unset or empty upstream issuer uses the public issuer URL.
 
-See [Authentication](./auth.md) for full oauth2-proxy setup instructions.
+See [Authentication](../operate/authentication.md) for full oauth2-proxy setup instructions.
 
 ### Intercept Feature
 
@@ -245,7 +245,7 @@ The intercept feature records request/response interactions for conversation tra
 |---|---|---|
 | `WANAKU_INTERACTION_CAPACITY` | `1000` | Maximum number of interactions kept in the in-memory store |
 
-The intercept feature captures the LLM request body and response body. The feature redacts sensitive data from both bodies before it stores them. The feature preserves the conversation content that intent analysis needs. See [Redaction boundary](./redaction.md) for the redaction rules and limitations.
+The intercept feature captures the LLM request body and response body. The feature redacts sensitive data from both bodies before it stores them. The feature preserves the conversation content that intent analysis needs. See [Redaction boundary](../govern/redaction.md) for the redaction rules and limitations.
 
 Configure the redaction rules in the intercept filter node of the pipeline configuration:
 
@@ -271,7 +271,7 @@ Configure the redaction rules in the intercept filter node of the pipeline confi
 
 `include_default_redaction_rules` controls the built-in redaction rules. The default is `true`. Set this value to `false` only when you must replace or disable the built-in rules.
 
-`sensitive_fields`, `sensitive_json_pointers`, `credential_markers`, and `token_prefixes` extend the built-in rules. These controls use the same behavior as the audit configuration. See [Governance audit trail](./audit-trail.md).
+`sensitive_fields`, `sensitive_json_pointers`, `credential_markers`, and `token_prefixes` extend the built-in rules. These controls use the same behavior as the audit configuration. See [Governance audit trail](../govern/audit-trail.md).
 
 You can use these environment variables to override the YAML values:
 
@@ -339,7 +339,7 @@ The pipeline configuration defines listeners, filter chains, and filter-specific
 wanaku-server --pipeline-config /path/to/pipeline.yaml
 ```
 
-A custom file replaces the complete embedded pipeline. Start from [`server/src/default.yaml`](../server/src/default.yaml), which is the embedded default, and change only what you need.
+A custom file replaces the complete embedded pipeline. Start from [`server/src/default.yaml`](../../server/src/default.yaml), which is the embedded default, and change only what you need.
 
 **Format:**
 
@@ -465,7 +465,7 @@ The default value of `--wanaku-config` is `wanaku.yaml`. The server resolves thi
 
 If the file does not exist, the server logs the warning `wanaku config not found, using defaults` and starts with the fail-safe defaults. This also applies when you give the path explicitly. Check the startup log if your configuration seems to have no effect. A file that the server cannot read, or that is not valid YAML, stops startup.
 
-For a complete annotated file that combines forwards, credential bindings, connections, evaluators, action policies, and governance, see [`examples/governed-mcp`](../examples/governed-mcp/README.md).
+For a complete annotated file that combines forwards, credential bindings, connections, evaluators, action policies, and governance, see [`examples/governed-mcp`](../../examples/governed-mcp/README.md).
 
 **Format:**
 
@@ -483,23 +483,23 @@ plugins:
 Wanaku loads these top-level sections from `wanaku.yaml`:
 
 - `forwards` — core forward bootstrap configuration
-- `bindings` — credential bindings that forwards reference for brokered authentication. See [Credential Brokerage](./credential-brokerage.md#configuring-credentials-in-wanakuyaml)
+- `bindings` — credential bindings that forwards reference for brokered authentication. See [Credential Brokerage](../govern/credential-brokerage.md#configuring-credentials-in-wanakuyaml)
 - `llm_connections` — named LLM connections (model/url/api_key) for evaluators; config-only, never exposed via the management API
 - `typesafe_system_one_connections` — named TypeSafe System One connections for evaluators; config-only, never exposed via the management API
-- `opa_connections` — named Open Policy Agent connections (url/token/timeout_ms/ca_cert) for evaluators; config-only, never exposed via the management API. See [Open Policy Agent](./evaluator-engine.md#open-policy-agent)
+- `opa_connections` — named Open Policy Agent connections (url/token/timeout_ms/ca_cert) for evaluators; config-only, never exposed via the management API. See [Open Policy Agent](../govern/evaluators.md#open-policy-agent)
 - `evaluators` — evaluator feature configuration
 - `evaluator_startup_failure` — `abort` (default) or `deny`. Use a string value. Another value, for example a boolean, marks the evaluator runtime invalid with `startup_policy_invalid`. See [Evaluator governance startup](#evaluator-governance-startup)
-- `action_policy` — declarative action-policy rules. See [Action Policies](./action-policies.md)
-- `simulation` — policy validation, simulation, and replay limits. See [Policy Simulation](policy-simulation.md#resource-limits)
+- `action_policy` — declarative action-policy rules. See [Action Policies](../govern/action-policies.md)
+- `simulation` — policy validation, simulation, and replay limits. See [Policy Simulation](../govern/policy-simulation.md#resource-limits)
 - `governance` — global governance posture and namespace overrides
-- `audit` — audit retention, payload capture, and redaction. See [Governance audit trail](audit-trail.md)
+- `audit` — audit retention, payload capture, and redaction. See [Governance audit trail](../govern/audit-trail.md)
 - `plugins` — plugin service mappings owned by the plugins feature
 
 There is no top-level `namespaces` key. A forward sets its namespace with its own `namespace` field. Namespace governance overrides go under `governance.namespaces`.
 
 The server ignores unknown top-level keys without a warning. For example, a misspelled `evaluator:` key has no effect. The server logs a warning for an unknown key inside a `forwards` or `bindings` entry. The `governance` section, the evaluator definitions, and `opa_connections` reject unknown keys and stop startup. The entries of `llm_connections` and `typesafe_system_one_connections`, and the `trigger` and `processor` objects of an evaluator, ignore unknown keys without a warning. For example, a misspelled `trigger.namespace` key makes the evaluator match every namespace.
 
-The [Governance Posture](./governance-posture.md) model defines fail-safe defaults and namespace overrides. Wanaku validates the section during startup. Invalid governance configuration stops startup.
+The [Governance Posture](../govern/governance-posture.md) model defines fail-safe defaults and namespace overrides. Wanaku validates the section during startup. Invalid governance configuration stops startup.
 
 Wanaku discovers tools, resources, and prompts from the configured forwards.
 
@@ -511,7 +511,7 @@ The `forwards` and `bindings` entries also accept `camelCase` keys, for example 
 
 The other sections accept only `snake_case` keys. For example, the server does not read `apiKey` in an `llm_connections` entry.
 
-**Evaluator configuration** (see [Evaluator Engine](./evaluator-engine.md) for full details):
+**Evaluator configuration** (see [Evaluator Engine](../govern/evaluators.md) for full details):
 
 ```yaml
 llm_connections:
@@ -589,7 +589,7 @@ wanaku-server
 
 ### Kubernetes
 
-For production installs on Kubernetes or OpenShift, use the Wanaku Operator. See [Production Deployment on Kubernetes or OpenShift](./getting-started.md#production-deployment-on-kubernetes-or-openshift). The manifests below show a plain `Deployment` for a small installation.
+For production installs on Kubernetes or OpenShift, use the Wanaku Operator. See [Production Deployment on Kubernetes or OpenShift](../get-started/quickstart.md#production-deployment-on-kubernetes-or-openshift). The manifests below show a plain `Deployment` for a small installation.
 
 **ConfigMap:**
 
@@ -736,16 +736,16 @@ The server does not reject unknown environment variable names. A misspelled name
 
 ## Related Docs
 
-- [Architecture](./architecture.md) — understand the filter pipeline and registry
-- [Authentication](./auth.md) — oauth2-proxy setup and Keycloak configuration
-- [Features](./features.md) — enable evaluators and create custom features
+- [Architecture](../get-started/architecture.md) — understand the filter pipeline and registry
+- [Authentication](../operate/authentication.md) — oauth2-proxy setup and Keycloak configuration
+- [Features](../extend/feature-crates.md) — enable evaluators and create custom features
 - [Management API](./management-api.md) — API routes that respect configuration
-- [Redaction boundary](./redaction.md) — where Wanaku removes sensitive data
-- [FAQ](./faq.md) — troubleshooting common issues
+- [Redaction boundary](../govern/redaction.md) — where Wanaku removes sensitive data
+- [FAQ](../operate/troubleshooting.md) — troubleshooting common issues
 
 ## Evaluator governance startup
 
-Evaluator execution uses the global and namespace [governance posture](governance-posture.md). The default failure behavior is `deny`. The evaluator `on_error` field is not accepted.
+Evaluator execution uses the global and namespace [governance posture](../govern/governance-posture.md). The default failure behavior is `deny`. The evaluator `on_error` field is not accepted.
 
 Invalid evaluator configuration stops startup by default. Set the top-level `evaluator_startup_failure: deny` option to start with an invalid runtime that blocks evaluation in enforce mode. Valid management updates can replace this invalid runtime. Audit and disabled modes retain their configured behavior.
 
@@ -757,6 +757,6 @@ Set `WANAKU_PLUGIN_CATALOG_PATH` to load a local JSON file. Set `WANAKU_PLUGIN_C
 
 The server selects the source at startup. It reads a local file or remote URL on each catalog request. An update to a local file or remote document does not require a server restart. An update to the embedded catalog requires a new build.
 
-A catalog must contain a JSON array of plugin entries. The size limit is 1 MiB. The server returns HTTP 502 if the selected source is unavailable or invalid. It does not fall back to the embedded catalog. See [Plugin Catalog](plugin-catalog.md) for the entry format and publication instructions.
+A catalog must contain a JSON array of plugin entries. The size limit is 1 MiB. The server returns HTTP 502 if the selected source is unavailable or invalid. It does not fall back to the embedded catalog. See [Plugin Catalog](../extend/plugin-catalog.md) for the entry format and publication instructions.
 
 A catalog request reads only catalog JSON. It does not download plugin archives or install plugins.

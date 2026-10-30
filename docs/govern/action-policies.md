@@ -1,6 +1,6 @@
 # Action Policies
 
-Action policies give Wanaku a deterministic authorization layer for MCP and A2A actions. They complement the MCP evaluator. Use action policies for rules that depend on known names, labels, URIs, and structured request values. Use evaluators for contextual or semantic MCP decisions. See [A2A Proxy](./a2a.md) for the initial A2A scope and configuration.
+Action policies give Wanaku a deterministic authorization layer for MCP and A2A actions. They complement the MCP evaluator. Use action policies for rules that depend on known names, labels, URIs, and structured request values. Use evaluators for contextual or semantic MCP decisions. See [A2A Proxy](../connect/a2a.md) for the initial A2A scope and configuration.
 
 The [Governance Posture](./governance-posture.md) model defines the behavior for unmatched actions, policy failures, audit-only evaluation, and disabled scopes. The action-policy filter resolves the global posture and namespace override before it evaluates a request.
 
@@ -66,7 +66,7 @@ A rule can use these selectors:
 | Selector | Value |
 | --- | --- |
 | `namespace` | The Wanaku namespace. |
-| `operation` | MCP: `tools/call`, `resources/read`, or `prompts/get`. A2A: the canonical method specified in [A2A Proxy](./a2a.md). |
+| `operation` | MCP: `tools/call`, `resources/read`, or `prompts/get`. A2A: the canonical method specified in [A2A Proxy](../connect/a2a.md). |
 | `target_type` | `tool`, `resource`, `prompt`, or `agent`. |
 | `target_name` | An `exact` or `glob` match expression. |
 | `labels` | Required registry label key-value pairs. |

@@ -14,7 +14,7 @@ Creates the governance audit store. The action-policy, evaluator, simulation, an
 
 **Management API routes:** `GET /api/v1/audit/events`, `GET /api/v1/audit/events/{id}`, `GET /api/v1/audit/schema`, `GET /api/v1/audit/health`, and `POST /api/v1/audit/semantic` (only when `WANAKU_AUDIT_INGESTION_ENABLED=true`).
 
-**Configuration:** the top-level `audit` section in `wanaku.yaml`. See [Governance Audit Trail](./audit-trail.md).
+**Configuration:** the top-level `audit` section in `wanaku.yaml`. See [Governance Audit Trail](../govern/audit-trail.md).
 
 ### Action Policy Feature (`features/action-policy/`)
 
@@ -24,7 +24,7 @@ Applies deterministic allow and deny rules to MCP and A2A actions before the eva
 
 **Management API prefix:** `/api/v1/action-policies`
 
-**Configuration:** the top-level `action_policy` section in `wanaku.yaml`. See [Action Policies](./action-policies.md).
+**Configuration:** the top-level `action_policy` section in `wanaku.yaml`. See [Action Policies](../govern/action-policies.md).
 
 ### Metrics Feature (`features/metrics/`)
 
@@ -79,7 +79,7 @@ If `WANAKU_AUTH_ISSUER` is unset, the metadata route still returns 200, with an 
 
 Wanaku does not validate tokens or enforce authentication. [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) provides these controls. It runs as a reverse proxy in front of the MCP port (8081) and management API port (8080).
 
-For deployment details, see `deploy/auth/README.md` and [Configuration](./configuration.md#authentication-with-oauth2-proxy).
+For deployment details, see `deploy/auth/README.md` and [Configuration](../reference/configuration.md#authentication-with-oauth2-proxy).
 
 ### Evaluator Feature (`features/evaluator/`)
 
@@ -93,12 +93,12 @@ A WASM-based evaluation engine that lets you build trigger→evaluate→act pipe
 - `PUT /api/v1/evaluators` — hot-reload evaluator configuration
 - `GET /api/v1/evaluators/status` — runtime readiness, revision, and effective posture
 - `GET /api/v1/evaluators/llm-connections` — configured LLM connection names
-- `GET /api/v1/evaluators/revisions` and related routes — revision history and rollback (see [Management API](./management-api.md#evaluators))
+- `GET /api/v1/evaluators/revisions` and related routes — revision history and rollback (see [Management API](../reference/management-api.md#evaluators))
 - `GET /api/v1/evaluators/namespaces` — list namespace-to-conversation bindings
 - `PUT /api/v1/evaluators/namespaces/{namespace}` — bind a namespace to a conversation ID
 - `DELETE /api/v1/evaluators/namespaces/{namespace}` — unbind
 
-See the [Evaluator Engine](./evaluator-engine.md) guide for configuration details and WASM action script development.
+See the [Evaluator Engine](../govern/evaluators.md) guide for configuration details and WASM action script development.
 
 ### Policy Simulation Feature (`features/simulation/`)
 
@@ -108,7 +108,7 @@ Validates transient policy candidates and evaluates synthetic MCP actions. Async
 
 **Configuration:** The top-level `simulation` section in `wanaku.yaml` sets resource and retention limits.
 
-See [Policy Simulation](policy-simulation.md) for the report schema and CI procedure.
+See [Policy Simulation](../govern/policy-simulation.md) for the report schema and CI procedure.
 
 ### Plugins Feature (`features/plugins/`)
 
@@ -130,7 +130,7 @@ See the [Plugin Development Guide](./plugin-development-guide.md) for details.
 
 ### A2A proxy support
 
-The action-policy feature registers the `wanaku_a2a` filter. The managed A2A pipeline selects a registered agent, extracts protocol metadata with the Praxis `a2a` filter, and applies the shared `wanaku_action_policy` filter. Operators manage agents through the management API and the **A2A agents** page. See [A2A Proxy](./a2a.md) for configuration and supported operations.
+The action-policy feature registers the `wanaku_a2a` filter. The managed A2A pipeline selects a registered agent, extracts protocol metadata with the Praxis `a2a` filter, and applies the shared `wanaku_action_policy` filter. Operators manage agents through the management API and the **A2A agents** page. See [A2A Proxy](../connect/a2a.md) for configuration and supported operations.
 
 ## Creating a Custom Feature
 
@@ -471,9 +471,9 @@ No env var or config flag. Features are compile-time dependencies.
 
 ## Related Docs
 
-- [Architecture](./architecture.md) — how features fit into the filter pipeline
-- [Configuration](./configuration.md) — feature-specific env vars
-- [Management API](./management-api.md) — feature routes follow the same patterns
+- [Architecture](../get-started/architecture.md) — how features fit into the filter pipeline
+- [Configuration](../reference/configuration.md) — feature-specific env vars
+- [Management API](../reference/management-api.md) — feature routes follow the same patterns
 
 ### Startup validation
 

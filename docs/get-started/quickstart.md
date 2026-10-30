@@ -154,7 +154,7 @@ The container image runs the same server as the binary. The image uses these pat
 | A2A listener | `8084` | |
 | User | UID `1001`, GID `0` | Mounted files must be readable by this user. |
 
-The server can start without a `wanaku.yaml` file, but it then uses the fail-safe governance defaults. Discovery works, but the server denies every tool call, resource read, and prompt request. Without an action policy and an evaluator, nothing allows these requests. This is sufficient for a first try. For real use, write your own configuration. Start from the [minimal wanaku.yaml](#minimal-wanakuyaml) and read [Governance Posture](./governance-posture.md).
+The server can start without a `wanaku.yaml` file, but it then uses the fail-safe governance defaults. Discovery works, but the server denies every tool call, resource read, and prompt request. Without an action policy and an evaluator, nothing allows these requests. This is sufficient for a first try. For real use, write your own configuration. Start from the [minimal wanaku.yaml](#minimal-wanakuyaml) and read [Governance Posture](../govern/governance-posture.md).
 
 Podman and Docker do not create a file for a bind mount, so create the file before you start the container:
 
@@ -218,7 +218,7 @@ For credential bindings, also check these items:
 - Each binding must have an `origin` with the scheme, host, and port of the forward address.
 - The forward field is `credential_bindings`. When the server finds an unknown key in a forward or binding entry, it logs `ignoring unknown key in wanaku.yaml entry`. Look for this message in the startup log.
 
-Read [Credential Brokerage](./credential-brokerage.md) for the complete binding reference.
+Read [Credential Brokerage](../govern/credential-brokerage.md) for the complete binding reference.
 
 ### Minimal wanaku.yaml
 
@@ -257,16 +257,16 @@ The `no_match: allow` override removes the default-deny baseline for the `defaul
 
 The action-policy filter and the evaluator filter apply `no_match` independently. Each filter must allow a request. When you remove the override and keep `no_match: deny`, a governed request needs both of these:
 
-- An [action-policy](./action-policies.md) rule that allows it.
-- An [evaluator](./evaluator-engine.md) whose trigger matches it, and whose processor passes it.
+- An [action-policy](../govern/action-policies.md) rule that allows it.
+- An [evaluator](../govern/evaluators.md) whose trigger matches it, and whose processor passes it.
 
-If only one of the filters matches, the other filter denies the request with its no-match error. For a complete example, see [`examples/governed-mcp`](../examples/governed-mcp/README.md).
+If only one of the filters matches, the other filter denies the request with its no-match error. For a complete example, see [`examples/governed-mcp`](../../examples/governed-mcp/README.md).
 
 Start the container with `-e MY_MCP_TOKEN` to pass the token. Remove the `credential_bindings` and `bindings` keys if the upstream server does not require a token.
 
 ## Run as a systemd Service
 
-The [`deploy/systemd/wanaku.service`](../deploy/systemd/wanaku.service) file is a template for convenience. Review it and adapt it to your system before you use it.
+The [`deploy/systemd/wanaku.service`](../../deploy/systemd/wanaku.service) file is a template for convenience. Review it and adapt it to your system before you use it.
 
 The template uses these paths:
 
@@ -374,7 +374,7 @@ All MCP endpoints use the `/{namespace}/mcp` pattern. Paths such as `/finance` a
 
 ### Use the Admin UI
 
-> **Note:** Only the full distribution contains the admin UI. Use the CLI or the [Management API](./management-api.md) with the headless variant.
+> **Note:** Only the full distribution contains the admin UI. Use the CLI or the [Management API](../reference/management-api.md) with the headless variant.
 
 Open `http://localhost:8080` in your browser. The React-based admin UI communicates with the same management API as the CLI.
 
@@ -386,7 +386,7 @@ Use the admin UI to view and manage tools, namespaces, resources, prompts, and f
 
 Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. oauth2-proxy receives requests before it sends them to the MCP and management API ports.
 
-Follow [Authenticated local deployment](../deploy/auth/README.md) for the complete Docker Compose workflow. It starts Keycloak, Wanaku, and both oauth2-proxy instances, then verifies CLI access.
+Follow [Authenticated local deployment](../../deploy/auth/README.md) for the complete Docker Compose workflow. It starts Keycloak, Wanaku, and both oauth2-proxy instances, then verifies CLI access.
 
 After setup, log in with the local CLI client and use one token with both APIs:
 
@@ -426,7 +426,7 @@ You can configure Wanaku with environment variables. This table lists the most c
 | `WANAKU_PERSIST_BACKEND` | `file` | File persistence backend. Set to `"none"` to disable persistence. |
 | `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | Directory for `registry.json` |
 
-Read [Configuration](./configuration.md) for the complete list.
+Read [Configuration](../reference/configuration.md) for the complete list.
 
 ### Endpoints
 
@@ -445,15 +445,15 @@ Authentication is handled externally by [oauth2-proxy](https://github.com/oauth2
 
 Wanaku also serves [RFC 9728](https://datatracker.ietf.org/doc/rfc9728/) OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. Set `WANAKU_AUTH_ISSUER` to your Keycloak realm URL to populate the `authorization_servers` field.
 
-See [`deploy/auth/README.md`](../deploy/auth/README.md) for setup instructions (Docker Compose and local development).
+See [`deploy/auth/README.md`](../../deploy/auth/README.md) for setup instructions (Docker Compose and local development).
 
 ## Where to Go Next
 
 - **[Architecture](./architecture.md)** — See how the filter pipeline, registry, and routing work together.
-- **[Configuration](./configuration.md)** — Explore the environment variables, YAML options, and configuration patterns.
-- **[Authentication](./auth.md)** — Set up oauth2-proxy with Keycloak.
-- **[Features](./features.md)** — Enable evaluators or create a custom feature.
-- **[Management API](./management-api.md)** — Browse the complete REST API reference.
-- **[FAQ](./faq.md)** — Find answers to common questions and problems.
+- **[Configuration](../reference/configuration.md)** — Explore the environment variables, YAML options, and configuration patterns.
+- **[Authentication](../operate/authentication.md)** — Set up oauth2-proxy with Keycloak.
+- **[Features](../extend/feature-crates.md)** — Enable evaluators or create a custom feature.
+- **[Management API](../reference/management-api.md)** — Browse the complete REST API reference.
+- **[FAQ](../operate/troubleshooting.md)** — Find answers to common questions and problems.
 
 With the proxy running, the next step is to configure Wanaku for your environment and connect the systems your agents need.

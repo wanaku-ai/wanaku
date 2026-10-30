@@ -40,7 +40,7 @@ curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh
 
 The installer puts `wanaku-server` in `$HOME/bin`.
 
-Other install methods are available. You can download the archive manually, use a container image, run Wanaku as a systemd service, or deploy it on Kubernetes or OpenShift. Read the [Getting Started](docs/getting-started.md) guide for the details of each method.
+Other install methods are available. You can download the archive manually, use a container image, run Wanaku as a systemd service, or deploy it on Kubernetes or OpenShift. Read the [Getting Started](docs/get-started/quickstart.md) guide for the details of each method.
 
 Run `wanaku-server`. Open <http://localhost:8080> to see the dashboard:
 
@@ -60,19 +60,19 @@ The **[Wanaku Documentation](https://wanaku.ai/docs/)** website contains the ful
 
 Contributors working on the project may want to refer to the development documentation:
 
-- [Getting Started](docs/getting-started.md) - Development setup guide
-- [Architecture](docs/architecture.md) - System architecture and components
-- [Configuration](docs/configuration.md) - Environment variables and configuration reference
-- [Management API](docs/management-api.md) - API reference
-- [Admin UI](docs/contributing-admin-ui.md) - Admin dashboard development
-- [Features / Plugins](docs/features.md) - Feature crate system
-- [Plugin Catalog](docs/plugin-catalog.md) - Publish and configure available UI plugins
-- [Plugin Development](docs/plugin-development-guide.md) - Guide for writing admin UI plugins
-- [Evaluator Engine](docs/evaluator-engine.md) - WASM-based evaluator
-- [Action Policies](docs/action-policies.md) - Deterministic MCP action rules
-- [Governance Posture](docs/governance-posture.md) - Enforcement modes and fail-safe behavior
-- [Credential Brokerage](docs/credential-brokerage.md) - Scoped upstream credentials for forwards
-- [FAQ](docs/faq.md) - Common problems and answers
+- [Getting Started](docs/get-started/quickstart.md) - Development setup guide
+- [Architecture](docs/get-started/architecture.md) - System architecture and components
+- [Configuration](docs/reference/configuration.md) - Environment variables and configuration reference
+- [Management API](docs/reference/management-api.md) - API reference
+- [Admin UI](docs/contributing/admin-ui.md) - Admin dashboard development
+- [Features / Plugins](docs/extend/feature-crates.md) - Feature crate system
+- [Plugin Catalog](docs/extend/plugin-catalog.md) - Publish and configure available UI plugins
+- [Plugin Development](docs/extend/plugin-development-guide.md) - Guide for writing admin UI plugins
+- [Evaluator Engine](docs/govern/evaluators.md) - WASM-based evaluator
+- [Action Policies](docs/govern/action-policies.md) - Deterministic MCP action rules
+- [Governance Posture](docs/govern/governance-posture.md) - Enforcement modes and fail-safe behavior
+- [Credential Brokerage](docs/govern/credential-brokerage.md) - Scoped upstream credentials for forwards
+- [FAQ](docs/operate/troubleshooting.md) - Common problems and answers
 - [Contributing](CONTRIBUTING.md) - Contribution guidelines
 - [Security](SECURITY.md) - Security policy
 

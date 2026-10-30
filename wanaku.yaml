@@ -12,7 +12,7 @@ forwards:
     namespace: "test-ns"
 
 # Governance uses fail-safe defaults. Namespace entries override only the
-# fields that they specify. See docs/governance-posture.md.
+# fields that they specify. See docs/govern/governance-posture.md.
 governance:
   default:
     mode: enforce
@@ -51,7 +51,7 @@ governance:
 # evaluator calls. Full audit runs them without applying processor mutations.
 # Both audit levels let requests continue through these governance filters.
 
-# Sample evaluator configuration. See docs/evaluator-engine.md for the full guide.
+# Sample evaluator configuration. See docs/govern/evaluators.md for the full guide.
 # LLM connections are config-only: set them here. The management API lists
 # only their names (GET /api/v1/evaluators/llm-connections).
 llm_connections:

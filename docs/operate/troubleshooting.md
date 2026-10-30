@@ -94,7 +94,7 @@ wanaku-server
 
 On startup, the server loads `registry.json` from `WANAKU_PERSIST_PATH`. After each registry change, a background writer saves a full snapshot. On an orderly shutdown (SIGTERM, SIGINT), the server waits up to 10 seconds for a pending snapshot.
 
-> **Note:** If the process stops because of SIGKILL or an out-of-memory error, changes since the latest completed snapshot are lost. File persistence supports one writer. See [Registry Persistence](configuration.md#registry-persistence).
+> **Note:** If the process stops because of SIGKILL or an out-of-memory error, changes since the latest completed snapshot are lost. File persistence supports one writer. See [Registry Persistence](../reference/configuration.md#registry-persistence).
 
 To disable persistence, set `WANAKU_PERSIST_BACKEND=none`.
 
@@ -104,21 +104,21 @@ The server prints `fatal: <reason>` and stops. These are common reasons:
 
 | Message or log | Cause | Action |
 |---|---|---|
-| `invalid governance configuration` | The `governance` section has an unknown key or a value that is not valid. | Correct the section. See [Governance Posture](governance-posture.md). |
-| `evaluator startup failed: configuration_invalid` | An evaluator definition is not valid. For example, it uses the removed `llm:` key instead of `engine:`, names an unknown connection, or has a `processor.path` file that does not exist or does not compile. A relative path resolves against the working directory. | Read the `startup evaluator configuration rejected` or `failed to parse evaluators config` log line for the details. Correct the evaluator. In a source tree, build the example actions into `actions/dist/`. See [Evaluator Engine](evaluator-engine.md#yaml-configuration). |
+| `invalid governance configuration` | The `governance` section has an unknown key or a value that is not valid. | Correct the section. See [Governance Posture](../govern/governance-posture.md). |
+| `evaluator startup failed: configuration_invalid` | An evaluator definition is not valid. For example, it uses the removed `llm:` key instead of `engine:`, names an unknown connection, or has a `processor.path` file that does not exist or does not compile. A relative path resolves against the working directory. | Read the `startup evaluator configuration rejected` or `failed to parse evaluators config` log line for the details. Correct the evaluator. In a source tree, build the example actions into `actions/dist/`. See [Evaluator Engine](../govern/evaluators.md#yaml-configuration). |
 | `evaluator startup failed: connection_configuration_invalid` | A connection entry is not valid, or an `env:` reference names a variable that is not set. Wanaku resolves every connection, also connections that no evaluator uses. | Set the variable, or remove the connection. |
 | `invalid wanaku configuration YAML` | The `wanaku.yaml` file is not valid YAML. | Correct the YAML syntax. |
 | `wanaku config not found, using defaults` (warning, the server starts) | The `--wanaku-config` file does not exist. The default is `wanaku.yaml` in the working directory. | Correct the path. The server does not stop for a missing file, also when you give the path explicitly. |
 
-Any one invalid evaluator rejects the complete evaluator configuration. To start the server with an invalid evaluator runtime that blocks governed requests, set `evaluator_startup_failure: deny`. See [Evaluator governance startup](configuration.md#evaluator-governance-startup).
+Any one invalid evaluator rejects the complete evaluator configuration. To start the server with an invalid evaluator runtime that blocks governed requests, set `evaluator_startup_failure: deny`. See [Evaluator governance startup](../reference/configuration.md#evaluator-governance-startup).
 
 ## A configuration key has no effect
 
-The server ignores unknown top-level keys in `wanaku.yaml` without a warning. It also ignores unknown keys in `llm_connections` entries and in the `trigger` and `processor` objects of an evaluator. For example, a misspelled `trigger.namespace` key makes the evaluator match every namespace. For unknown keys in `forwards` and `bindings` entries, the server logs `ignoring unknown key in wanaku.yaml entry`. See the [list of top-level keys](configuration.md#wanaku-config-file-wanakuyaml).
+The server ignores unknown top-level keys in `wanaku.yaml` without a warning. It also ignores unknown keys in `llm_connections` entries and in the `trigger` and `processor` objects of an evaluator. For example, a misspelled `trigger.namespace` key makes the evaluator match every namespace. For unknown keys in `forwards` and `bindings` entries, the server logs `ignoring unknown key in wanaku.yaml entry`. See the [list of top-level keys](../reference/configuration.md#wanaku-config-file-wanakuyaml).
 
 ## Tool calls fail with `-32003`
 
-The action-policy filter denied the request. With the default `no_match: deny` and no action policy, the filter denies every `tools/call`, `resources/read`, and `prompts/get`. The action-policy filter and the evaluator filter apply `no_match` independently. A governed request needs an action-policy rule that allows it and an evaluator that matches it, or a `no_match: allow` override for the namespace. See [Governance Posture](governance-posture.md).
+The action-policy filter denied the request. With the default `no_match: deny` and no action policy, the filter denies every `tools/call`, `resources/read`, and `prompts/get`. The action-policy filter and the evaluator filter apply `no_match` independently. A governed request needs an action-policy rule that allows it and an evaluator that matches it, or a `no_match: allow` override for the namespace. See [Governance Posture](../govern/governance-posture.md).
 
 ## Debugging
 

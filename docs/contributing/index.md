@@ -4,18 +4,19 @@ Thank you for your interest in contributing to Wanaku. This page directs contrib
 
 ## Getting Started
 
-Use [Getting Started](getting-started.md) to run Wanaku and verify an MCP request. It is an operator quick start, not a contributor setup guide.
+Use [Getting Started](../get-started/quickstart.md) to run Wanaku and verify an MCP request. It is an operator quick start, not a contributor setup guide.
 
 For implementation work, read the guide that matches the area you plan to change:
 
 ## Quick Links
 
-- [Architecture Overview](architecture.md): filter order, request flow, registries, routing, and feature integration.
-- [Feature Development](features.md): the `Feature` trait and a custom feature tutorial.
-- [Configuration Reference](configuration.md): environment variables, pipeline configuration, and Wanaku bootstrap configuration.
-- [Admin UI Development](contributing-admin-ui.md): React development, generated API clients, tests, and UI conventions.
-- [Plugin Development](plugin-development-guide.md): the implemented Web UI plugin contract and local test workflow.
-- [Evaluator Engine](evaluator-engine.md): evaluator configuration and JavaScript or Rust action scripts.
+- [Architecture Overview](../get-started/architecture.md): filter order, request flow, registries, routing, and feature integration.
+- [Feature Development](../extend/feature-crates.md): the `Feature` trait and a custom feature tutorial.
+- [Configuration Reference](../reference/configuration.md): environment variables, pipeline configuration, and Wanaku bootstrap configuration.
+- [Admin UI Development](admin-ui.md): React development, generated API clients, tests, and UI conventions.
+- [Container Image Build](container-build.md): build the Wanaku container image locally with the Cargo toolchain.
+- [Plugin Development](../extend/plugin-development-guide.md): the implemented Web UI plugin contract and local test workflow.
+- [Evaluator Engine](../govern/evaluators.md): evaluator configuration and JavaScript or Rust action scripts.
 
 ## Prerequisites
 
@@ -80,7 +81,7 @@ The `.github/workflows/pr-build.yml` workflow runs the same checks for each pull
 
 Add meaningful tests for new behavior. Update the relevant documentation when you add or change a feature.
 
-For admin UI changes, follow the [E2E Tests](contributing-admin-ui.md#e2e-tests) section in Admin UI Development. At minimum, cover the page title, add flow, and delete flow when the page supports those actions.
+For admin UI changes, follow the [E2E Tests](admin-ui.md#e2e-tests) section in Admin UI Development. At minimum, cover the page title, add flow, and delete flow when the page supports those actions.
 
 Before you submit a pull request, review the diff for unrelated changes. Keep related corrections in the existing commit when the project maintainers ask for amended commits.
 

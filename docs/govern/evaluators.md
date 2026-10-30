@@ -2,7 +2,7 @@
 
 The evaluator engine lets you build **trigger→evaluate→act** pipelines. When a request matches a trigger, an LLM, TypeSafe System One, or Open Policy Agent (OPA) engine evaluates the request. Wanaku then executes a WebAssembly action script that has access to the registry, conversation history, and response control.
 
-You write the logic in JavaScript or Rust. The engine compiles it to WASM and runs it in a sandboxed environment with a clean, versioned API defined by the [WIT interface](../features/evaluator/wit/evaluator.wit).
+You write the logic in JavaScript or Rust. The engine compiles it to WASM and runs it in a sandboxed environment with a clean, versioned API defined by the [WIT interface](../../features/evaluator/wit/evaluator.wit).
 
 **Why this exists:** MCP tools can be dangerous. You want to block "restart production database" calls, or dynamically assemble a per-conversation tool catalog based on what the LLM thinks the user needs. Pure LLM-based gates are too brittle (hallucination, prompt injection). Pure rule-based gates are too rigid. This engine gives you both: LLM cognitive work + deterministic WASM execution.
 
@@ -59,7 +59,7 @@ evaluators:
 | `url` | string | Base URL of an OpenAI-compatible API, including the version path (for example `http://localhost:11434/v1` or `https://openrouter.ai/api/v1`). Wanaku appends only `/chat/completions`. |
 | `api_key` | string | Optional bearer token for the LLM endpoint, or `env:VARIABLE_NAME`. When it is empty, Wanaku sends no `Authorization` header. |
 
-Each LLM request has a fixed timeout of 10 seconds. Wanaku resolves every `env:` reference at startup, also for a connection that no evaluator uses. One missing variable stops startup. See [Configuration](configuration.md#wanaku-config-file-wanakuyaml).
+Each LLM request has a fixed timeout of 10 seconds. Wanaku resolves every `env:` reference at startup, also for a connection that no evaluator uses. One missing variable stops startup. See [Configuration](../reference/configuration.md#wanaku-config-file-wanakuyaml).
 
 The server loads connections once at startup from `wanaku.yaml`. No API can create,
 update, or read a connection's `api_key`. This design keeps credentials out of the
@@ -181,7 +181,7 @@ evaluators:
       path: "actions/dist/safety_review_action.wasm"
 ```
 
-Set `TYPESAFE_API_KEY` in the server environment before startup. Wanaku resolves `env:VARIABLE_NAME` once when it loads connections. The variable must exist and contain a non-empty Unicode value. An empty variable name or invalid value rejects the complete connection set. Error messages do not include the key value. API keys without the `env:` prefix remain literal values. See [Configuration](configuration.md) for the connection settings.
+Set `TYPESAFE_API_KEY` in the server environment before startup. Wanaku resolves `env:VARIABLE_NAME` once when it loads connections. The variable must exist and contain a non-empty Unicode value. An empty variable name or invalid value rejects the complete connection set. Error messages do not include the key value. API keys without the `env:` prefix remain literal values. See [Configuration](../reference/configuration.md) for the connection settings.
 
 The Noul primitive returns the probability that its answer is true. Wanaku
 passes this stable JSON object to `ctx.llmResult`:
@@ -334,7 +334,7 @@ The default `on_failure` value is `deny`.
 - The metrics store records the engine latency and the result for each evaluator.
 - Set `RUST_LOG=wanaku_feature_evaluator=debug` to log the decision path, outcome, and latency of each OPA query.
 
-For a runnable policy, Rego tests, and configuration, see [`examples/opa`](../examples/opa/README.md).
+For a runnable policy, Rego tests, and configuration, see [`examples/opa`](../../examples/opa/README.md).
 
 ### Processor
 
@@ -381,9 +381,9 @@ Wanaku ships three prebuilt action scripts, so you can use evaluators without a 
 
 | File | Engine input | Behavior | Source |
 |------|--------------|----------|--------|
-| `safety_review_action.wasm` | `{"level": "green\|yellow\|red", "reason": "..."}` from an `llm` engine, or a TypeSafe System One result | Blocks `red`, warns on `yellow`, and passes `green`. For a TypeSafe System One result, blocks a probability below 0.5. Rejects any other result as malformed (`-32002`). | [`actions/safety-review`](../actions/safety-review/src/lib.rs) |
-| `assembly_filter_action.wasm` | A JSON array of tool names | Moves the named tools from the `default` namespace into the request namespace and limits the tool list to them. Skips tools from other namespaces. Passes all tools if the input is not a JSON array. | [`actions/assembly-filter`](../actions/assembly-filter/src/lib.rs) |
-| `opa_allow_action.wasm` | A normalized OPA decision from an `opa` engine | Passes only when the decision is `"allow": true`. Blocks all other input. | [`actions/opa-allow`](../actions/opa-allow/src/lib.rs) |
+| `safety_review_action.wasm` | `{"level": "green\|yellow\|red", "reason": "..."}` from an `llm` engine, or a TypeSafe System One result | Blocks `red`, warns on `yellow`, and passes `green`. For a TypeSafe System One result, blocks a probability below 0.5. Rejects any other result as malformed (`-32002`). | [`actions/safety-review`](../../actions/safety-review/src/lib.rs) |
+| `assembly_filter_action.wasm` | A JSON array of tool names | Moves the named tools from the `default` namespace into the request namespace and limits the tool list to them. Skips tools from other namespaces. Passes all tools if the input is not a JSON array. | [`actions/assembly-filter`](../../actions/assembly-filter/src/lib.rs) |
+| `opa_allow_action.wasm` | A normalized OPA decision from an `opa` engine | Passes only when the decision is `"allow": true`. Blocks all other input. | [`actions/opa-allow`](../../actions/opa-allow/src/lib.rs) |
 
 The location of the files depends on how you install Wanaku:
 
@@ -917,7 +917,7 @@ processor:
 ### Complete Rust Example
 
 Full `src/lib.rs` for a safety gate. This file is the shipped
-[`actions/safety-review/src/lib.rs`](../actions/safety-review/src/lib.rs) without
+[`actions/safety-review/src/lib.rs`](../../actions/safety-review/src/lib.rs) without
 its tests. The action reads the engine result from `ctx.llm_result` and maps the
 level to a response: `red` blocks, `yellow` warns, and any other level passes.
 The action accepts two result formats:
@@ -1345,7 +1345,7 @@ Your system prompt tells the LLM what to extract from that context. The engine s
 
 Evaluator execution uses the shared [governance posture](governance-posture.md). The `on_error` field is no longer accepted.
 
-Users of earlier 0.3.0 pre-release builds must update both startup configuration and persisted evaluator revisions. See [Update an earlier pre-release configuration](configuration.md#update-an-earlier-pre-release-configuration).
+Users of earlier 0.3.0 pre-release builds must update both startup configuration and persisted evaluator revisions. See [Update an earlier pre-release configuration](../reference/configuration.md#update-an-earlier-pre-release-configuration).
 
 - LLM, TypeSafe, and OPA failures follow `on_failure`.
 - Empty engine output is a failure.
@@ -1511,7 +1511,7 @@ This re-compiles all WASM files referenced in the config.
 - **LLM prompts can be attacked** — sanitize user input, use system prompts that are robust to injection, and fail open if unsure.
 - **WASM actions are deterministic** — the same input always produces the same output. Use this property to test your logic thoroughly.
 - **Namespace bindings are ephemeral** — they live in memory, not persisted. If the server restarts, you lose bindings.
-- **Evaluator revisions persist when persistence is enabled** — revision history and the active revision survive a restart. The server writes `evaluator-revisions.json` after every change and restores the active revision at startup. See [Evaluator Revision Persistence](configuration.md#evaluator-revision-persistence). When persistence is disabled, revisions live only in memory and the server rebuilds the active revision from `wanaku.yaml` on each restart.
+- **Evaluator revisions persist when persistence is enabled** — revision history and the active revision survive a restart. The server writes `evaluator-revisions.json` after every change and restores the active revision at startup. See [Evaluator Revision Persistence](../reference/configuration.md#evaluator-revision-persistence). When persistence is disabled, revisions live only in memory and the server rebuilds the active revision from `wanaku.yaml` on each restart.
 - **OPA connection credentials never transit the management API.** The `url`, `token`, and `ca_cert` fields live only in `opa_connections` in `wanaku.yaml`. The OPA input document does not contain headers or credentials.
 - **LLM credentials never transit the management API.** `model`, `url`, and `api_key` live only in `llm_connections` in `wanaku.yaml`, loaded once at startup. Evaluators refer to a connection by name. No route can set, update, or read an `api_key`, not on evaluator create or update, and not in evaluator revision history. To rotate a credential, edit `wanaku.yaml` and restart the server.
 
@@ -1521,13 +1521,13 @@ This re-compiles all WASM files referenced in the config.
 - **Iterate on prompts:** The LLM is the cognitive core — spend time tuning your system prompt.
 - **Test offline:** Write unit tests for your WASM logic before deploying.
 - **Monitor logs:** The evaluator filter emits detailed traces — watch for LLM responses, WASM decisions, and action results.
-- **Read the WIT:** [`features/evaluator/wit/evaluator.wit`](../features/evaluator/wit/evaluator.wit) is the authoritative API reference.
+- **Read the WIT:** [`features/evaluator/wit/evaluator.wit`](../../features/evaluator/wit/evaluator.wit) is the authoritative API reference.
 
 ## Reference Links
 
-- **WIT Interface:** [`features/evaluator/wit/evaluator.wit`](../features/evaluator/wit/evaluator.wit)
-- **TypeScript Definitions:** [`sdk/js/wanaku-actions.d.ts`](../sdk/js/wanaku-actions.d.ts)
-- **JavaScript Examples:** [`actions/js-examples/`](../actions/js-examples/)
-- **Rust Example:** [`actions/safety-review/`](../actions/safety-review/)
+- **WIT Interface:** [`features/evaluator/wit/evaluator.wit`](../../features/evaluator/wit/evaluator.wit)
+- **TypeScript Definitions:** [`sdk/js/wanaku-actions.d.ts`](../../sdk/js/wanaku-actions.d.ts)
+- **JavaScript Examples:** [`actions/js-examples/`](../../actions/js-examples/)
+- **Rust Example:** [`actions/safety-review/`](../../actions/safety-review/)
 - **jco Componentize Docs:** [Bytecode Alliance jco](https://github.com/bytecodealliance/jco)
 - **cargo-component Docs:** [cargo-component](https://github.com/bytecodealliance/cargo-component)

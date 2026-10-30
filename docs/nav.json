@@ -1,0 +1,69 @@
+{
+  "sidebar": [
+    {
+      "text": "Get started",
+      "link": "get-started/",
+      "items": [
+        { "text": "Quickstart", "link": "get-started/quickstart" },
+        { "text": "Architecture", "link": "get-started/architecture" },
+        { "text": "Migrate from Classic Wanaku", "link": "get-started/migration-from-classic" }
+      ]
+    },
+    {
+      "text": "Deploy and operate",
+      "link": "operate/",
+      "items": [
+        { "text": "Authentication", "link": "operate/authentication" },
+        { "text": "Troubleshooting", "link": "operate/troubleshooting" }
+      ]
+    },
+    {
+      "text": "Connect agents and backends",
+      "link": "connect/",
+      "items": [
+        { "text": "A2A proxy", "link": "connect/a2a" },
+        { "text": "Semantic routing", "link": "connect/semantic-routing" }
+      ]
+    },
+    {
+      "text": "Govern agent actions",
+      "link": "govern/",
+      "items": [
+        { "text": "Governance posture", "link": "govern/governance-posture" },
+        { "text": "Action policies", "link": "govern/action-policies" },
+        { "text": "Evaluators", "link": "govern/evaluators" },
+        { "text": "Credential brokerage", "link": "govern/credential-brokerage" },
+        { "text": "Redaction boundary", "link": "govern/redaction" },
+        { "text": "Audit trail", "link": "govern/audit-trail" },
+        { "text": "Policy simulation", "link": "govern/policy-simulation" }
+      ]
+    },
+    {
+      "text": "Extend",
+      "link": "extend/",
+      "items": [
+        { "text": "Feature crates", "link": "extend/feature-crates" },
+        { "text": "Build an Admin UI plugin", "link": "extend/plugin-development-guide" },
+        { "text": "Plugin catalog", "link": "extend/plugin-catalog" },
+        { "text": "Admin UI plugin architecture", "link": "extend/extensible-web-ui-plugin-guidelines" }
+      ]
+    },
+    {
+      "text": "Reference",
+      "link": "reference/",
+      "items": [
+        { "text": "Configuration", "link": "reference/configuration" },
+        { "text": "Management API", "link": "reference/management-api" }
+      ]
+    },
+    {
+      "text": "Contribute",
+      "link": "contributing/",
+      "collapsed": true,
+      "items": [
+        { "text": "Admin UI development", "link": "contributing/admin-ui" },
+        { "text": "Build container images", "link": "contributing/container-build" }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Contributing: Admin UI
 
-This guide covers development of the admin UI for contributors. For end-user documentation on using the admin UI, see the [Getting Started](./getting-started.md) guide.
+This guide covers development of the admin UI for contributors. For end-user documentation on using the admin UI, see the [Getting Started](../get-started/quickstart.md) guide.
 
 The admin UI is a React 19 and TypeScript frontend embedded in the server binary through `rust_embed`. Open `http://localhost:8080/admin/` to use the graphical interface to the management API. The server redirects `/` to `/admin/`.
 
@@ -113,7 +113,7 @@ dist/
 
 ### 4. Embed in Server
 
-The server binary embeds `ui/admin/dist/` at compile time through `rust_embed`. Refer to the `AdminUi` struct in [`server/src/management/ui.rs`](../server/src/management/ui.rs). The `ui` Cargo feature (on by default) enables the embedded UI.
+The server binary embeds `ui/admin/dist/` at compile time through `rust_embed`. Refer to the `AdminUi` struct in [`server/src/management/ui.rs`](../../server/src/management/ui.rs). The `ui` Cargo feature (on by default) enables the embedded UI.
 
 The server serves the UI under `/admin/`. When you open `http://localhost:8080/admin/`, the server serves files from the embedded bundle.
 
@@ -437,7 +437,7 @@ Hash routing keeps all requests to `GET /` (which serves `index.html`), and the 
 
 **Router setup:**
 
-`buildRouter(pluginPages)` in [`ui/admin/src/router.tsx`](../ui/admin/src/router.tsx) creates the hash router. It adds one lazy route for each core page and one route for each plugin page.
+`buildRouter(pluginPages)` in [`ui/admin/src/router.tsx`](../../ui/admin/src/router.tsx) creates the hash router. It adds one lazy route for each core page and one route for each plugin page.
 
 ## API Client (Orval)
 
@@ -466,7 +466,7 @@ This runs the `wanaku-openapi` example from `server/Cargo.toml` with `--no-defau
 
 ### Configuration
 
-[`ui/admin/orval.config.ts`](../ui/admin/orval.config.ts) configures Orval:
+[`ui/admin/orval.config.ts`](../../ui/admin/orval.config.ts) configures Orval:
 
 - The input is `./openapi.json`. An input transformer removes the `{"data": ...}` envelope from the success response schemas of some tags.
 - The output is a `fetch` client in `./src/api/wanaku-router-api.ts`, with the models in `./src/models`.
@@ -600,7 +600,7 @@ The test directory has this layout:
 
 A new page must have tests for the page title. If the page supports these actions, add tests for the add modal and for delete.
 
-To run the tests, build the admin UI and the evaluator actions first. Refer to [Contributing](contributing.md#prerequisites). Then install the test dependencies:
+To run the tests, build the admin UI and the evaluator actions first. Refer to [Contributing](index.md#prerequisites). Then install the test dependencies:
 
 ```bash
 cd tests/e2e/ui
@@ -620,6 +620,6 @@ npx playwright test
 
 ## Related Docs
 
-- [Architecture](./architecture.md) — how the UI is embedded in the server
-- [Configuration](./configuration.md) — `WANAKU_UI_PATH` for local dev
-- [Management API](./management-api.md) — API routes the UI consumes
+- [Architecture](../get-started/architecture.md) — how the UI is embedded in the server
+- [Configuration](../reference/configuration.md) — `WANAKU_UI_PATH` for local dev
+- [Management API](../reference/management-api.md) — API routes the UI consumes

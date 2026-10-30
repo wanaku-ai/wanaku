@@ -81,7 +81,7 @@ Each request accepts a `candidate` object. An empty object selects the active ac
 
 Use one source for each configuration. Specify the corresponding base revision for an inline candidate or patch. A merge patch replaces arrays. A `null` patch member removes that member.
 
-Use the action-policy schema from [Action Policies](action-policies.md). Use the evaluator schema from [Evaluator Engine](evaluator-engine.md). Do not include connection credentials in a candidate.
+Use the action-policy schema from [Action Policies](action-policies.md). Use the evaluator schema from [Evaluator Engine](evaluators.md). Do not include connection credentials in a candidate.
 
 `inline_policy` is the policy object itself, with a top-level `rules` list. Do not wrap it in an `action_policy` or `policy` key. `inline_evaluators` is the evaluator list itself, a JSON array. Do not wrap it in an `evaluators` key. A wrapped value fails with `policy_schema_invalid` or `evaluator_schema_invalid`. An inline value or patch without its base revision fails with `candidate_base_revision_required`.
 
@@ -354,8 +354,8 @@ Simulation records administrative activity with safe policy identity and operati
 
 ## Related documentation
 
-- [Management API](management-api.md#policy-simulation)
-- [Configuration](configuration.md)
+- [Management API](../reference/management-api.md#policy-simulation)
+- [Configuration](../reference/configuration.md)
 - [Action Policies](action-policies.md)
-- [Evaluator Engine](evaluator-engine.md)
+- [Evaluator Engine](evaluators.md)
 - [Governance Posture](governance-posture.md)
