@@ -28,6 +28,20 @@ The CLI logs in with the public `mcp-client`, which does not need a client secre
 
 The local realm enables the password grant for `mcp-client`. Use this grant only for local development. Production deployments should use an interactive OAuth flow and production Keycloak clients.
 
+## Log in with the CLI
+
+After setup, log in with the local CLI client and use one token with both APIs:
+
+```bash
+wanaku auth login --auth-server http://localhost:8543 --realm wanaku \
+  --client-id mcp-client --username alice --password
+TOKEN=$(wanaku auth token --get --plain --unmask)
+wanaku mcp tool list --verbose --uri http://localhost:4181/default/mcp --token "$TOKEN"
+wanaku tools list --verbose --host http://localhost:4180 --token "$TOKEN"
+```
+
+Set the namespace in the MCP endpoint path. Replace `default` with the namespace that contains the tools you want to access. The login command prompts for the user's password.
+
 ## Issuer addresses
 
 Set `WANAKU_AUTH_ISSUER` to the issuer URL that clients can reach. Set `WANAKU_AUTH_UPSTREAM_ISSUER` when the server must use a different URL to reach Keycloak. The upstream variable defaults to `WANAKU_AUTH_ISSUER`.

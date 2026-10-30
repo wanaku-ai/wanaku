@@ -274,7 +274,7 @@ A secret reference has the form `scheme:path`, for example `env:API_TOKEN`. The 
 
 Wanaku registers one resolver by default: `env`. It reads the named process environment variable.
 
-When Wanaku runs in a container or as a systemd service, you must pass the variable to the server process. Read [Secrets and Environment Variables](../get-started/quickstart.md#secrets-and-environment-variables).
+When Wanaku runs in a container or as a systemd service, you must pass the variable to the server process. Read [Pass secrets to the Wanaku server](../operate/secrets.md).
 
 The `env` resolver:
 

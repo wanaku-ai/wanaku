@@ -5,7 +5,18 @@ description: Deploy Wanaku on Kubernetes or OpenShift with a ConfigMap, a Secret
 
 # Deploy Wanaku on Kubernetes and OpenShift
 
-For production installs on Kubernetes or OpenShift, use the Wanaku Operator. See [Production Deployment on Kubernetes or OpenShift](../get-started/quickstart.md#production-deployment-on-kubernetes-or-openshift). The manifests below show a plain `Deployment` for a small installation.
+The container and systemd setups are for evaluation and small installations. For a full production system, use the Wanaku Operator. The manifests on this page show a plain `Deployment` for a small installation.
+
+## Use the Wanaku Operator
+
+The operator is part of the [wanaku-barn](https://github.com/wanaku-ai/wanaku-barn) repository. The operator deploys the Wanaku server and its related components from custom resources. It creates the deployments, services, configuration, secrets, routes or ingress, and RBAC resources.
+
+Read these guides to install it:
+
+- [Kubernetes Operator Guide](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/operator.md): the custom resources and how to deploy them.
+- [Wanaku Operator on OperatorHub](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/operator-olm.md): installation with the Operator Lifecycle Manager (OLM) on OpenShift or OKD.
+
+## Deploy with plain manifests
 
 **ConfigMap:**
 
