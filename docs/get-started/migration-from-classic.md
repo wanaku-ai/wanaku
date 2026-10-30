@@ -627,7 +627,7 @@ export WANAKU_INFERENCE_UPSTREAM=http://ollama:11434
 
 ### Interaction Recording
 
-The `wanaku_intercept` filter records LLM request and response pairs that pass through the inference proxy (port 8083). It does not record MCP traffic. The evaluator engine uses these records as conversation history. The filter can also insert a system message into the `messages` array of a chat request. Read [Features](../extend/feature-crates.md#intercept-feature-featuresintercept) for details. The store keeps the most recent 1000 interactions by default.
+The `wanaku_intercept` filter records LLM request and response pairs that pass through the inference proxy (port 8083). It does not record MCP traffic. The evaluator engine uses these records as conversation history. The filter can also insert a system message into the `messages` array of a chat request. Read [Feature crates](../extend/feature-crates.md#intercept) for details. The store keeps the most recent 1000 interactions by default.
 
 ```bash
 export WANAKU_INTERACTION_CAPACITY=1000

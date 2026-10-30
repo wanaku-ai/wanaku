@@ -241,7 +241,7 @@ Wanaku is open source (Apache 2.0). Contributions welcome.
 6. Write tests
 7. Update docs
 
-See [Features](./extend/feature-crates.md) for the full tutorial.
+See [Build a feature crate](./extend/build-a-feature.md) for the full tutorial.
 
 ## Support and Community
 
