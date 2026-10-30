@@ -1,4 +1,9 @@
-# Semantic routing with Barn and WSR
+---
+title: Semantic routing with Barn and WSR
+description: Create a semantic router in Barn, run it with the Wanaku Semantic Router (WSR), and authorize its MCP tool with Wanaku action policies.
+---
+
+# Semantic routing with Barn and the Wanaku Semantic Router (WSR)
 
 Barn provides a focused wizard for creating semantic routers from curated Kamelet actions. Wanaku Semantic Router (WSR) runs the published Camel integration. Wanaku discovers its MCP tool and applies the normal action policy before forwarding each call.
 
@@ -103,20 +108,16 @@ Graceful shutdown removes the WSR forward. After an abrupt failure, Wanaku marks
 
 ## Run acceptance checks
 
-Use a JDK 21 or later. Use Node.js 22 or later. Build Barn with `mvn verify`. Build WSR with `mvn verify`. Build Wanaku with `cargo build`. Run `cargo test --workspace` in Wanaku.
-
-Run the cross-repository suite from the Wanaku checkout:
-
-```bash
-node tests/semantic-router/acceptance.mjs /path/to/wanaku-barn /path/to/wanaku-semantic-router
-```
-
-The suite starts the three built applications and a local HTTP provider fixture. It uses isolated state and dynamically selected ports. It uploads ordinary and semantic Kamelets through Barn. It runs an ordinary Kamelet through Camel's native HTTP lookup. It verifies pinned semantic content after replacement and removal. It inspects generated files without persistence or inference. It creates a definition, runs previews, publishes a real catalog, and starts WSR from the published revision. It checks MCP initialization, discovery, schemas, namespace isolation, both actions, no match, failed and malformed evaluations, policy denial before inference, unavailable forwards, revision replacement, and graceful shutdown. The suite writes logs to a temporary directory and stops its processes after the checks.
-
-Run Barn's browser tests separately. Use the documented model evaluation procedure in WSR for representative model inputs. CI checks integration behavior with deterministic fixtures. CI does not require paid inference or backend side effects.
+Wanaku has a cross-repository acceptance suite for Barn, WSR, and Wanaku. Read [Semantic router acceptance suite](../contributing/testing.md#semantic-router-acceptance-suite) for the prerequisites and the command.
 
 ## Release compatibility
 
-Use Barn, WSR, and Wanaku revisions that pass the cross-repository suite together. Run the suite against the selected revisions before release.
+Use Barn, WSR, and Wanaku revisions that pass the cross-repository suite together. Run the [acceptance suite](../contributing/testing.md#semantic-router-acceptance-suite) against the selected revisions before release.
 
 Tracking: [Wanaku #2101](https://github.com/wanaku-ai/wanaku/issues/2101), [Wanaku #2102](https://github.com/wanaku-ai/wanaku/issues/2102), and [Barn #179–184](https://github.com/wanaku-ai/wanaku-barn/issues/179).
+
+## Next steps
+
+- [Action Policies](../govern/action-policies.md): allow and deny calls to the router tool.
+- [Ingest Camel semantic audit records](semantic-audit-ingestion.md): store the router decisions in the audit trail.
+- [Governance Posture](../govern/governance-posture.md): set the no-match posture for the router namespace.
