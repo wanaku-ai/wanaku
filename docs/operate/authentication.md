@@ -1,9 +1,9 @@
 ---
-title: Authentication
+title: Authenticate MCP clients with oauth2-proxy and Keycloak
 description: Authenticate MCP clients and Admin UI users for Wanaku with oauth2-proxy and Keycloak, set the issuer addresses, and log out of the CLI.
 ---
 
-# Authentication
+# Authenticate MCP clients with oauth2-proxy and Keycloak
 
 Wanaku uses Keycloak to issue tokens. oauth2-proxy validates browser sessions and bearer tokens before it forwards requests to Wanaku.
 

@@ -1,9 +1,9 @@
 ---
-title: Governance audit trail
+title: Audit trail for AI agent tool calls
 description: Record Wanaku governance decisions in the audit store, configure retention and redaction, enable persistence, and query events through the API.
 ---
 
-# Governance audit trail
+# Audit trail for AI agent tool calls
 
 Wanaku records governance decisions in a dedicated audit store. Audit events are separate from interaction records and metrics. The stable event schema lets operators correlate a request with the controls that evaluated it and the result of the evaluation.
 

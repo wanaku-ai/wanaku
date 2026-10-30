@@ -1,9 +1,9 @@
 ---
-title: Architecture
+title: How the proxy intercepts and governs tool calls
 description: How Wanaku intercepts and governs tool calls, agent messages, and inference traffic, with the filter pipeline, registries, and features.
 ---
 
-# Architecture
+# How the proxy intercepts and governs tool calls
 
 Wanaku is a governed action proxy for AI agents, built in Rust on the Praxis proxy framework. It sits between agents and the systems they act on, intercepting every tool call, agent-to-agent message, and inference request. Policy, identity, data controls, and audit are enforced in the proxy — agents never touch backend systems directly.
 

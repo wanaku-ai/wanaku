@@ -1,9 +1,9 @@
 ---
-title: Quickstart
+title: "Quickstart: install Wanaku and proxy an MCP tool call"
 description: Install Wanaku, start the server, register an upstream MCP server as a forward, and test the MCP endpoint, in a container or with systemd.
 ---
 
-# Getting Started with Wanaku
+# Quickstart: install Wanaku and proxy an MCP tool call
 
 Wanaku is a governed action proxy for AI agents. It sits between agents and backend systems, where it intercepts tool calls and enforces policy, identity, and data controls. Wanaku performs requested actions on behalf of agents, so agents never access backend systems directly.
 

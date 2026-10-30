@@ -1,9 +1,9 @@
 ---
-title: Management API
+title: Management API reference for tools, forwards and policies
 description: "Reference for the Wanaku management API on port 8080: tools, namespaces, forwards, bindings, feature routes, status codes, and CORS."
 ---
 
-# Management API
+# Management API reference for tools, forwards and policies
 
 The management API lets operators inspect and change Wanaku at runtime. It listens on port 8080 by default. Set `WANAKU_MGMT_LISTEN` to use a different address.
 
