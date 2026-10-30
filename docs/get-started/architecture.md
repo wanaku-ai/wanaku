@@ -337,7 +337,7 @@ pub trait Feature: Send + Sync {
 7. **Policy simulation** (`features/simulation/`) — validates candidates and compares decisions without activation
 8. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
 
-See [Features](../extend/feature-crates.md) for how to create your own.
+See [Build a feature crate](../extend/build-a-feature.md) for how to create your own.
 
 ### Application Assembly
 

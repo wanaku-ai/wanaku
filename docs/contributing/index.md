@@ -11,7 +11,8 @@ For implementation work, read the guide that matches the area you plan to change
 ## Quick Links
 
 - [Architecture Overview](../get-started/architecture.md): filter order, request flow, registries, routing, and feature integration.
-- [Feature Development](../extend/feature-crates.md): the `Feature` trait and a custom feature tutorial.
+- [Feature crates](../extend/feature-crates.md): the `Feature` trait and the feature lifecycle.
+- [Build a feature crate](../extend/build-a-feature.md): a custom feature tutorial.
 - [Configuration Reference](../reference/configuration.md): environment variables, pipeline configuration, and Wanaku bootstrap configuration.
 - [Admin UI Development](admin-ui.md): React development, generated API clients, tests, and UI conventions.
 - [Container Image Build](container-build.md): build the Wanaku container image locally with the Cargo toolchain.

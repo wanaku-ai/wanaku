@@ -14,7 +14,8 @@ These pages are for developers who add features to Wanaku.
 
 ## Feature crates
 
-- [Features](feature-crates.md): learn the `Feature` trait and build a custom feature crate.
+- [Feature crates](feature-crates.md): learn the `Feature` trait, the built-in crates, and the lifecycle.
+- [Build a feature crate](build-a-feature.md): create, wire, and test a custom feature crate.
 
 ## Admin UI plugins
 

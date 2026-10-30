@@ -51,6 +51,7 @@
         { "text": "Evaluator actions in JavaScript", "link": "extend/evaluator-actions-js" },
         { "text": "Evaluator actions in Rust", "link": "extend/evaluator-actions-rust" },
         { "text": "Feature crates", "link": "extend/feature-crates" },
+        { "text": "Build a feature crate", "link": "extend/build-a-feature" },
         { "text": "Build an Admin UI plugin", "link": "extend/plugin-development-guide" },
         { "text": "Plugin catalog", "link": "extend/plugin-catalog" },
         { "text": "Admin UI plugin architecture", "link": "extend/extensible-web-ui-plugin-guidelines" }

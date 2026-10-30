@@ -151,7 +151,7 @@ See [docs/govern/evaluators.md](docs/govern/evaluators.md) for YAML config, mana
 
 ## Common Tasks
 
-**Add feature:** See [docs/extend/feature-crates.md](docs/extend/feature-crates.md) for the full tutorial. Key patterns: `body_filter_boilerplate!`, `json_rpc_error`, `NAMESPACE_METADATA_KEY`, `llm::{LlmClient, HotSwap}`, `HttpContext`, `McpContext`.
+**Add feature:** See [docs/extend/build-a-feature.md](docs/extend/build-a-feature.md) for the full tutorial. Key patterns: `body_filter_boilerplate!`, `json_rpc_error`, `NAMESPACE_METADATA_KEY`, `llm::{LlmClient, HotSwap}`, `HttpContext`, `McpContext`.
 
 **Add core filter:**
 
@@ -198,7 +198,7 @@ tracing::debug!(method = ?ctx.get_metadata("mcp.method"), namespace = ?ctx.get_m
 
 ## Extensibility
 
-See [docs/extend/feature-crates.md](docs/extend/feature-crates.md) for the Feature trait, lifecycle, and creating custom features. See [docs/get-started/architecture.md](docs/get-started/architecture.md) for how features fit into the pipeline.
+See [docs/extend/feature-crates.md](docs/extend/feature-crates.md) for the Feature trait and lifecycle, and [docs/extend/build-a-feature.md](docs/extend/build-a-feature.md) for creating custom features. See [docs/get-started/architecture.md](docs/get-started/architecture.md) for how features fit into the pipeline.
 
 **Shared LLM:** `infra/src/llm.rs` — `LlmClient` (OpenAI `/chat/completions`), `HotSwap<T>` (runtime config), `sanitize()`/`strip_markdown_fences()`/`extract_content()` utilities.
 
