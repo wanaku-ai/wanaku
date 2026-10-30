@@ -21,7 +21,7 @@ The image uses these paths and ports:
 | A2A listener | `8084` | |
 | User | UID `1001`, GID `0` | Mounted files must be readable by this user. |
 
-The server can start without a `wanaku.yaml` file, but it then uses the fail-safe governance defaults. Discovery works, but the server denies every tool call, resource read, and prompt request. Without an action policy and an evaluator, nothing allows these requests. This is sufficient for a first try. For real use, write your own configuration. Start from the [minimal wanaku.yaml](../get-started/quickstart.md#7-allow-your-first-tool-call) and read [Governance Posture](../govern/governance-posture.md).
+The server can start without a `wanaku.yaml` file, but it then uses the fail-safe governance defaults. Discovery works, but the server denies every tool call, resource read, and prompt request. Without an action policy and an evaluator, nothing allows these requests. This is sufficient for a first try. For real use, write your own configuration. Start from the [quickstart configuration](../get-started/quickstart.md#3-write-the-configuration) and read [Governance Posture](../govern/governance-posture.md).
 
 ## Start the container
 
