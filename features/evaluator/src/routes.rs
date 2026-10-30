@@ -315,7 +315,12 @@ pub(crate) fn handle_unbind_namespace(
     state: &EvaluatorState,
     namespace: &str,
 ) -> Response<Vec<u8>> {
-    state.unbind_namespace(namespace);
+    if !state.unbind_namespace(namespace) {
+        return json_err(
+            StatusCode::NOT_FOUND,
+            &format!("namespace binding not found: {namespace}"),
+        );
+    }
     info!(namespace = %namespace, "namespace unbound");
     json_ok(&serde_json::json!({"unbound": namespace}))
 }
@@ -323,6 +328,23 @@ pub(crate) fn handle_unbind_namespace(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unbind_of_unknown_namespace_returns_404() {
+        let state = EvaluatorState::new();
+        let response = handle_unbind_namespace(&state, "never-bound");
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        state.bind_namespace("prod", "conv-1");
+        assert_eq!(
+            handle_unbind_namespace(&state, "prod").status(),
+            StatusCode::OK
+        );
+        assert_eq!(
+            handle_unbind_namespace(&state, "prod").status(),
+            StatusCode::NOT_FOUND
+        );
+    }
 
     #[test]
     fn misspelled_update_does_not_clear_configuration() {

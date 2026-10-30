@@ -34,7 +34,7 @@ use self::handlers::{
     handle_namespace_update, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
     handle_prompt_set_enabled, handle_resource_delete, handle_resource_get, handle_resource_list,
     handle_resource_set_enabled, handle_statistics, handle_tool_delete, handle_tool_get,
-    handle_tool_list, handle_tool_set_enabled,
+    handle_tool_list, handle_tool_set_enabled, replace_requested,
 };
 #[cfg(feature = "ui")]
 use self::response::redirect_response;
@@ -222,7 +222,10 @@ pub(crate) async fn dispatch(
         ForwardRoute::GetByName(name) => return handle_forward_get(registry, &name),
         ForwardRoute::Create => {
             return match ctx.body {
-                Some(b) => handle_forward_create(registry, broker, audit_sink, b).await,
+                Some(b) => {
+                    let replace = replace_requested(ctx.query);
+                    handle_forward_create(registry, broker, audit_sink, b, replace).await
+                }
                 None => json_err(StatusCode::BAD_REQUEST, "request body required"),
             };
         }

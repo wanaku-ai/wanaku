@@ -203,6 +203,13 @@ pub(super) fn handle_namespace_create(
         return json_err(StatusCode::BAD_REQUEST, &reason);
     }
 
+    if registry.get_namespace(&namespace.name).is_some() {
+        return json_err(
+            StatusCode::CONFLICT,
+            &format!("namespace already exists: {}", namespace.name),
+        );
+    }
+
     let name = namespace.name.clone();
     registry.register_namespace(namespace);
     info!(namespace = %name, "registered namespace via management API");
@@ -295,6 +302,7 @@ pub(super) async fn handle_forward_create(
     broker: &CredentialBroker,
     audit_sink: Option<&dyn CredentialAuditSink>,
     body: &str,
+    replace: bool,
 ) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, "forward create request body");
     let mut forward: ForwardEntry = match serde_json::from_str(body) {
@@ -308,13 +316,30 @@ pub(super) async fn handle_forward_create(
         }
     };
 
-    // A re-registration that changes the upstream address must drop credentials
-    // cached against the previous origin before anything is brokered anew.
-    if let Some(existing) = registry.get_forward(&forward.name)
-        && existing.address != forward.address
+    if let Some(namespace) = &forward.namespace
+        && let Err(reason) = wanaku_types::registry::validate_namespace_name(namespace)
     {
-        info!(forward = %forward.name, "forward address changed; revalidating credentials");
-        revalidate_forward_credentials(registry, broker, &forward);
+        warn!(forward = %forward.name, namespace = %namespace, reason = %reason, "forward namespace validation failed");
+        return json_err(StatusCode::BAD_REQUEST, &reason);
+    }
+    if let Err(e) = NormalizedOrigin::from_address(&forward.address) {
+        warn!(forward = %forward.name, error = %e, "forward address validation failed");
+        return json_err(StatusCode::BAD_REQUEST, &e.to_string());
+    }
+    // Re-registering replaces the forward's state, so callers must ask for it.
+    if let Some(existing) = registry.get_forward(&forward.name) {
+        if !replace {
+            return json_err(
+                StatusCode::CONFLICT,
+                &format!("forward already exists: {}", forward.name),
+            );
+        }
+        // A replacement that changes the upstream address must drop credentials
+        // cached against the previous origin before anything is brokered anew.
+        if existing.address != forward.address {
+            info!(forward = %forward.name, "forward address changed; revalidating credentials");
+            revalidate_forward_credentials(registry, broker, &forward);
+        }
     }
 
     let DiscoveryExchange {
@@ -383,6 +408,13 @@ pub(super) async fn handle_forward_create(
         "resources_discovered": resources_count,
         "prompts_discovered": prompts_count,
     }))
+}
+
+/// Whether a forward create asks to replace an existing forward
+/// (`replace=true` query parameter).
+pub(super) fn replace_requested(query: Option<&str>) -> bool {
+    form_urlencoded::parse(query.unwrap_or_default().as_bytes())
+        .any(|(key, value)| key == "replace" && value == "true")
 }
 
 /// Build the label precondition of a conditional delete from the
@@ -1353,12 +1385,12 @@ mod tests {
     };
 
     use super::{
-        handle_binding_get, handle_binding_list, handle_forward_delete, handle_forward_get,
-        handle_forward_list, handle_info, handle_namespace_create, handle_namespace_delete,
-        handle_namespace_get, handle_namespace_list, handle_namespace_update, handle_prompt_delete,
-        handle_prompt_get, handle_prompt_list, handle_resource_delete, handle_resource_get,
-        handle_resource_list, handle_statistics, handle_tool_delete, handle_tool_get,
-        handle_tool_list,
+        handle_binding_get, handle_binding_list, handle_forward_create, handle_forward_delete,
+        handle_forward_get, handle_forward_list, handle_info, handle_namespace_create,
+        handle_namespace_delete, handle_namespace_get, handle_namespace_list,
+        handle_namespace_update, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
+        handle_resource_delete, handle_resource_get, handle_resource_list, handle_statistics,
+        handle_tool_delete, handle_tool_get, handle_tool_list,
     };
 
     fn test_broker() -> CredentialBroker {
@@ -1585,6 +1617,86 @@ mod tests {
             handle_namespace_create(&registry, r#"{"name":""}"#).status(),
             400
         );
+    }
+
+    #[test]
+    fn namespace_create_duplicate_returns_409_and_keeps_entry() {
+        let registry = InMemoryRegistry::new();
+        let body = r#"{"name":"dup-ns","labels":{"team":"a"}}"#;
+        assert_eq!(handle_namespace_create(&registry, body).status(), 200);
+
+        let resp = handle_namespace_create(&registry, r#"{"name":"dup-ns"}"#);
+        assert_eq!(resp.status(), 409);
+        let data = data_field(&handle_namespace_get(&registry, "dup-ns"));
+        assert_eq!(data["labels"]["team"], "a");
+    }
+
+    async fn create_forward(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
+        handle_forward_create(registry, &test_broker(), None, body, false).await
+    }
+
+    #[tokio::test]
+    async fn forward_create_rejects_invalid_namespace() {
+        let registry = InMemoryRegistry::new();
+        let body = r#"{"name":"fwd","address":"http://localhost:1/mcp","namespace":"Bad_NS"}"#;
+        assert_eq!(create_forward(&registry, body).await.status(), 400);
+        assert!(registry.get_forward("fwd").is_none());
+        assert_eq!(handle_namespace_get(&registry, "Bad_NS").status(), 404);
+    }
+
+    #[tokio::test]
+    async fn forward_create_rejects_non_http_address() {
+        let registry = InMemoryRegistry::new();
+        for address in ["ftp://host/mcp", "host/mcp", "not a url"] {
+            let body = serde_json::json!({"name": "fwd", "address": address}).to_string();
+            assert_eq!(
+                create_forward(&registry, &body).await.status(),
+                400,
+                "{address}"
+            );
+        }
+        assert!(registry.get_forward("fwd").is_none());
+    }
+
+    #[tokio::test]
+    async fn forward_create_duplicate_returns_409_and_keeps_state() {
+        let registry = InMemoryRegistry::new();
+        register_owned_forward(&registry, "pod-a");
+        let body = r#"{"name":"owned-fwd","address":"http://other.example/mcp"}"#;
+
+        let resp = create_forward(&registry, body).await;
+
+        assert_eq!(resp.status(), 409);
+        assert!(registry.get_tool("owned-tool").is_some());
+        let kept = registry.get_forward("owned-fwd").map(|f| f.address);
+        assert_eq!(kept, Some(cached_forward("owned-fwd").address));
+    }
+
+    #[test]
+    fn forward_create_with_replace_drops_credentials_cached_for_old_address() {
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(cached_forward("cred-fwd"));
+        // Builds its own runtime, so this test cannot run inside `tokio::test`.
+        let broker = broker_with_cached_forward("cred-fwd");
+        let body = r#"{"name":"cred-fwd","address":"http://127.0.0.1:1/mcp"}"#;
+
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let resp = runtime.block_on(handle_forward_create(&registry, &broker, None, body, true));
+
+        assert_eq!(resp.status(), 200);
+        assert!(broker.cache().is_empty());
+        let address = registry.get_forward("cred-fwd").map(|f| f.address);
+        assert_eq!(address.as_deref(), Some("http://127.0.0.1:1/mcp"));
+    }
+
+    #[test]
+    fn replace_requested_only_for_true() {
+        assert!(super::replace_requested(Some("replace=true")));
+        assert!(!super::replace_requested(Some("replace=false")));
+        assert!(!super::replace_requested(None));
     }
 
     #[test]

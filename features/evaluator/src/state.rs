@@ -687,13 +687,17 @@ impl EvaluatorState {
         }
     }
 
-    pub fn unbind_namespace(&self, namespace: &str) {
-        if let Ok(mut guard) = self.bindings.write() {
-            guard.remove(namespace);
-            if let Some(ref store) = self.metrics {
-                store.set_namespace_bindings(guard.len() as u64);
-            }
+    /// Removes the binding of a namespace. Returns `false` when the namespace
+    /// had no binding.
+    pub fn unbind_namespace(&self, namespace: &str) -> bool {
+        let Ok(mut guard) = self.bindings.write() else {
+            return false;
+        };
+        let removed = guard.remove(namespace).is_some();
+        if let Some(ref store) = self.metrics {
+            store.set_namespace_bindings(guard.len() as u64);
         }
+        removed
     }
 
     pub fn get_binding(&self, namespace: &str) -> Option<String> {
@@ -1249,7 +1253,7 @@ mod tests {
         let all = state.list_bindings();
         assert_eq!(all.get("prod").map(String::as_str), Some("wk-123"));
 
-        state.unbind_namespace("prod");
+        assert!(state.unbind_namespace("prod"));
         assert!(state.get_binding("prod").is_none());
     }
 

@@ -37,7 +37,10 @@ pub(crate) fn handle(
     query: Option<&str>,
 ) -> Response<Vec<u8>> {
     match route {
-        AuditRoute::List => json_ok(&serde_json::json!(store.query(&parse_query(query)))),
+        AuditRoute::List => match parse_query(query) {
+            Ok(query) => json_ok(&serde_json::json!(store.query(&query))),
+            Err(message) => json_err(StatusCode::BAD_REQUEST, &message),
+        },
         AuditRoute::Get(id) => store.get(&id).map_or_else(
             || json_err(StatusCode::NOT_FOUND, "audit event not found"),
             |event| json_ok(&serde_json::json!(event)),
@@ -109,20 +112,14 @@ fn contains_null(value: &serde_json::Value) -> bool {
     }
 }
 
-fn parse_query(raw: Option<&str>) -> AuditQuery {
+fn parse_query(raw: Option<&str>) -> Result<AuditQuery, String> {
     let mut query = AuditQuery::default();
     for (key, value) in form_urlencoded::parse(raw.unwrap_or_default().as_bytes()) {
+        let invalid = || format!("invalid {key}: {value}");
         match key.as_ref() {
             "source_instance_id" => query.source_instance_id = Some(value.into_owned()),
             "source_event_id" => query.source_event_id = Some(value.into_owned()),
-            "category" => {
-                query.category = match value.as_ref() {
-                    "semantic" => Some(wanaku_types::audit::AuditCategory::Semantic),
-                    "decision" => Some(wanaku_types::audit::AuditCategory::Decision),
-                    "administrative" => Some(wanaku_types::audit::AuditCategory::Administrative),
-                    _ => None,
-                }
-            }
+            "category" => query.category = Some(parse_category(&value).ok_or_else(invalid)?),
             "from" => query.from = Some(value.into_owned()),
             "to" => query.to = Some(value.into_owned()),
             "namespace" => query.namespace = Some(value.into_owned()),
@@ -131,13 +128,22 @@ fn parse_query(raw: Option<&str>) -> AuditQuery {
             "target" => query.target = Some(value.into_owned()),
             "reason_code" => query.reason_code = Some(value.into_owned()),
             "correlation_id" => query.correlation_id = Some(value.into_owned()),
-            "offset" => query.offset = value.parse().unwrap_or_default(),
-            "limit" => query.limit = value.parse().unwrap_or_default(),
-            "decision" => query.decision = parse_decision(&value),
+            "offset" => query.offset = value.parse().map_err(|_| invalid())?,
+            "limit" => query.limit = value.parse().map_err(|_| invalid())?,
+            "decision" => query.decision = Some(parse_decision(&value).ok_or_else(invalid)?),
             _ => {}
         }
     }
-    query
+    Ok(query)
+}
+
+fn parse_category(value: &str) -> Option<wanaku_types::audit::AuditCategory> {
+    match value {
+        "semantic" => Some(wanaku_types::audit::AuditCategory::Semantic),
+        "decision" => Some(wanaku_types::audit::AuditCategory::Decision),
+        "administrative" => Some(wanaku_types::audit::AuditCategory::Administrative),
+        _ => None,
+    }
 }
 
 fn parse_decision(value: &str) -> Option<AuditDecision> {
@@ -368,10 +374,22 @@ mod tests {
     }
 
     #[test]
+    fn list_rejects_invalid_filter_values() {
+        let store = InMemoryAuditStore::new(10);
+        for query in ["decision=bogus", "category=bogus", "limit=ten", "offset=-1"] {
+            let response = handle(&store, AuditRoute::List, Some(query));
+            assert_eq!(response.status(), StatusCode::BAD_REQUEST, "{query}");
+        }
+        let response = handle(&store, AuditRoute::List, Some("decision=block&limit=5"));
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[test]
     fn query_parser_decodes_browser_encoded_values() {
         let query = parse_query(Some(
             "operation=tools%2Fcall&namespace=finance+team&from=2026-09-14T12%3A00%3A00Z",
-        ));
+        ))
+        .unwrap_or_default();
 
         assert_eq!(query.operation.as_deref(), Some(TOOLS_CALL));
         assert_eq!(query.namespace.as_deref(), Some("finance team"));

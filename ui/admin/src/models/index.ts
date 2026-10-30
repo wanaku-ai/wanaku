@@ -51,6 +51,7 @@ export * from "./cancelPolicyReplay200Counts";
 export * from "./candidateSelection";
 export * from "./configurePluginRequest";
 export * from "./configurePluginRequestServices";
+export * from "./createForwardParams";
 export * from "./credentialBinding";
 export * from "./credentialPurpose";
 export * from "./decisionSnapshot";

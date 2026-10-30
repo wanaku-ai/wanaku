@@ -14,6 +14,7 @@ import type {
   BindNamespaceRequest,
   CancelPolicyReplay200,
   ConfigurePluginRequest,
+  CreateForwardParams,
   CredentialBinding,
   ForwardEntry,
   GetActionPolicyRevision200,
@@ -688,10 +689,21 @@ export type listAuditEventsResponse200 = {
   status: 200;
 };
 
+export type listAuditEventsResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
 export type listAuditEventsResponseSuccess = listAuditEventsResponse200 & {
   headers: Headers;
 };
-export type listAuditEventsResponse = listAuditEventsResponseSuccess;
+export type listAuditEventsResponseError = listAuditEventsResponse400 & {
+  headers: Headers;
+};
+
+export type listAuditEventsResponse =
+  | listAuditEventsResponseSuccess
+  | listAuditEventsResponseError;
 
 export const getListAuditEventsUrl = (params?: ListAuditEventsParams) => {
   const normalizedParams = new URLSearchParams();
@@ -1178,12 +1190,23 @@ export type unbindEvaluatorNamespaceResponse200 = {
   status: 200;
 };
 
+export type unbindEvaluatorNamespaceResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
 export type unbindEvaluatorNamespaceResponseSuccess =
   unbindEvaluatorNamespaceResponse200 & {
     headers: Headers;
   };
+export type unbindEvaluatorNamespaceResponseError =
+  unbindEvaluatorNamespaceResponse404 & {
+    headers: Headers;
+  };
+
 export type unbindEvaluatorNamespaceResponse =
-  unbindEvaluatorNamespaceResponseSuccess;
+  | unbindEvaluatorNamespaceResponseSuccess
+  | unbindEvaluatorNamespaceResponseError;
 
 export const getUnbindEvaluatorNamespaceUrl = (namespace: string) => {
   return `/api/v1/evaluators/namespaces/${namespace}`;
@@ -1463,17 +1486,49 @@ export type createForwardResponse200 = {
   status: 200;
 };
 
+export type createForwardResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type createForwardResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
 export type createForwardResponseSuccess = createForwardResponse200 & {
   headers: Headers;
 };
-export type createForwardResponse = createForwardResponseSuccess;
+export type createForwardResponseError = (
+  | createForwardResponse400
+  | createForwardResponse409
+) & {
+  headers: Headers;
+};
 
-export const getCreateForwardUrl = () => {
-  return `/api/v1/forwards`;
+export type createForwardResponse =
+  | createForwardResponseSuccess
+  | createForwardResponseError;
+
+export const getCreateForwardUrl = (params?: CreateForwardParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/forwards?${stringifiedParams}`
+    : `/api/v1/forwards`;
 };
 
 export const createForward = async (
   forwardEntry: ForwardEntry,
+  params?: CreateForwardParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<createForwardResponse> => {
   const getHeaders = (
@@ -1497,7 +1552,7 @@ export const createForward = async (
     }
     return headers;
   };
-  return customFetch<createForwardResponse>(getCreateForwardUrl(), {
+  return customFetch<createForwardResponse>(getCreateForwardUrl(params), {
     ...options,
     method: "POST",
     headers: {
@@ -1726,10 +1781,18 @@ export type createNamespaceResponse400 = {
   status: 400;
 };
 
+export type createNamespaceResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
 export type createNamespaceResponseSuccess = createNamespaceResponse200 & {
   headers: Headers;
 };
-export type createNamespaceResponseError = createNamespaceResponse400 & {
+export type createNamespaceResponseError = (
+  | createNamespaceResponse400
+  | createNamespaceResponse409
+) & {
   headers: Headers;
 };
 

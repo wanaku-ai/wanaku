@@ -38,7 +38,7 @@ export const addForward = async (
   options?: RequestInit,
 ): Promise<createForwardResponse> => {
   clearForwardsCache();
-  return apiCreateForward(forward, options);
+  return apiCreateForward(forward, undefined, options);
 };
 
 export const updateForward = async (
@@ -50,7 +50,7 @@ export const updateForward = async (
   }
   clearForwardsCache();
   await apiDeleteForward(forward.name, options);
-  return apiCreateForward(forward, options);
+  return apiCreateForward(forward, undefined, options);
 };
 
 export const removeForward = async (
