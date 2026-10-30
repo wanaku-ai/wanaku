@@ -13,8 +13,8 @@ The operator is part of the [wanaku-barn](https://github.com/wanaku-ai/wanaku-ba
 
 Read these guides to install it:
 
-- [Kubernetes Operator Guide](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/operator.md): the custom resources and how to deploy them.
-- [Wanaku Operator on OperatorHub](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/operator-olm.md): installation with the Operator Lifecycle Manager (OLM) on OpenShift or OKD.
+- [Kubernetes Operator Guide](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/operate/operator.md): the custom resources and how to deploy them.
+- [Wanaku Operator on OperatorHub](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/operate/operator-olm.md): installation with the Operator Lifecycle Manager (OLM) on OpenShift or OKD.
 
 ## Deploy with plain manifests
 

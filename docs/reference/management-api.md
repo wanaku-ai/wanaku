@@ -335,7 +335,7 @@ Chat completions do not go through the management API. Wanaku exposes a
 separate, raw reverse-proxy listener on port 8083 that forwards requests
 as-is to whatever OpenAI-compatible backend `WANAKU_INFERENCE_UPSTREAM`
 points at — including the caller's own `Authorization` header. The LLM Chat
-page in the [Wanaku Debugger plugin](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/deployment-debugger.md)
+page in the [Wanaku Debugger plugin](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/manage/deployment-debugger.md)
 calls this port directly with a key you supply in the browser. Install the
 plugin from the Admin UI Plugin Catalog. Open Debugger from the Developer
 navigation section. Select the LLM Chat tab:
