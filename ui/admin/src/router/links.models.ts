@@ -15,10 +15,11 @@ export const enum Links {
   Plugins = '/plugins-admin',
   PluginCatalog = '/plugin-catalog',
   Downloads = '/downloads',
-  Logout = '/logout',
 }
 
 export const enum ExternalLinks {
   Home = 'https://wanaku.ai',
   GitHub = 'https://github.com/wanaku-ai/wanaku',
+  // oauth2-proxy clears its session cookie, then sends the user back to the admin UI login.
+  Logout = '/oauth2/sign_out?rd=%2Fadmin%2F',
 }

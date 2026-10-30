@@ -12,7 +12,7 @@ import {
 
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLinks, Links } from '../router/links.models';
+import { ExternalLinks } from '../router/links.models';
 
 import { LogoGithub, Logout, Notification, Search } from '@carbon/icons-react';
 import wanakuLogo from '../assets/wanaku.svg';
@@ -89,7 +89,7 @@ const HeaderComponent = memo(function HeaderComponent({
         <HeaderGlobalAction
           aria-label="Logout"
           onClick={() => {
-            window.open(Links.Logout);
+            window.location.assign(ExternalLinks.Logout);
           }}
         >
           <Logout size={20} />

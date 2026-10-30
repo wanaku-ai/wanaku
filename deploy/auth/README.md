@@ -140,7 +140,7 @@ The shell variable does not update when a token expires. Run the token command a
 
 Open `http://localhost:4180/admin/` and log in as `alice`. Both proxies share a session cookie. Every MCP endpoint, such as `http://localhost:4181/default/mcp`, requires a bearer token.
 
-The admin UI logout defect is tracked separately in [issue #2026](https://github.com/wanaku-ai/wanaku/issues/2026). `wanaku auth logout` clears local CLI credentials. It does not end a browser session or revoke an access token. Use `unset TOKEN` to clear the shell variable.
+Select **Logout** in the admin UI header to end the browser session. The management proxy deletes its session cookie and ends the Keycloak session. Then the browser goes to the login page. `wanaku auth logout` clears local CLI credentials. It does not end a browser session or revoke an access token. Use `unset TOKEN` to clear the shell variable.
 
 ## Stop and restart
 

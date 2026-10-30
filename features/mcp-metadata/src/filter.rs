@@ -88,21 +88,11 @@ impl WellKnownFilter {
         clippy::unused_self,
         reason = "method on impl for consistency with other handlers"
     )]
-    #[expect(
-        clippy::too_many_lines,
-        reason = "RFC 9728 protected resource metadata assembly"
-    )]
     fn handle_protected_resource_metadata(
         &self,
         ctx: &HttpFilterContext<'_>,
         suffix: &str,
     ) -> Result<FilterAction, FilterError> {
-        let namespace = suffix
-            .strip_suffix("/mcp")
-            .or_else(|| suffix.strip_suffix("/mcp/"))
-            .filter(|ns| !ns.is_empty() && !ns.contains('/'))
-            .unwrap_or("default");
-
         let host = ctx
             .request
             .headers
@@ -110,11 +100,7 @@ impl WellKnownFilter {
             .and_then(|v| v.to_str().ok())
             .unwrap_or("localhost:8081");
 
-        let resource = if namespace == "default" {
-            format!("http://{host}/mcp")
-        } else {
-            format!("http://{host}/{namespace}/mcp")
-        };
+        let resource = resource_url(host, suffix);
 
         let issuer_config = ctx.extensions.get::<IssuerConfig>();
         let has_issuer = issuer_config.is_some_and(|c| !c.issuer.is_empty());
@@ -127,17 +113,28 @@ impl WellKnownFilter {
         };
 
         let metadata = serde_json::json!({
-            "resource": resource,
+            "resource": &resource,
             "authorization_servers": auth_servers,
             "bearer_methods_supported": ["header"],
         });
 
-        tracing::debug!(namespace = %namespace, "served protected resource metadata");
+        tracing::debug!(resource = %resource, "served protected resource metadata");
         Ok(FilterAction::Reject(json_response(
             StatusCode::OK,
             &metadata,
         )))
     }
+}
+
+/// Wanaku serves MCP only at `/{namespace}/mcp`, so the default namespace
+/// also gets an explicit `/default/mcp` resource.
+fn resource_url(host: &str, suffix: &str) -> String {
+    let namespace = suffix
+        .strip_suffix("/mcp")
+        .or_else(|| suffix.strip_suffix("/mcp/"))
+        .filter(|ns| !ns.is_empty() && !ns.contains('/'))
+        .unwrap_or("default");
+    format!("http://{host}/{namespace}/mcp")
 }
 
 #[expect(
@@ -218,9 +215,17 @@ fn json_response(status: StatusCode, value: &serde_json::Value) -> Rejection {
 
 #[cfg(test)]
 mod tests {
-    use super::{IssuerConfig, WellKnownFilter, proxy_token_endpoint};
+    use super::{IssuerConfig, WellKnownFilter, proxy_token_endpoint, resource_url};
     use bytes::Bytes;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    #[test]
+    fn resource_always_names_the_namespace() {
+        assert_eq!(resource_url("h:1", "mcp"), "http://h:1/default/mcp");
+        assert_eq!(resource_url("h:1", "default/mcp"), "http://h:1/default/mcp");
+        assert_eq!(resource_url("h:1", "finance/mcp"), "http://h:1/finance/mcp");
+        assert_eq!(resource_url("h:1", "a/b/mcp"), "http://h:1/default/mcp");
+    }
 
     #[test]
     fn discovery_uses_public_issuer() -> Result<(), Box<dyn std::error::Error>> {
