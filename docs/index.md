@@ -1,6 +1,6 @@
 ---
 layout: home
-title: Wanaku documentation
+title: "Wanaku: an MCP gateway that governs AI agent actions"
 description: Wanaku is a governed action proxy for AI agents. Start here to install it, connect agents and backends, govern their actions, and extend it.
 hero:
   name: Wanaku
@@ -34,9 +34,9 @@ features:
     link: ./reference/
 ---
 
-# Wanaku documentation
+# Wanaku: an MCP gateway that governs AI agent actions
 
-Wanaku is a governed action proxy for AI agents. It sits between agents and the systems they act on, and it intercepts tool calls, agent-to-agent messages, and inference traffic. Agents never touch backend systems directly: policy, credentials, data controls, and audit happen in the proxy.
+Wanaku is a governed action proxy for AI agents, and it works as an MCP gateway. It sits between agents and the systems they act on, and it intercepts tool calls, agent-to-agent messages, and inference traffic. Agents never touch backend systems directly: policy, credentials, data controls, and audit happen in the proxy.
 
 ## Choose your path
 
