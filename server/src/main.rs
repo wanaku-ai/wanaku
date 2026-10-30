@@ -233,6 +233,8 @@ fn load_wanaku_yaml(path: &str) -> Result<Option<serde_yaml::Value>, String> {
         }
         Err(_) => return Err("cannot read wanaku configuration".to_owned()),
     };
+    let resolved = std::fs::canonicalize(path).unwrap_or_else(|_| path.into());
+    tracing::info!(path = %resolved.display(), "loaded wanaku config");
     let root: serde_yaml::Value = serde_yaml::from_str(&content)
         .map_err(|_| "invalid wanaku configuration YAML".to_owned())?;
     match root {
