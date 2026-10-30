@@ -25,7 +25,8 @@
       "items": [
         { "text": "A2A proxy", "link": "connect/a2a" },
         { "text": "Inference proxy", "link": "connect/inference-proxy" },
-        { "text": "Semantic routing", "link": "connect/semantic-routing" }
+        { "text": "Semantic routing", "link": "connect/semantic-routing" },
+        { "text": "Semantic audit ingestion", "link": "connect/semantic-audit-ingestion" }
       ]
     },
     {

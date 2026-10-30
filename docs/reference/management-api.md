@@ -244,7 +244,7 @@ There is no create, update, or delete route for bindings in this release. Bindin
 | `GET` | `/api/v1/audit/health` | Get audit-store health and the dropped-event count. |
 | `POST` | `/api/v1/audit/semantic` | Accept one semantic audit event from an external producer, such as WSR. |
 
-`POST /api/v1/audit/semantic` returns `404` unless `WANAKU_AUDIT_INGESTION_ENABLED=true`. See [Governance Audit Trail](../govern/audit-trail.md).
+`POST /api/v1/audit/semantic` returns `404` unless `WANAKU_AUDIT_INGESTION_ENABLED=true`. See [Ingest Camel semantic audit records](../connect/semantic-audit-ingestion.md).
 
 ### Metrics
 

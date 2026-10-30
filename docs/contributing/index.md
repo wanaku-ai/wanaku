@@ -20,7 +20,7 @@ For implementation work, read the guide that matches the area you plan to change
 - [Admin UI plugin reference](../extend/plugin-reference.md): the implemented Web UI plugin contract.
 - [Evaluators](../govern/evaluators.md): evaluator configuration, runtime management, and internals.
 - [Write evaluator actions in JavaScript](../extend/evaluator-actions-js.md) and [in Rust](../extend/evaluator-actions-rust.md): the action script guides.
-- [Testing](testing.md): the evaluator test suites.
+- [Testing](testing.md): the workspace, evaluator, semantic router, and Admin UI test suites.
 
 ## Prerequisites
 
