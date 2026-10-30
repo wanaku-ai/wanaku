@@ -67,4 +67,6 @@ Every namespace endpoint requires a token. Wanaku has no unauthenticated `public
 
 ## Logging out
 
-`wanaku auth logout` clears the CLI's saved credentials. It does not end a browser session or revoke a token that was already issued. Browser logout behavior is tracked in [issue #2026](https://github.com/wanaku-ai/wanaku/issues/2026).
+`wanaku auth logout` clears the CLI's saved credentials. It does not end a browser session or revoke a token that was already issued.
+
+The admin UI **Logout** button opens `/oauth2/sign_out?rd=/admin/`. An oauth2-proxy in front of the management API must serve this path. Set `OAUTH2_PROXY_BACKEND_LOGOUT_URL` to the identity provider logout endpoint to also end the provider session. Without it, the next login can complete without a password prompt.

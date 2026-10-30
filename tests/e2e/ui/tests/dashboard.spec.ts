@@ -34,4 +34,10 @@ test.describe('Dashboard', () => {
     await dashboard.clickRefresh();
     await expect(dashboard.errorNotification()).toBeHidden();
   });
+
+  test('logout button signs out through the auth proxy in the same tab', async ({ page }) => {
+    await page.route('**/oauth2/sign_out**', (route) => route.fulfill({ status: 200, body: 'signed out' }));
+    await page.getByRole('button', { name: 'Logout' }).click();
+    await expect(page).toHaveURL(`${routerUrl}/oauth2/sign_out?rd=%2Fadmin%2F`);
+  });
 });
