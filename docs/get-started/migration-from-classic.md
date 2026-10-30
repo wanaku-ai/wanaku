@@ -176,6 +176,8 @@ Wanaku uses DNS-label-style namespace names directly — no fixed slots, no nume
 http://localhost:8081/finance/mcp             # Streamable HTTP only
 ```
 
+Wanaku has no unauthenticated `public` namespace. When you use the authentication proxy, every namespace endpoint requires a token, including a namespace named `public`.
+
 Create as many namespaces as you need:
 
 ```bash
