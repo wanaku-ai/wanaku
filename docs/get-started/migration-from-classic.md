@@ -145,7 +145,7 @@ wanaku-server --wanaku-config /etc/wanaku/wanaku.yaml
 | `WANAKU_HOME` | `WANAKU_PERSIST_PATH` | Wanaku uses `$HOME/.wanaku/server` by default (similar concept) |
 | `quarkus.log.level` | `RUST_LOG` | Uses Rust `tracing` crate syntax (e.g., `RUST_LOG=info,wanaku_filters=trace`) |
 
-See [Configuration](../reference/configuration.md) for the full list of Wanaku environment variables.
+See [Wanaku environment variables](../reference/environment-variables.md) for the full list of Wanaku environment variables.
 
 ## Namespaces
 
@@ -535,7 +535,7 @@ The operator creates the deployments, services, and ingress or routes for both c
 
 ### Without the Operator
 
-If you prefer not to use the operator, deploy Wanaku as a standard Kubernetes `Deployment`. Read [Configuration: Kubernetes](../reference/configuration.md#kubernetes) for complete ConfigMap, Secret, Deployment, and Service manifests.
+If you prefer not to use the operator, deploy Wanaku as a standard Kubernetes `Deployment`. Read [Configuration: Kubernetes](../operate/kubernetes.md) for complete ConfigMap, Secret, Deployment, and Service manifests.
 
 ### Migration Steps
 

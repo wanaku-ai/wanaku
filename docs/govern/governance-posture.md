@@ -107,7 +107,7 @@ In audit mode, the `copy-tool-to-namespace` host function returns `false` withou
 
 The evaluator `on_error` field is removed. Configuration with this field is rejected. Set `governance.default.on_failure` or a namespace override instead. The default is `deny`.
 
-Wanaku 0.3.0 is unreleased. Earlier pre-release evaluator configurations and persisted revisions are not migrated automatically. See [Update an earlier pre-release configuration](../reference/configuration.md#update-an-earlier-pre-release-configuration) before you update a pre-release build.
+Wanaku 0.3.0 is unreleased. Earlier pre-release evaluator configurations and persisted revisions are not migrated automatically. See [Update an earlier pre-release configuration](../operate/persistence.md#update-an-earlier-pre-release-configuration) before you update a pre-release build.
 
 ## Evaluator readiness
 

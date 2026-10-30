@@ -1,6 +1,6 @@
 ---
 title: Connect agents and backends
-description: Connect agents and backend systems to Wanaku through governed agent-to-agent traffic and semantic routing with Barn and WSR.
+description: Connect agents and backends to Wanaku with governed agent-to-agent traffic, the inference proxy, and semantic routing with Barn and WSR.
 ---
 
 # Connect agents and backends
@@ -10,6 +10,7 @@ These pages are for integration developers who connect agents and backends throu
 ## Pages in this section
 
 - [A2A Proxy](a2a.md): govern agent-to-agent (A2A) traffic.
+- [Inference proxy](inference-proxy.md): send OpenAI-compatible inference traffic through Wanaku.
 - [Semantic routing with Barn and WSR](semantic-routing.md): author routes in Barn, deploy the Wanaku Semantic Router (WSR), and check governed MCP calls.
 
 ## Next steps

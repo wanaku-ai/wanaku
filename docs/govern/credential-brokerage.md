@@ -54,7 +54,7 @@ bindings:
 ```
 
 > [!NOTE]
-> Binding keys in `wanaku.yaml` use `snake_case`. Wanaku also accepts the `camelCase` spelling of each key, for example `forwardId`, `secretRefs`, `allowedPurposes`, `governedItems`, and `maxTtlSeconds`. The management API uses the `camelCase` names `forwardId`, `secretRefs`, `allowedPurposes`, and `cache.maxTtlSeconds` in its JSON responses. See [Key names](../reference/configuration.md#wanaku-config-file-wanakuyaml).
+> Binding keys in `wanaku.yaml` use `snake_case`. Wanaku also accepts the `camelCase` spelling of each key, for example `forwardId`, `secretRefs`, `allowedPurposes`, `governedItems`, and `maxTtlSeconds`. The management API uses the `camelCase` names `forwardId`, `secretRefs`, `allowedPurposes`, and `cache.maxTtlSeconds` in its JSON responses. See [Key names](../reference/wanaku-yaml.md).
 
 ## Purposes
 

@@ -426,7 +426,7 @@ You can configure Wanaku with environment variables. This table lists the most c
 | `WANAKU_PERSIST_BACKEND` | `file` | File persistence backend. Set to `"none"` to disable persistence. |
 | `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | Directory for `registry.json` |
 
-Read [Configuration](../reference/configuration.md) for the complete list.
+Read [Wanaku environment variables](../reference/environment-variables.md) for the complete list.
 
 ### Endpoints
 

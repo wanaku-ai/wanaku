@@ -190,7 +190,7 @@ Pin to a specific `rev` — HEAD may break.
 
 ## Debugging
 
-See [docs/reference/configuration.md](docs/reference/configuration.md) for trace log options. Filter-specific pattern:
+See [docs/operate/troubleshooting.md](docs/operate/troubleshooting.md#debugging) for trace log options. Filter-specific pattern:
 
 ```rust
 tracing::debug!(method = ?ctx.get_metadata("mcp.method"), namespace = ?ctx.get_metadata("wanaku.namespace"), "filter context");
