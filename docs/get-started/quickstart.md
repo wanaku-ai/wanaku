@@ -378,7 +378,7 @@ All MCP endpoints use the `/{namespace}/mcp` pattern. Paths such as `/finance` a
 
 Open `http://localhost:8080` in your browser. The React-based admin UI communicates with the same management API as the CLI.
 
-Use the admin UI to view and manage tools, namespaces, resources, prompts, and forwards.
+Use the admin UI to view and manage tools, namespaces, resources, prompts, and forwards. Read [Use the Wanaku Admin UI](../operate/admin-ui.md) for a map of all pages.
 
 > **Note:** Port `8080` does not require authentication. On a remote host, do not expose it to the network. Use an SSH tunnel (`ssh -L 8080:localhost:8080 <host>`) and open `http://localhost:8080`, or [enable authentication](#enable-authentication). Some browser features are available only on HTTPS or `localhost` origins. Plugins can fail when you open the UI over plain HTTP on a remote address.
 
