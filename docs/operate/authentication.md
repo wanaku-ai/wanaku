@@ -63,7 +63,7 @@ The MCP proxy accepts bearer tokens with the configured Wanaku MCP audience. MCP
 
 The management proxy accepts the same bearer tokens for `/api/` requests. It protects the admin UI with a browser session. Set the proxy's allowed roles only when the realm maps the selected administrator role into access tokens.
 
-Public MCP requests use `/public/mcp`. The Compose setup allows this endpoint without a token. Keep public tools safe for anonymous use.
+Every namespace endpoint requires a token. Wanaku has no unauthenticated `public` namespace. A namespace named `public` requires a token, like all other namespaces. The proxy permits requests without a token only for OAuth discovery (`/.well-known/`), `/authorize`, `/token`, `/register`, and CORS preflight (`OPTIONS`) requests.
 
 ## Logging out
 
