@@ -373,7 +373,7 @@ The endpoint returns HTTP 502 if the selected source is unavailable or invalid. 
 | `GET` | `/plugins/{pluginId}/{path}` | Get a static plugin file. |
 | Any HTTP method | `/api/plugins/{pluginId}/{serviceId}/{path}` | Send a request through a configured plugin service mapping. |
 
-The plugin proxy accepts only plugin and service IDs that Wanaku loaded from configuration. It forwards the request method, body, query, and selected headers to the configured service. See [Plugin Development Guide](../extend/plugin-development-guide.md).
+The plugin proxy accepts only plugin and service IDs that Wanaku loaded from configuration. It forwards the request method, body, query, and selected headers to the configured service. See [Backend configuration](../extend/plugin-reference.md#backend-configuration).
 
 ## Persistence
 

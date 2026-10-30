@@ -7,7 +7,7 @@ description: Learn how Wanaku feature crates add filters, routes, and state, whi
 
 A feature crate is a self-contained Rust crate that extends Wanaku. A feature crate can register pipeline filters, add management API routes, and keep state. The core server supplies the filter pipeline, the registry, and the management API. Feature crates build on top of them.
 
-Feature crates are different from Admin UI plugins. A feature crate is compiled into the server binary. An Admin UI plugin is a JavaScript module that the Admin UI loads at runtime. For Admin UI plugins, read the [Plugin Development Guide](plugin-development-guide.md).
+Feature crates are different from Admin UI plugins. A feature crate is compiled into the server binary. An Admin UI plugin is a JavaScript module that the Admin UI loads at runtime. For Admin UI plugins, read the [Build an Admin UI plugin](plugin-development-guide.md).
 
 To write your own feature crate, follow [Build a feature crate](build-a-feature.md).
 
@@ -24,7 +24,7 @@ To write your own feature crate, follow [Build a feature crate](build-a-feature.
 | `mcp-metadata` | Serves RFC 9728 OAuth protected resource metadata and the issuer discovery routes. | None | None (MCP port routes) | [Authentication](../operate/authentication.md) |
 | `evaluator` | Runs trigger, evaluate, and act pipelines with LLM, TypeSafe, or OPA engines and WASM actions. | `wanaku_evaluator` | `/api/v1/evaluators` | [Evaluators](../govern/evaluators.md) |
 | `simulation` | Tests policy candidates against synthetic and replayed actions. | None | `/api/v1/policy-simulations` | [Policy Simulation](../govern/policy-simulation.md) |
-| `plugins` | Loads Admin UI plugins from the plugins path and installs plugins from the catalog. | None | `/api/v1/plugins` | [Plugin Development Guide](plugin-development-guide.md) |
+| `plugins` | Loads Admin UI plugins from the plugins path and installs plugins from the catalog. | None | `/api/v1/plugins` | [Build an Admin UI plugin](plugin-development-guide.md) |
 
 ### Intercept
 

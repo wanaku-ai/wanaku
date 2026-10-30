@@ -53,7 +53,7 @@ All in a single binary that needs only libc.
 
 - **[Contributing](./contributing/index.md)** — development workflow, checks, and pull requests
 - **[Admin UI Development](./contributing/admin-ui.md)** — React + Carbon Design System frontend development
-- **[Plugin Development](./extend/plugin-development-guide.md)** — write and package admin UI plugins
+- **[Build an Admin UI plugin](./extend/plugin-development-guide.md)** — write and package admin UI plugins
 - **[Plugin Catalog](./extend/plugin-catalog.md)** — publish and install available UI plugins
 - **[Web UI Plugin Guidelines](./extend/extensible-web-ui-plugin-guidelines.md)** — design rules for admin UI plugins
 

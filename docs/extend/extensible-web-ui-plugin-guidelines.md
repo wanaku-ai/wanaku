@@ -1,10 +1,15 @@
-# Extensible Web UI Plugin Architecture
+---
+title: Admin UI plugin architecture
+description: Design principles, implementation status, and roadmap for the Wanaku Admin UI plugin platform, for maintainers and plugin platform designers.
+---
+
+# Admin UI plugin architecture
 
 ## Purpose
 
 This document defines the high-level architecture and development guidelines for making the application's web UI extensible through plugins.
 
-The audience is Wanaku maintainers and plugin platform designers. Plugin authors who need the current, implemented API should use the [Plugin Development Guide](plugin-development-guide.md).
+The audience is Wanaku maintainers and plugin platform designers. Plugin authors who need the current, implemented API should use [Build an Admin UI plugin](plugin-development-guide.md) and the [Plugin reference](plugin-reference.md).
 
 ## Implementation Status
 
@@ -17,21 +22,6 @@ This document contains both current behavior and design requirements. Unless a s
 **Declared but not enforced:** manifest permissions and host API compatibility ranges. Wanaku currently loads plugins as trusted, same-origin JavaScript. It does not provide a security sandbox.
 
 **Planned:** capability enforcement, compatibility rejection, additional extension points, a plugin test kit, a fake development host, and stronger isolation for untrusted plugins.
-
-## Contents
-
-- [Core Architectural Principles](#1-core-architectural-principles)
-- [High-Level Architecture](#2-high-level-architecture)
-- [Plugin Manifest](#3-plugin-manifest)
-- [Plugin Lifecycle](#4-plugin-lifecycle)
-- [Plugin Host API](#5-plugin-host-api)
-- [UI Rendering Guidelines](#6-ui-rendering-guidelines)
-- [Backend Service Resolution](#7-backend-service-resolution)
-- [Authentication and Authorization](#8-authentication-and-authorization)
-- [Testing Strategy](#10-testing-strategy)
-- [Compatibility and Versioning](#11-compatibility-and-versioning)
-- [Security Guidelines](#13-security-guidelines)
-- [Recommended Initial Scope](#17-recommended-initial-scope)
 
 The main application consists of:
 
@@ -215,157 +205,35 @@ This avoids hard-coded backend hostnames and centralizes cross-cutting concerns.
 
 ## 3. Plugin Manifest
 
-Every plugin should provide a machine-readable manifest.
+**Implemented.** The [Plugin reference](plugin-reference.md#manifest-pluginjson) lists the `plugin.json` fields.
 
-Recommended name:
+Design rules:
 
-```text
-plugin.json
-```
-
-Example:
-
-```json
-{
-  "id": "customer-management",
-  "name": "Customer Management",
-  "version": "1.4.0",
-  "entrypoint": "./plugin.js",
-  "styles": ["./plugin.css"],
-  "requires": {
-    "hostApi": ">=1.0 <2.0",
-    "services": [
-      {
-        "id": "customer-api",
-        "version": "1.0"
-      }
-    ]
-  },
-  "permissions": [
-    "navigation",
-    "pages",
-    "notifications",
-    "service:customer-api:read",
-    "service:customer-api:write"
-  ]
-}
-```
-
-The manifest should contain logical requirements only.
-
-Do not hard-code environment-specific backend hostnames into the plugin manifest unless the API is intentionally external and public.
+- The manifest must contain logical requirements only, such as service IDs and the host API range.
+- Do not hard-code environment-specific backend hostnames into the manifest, unless the API is intentionally external and public.
+- Permissions such as `service:customer-api:read` are reserved for future capability enforcement.
 
 ---
 
 ## 4. Plugin Lifecycle
 
-Each plugin should implement a small lifecycle contract.
+**Implemented in part.** The host calls `activate(host)`. It does not call `deactivate()` yet. The [Build an Admin UI plugin](plugin-development-guide.md#plugin-lifecycle) guide describes the current behavior.
 
-Example:
+Design rules:
 
-```ts
-export interface Plugin {
-  activate(host: PluginHost): void | Promise<void>;
-  deactivate?(): void | Promise<void>;
-}
-```
-
-A plugin entry point may look like:
-
-```ts
-export async function activate(host) {
-  host.navigation.add({
-    id: "customers",
-    label: "Customers",
-    route: "/customers"
-  });
-
-  host.pages.register({
-    route: "/customers",
-    mount(container) {
-      return mountCustomerPage(container, host);
-    }
-  });
-}
-
-export async function deactivate() {
-  // release listeners, subscriptions, timers, and other resources
-}
-```
-
-The host should own plugin loading and unloading.
-
-A plugin must clean up all resources it creates during deactivation.
+- The host owns plugin loading and unloading.
+- A plugin must release all resources that it creates. When the host calls `deactivate()` in the future, the plugin must release its listeners, subscriptions, and timers there.
 
 ---
 
 ## 5. Plugin Host API
 
-The host API should be small, capability-oriented, versioned, and framework-independent.
+**Implemented in part.** The [Plugin reference](plugin-reference.md#pluginhost-api) describes `host.version`, `host.navigation`, `host.pages`, `host.http`, and `host.notifications`.
 
-A conceptual API may look like:
+Design rules:
 
-```ts
-interface PluginHost {
-  version: string;
-
-  navigation: NavigationAPI;
-  pages: PageAPI;
-  toolbar: ToolbarAPI;
-  notifications: NotificationAPI;
-  http: HttpAPI;
-  config: ConfigurationAPI;
-}
-```
-
-### Navigation
-
-```ts
-interface NavigationAPI {
-  add(entry: {
-    id: string;
-    label: string;
-    route: string;
-    icon?: string;
-  }): Disposable;
-}
-```
-
-### Pages
-
-```ts
-interface PageAPI {
-  register(page: {
-    route: string;
-    mount(container: HTMLElement): void | Disposable;
-  }): Disposable;
-}
-```
-
-### Notifications
-
-```ts
-interface NotificationAPI {
-  show(message: {
-    title?: string;
-    text: string;
-    kind?: "info" | "success" | "warning" | "error";
-  }): void;
-}
-```
-
-### HTTP
-
-```ts
-interface HttpAPI {
-  get<T>(service: string, path: string): Promise<T>;
-  post<T>(service: string, path: string, body?: unknown): Promise<T>;
-  put<T>(service: string, path: string, body?: unknown): Promise<T>;
-  delete<T>(service: string, path: string): Promise<T>;
-}
-```
-
-The exact implementation is application-specific, but the public API should remain deliberately small.
+- The host API must stay small, capability-oriented, versioned, and framework-independent.
+- Planned extension points, such as a toolbar API and a configuration API, must follow the same rules.
 
 ---
 
@@ -442,48 +310,13 @@ unless explicitly supported by the plugin platform.
 
 ## 7. Backend Service Resolution
 
-Plugins should use logical service identifiers.
+**Implemented.** The [Plugin reference](plugin-reference.md#backend-configuration) describes the service mappings.
 
-Example:
+Design rules:
 
-```ts
-await host.http.get("customer-api", "/customers");
-```
-
-The UI plugin does not know whether the backend is physically located at:
-
-```text
-http://customer-service.namespace.svc:8080
-```
-
-or:
-
-```text
-https://customer-api.prod.example.com
-```
-
-The platform resolves the logical name.
-
-### Recommended request path
-
-```text
-Browser
-  |
-  | /api/plugins/customer-management/customer-api/customers
-  v
-Rust backend
-  |
-  | resolves logical service
-  v
-customer-api
-  |
-  v
-Plugin backend
-```
-
-The Rust backend may act as a reverse proxy for plugin services.
-
-This provides a single browser origin and reduces CORS complexity.
+- Plugins use logical service identifiers, for example `host.http.get("customer-api", "/customers")`. The plugin does not know the physical address of the backend.
+- The platform resolves the logical name. The Rust backend acts as a reverse proxy at `/api/plugins/{pluginId}/{serviceId}/{path}`.
+- One browser origin for all plugin calls reduces CORS complexity.
 
 ---
 
@@ -947,3 +780,9 @@ Key decisions:
 The most important boundary is:
 
 > A plugin should depend on the public plugin API and its backend API contracts, never on the private implementation details of the main application.
+
+## Next steps
+
+- [Build an Admin UI plugin](plugin-development-guide.md): build a plugin against the current host.
+- [Plugin reference](plugin-reference.md): read the implemented manifest and host API.
+- [Plugin Catalog](plugin-catalog.md): read how the catalog installs plugins.
