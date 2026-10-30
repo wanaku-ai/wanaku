@@ -98,7 +98,7 @@ A WASM-based evaluation engine that lets you build trigger→evaluate→act pipe
 - `PUT /api/v1/evaluators/namespaces/{namespace}` — bind a namespace to a conversation ID
 - `DELETE /api/v1/evaluators/namespaces/{namespace}` — unbind
 
-See the [Evaluator Engine](../govern/evaluators.md) guide for configuration details and WASM action script development.
+See [Evaluators](../govern/evaluators.md) for configuration details. See [Write evaluator actions in JavaScript](evaluator-actions-js.md) for WASM action script development.
 
 ### Policy Simulation Feature (`features/simulation/`)
 

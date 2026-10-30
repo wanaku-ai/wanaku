@@ -125,6 +125,83 @@ The action-policy filter denied the request. With the default `no_match: deny` a
 
 The server does not reject unknown environment variable names. A misspelled name has no effect, and the server uses the default value. Enable trace logs to verify the values that the server uses.
 
+## Evaluators
+
+### "WASM component failed to compile"
+
+**Cause:** The `.wasm` file is invalid or does not match the WIT interface.
+
+**Fix:**
+
+1. Verify you compiled with the correct `--wit` path and `--world-name evaluator-action`
+2. Check that your imports match the WIT exactly (namespace, function names, signatures)
+3. For JavaScript, use `jco componentize`. Do not use `jco transpile`.
+4. For Rust, verify `cargo.toml` has the correct `[package.metadata.component.target]` path and world
+
+### "Evaluator did not trigger"
+
+**Cause:** The trigger does not match the request.
+
+**Fix:**
+
+1. Check server logs for `evaluator filter` trace messages — they show what the filter sees
+2. Verify `trigger.method` matches `mcp.method` metadata (e.g., `tools/call` not `tool/call`)
+3. If you use `trigger.namespace`, verify that the request URL uses `/{namespace}/mcp`. A bare `/mcp` path is invalid.
+
+Enable trace logs: `RUST_LOG=wanaku_feature_evaluator=trace`
+
+### "LLM returned invalid output"
+
+**Cause:** The LLM did not follow the prompt format.
+
+**Fix:**
+
+1. Add `result_schema` to the LLM configuration. The host validates the LLM output. If the output does not match, the host retries once with a correction prompt:
+
+   ```yaml
+   engine:
+     type: llm
+     result_schema:
+       type: object
+       properties:
+         level: { type: string, enum: ["green", "yellow", "red"] }
+         reason: { type: string }
+       required: ["level", "reason"]
+   ```
+
+2. **Use `verifyLlmResult()` in your WASM script** — even with host-side validation, the guest can double-check and call `rejectMalformed()` instead of silently proceeding with bad data:
+
+   ```javascript
+   const validated = verifyLlmResult(ctx.llmResult);
+   if (validated.tag === 'err') {
+     rejectMalformed(`Cannot assess: ${validated.val}`);
+     return;
+   }
+   ```
+
+3. Make your prompt more explicit: "Respond with ONLY a JSON object, no other text"
+4. Use a smaller, faster model for classification tasks — they need less context
+
+### "WASM action did nothing"
+
+**Cause:** The action did not call a response function. The default `pass()` action applied.
+
+**Fix:** Call `block()`, `warn()`, `filterTools()`, or `setMetadata()` in the action. To pass explicitly, call `pass()`. This call is optional.
+
+### "Hot-reload did not apply my WASM changes"
+
+**Cause:** You changed the WASM file but did not call `PUT /api/v1/evaluators`.
+
+**Fix:** The engine only compiles WASM at hot-reload time. After building a new `.wasm` file, trigger a reload:
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/evaluators \
+  -H "Content-Type: application/json" \
+  -d @current-config.json
+```
+
+This re-compiles all WASM files referenced in the config.
+
 ## Debugging
 
 Enable trace logs to see all filter decisions, metadata reads/writes, and registry operations:

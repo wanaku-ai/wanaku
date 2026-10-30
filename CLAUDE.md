@@ -147,7 +147,7 @@ Core env vars are defined in `types/src/config.rs`. Feature-specific env vars ar
 
 ## Evaluator
 
-See [docs/govern/evaluators.md](docs/govern/evaluators.md) for YAML config, WIT contract, host imports, response variants, action script development (JS and Rust), and testing.
+See [docs/govern/evaluators.md](docs/govern/evaluators.md) for YAML config, management routes, and internals, and [docs/govern/evaluator-engines.md](docs/govern/evaluator-engines.md) for the engines and connections. Action script development (WIT contract, host imports, response variants) is in [docs/extend/evaluator-actions-js.md](docs/extend/evaluator-actions-js.md) and [docs/extend/evaluator-actions-rust.md](docs/extend/evaluator-actions-rust.md). Evaluator test suites are in [docs/contributing/testing.md](docs/contributing/testing.md).
 
 ## Common Tasks
 

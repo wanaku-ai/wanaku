@@ -11,7 +11,8 @@ These pages are for policy authors. They follow the path of a request through Wa
 
 - [Governance Posture](governance-posture.md): set the enforcement mode, the fail-safe defaults, and namespace resolution.
 - [Action Policies](action-policies.md): write deterministic rules that allow or deny MCP actions.
-- [Evaluator Engine](evaluators.md): configure evaluators and write JavaScript or Rust action scripts.
+- [Evaluators](evaluators.md): configure evaluators, their triggers, and their processors.
+- [Evaluator engines](evaluator-engines.md): configure the LLM, TypeSafe System One, OPA, and passthrough engines.
 
 ## Credentials and data
 
@@ -22,6 +23,11 @@ These pages are for policy authors. They follow the path of a request through Wa
 
 - [Governance audit trail](audit-trail.md): read audit events, redaction rules, and retention.
 - [Policy Simulation](policy-simulation.md): validate candidate policies and compare decisions before you activate them.
+
+## Tutorials
+
+- [Govern an MCP server](govern-an-mcp-server.md): put one MCP server behind a credential binding, action-policy rules, and an LLM evaluator.
+- [Gate tool calls with OPA](gate-calls-with-opa.md): allow or deny tool calls with a Rego policy.
 
 ## Next steps
 

@@ -1,6 +1,6 @@
 ---
 title: Pipeline configuration file (pipeline.yaml)
-description: Reference for the Wanaku pipeline.yaml file: listeners, TLS, filter chains, filter options, and the filter order rules that the pipeline needs.
+description: "Reference for the Wanaku pipeline.yaml file: listeners, TLS, filter chains, filter options, and the filter order rules that the pipeline needs."
 ---
 
 # Pipeline configuration file (pipeline.yaml)
