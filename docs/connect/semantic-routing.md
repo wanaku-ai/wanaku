@@ -76,7 +76,7 @@ curl -X PUT http://localhost:8080/api/v1/action-policies \
   }]}}'
 ```
 
-Use `/support/mcp` on the Wanaku MCP listener. Tool discovery does not grant authorization. A policy denial occurs before the request reaches WSR. See [Action Policies](action-policies.md) for deny precedence and policy revision management.
+Use `/support/mcp` on the Wanaku MCP listener. Tool discovery does not grant authorization. A policy denial occurs before the request reaches WSR. See [Action Policies](../govern/action-policies.md) for deny precedence and policy revision management.
 
 An action-policy allow does not bypass the evaluator. With the default posture (`no_match: deny`), a call to the tool still fails with `evaluator: no_match` when no evaluator matches it. Configure an evaluator for this tool, or set the no-match posture of the namespace. For example, in `wanaku.yaml`:
 
@@ -87,7 +87,7 @@ governance:
       no_match: allow
 ```
 
-`no_match: allow` also applies to the action policy in that namespace. Then the action policy permits each call that no rule denies. Keep explicit deny rules for actions that the namespace must block. See [Governance Posture](governance-posture.md). The acceptance suite uses explicit policy allow and deny rules with `no_match: allow` in its isolated test namespace.
+`no_match: allow` also applies to the action policy in that namespace. Then the action policy permits each call that no rule denies. Keep explicit deny rules for actions that the namespace must block. See [Governance Posture](../govern/governance-posture.md). The acceptance suite uses explicit policy allow and deny rules with `no_match: allow` in its isolated test namespace.
 
 An action result is a successful MCP result. No match is an explicit successful result and executes no action. Evaluation failure and action failure return errors. Wanaku preserves supported MCP content blocks, structured content, metadata, and `isError`. Wanaku retains credential redaction at the forwarding boundary. An unsupported content type returns an error.
 

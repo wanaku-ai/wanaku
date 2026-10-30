@@ -382,7 +382,7 @@ The new mappings apply immediately. A save replaces all mappings for that plugin
 
 ## Complete Example
 
-The following example shows the `hello-world` plugin in [`examples/hello-world`](../examples/hello-world/):
+The following example shows the `hello-world` plugin in [`examples/hello-world`](../../examples/hello-world/):
 
 **plugin.json:**
 
@@ -587,7 +587,7 @@ Step-by-step process to test a plugin:
    cargo run -- --plugins-path /tmp/plugins
    ```
 
-   The first build also builds the admin UI and needs Node.js and Yarn. Refer to [Contributing](contributing.md). With a released server binary, run `wanaku-server --plugins-path /tmp/plugins` instead.
+   The first build also builds the admin UI and needs Node.js and Yarn. Refer to [Contributing](../contributing/index.md). With a released server binary, run `wanaku-server --plugins-path /tmp/plugins` instead.
 
 5. Open `http://localhost:8080/admin/`.
 
@@ -745,4 +745,4 @@ The host reads navigation entries and pages once, after all plugins finish `acti
 
 ---
 
-**That's the guide.** You now know how to build, configure, and test a plugin for Wanaku. Start with the Quick Start example, experiment with the host APIs, and check the [`examples/hello-world`](../examples/hello-world/) directory for a working reference implementation.
+**That's the guide.** You now know how to build, configure, and test a plugin for Wanaku. Start with the Quick Start example, experiment with the host APIs, and check the [`examples/hello-world`](../../examples/hello-world/) directory for a working reference implementation.

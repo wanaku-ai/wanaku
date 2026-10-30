@@ -54,7 +54,7 @@ bindings:
 ```
 
 > [!NOTE]
-> Binding keys in `wanaku.yaml` use `snake_case`. Wanaku also accepts the `camelCase` spelling of each key, for example `forwardId`, `secretRefs`, `allowedPurposes`, `governedItems`, and `maxTtlSeconds`. The management API uses the `camelCase` names `forwardId`, `secretRefs`, `allowedPurposes`, and `cache.maxTtlSeconds` in its JSON responses. See [Key names](./configuration.md#wanaku-config-file-wanakuyaml).
+> Binding keys in `wanaku.yaml` use `snake_case`. Wanaku also accepts the `camelCase` spelling of each key, for example `forwardId`, `secretRefs`, `allowedPurposes`, `governedItems`, and `maxTtlSeconds`. The management API uses the `camelCase` names `forwardId`, `secretRefs`, `allowedPurposes`, and `cache.maxTtlSeconds` in its JSON responses. See [Key names](../reference/configuration.md#wanaku-config-file-wanakuyaml).
 
 ## Purposes
 
@@ -269,7 +269,7 @@ A secret reference has the form `scheme:path`, for example `env:API_TOKEN`. The 
 
 Wanaku registers one resolver by default: `env`. It reads the named process environment variable.
 
-When Wanaku runs in a container or as a systemd service, you must pass the variable to the server process. Read [Secrets and Environment Variables](./getting-started.md#secrets-and-environment-variables).
+When Wanaku runs in a container or as a systemd service, you must pass the variable to the server process. Read [Secrets and Environment Variables](../get-started/quickstart.md#secrets-and-environment-variables).
 
 The `env` resolver:
 
@@ -422,9 +422,9 @@ curl http://localhost:8080/api/v1/bindings/b1
 
 Wanaku returns `404 Not Found` when no binding with the given id exists.
 
-This release does not have create, update, or delete routes for bindings. You author bindings in the `wanaku.yaml` configuration file. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml). Wanaku also persists bindings as part of the registry snapshot and restores them at startup. See [Management API](management-api.md) for the full route reference and response envelope.
+This release does not have create, update, or delete routes for bindings. You author bindings in the `wanaku.yaml` configuration file. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml). Wanaku also persists bindings as part of the registry snapshot and restores them at startup. See [Management API](../reference/management-api.md) for the full route reference and response envelope.
 
 ## Related Docs
 
-- [Management API](management-api.md) — the complete route reference and response format.
+- [Management API](../reference/management-api.md) — the complete route reference and response format.
 - [Governance Posture](governance-posture.md) — how Wanaku decides whether an action is authorized before the broker ever runs.

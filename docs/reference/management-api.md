@@ -122,7 +122,7 @@ curl -X PUT http://localhost:8080/api/v1/agents/default/assistant \
   -d '{"name":"assistant","namespace":"default","description":"Team assistant","address":"http://localhost:9000/"}'
 ```
 
-Agent changes use the configured registry persistence backend. They affect subsequent proxy requests without a restart. See [A2A Proxy](./a2a.md) for the admin UI, listener configuration, policy, and supported protocol operations.
+Agent changes use the configured registry persistence backend. They affect subsequent proxy requests without a restart. See [A2A Proxy](../connect/a2a.md) for the admin UI, listener configuration, policy, and supported protocol operations.
 
 ### Create a Namespace
 
@@ -199,7 +199,7 @@ curl -sS -X POST http://localhost:8080/api/v1/forwards \
 
 `POST /api/v1/forwards/{name}/refreshes` returns a different shape: `refreshed` (the forward name) and the three counts. It does not return the forward. After a refresh, use `GET /api/v1/forwards/{name}` to check `available` and `statusMessage`.
 
-The request body can also contain `credentialBindings`, a map from purpose (`discovery`, `invocation`) to binding id. The bindings themselves must exist in `wanaku.yaml`, because the management API cannot create bindings. See [Credential Brokerage](credential-brokerage.md#attaching-a-binding-to-a-forward).
+The request body can also contain `credentialBindings`, a map from purpose (`discovery`, `invocation`) to binding id. The bindings themselves must exist in `wanaku.yaml`, because the management API cannot create bindings. See [Credential Brokerage](../govern/credential-brokerage.md#attaching-a-binding-to-a-forward).
 
 ### Delete a Forward Conditionally
 
@@ -230,7 +230,7 @@ curl http://localhost:8080/api/v1/bindings/b1
 
 Replace `b1` with a binding ID from `GET /api/v1/bindings`.
 
-There is no create, update, or delete route for bindings in this release. Bindings are part of the registry snapshot. See [Credential Brokerage](credential-brokerage.md) for the binding schema and the brokerage flow.
+There is no create, update, or delete route for bindings in this release. Bindings are part of the registry snapshot. See [Credential Brokerage](../govern/credential-brokerage.md) for the binding schema and the brokerage flow.
 
 ## Feature Routes
 
@@ -244,7 +244,7 @@ There is no create, update, or delete route for bindings in this release. Bindin
 | `GET` | `/api/v1/audit/health` | Get audit-store health and the dropped-event count. |
 | `POST` | `/api/v1/audit/semantic` | Accept one semantic audit event from an external producer, such as WSR. |
 
-`POST /api/v1/audit/semantic` returns `404` unless `WANAKU_AUDIT_INGESTION_ENABLED=true`. See [Governance Audit Trail](audit-trail.md).
+`POST /api/v1/audit/semantic` returns `404` unless `WANAKU_AUDIT_INGESTION_ENABLED=true`. See [Governance Audit Trail](../govern/audit-trail.md).
 
 ### Metrics
 
@@ -268,7 +268,7 @@ There is no create, update, or delete route for bindings in this release. Bindin
 | `GET` | `/api/v1/evaluators/revisions/{id}` | Get one evaluator revision. |
 | `POST` | `/api/v1/evaluators/revisions/{id}/activate` | Activate a prior evaluator configuration as a new revision. |
 
-The `PUT /api/v1/evaluators` body is `{"evaluators": [...], "expected_revision": N}`. `expected_revision` is optional. Unknown keys return `400`. A revision mismatch returns `409`. A configuration that does not validate or compile returns `422`, and the active revision does not change. See [Update Evaluators](evaluator-engine.md#update-evaluators-hot-reload) for an example.
+The `PUT /api/v1/evaluators` body is `{"evaluators": [...], "expected_revision": N}`. `expected_revision` is optional. Unknown keys return `400`. A revision mismatch returns `409`. A configuration that does not validate or compile returns `422`, and the active revision does not change. See [Update Evaluators](../govern/evaluators.md#update-evaluators-hot-reload) for an example.
 
 The `activate` body is optional. To prevent a lost update, send `{"expected_revision": N}`. A mismatch returns `409`.
 
@@ -280,7 +280,7 @@ curl -X PUT http://localhost:8080/api/v1/evaluators/namespaces/finance \
   -d '{"conversation_id": "conversation-123"}'
 ```
 
-See [Evaluator Engine](evaluator-engine.md) for the evaluator configuration schema.
+See [Evaluator Engine](../govern/evaluators.md) for the evaluator configuration schema.
 
 The OpenAPI document contains all evaluator request and response schemas. Run `yarn run generate-api` in `ui/admin` after you change an evaluator route or schema.
 
@@ -295,7 +295,7 @@ The OpenAPI document contains all evaluator request and response schemas. Run `y
 | `GET` | `/api/v1/action-policies/revisions/{id}` | Get one policy revision. |
 | `POST` | `/api/v1/action-policies/revisions/{id}/activate` | Activate a prior policy as a new revision. |
 
-The update and activation requests accept an optional `expected_revision`. Wanaku returns `409 Conflict` if the value does not equal the active revision. See [Action Policies](action-policies.md) for request examples and validation behavior.
+The update and activation requests accept an optional `expected_revision`. Wanaku returns `409 Conflict` if the value does not equal the active revision. See [Action Policies](../govern/action-policies.md) for request examples and validation behavior.
 
 The OpenAPI document contains all action-policy request and response schemas. Run `yarn run generate-api` in `ui/admin` after you change an action-policy route or schema.
 
@@ -310,7 +310,7 @@ The OpenAPI document contains all action-policy request and response schemas. Ru
 | `POST` | `/api/v1/policy-simulations/replays/{id}/cancel` | Request job cancellation. |
 | `DELETE` | `/api/v1/policy-simulations/replays/{id}` | Delete a retained job. |
 
-These routes do not activate candidates. They do not forward actions or resolve credentials. External evaluator execution is not supported. Reports contain decision metadata instead of request payloads. See [Policy Simulation](policy-simulation.md) for candidate selection, replay limits, audit input, and CI examples.
+These routes do not activate candidates. They do not forward actions or resolve credentials. External evaluator execution is not supported. Reports contain decision metadata instead of request payloads. See [Policy Simulation](../govern/policy-simulation.md) for candidate selection, replay limits, audit input, and CI examples.
 
 ### Inference Proxy (not part of this API)
 
@@ -350,7 +350,7 @@ The MCP listener (port 8081) serves this route, not the management API. For exam
 curl http://localhost:8081/.well-known/oauth-protected-resource/default/mcp
 ```
 
-MCP clients use this document to find the authorization server. An external authentication proxy enforces access to the MCP endpoint. See [Authentication](auth.md).
+MCP clients use this document to find the authorization server. An external authentication proxy enforces access to the MCP endpoint. See [Authentication](../operate/authentication.md).
 
 ### Web UI Plugins
 
@@ -360,7 +360,7 @@ Open **Plugin Catalog** in the admin UI to browse available plugins. Select **In
 
 The default source is the embedded `features/plugins/plugin-catalog.json` file. The server uses the plugin description and publisher from each catalog entry. It does not read GitHub release notes or plugin archives during catalog requests.
 
-`WANAKU_PLUGIN_CATALOG_PATH` selects a local JSON file. `WANAKU_PLUGIN_CATALOG_URL` selects a remote JSON file. A local path takes precedence. A custom source replaces the complete default catalog. See [Plugin Catalog](plugin-catalog.md) for the source format and publication instructions.
+`WANAKU_PLUGIN_CATALOG_PATH` selects a local JSON file. `WANAKU_PLUGIN_CATALOG_URL` selects a remote JSON file. A local path takes precedence. A custom source replaces the complete default catalog. See [Plugin Catalog](../extend/plugin-catalog.md) for the source format and publication instructions.
 
 The endpoint returns HTTP 502 if the selected source is unavailable or invalid. It does not use a fallback source. A request has a 30-second limit. A remote download has a 15-second limit. Catalog JSON has a 1 MiB size limit.
 
@@ -373,7 +373,7 @@ The endpoint returns HTTP 502 if the selected source is unavailable or invalid. 
 | `GET` | `/plugins/{pluginId}/{path}` | Get a static plugin file. |
 | Any HTTP method | `/api/plugins/{pluginId}/{serviceId}/{path}` | Send a request through a configured plugin service mapping. |
 
-The plugin proxy accepts only plugin and service IDs that Wanaku loaded from configuration. It forwards the request method, body, query, and selected headers to the configured service. See [Plugin Development Guide](plugin-development-guide.md).
+The plugin proxy accepts only plugin and service IDs that Wanaku loaded from configuration. It forwards the request method, body, query, and selected headers to the configured service. See [Plugin Development Guide](../extend/plugin-development-guide.md).
 
 ## Persistence
 
@@ -418,8 +418,8 @@ The MCP endpoint (port 8081) and the inference proxy (port 8083) each use their 
 
 ## Related Docs
 
-- [Architecture](architecture.md) — See how the management API fits into the server.
+- [Architecture](../get-started/architecture.md) — See how the management API fits into the server.
 - [Configuration](configuration.md) — Configure the listen address, persistence, and CORS.
-- [Features](features.md) — Add management routes through the feature system.
-- [Authentication](auth.md) — Put the management API behind oauth2-proxy.
-- [Credential Brokerage](credential-brokerage.md) — Scoped, fail-closed upstream authentication for forwards.
+- [Features](../extend/feature-crates.md) — Add management routes through the feature system.
+- [Authentication](../operate/authentication.md) — Put the management API behind oauth2-proxy.
+- [Credential Brokerage](../govern/credential-brokerage.md) — Scoped, fail-closed upstream authentication for forwards.

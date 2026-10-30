@@ -44,7 +44,7 @@ Under the hood, Wanaku is an HTTP filter pipeline. Actions flow through a chain 
 
 ## The Filter Pipeline
 
-Filters are the heart of Praxis. Each request passes through a chain of filters defined in `server/src/default.yaml`. This listing shows the filter order of the `mcp_router` chain. It leaves out the filter options. Refer to [`server/src/default.yaml`](../server/src/default.yaml) for the complete configuration:
+Filters are the heart of Praxis. Each request passes through a chain of filters defined in `server/src/default.yaml`. This listing shows the filter order of the `mcp_router` chain. It leaves out the filter options. Refer to [`server/src/default.yaml`](../../server/src/default.yaml) for the complete configuration:
 
 ```yaml
 filter_chains:
@@ -337,7 +337,7 @@ pub trait Feature: Send + Sync {
 7. **Policy simulation** (`features/simulation/`) — validates candidates and compares decisions without activation
 8. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
 
-See [Features](./features.md) for how to create your own.
+See [Features](../extend/feature-crates.md) for how to create your own.
 
 ### Application Assembly
 
@@ -362,7 +362,7 @@ A managed pipeline proxies A2A JSON-RPC requests to registered upstream agents. 
 
 Agent entries use shared registry persistence. The management API and the **A2A agents** page support registration, editing, and deletion. Explicit agent paths preserve namespace and agent routing boundaries. The managed pipeline does not use the global Praxis task-ID routing store. A separate custom pipeline can still use static upstreams and Praxis task-owner routing.
 
-The upstream agent owns task execution and state. Wanaku does not translate A2A requests into MCP calls. The initial implementation does not support streaming, push notifications, trusted actor identity, or approval workflows. See [A2A Proxy](./a2a.md) for configuration and follow-up work.
+The upstream agent owns task execution and state. Wanaku does not translate A2A requests into MCP calls. The initial implementation does not support streaming, push notifications, trusted actor identity, or approval workflows. See [A2A Proxy](../connect/a2a.md) for configuration and follow-up work.
 
 ## Management API
 
@@ -435,7 +435,7 @@ const result = await listTools();  // Orval-generated function
 const tools = result.data;         // customFetch already removed the server envelope
 ```
 
-See [Contributing: Admin UI](./contributing-admin-ui.md) for development details.
+See [Contributing: Admin UI](../contributing/admin-ui.md) for development details.
 
 ## Deployment Patterns
 
@@ -453,9 +453,9 @@ Deploy Wanaku as a `Deployment` with:
 - **Service:** ClusterIP for the MCP endpoint (port 8081). Expose it outside the cluster only through an authenticating proxy, such as oauth2-proxy.
 - **Service:** ClusterIP for the management API (port 8080). The management API has no built-in authentication. Do not expose it with a LoadBalancer Service.
 - **ConfigMap:** `wanaku.yaml` bootstrap config
-- **Secret:** credential values, passed to the container as environment variables. `wanaku.yaml` refers to them with `env:VARIABLE_NAME` (in `llm_connections[].api_key`, `typesafe_system_one_connections[].api_key`, and `bindings[].secret_refs`). Do not put secret values in `wanaku.yaml`. See [Configuration](./configuration.md#kubernetes)
+- **Secret:** credential values, passed to the container as environment variables. `wanaku.yaml` refers to them with `env:VARIABLE_NAME` (in `llm_connections[].api_key`, `typesafe_system_one_connections[].api_key`, and `bindings[].secret_refs`). Do not put secret values in `wanaku.yaml`. See [Configuration](../reference/configuration.md#kubernetes)
 
-Mount a `PersistentVolume` on `WANAKU_PERSIST_PATH` (`/data/registry` in the image) for registry persistence across restarts. Refer to [Configuration](./configuration.md#kubernetes) for the complete manifests.
+Mount a `PersistentVolume` on `WANAKU_PERSIST_PATH` (`/data/registry` in the image) for registry persistence across restarts. Refer to [Configuration](../reference/configuration.md#kubernetes) for the complete manifests.
 
 All listeners bind to all interfaces by default: the management API (8080), MCP (8081), the inference proxy (8083), and A2A (8084).
 
@@ -489,7 +489,7 @@ Two oauth2-proxy instances with a shared cookie provide SSO across both endpoint
 - **oauth2-proxy-mgmt** (port 4180 → 8080) — protects admin UI and REST API
 - **oauth2-proxy-mcp** (port 4181 → 8081) — protects MCP endpoints
 
-The shipped configuration accepts each authenticated user of the realm. It does not require a role. To restrict the management proxy to a role, set `OAUTH2_PROXY_ALLOWED_ROLES` (commented out in `deploy/auth/oauth2-proxy-mgmt.env`). See [Authentication](./auth.md).
+The shipped configuration accepts each authenticated user of the realm. It does not require a role. To restrict the management proxy to a role, set `OAUTH2_PROXY_ALLOWED_ROLES` (commented out in `deploy/auth/oauth2-proxy-mgmt.env`). See [Authentication](../operate/authentication.md).
 
 Users authenticate via oauth2-proxy's browser-based login flow (PKCE). CLI clients obtain tokens from Keycloak and pass them as `Authorization: Bearer <token>` headers — oauth2-proxy validates them before proxying to Wanaku.
 
@@ -510,7 +510,7 @@ CORS is enabled by default via the `cors` filter (allows all origins). To restri
 export WANAKU_CORS_ORIGIN=https://app.example.com
 ```
 
-The variable applies to the embedded pipeline configuration. A custom `--pipeline-config` file must set `allow_origins` in its own `cors` filters. See [Configuration](./configuration.md#filter-configuration).
+The variable applies to the embedded pipeline configuration. A custom `--pipeline-config` file must set `allow_origins` in its own `cors` filters. See [Configuration](../reference/configuration.md#filter-configuration).
 
 ## What's Not Here (Yet)
 
@@ -524,8 +524,8 @@ These are all solvable (implement traits, add filters), but they're not in scope
 
 ## Related Docs
 
-- [Configuration](./configuration.md) — all env vars and YAML options
-- [Action Policies](./action-policies.md) — schema, matching, decisions, and revisions
-- [Features](./features.md) — enable evaluators, create custom features
-- [Management API](./management-api.md) — REST API reference
-- [Contributing: Admin UI](./contributing-admin-ui.md) — customize the embedded UI
+- [Configuration](../reference/configuration.md) — all env vars and YAML options
+- [Action Policies](../govern/action-policies.md) — schema, matching, decisions, and revisions
+- [Features](../extend/feature-crates.md) — enable evaluators, create custom features
+- [Management API](../reference/management-api.md) — REST API reference
+- [Contributing: Admin UI](../contributing/admin-ui.md) — customize the embedded UI

@@ -2,7 +2,7 @@
 
 This guide is for users moving from the Java-based Wanaku ("Classic Wanaku", `wanaku-barn`) to the Rust-based Wanaku. In this guide, "Wanaku" means the Rust-based server, and "Praxis" means only the proxy framework that it uses. It covers what changed, what works differently, and what you need to do to migrate.
 
-If you're new to Wanaku and have never used the Java version, skip this doc — start with [Getting Started](./getting-started.md) instead.
+If you're new to Wanaku and have never used the Java version, skip this doc — start with [Getting Started](./quickstart.md) instead.
 
 Use this guide if you operate Classic Wanaku and need to plan or perform a migration. It compares the two systems, identifies compatibility limits, and provides a migration checklist.
 
@@ -145,7 +145,7 @@ wanaku-server --wanaku-config /etc/wanaku/wanaku.yaml
 | `WANAKU_HOME` | `WANAKU_PERSIST_PATH` | Wanaku uses `$HOME/.wanaku/server` by default (similar concept) |
 | `quarkus.log.level` | `RUST_LOG` | Uses Rust `tracing` crate syntax (e.g., `RUST_LOG=info,wanaku_filters=trace`) |
 
-See [Configuration](./configuration.md) for the full list of Wanaku environment variables.
+See [Configuration](../reference/configuration.md) for the full list of Wanaku environment variables.
 
 ## Namespaces
 
@@ -285,7 +285,7 @@ wanaku forwards remove --name echo --no-auth
 wanaku forwards refresh --name echo --no-auth
 ```
 
-Read [Management API](./management-api.md) for the equivalent REST routes.
+Read [Management API](../reference/management-api.md) for the equivalent REST routes.
 
 ### Try a Forward
 
@@ -413,7 +413,7 @@ These endpoints are new in Wanaku:
 | `GET /api/v1/metrics` | In-memory metrics snapshot |
 | `GET /api/v1/plugins` | Discovered UI plugins |
 
-This list is not complete. See [Management API](./management-api.md) for the full reference.
+This list is not complete. See [Management API](../reference/management-api.md) for the full reference.
 
 ## Authentication
 
@@ -446,7 +446,7 @@ This means authentication is handled before requests reach Wanaku. The proxy val
 3. Point clients at the oauth2-proxy port instead of directly at Wanaku
 4. Update CLI commands to use `--host` pointing at the oauth2-proxy endpoint
 
-See [Authentication](./auth.md) for detailed setup.
+See [Authentication](../operate/authentication.md) for detailed setup.
 
 **When running without authentication:** Wanaku runs without auth by default. Use `--no-auth` with the CLI, same as setting `wanaku.http.auth=none` in Classic.
 
@@ -535,7 +535,7 @@ The operator creates the deployments, services, and ingress or routes for both c
 
 ### Without the Operator
 
-If you prefer not to use the operator, deploy Wanaku as a standard Kubernetes `Deployment`. Read [Configuration: Kubernetes](./configuration.md#kubernetes) for complete ConfigMap, Secret, Deployment, and Service manifests.
+If you prefer not to use the operator, deploy Wanaku as a standard Kubernetes `Deployment`. Read [Configuration: Kubernetes](../reference/configuration.md#kubernetes) for complete ConfigMap, Secret, Deployment, and Service manifests.
 
 ### Migration Steps
 
@@ -615,7 +615,7 @@ These features have no Classic Wanaku equivalent.
 
 WASM-based policy enforcement in the filter pipeline. Evaluators can classify tool calls using an LLM and execute WebAssembly action scripts to block, warn, filter, or modify requests.
 
-See [Evaluator Engine](./evaluator-engine.md).
+See [Evaluator Engine](../govern/evaluators.md).
 
 ### Inference Proxy
 
@@ -627,7 +627,7 @@ export WANAKU_INFERENCE_UPSTREAM=http://ollama:11434
 
 ### Interaction Recording
 
-The `wanaku_intercept` filter records LLM request and response pairs that pass through the inference proxy (port 8083). It does not record MCP traffic. The evaluator engine uses these records as conversation history. The filter can also insert a system message into the `messages` array of a chat request. Read [Features](./features.md#intercept-feature-featuresintercept) for details. The store keeps the most recent 1000 interactions by default.
+The `wanaku_intercept` filter records LLM request and response pairs that pass through the inference proxy (port 8083). It does not record MCP traffic. The evaluator engine uses these records as conversation history. The filter can also insert a system message into the `messages` array of a chat request. Read [Features](../extend/feature-crates.md#intercept-feature-featuresintercept) for details. The store keeps the most recent 1000 interactions by default.
 
 ```bash
 export WANAKU_INTERACTION_CAPACITY=1000
@@ -670,4 +670,4 @@ Use this checklist to verify your migration:
 
 - **Wanaku issues:** [github.com/wanaku-ai/wanaku/issues](https://github.com/wanaku-ai/wanaku/issues)
 - **Classic Wanaku issues:** [github.com/wanaku-ai/wanaku-barn/issues](https://github.com/wanaku-ai/wanaku-barn/issues)
-- **FAQ:** [FAQ](./faq.md)
+- **FAQ:** [FAQ](../operate/troubleshooting.md)

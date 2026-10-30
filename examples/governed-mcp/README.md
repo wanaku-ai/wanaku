@@ -71,12 +71,12 @@ The `sandbox` namespace uses `mode: audit`. Wanaku records the governance decisi
 ## Adapt the Example
 
 - Change the forward `address`, the binding `origin`, and the namespace for your server. The origin keeps only the scheme, host, and port.
-- Replace the evaluator with an OPA evaluator or a passthrough evaluator. See [Evaluator Engine](../../docs/evaluator-engine.md) and [`examples/opa`](../opa/README.md).
+- Replace the evaluator with an OPA evaluator or a passthrough evaluator. See [Evaluator Engine](../../docs/govern/evaluators.md) and [`examples/opa`](../opa/README.md).
 - Remove the `llm_connections` entry if no evaluator uses it. Wanaku resolves every connection at startup.
 
 ## Related Docs
 
-- [Configuration](../../docs/configuration.md#wanaku-config-file-wanakuyaml)
-- [Governance Posture](../../docs/governance-posture.md)
-- [Action Policies](../../docs/action-policies.md)
-- [Credential Brokerage](../../docs/credential-brokerage.md)
+- [Configuration](../../docs/reference/configuration.md#wanaku-config-file-wanakuyaml)
+- [Governance Posture](../../docs/govern/governance-posture.md)
+- [Action Policies](../../docs/govern/action-policies.md)
+- [Credential Brokerage](../../docs/govern/credential-brokerage.md)

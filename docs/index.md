@@ -27,35 +27,35 @@ All in a single binary that needs only libc.
 
 ### Getting Started
 
-- **[Getting Started](./getting-started.md)** — download, install, and run your first Wanaku proxy
-- **[Migrating from Classic Wanaku](./migration-from-classic.md)** — what changed, what broke, and how to migrate from the Java version
-- **[Configuration](./configuration.md)** — all environment variables and YAML config options
-- **[Authentication](./auth.md)** — set up oauth2-proxy with Keycloak
-- **[Management API](./management-api.md)** — REST API reference for tools, resources, etc.
-- **[Governance Posture](./governance-posture.md)** — enforcement modes, fail-safe defaults, and namespace resolution
-- **[Action Policies](./action-policies.md)** — deterministic rules for MCP actions
-- **[Semantic Routing](./semantic-routing.md)** — Barn authoring, WSR deployment, and governed MCP acceptance checks
-- **[Policy Simulation](./policy-simulation.md)** — validate candidates and compare action decisions before activation
-- **[Redaction Boundary](./redaction.md)** — where Wanaku removes credentials and PII before logs, errors, and stored data
-- **[Evaluator Engine](./evaluator-engine.md)** — LLM classification and WASM action scripts for policy enforcement
-- **[Governance Audit Trail](./audit-trail.md)** — audit events, redaction rules, and retention
-- **[A2A](./a2a.md)** — governed agent-to-agent traffic
-- **[Container Build](./container-build.md)** — build the container images locally
-- **[FAQ](./faq.md)** — common issues and troubleshooting
+- **[Getting Started](./get-started/quickstart.md)** — download, install, and run your first Wanaku proxy
+- **[Migrating from Classic Wanaku](./get-started/migration-from-classic.md)** — what changed, what broke, and how to migrate from the Java version
+- **[Configuration](./reference/configuration.md)** — all environment variables and YAML config options
+- **[Authentication](./operate/authentication.md)** — set up oauth2-proxy with Keycloak
+- **[Management API](./reference/management-api.md)** — REST API reference for tools, resources, etc.
+- **[Governance Posture](./govern/governance-posture.md)** — enforcement modes, fail-safe defaults, and namespace resolution
+- **[Action Policies](./govern/action-policies.md)** — deterministic rules for MCP actions
+- **[Semantic Routing](./connect/semantic-routing.md)** — Barn authoring, WSR deployment, and governed MCP acceptance checks
+- **[Policy Simulation](./govern/policy-simulation.md)** — validate candidates and compare action decisions before activation
+- **[Redaction Boundary](./govern/redaction.md)** — where Wanaku removes credentials and PII before logs, errors, and stored data
+- **[Evaluator Engine](./govern/evaluators.md)** — LLM classification and WASM action scripts for policy enforcement
+- **[Governance Audit Trail](./govern/audit-trail.md)** — audit events, redaction rules, and retention
+- **[A2A](./connect/a2a.md)** — governed agent-to-agent traffic
+- **[Container Build](./contributing/container-build.md)** — build the container images locally
+- **[FAQ](./operate/troubleshooting.md)** — common issues and troubleshooting
 
 ### Understanding the System
 
-- **[Architecture](./architecture.md)** — filter pipeline, registry, tool routing, deployment patterns
-- **[Features](./features.md)** — evaluators and how to create custom features
-- **[Credential Brokerage](./credential-brokerage.md)** — scoped, fail-closed upstream authentication for forwards
+- **[Architecture](./get-started/architecture.md)** — filter pipeline, registry, tool routing, deployment patterns
+- **[Features](./extend/feature-crates.md)** — evaluators and how to create custom features
+- **[Credential Brokerage](./govern/credential-brokerage.md)** — scoped, fail-closed upstream authentication for forwards
 
 ### Contributing
 
-- **[Contributing](./contributing.md)** — development workflow, checks, and pull requests
-- **[Admin UI Development](./contributing-admin-ui.md)** — React + Carbon Design System frontend development
-- **[Plugin Development](./plugin-development-guide.md)** — write and package admin UI plugins
-- **[Plugin Catalog](./plugin-catalog.md)** — publish and install available UI plugins
-- **[Web UI Plugin Guidelines](./extensible-web-ui-plugin-guidelines.md)** — design rules for admin UI plugins
+- **[Contributing](./contributing/index.md)** — development workflow, checks, and pull requests
+- **[Admin UI Development](./contributing/admin-ui.md)** — React + Carbon Design System frontend development
+- **[Plugin Development](./extend/plugin-development-guide.md)** — write and package admin UI plugins
+- **[Plugin Catalog](./extend/plugin-catalog.md)** — publish and install available UI plugins
+- **[Web UI Plugin Guidelines](./extend/extensible-web-ui-plugin-guidelines.md)** — design rules for admin UI plugins
 
 ## Who This Is For
 
@@ -96,7 +96,7 @@ These are solvable, but they're not in scope for the initial release.
 
 Agents send tool calls through Wanaku. The proxy intercepts every action, resolves the target namespace, enforces policy, and forwards the action to the appropriate upstream MCP server. Authentication happens before Wanaku, in an authenticating proxy such as oauth2-proxy. The agent never reaches backends directly — governance is enforced in the proxy layer.
 
-See [Architecture](./architecture.md) for the full story.
+See [Architecture](./get-started/architecture.md) for the full story.
 
 ## Core Concepts
 
@@ -162,11 +162,11 @@ Using the [Wanaku CLI](https://github.com/wanaku-ai/wanaku-barn/releases/tag/ear
 wanaku forwards add --service="http://echo-mcp:8080/mcp" --name echo-server --namespace default --no-auth
 ```
 
-This automatically discovers and registers all tools exposed by the upstream MCP server. The host in this example is a placeholder. For a procedure that you can run end to end, see [Try a Forward](./migration-from-classic.md#try-a-forward).
+This automatically discovers and registers all tools exposed by the upstream MCP server. The host in this example is a placeholder. For a procedure that you can run end to end, see [Try a Forward](./get-started/migration-from-classic.md#try-a-forward).
 
 ### Deploy to Kubernetes
 
-For production installs, use the Wanaku Operator. See [Production Deployment on Kubernetes or OpenShift](./getting-started.md#production-deployment-on-kubernetes-or-openshift). For plain manifests (ConfigMap, Secret, Deployment, and Service), see [Configuration: Kubernetes](./configuration.md#kubernetes).
+For production installs, use the Wanaku Operator. See [Production Deployment on Kubernetes or OpenShift](./get-started/quickstart.md#production-deployment-on-kubernetes-or-openshift). For plain manifests (ConfigMap, Secret, Deployment, and Service), see [Configuration: Kubernetes](./reference/configuration.md#kubernetes).
 
 ## Deployment Patterns
 
@@ -241,7 +241,7 @@ Wanaku is open source (Apache 2.0). Contributions welcome.
 6. Write tests
 7. Update docs
 
-See [Features](./features.md) for the full tutorial.
+See [Features](./extend/feature-crates.md) for the full tutorial.
 
 ## Support and Community
 
@@ -257,7 +257,7 @@ Apache 2.0. See LICENSE for details.
 
 **Next Steps:**
 
-- New to Wanaku? Start with [Getting Started](./getting-started.md)
-- Want to understand the internals? Read [Architecture](./architecture.md)
-- Need to configure it? See [Configuration](./configuration.md)
-- Building custom features? Check [Features](./features.md)
+- New to Wanaku? Start with [Getting Started](./get-started/quickstart.md)
+- Want to understand the internals? Read [Architecture](./get-started/architecture.md)
+- Need to configure it? See [Configuration](./reference/configuration.md)
+- Building custom features? Check [Features](./extend/feature-crates.md)

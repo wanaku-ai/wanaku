@@ -9,7 +9,7 @@
 //! missing artifact fails the test:
 //!
 //! ```sh
-//! # Build the actions into actions/dist/ first (see docs/evaluator-engine.md).
+//! # Build the actions into actions/dist/ first (see docs/govern/evaluators.md).
 //! cargo test -p wanaku-feature-evaluator --lib --test example_actions -- --ignored
 //! ```
 

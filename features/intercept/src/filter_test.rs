@@ -178,7 +178,7 @@ fn redact_bodies_preserves_opaque_bearer_token_in_content() {
     // basic auth-scheme markers, so an opaque bearer token pasted into a message
     // survives for intent analysis. A sensitive field or a shaped token is still
     // redacted (see the other tests). Operators close this residual exposure per
-    // deployment with a sensitive_json_pointer. See docs/redaction.md.
+    // deployment with a sensitive_json_pointer. See docs/govern/redaction.md.
     let filter = InterceptFilter::new(InterceptConfig::default());
     let mut request_body = serde_json::json!({
         "messages": [

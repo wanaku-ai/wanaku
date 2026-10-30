@@ -182,4 +182,4 @@ Keycloak does not update an existing realm from the import file. To test a chang
 | Proxy exits at startup | Export both secrets in the shell that runs Compose. Inspect the proxy logs. |
 | Browser redirects to `keycloak:8080` | Rebuild the server. The public issuer must be `http://localhost:8543/realms/wanaku`; the upstream issuer uses the container address. |
 
-For architecture, standalone proxy setup, and optional role restrictions, see [Authentication](../../docs/auth.md).
+For architecture, standalone proxy setup, and optional role restrictions, see [Authentication](../../docs/operate/authentication.md).

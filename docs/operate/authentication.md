@@ -11,7 +11,7 @@ Both proxies share a cookie secret. A browser login through either proxy then wo
 
 ## Local Docker Compose setup
 
-Follow the [authenticated local deployment guide](../deploy/auth/README.md). It starts Keycloak, Wanaku, and both proxies. It also creates a test user and demonstrates the `wanaku` and `wanaku-keycloak-admin` commands.
+Follow the [authenticated local deployment guide](../../deploy/auth/README.md). It starts Keycloak, Wanaku, and both proxies. It also creates a test user and demonstrates the `wanaku` and `wanaku-keycloak-admin` commands.
 
 The bundled realm has three separate clients:
 
