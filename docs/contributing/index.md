@@ -16,7 +16,9 @@ For implementation work, read the guide that matches the area you plan to change
 - [Admin UI Development](admin-ui.md): React development, generated API clients, tests, and UI conventions.
 - [Container Image Build](container-build.md): build the Wanaku container image locally with the Cargo toolchain.
 - [Plugin Development](../extend/plugin-development-guide.md): the implemented Web UI plugin contract and local test workflow.
-- [Evaluator Engine](../govern/evaluators.md): evaluator configuration and JavaScript or Rust action scripts.
+- [Evaluators](../govern/evaluators.md): evaluator configuration, runtime management, and internals.
+- [Write evaluator actions in JavaScript](../extend/evaluator-actions-js.md) and [in Rust](../extend/evaluator-actions-rust.md): the action script guides.
+- [Testing](testing.md): the evaluator test suites.
 
 ## Prerequisites
 

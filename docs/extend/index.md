@@ -1,11 +1,16 @@
 ---
 title: Extend Wanaku
-description: Extend Wanaku with Rust feature crates and JavaScript Admin UI plugins, and publish your plugins to the Wanaku plugin catalog.
+description: Extend Wanaku with evaluator action scripts, Rust feature crates, and JavaScript Admin UI plugins, and publish plugins to the catalog.
 ---
 
 # Extend Wanaku
 
-These pages are for developers who add features to Wanaku. Evaluator action scripts are in the [Evaluator Engine](../govern/evaluators.md) guide for now.
+These pages are for developers who add features to Wanaku.
+
+## Evaluator actions
+
+- [Write evaluator actions in JavaScript](evaluator-actions-js.md): write, compile, and test a JavaScript action script.
+- [Write evaluator actions in Rust](evaluator-actions-rust.md): build an action script with wit-bindgen and cargo-component.
 
 ## Feature crates
 

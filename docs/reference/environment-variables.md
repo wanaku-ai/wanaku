@@ -1,6 +1,6 @@
 ---
 title: Wanaku environment variables
-description: Reference for the Wanaku server environment variables: listen addresses, persistence, Admin UI override, header forwarding, and feature limits.
+description: "Reference for the Wanaku server environment variables: listen addresses, persistence, Admin UI override, header forwarding, and feature limits."
 ---
 
 # Wanaku environment variables

@@ -35,16 +35,21 @@
         { "text": "Governance posture", "link": "govern/governance-posture" },
         { "text": "Action policies", "link": "govern/action-policies" },
         { "text": "Evaluators", "link": "govern/evaluators" },
+        { "text": "Evaluator engines", "link": "govern/evaluator-engines" },
         { "text": "Credential brokerage", "link": "govern/credential-brokerage" },
         { "text": "Redaction boundary", "link": "govern/redaction" },
         { "text": "Audit trail", "link": "govern/audit-trail" },
-        { "text": "Policy simulation", "link": "govern/policy-simulation" }
+        { "text": "Policy simulation", "link": "govern/policy-simulation" },
+        { "text": "Govern an MCP server", "link": "govern/govern-an-mcp-server" },
+        { "text": "Gate tool calls with OPA", "link": "govern/gate-calls-with-opa" }
       ]
     },
     {
       "text": "Extend",
       "link": "extend/",
       "items": [
+        { "text": "Evaluator actions in JavaScript", "link": "extend/evaluator-actions-js" },
+        { "text": "Evaluator actions in Rust", "link": "extend/evaluator-actions-rust" },
         { "text": "Feature crates", "link": "extend/feature-crates" },
         { "text": "Build an Admin UI plugin", "link": "extend/plugin-development-guide" },
         { "text": "Plugin catalog", "link": "extend/plugin-catalog" },
@@ -69,7 +74,8 @@
       "collapsed": true,
       "items": [
         { "text": "Admin UI development", "link": "contributing/admin-ui" },
-        { "text": "Build container images", "link": "contributing/container-build" }
+        { "text": "Build container images", "link": "contributing/container-build" },
+        { "text": "Testing", "link": "contributing/testing" }
       ]
     }
   ]
