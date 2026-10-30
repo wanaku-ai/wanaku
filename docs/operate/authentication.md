@@ -1,3 +1,8 @@
+---
+title: Authentication
+description: Authenticate MCP clients and Admin UI users for Wanaku with oauth2-proxy and Keycloak, set the issuer addresses, and log out of the CLI.
+---
+
 # Authentication
 
 Wanaku uses Keycloak to issue tokens. oauth2-proxy validates browser sessions and bearer tokens before it forwards requests to Wanaku.
@@ -11,7 +16,7 @@ Both proxies share a cookie secret. A browser login through either proxy then wo
 
 ## Local Docker Compose setup
 
-Follow the [authenticated local deployment guide](../../deploy/auth/README.md). It starts Keycloak, Wanaku, and both proxies. It also creates a test user and demonstrates the `wanaku` and `wanaku-keycloak-admin` commands.
+Follow the [authenticated local deployment guide](https://github.com/wanaku-ai/wanaku/blob/main/deploy/auth/README.md). It starts Keycloak, Wanaku, and both proxies. It also creates a test user and demonstrates the `wanaku` and `wanaku-keycloak-admin` commands.
 
 The bundled realm has three separate clients:
 

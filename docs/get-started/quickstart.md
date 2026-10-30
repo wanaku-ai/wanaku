@@ -1,3 +1,8 @@
+---
+title: Quickstart
+description: Install Wanaku, start the server, register an upstream MCP server as a forward, and test the MCP endpoint, in a container or with systemd.
+---
+
 # Getting Started with Wanaku
 
 Wanaku is a governed action proxy for AI agents. It sits between agents and backend systems, where it intercepts tool calls and enforces policy, identity, and data controls. Wanaku performs requested actions on behalf of agents, so agents never access backend systems directly.
@@ -260,13 +265,13 @@ The action-policy filter and the evaluator filter apply `no_match` independently
 - An [action-policy](../govern/action-policies.md) rule that allows it.
 - An [evaluator](../govern/evaluators.md) whose trigger matches it, and whose processor passes it.
 
-If only one of the filters matches, the other filter denies the request with its no-match error. For a complete example, see [`examples/governed-mcp`](../../examples/governed-mcp/README.md).
+If only one of the filters matches, the other filter denies the request with its no-match error. For a complete example, see [`examples/governed-mcp`](https://github.com/wanaku-ai/wanaku/blob/main/examples/governed-mcp/README.md).
 
 Start the container with `-e MY_MCP_TOKEN` to pass the token. Remove the `credential_bindings` and `bindings` keys if the upstream server does not require a token.
 
 ## Run as a systemd Service
 
-The [`deploy/systemd/wanaku.service`](../../deploy/systemd/wanaku.service) file is a template for convenience. Review it and adapt it to your system before you use it.
+The [`deploy/systemd/wanaku.service`](https://github.com/wanaku-ai/wanaku/blob/main/deploy/systemd/wanaku.service) file is a template for convenience. Review it and adapt it to your system before you use it.
 
 The template uses these paths:
 
@@ -386,7 +391,7 @@ Use the admin UI to view and manage tools, namespaces, resources, prompts, and f
 
 Wanaku uses [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) for authentication. oauth2-proxy receives requests before it sends them to the MCP and management API ports.
 
-Follow [Authenticated local deployment](../../deploy/auth/README.md) for the complete Docker Compose workflow. It starts Keycloak, Wanaku, and both oauth2-proxy instances, then verifies CLI access.
+Follow [Authenticated local deployment](https://github.com/wanaku-ai/wanaku/blob/main/deploy/auth/README.md) for the complete Docker Compose workflow. It starts Keycloak, Wanaku, and both oauth2-proxy instances, then verifies CLI access.
 
 After setup, log in with the local CLI client and use one token with both APIs:
 
@@ -445,7 +450,7 @@ Authentication is handled externally by [oauth2-proxy](https://github.com/oauth2
 
 Wanaku also serves [RFC 9728](https://datatracker.ietf.org/doc/rfc9728/) OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. Set `WANAKU_AUTH_ISSUER` to your Keycloak realm URL to populate the `authorization_servers` field.
 
-See [`deploy/auth/README.md`](../../deploy/auth/README.md) for setup instructions (Docker Compose and local development).
+See [`deploy/auth/README.md`](https://github.com/wanaku-ai/wanaku/blob/main/deploy/auth/README.md) for setup instructions (Docker Compose and local development).
 
 ## Where to Go Next
 

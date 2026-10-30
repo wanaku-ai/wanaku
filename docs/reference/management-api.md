@@ -1,3 +1,8 @@
+---
+title: Management API
+description: "Reference for the Wanaku management API on port 8080: tools, namespaces, forwards, bindings, feature routes, status codes, and CORS."
+---
+
 # Management API
 
 The management API lets operators inspect and change Wanaku at runtime. It listens on port 8080 by default. Set `WANAKU_MGMT_LISTEN` to use a different address.
@@ -416,10 +421,10 @@ The management API sets only the `Access-Control-Allow-Origin` header. It does n
 
 The MCP endpoint (port 8081) and the inference proxy (port 8083) each use their own pipeline CORS filter, set from the same `WANAKU_CORS_ORIGIN` value.
 
-## Related Docs
+## Next steps
 
 - [Architecture](../get-started/architecture.md) — See how the management API fits into the server.
 - [Wanaku environment variables](environment-variables.md) — Configure the listen address, persistence, and CORS.
-- [Features](../extend/feature-crates.md) — Add management routes through the feature system.
+- [Feature crates](../extend/feature-crates.md) — Add management routes through the feature system.
 - [Authentication](../operate/authentication.md) — Put the management API behind oauth2-proxy.
 - [Credential Brokerage](../govern/credential-brokerage.md) — Scoped, fail-closed upstream authentication for forwards.

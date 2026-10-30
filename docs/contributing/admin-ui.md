@@ -1,3 +1,8 @@
+---
+title: Admin UI development
+description: "Develop the Wanaku Admin UI: the React and Carbon stack, page patterns, the generated API client, styling, and the Playwright E2E tests."
+---
+
 # Contributing: Admin UI
 
 This guide covers development of the admin UI for contributors. For end-user documentation on using the admin UI, see the [Getting Started](../get-started/quickstart.md) guide.
@@ -113,7 +118,7 @@ dist/
 
 ### 4. Embed in Server
 
-The server binary embeds `ui/admin/dist/` at compile time through `rust_embed`. Refer to the `AdminUi` struct in [`server/src/management/ui.rs`](../../server/src/management/ui.rs). The `ui` Cargo feature (on by default) enables the embedded UI.
+The server binary embeds `ui/admin/dist/` at compile time through `rust_embed`. Refer to the `AdminUi` struct in [`server/src/management/ui.rs`](https://github.com/wanaku-ai/wanaku/blob/main/server/src/management/ui.rs). The `ui` Cargo feature (on by default) enables the embedded UI.
 
 The server serves the UI under `/admin/`. When you open `http://localhost:8080/admin/`, the server serves files from the embedded bundle.
 
@@ -437,7 +442,7 @@ Hash routing keeps all requests to `GET /` (which serves `index.html`), and the 
 
 **Router setup:**
 
-`buildRouter(pluginPages)` in [`ui/admin/src/router.tsx`](../../ui/admin/src/router.tsx) creates the hash router. It adds one lazy route for each core page and one route for each plugin page.
+`buildRouter(pluginPages)` in [`ui/admin/src/router.tsx`](https://github.com/wanaku-ai/wanaku/blob/main/ui/admin/src/router.tsx) creates the hash router. It adds one lazy route for each core page and one route for each plugin page.
 
 ## API Client (Orval)
 
@@ -466,7 +471,7 @@ This runs the `wanaku-openapi` example from `server/Cargo.toml` with `--no-defau
 
 ### Configuration
 
-[`ui/admin/orval.config.ts`](../../ui/admin/orval.config.ts) configures Orval:
+[`ui/admin/orval.config.ts`](https://github.com/wanaku-ai/wanaku/blob/main/ui/admin/orval.config.ts) configures Orval:
 
 - The input is `./openapi.json`. An input transformer removes the `{"data": ...}` envelope from the success response schemas of some tags.
 - The output is a `fetch` client in `./src/api/wanaku-router-api.ts`, with the models in `./src/models`.
@@ -618,7 +623,7 @@ npx playwright test
 
 `playwright.config.ts` starts the server with `cargo run -- --wanaku-config wanaku.yaml` from the repository root. If a server already runs on `http://localhost:8080`, Playwright uses it. To use a server at a different address, set `WANAKU_ROUTER_URL`.
 
-## Related Docs
+## Next steps
 
 - [Architecture](../get-started/architecture.md) — how the UI is embedded in the server
 - [Wanaku environment variables](../reference/environment-variables.md#admin-ui-override) — `WANAKU_UI_PATH` for local dev

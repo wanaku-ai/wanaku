@@ -1,3 +1,8 @@
+---
+title: Credential brokerage
+description: "Keep API keys away from AI agents: Wanaku resolves credentials from bindings, injects them into upstream requests, and redacts responses."
+---
+
 # Credential Brokerage
 
 Agents that call tools through Wanaku never see the credentials those tools need. An upstream API key, a service-account bearer token, a Basic-auth password — none of it crosses the agent boundary. Wanaku resolves the credential, injects it into the outbound request, and hands the agent only the result. This is credential brokerage.
@@ -424,7 +429,7 @@ Wanaku returns `404 Not Found` when no binding with the given id exists.
 
 This release does not have create, update, or delete routes for bindings. You author bindings in the `wanaku.yaml` configuration file. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml). Wanaku also persists bindings as part of the registry snapshot and restores them at startup. See [Management API](../reference/management-api.md) for the full route reference and response envelope.
 
-## Related Docs
+## Next steps
 
 - [Management API](../reference/management-api.md) — the complete route reference and response format.
 - [Governance Posture](governance-posture.md) — how Wanaku decides whether an action is authorized before the broker ever runs.

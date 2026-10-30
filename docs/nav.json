@@ -80,7 +80,8 @@
       "items": [
         { "text": "Admin UI development", "link": "contributing/admin-ui" },
         { "text": "Build container images", "link": "contributing/container-build" },
-        { "text": "Testing", "link": "contributing/testing" }
+        { "text": "Testing", "link": "contributing/testing" },
+        { "text": "Write documentation", "link": "contributing/documentation" }
       ]
     }
   ]

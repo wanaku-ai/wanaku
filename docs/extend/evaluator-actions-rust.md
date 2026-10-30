@@ -155,7 +155,7 @@ processor:
 ## Complete Rust Example
 
 Full `src/lib.rs` for a safety gate. This file is the shipped
-[`actions/safety-review/src/lib.rs`](../../actions/safety-review/src/lib.rs) without
+[`actions/safety-review/src/lib.rs`](https://github.com/wanaku-ai/wanaku/blob/main/actions/safety-review/src/lib.rs) without
 its tests. The action reads the engine result from `ctx.llm_result` and maps the
 level to a response: `red` blocks, `yellow` warns, and any other level passes.
 The action accepts two result formats:

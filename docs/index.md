@@ -1,3 +1,8 @@
+---
+title: Wanaku documentation
+description: Wanaku is a governed action proxy for AI agents. Start here to install it, connect agents and backends, govern their actions, and extend it.
+---
+
 # Wanaku Documentation
 
 Wanaku is a governed action proxy for AI agents. It sits between agents and the systems they act on, intercepting tool calls, agent-to-agent messages, and inference traffic. Wanaku forwards tool calls to upstream MCP servers, for example a Camel-based server that publishes Apache Camel routes as tools. The agent never touches backend systems directly. Policy, data controls, and audit happen in the proxy, not in the agent. An authenticating proxy such as oauth2-proxy handles identity in front of Wanaku.

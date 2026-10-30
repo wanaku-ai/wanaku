@@ -1,3 +1,8 @@
+---
+title: Governance posture
+description: Set how Wanaku handles unmatched actions and evaluation failures, globally and per namespace, with the mode, no_match, and on_failure settings.
+---
+
 # Governance Posture
 
 Governance posture defines how Wanaku handles policy decisions, unmatched actions, and evaluation failures. The model keeps these controls separate. This separation makes the effective behavior explicit for each namespace.

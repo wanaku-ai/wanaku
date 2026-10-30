@@ -108,7 +108,7 @@ The `PluginModule` type declares an optional `deactivate()` export, but the host
 
 ## Complete Example
 
-The following example shows the `hello-world` plugin in [`examples/hello-world`](../../examples/hello-world/):
+The following example shows the `hello-world` plugin in [`examples/hello-world`](https://github.com/wanaku-ai/wanaku/tree/main/examples/hello-world):
 
 **plugin.json:**
 

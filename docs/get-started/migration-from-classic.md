@@ -1,3 +1,8 @@
+---
+title: Migrate from Classic Wanaku
+description: "Move from Classic Wanaku, the Java-based wanaku-barn line, to the Rust-based Wanaku: what changed, what works differently, and what to do."
+---
+
 # Migrating from Classic Wanaku
 
 This guide is for users moving from the Java-based Wanaku ("Classic Wanaku", `wanaku-barn`) to the Rust-based Wanaku. In this guide, "Wanaku" means the Rust-based server, and "Praxis" means only the proxy framework that it uses. It covers what changed, what works differently, and what you need to do to migrate.

@@ -1,3 +1,8 @@
+---
+title: Redaction boundary
+description: Learn where Wanaku redacts credentials and sensitive values in logs, interactions, and audit events, how to configure it, and its limits.
+---
+
 # Redaction boundary
 
 Wanaku sits between agents and backend systems. It sees credentials, headers, tool
@@ -137,8 +142,8 @@ capture or share logs.
   not change the request or response that Wanaku forwards to the backend or returns
   to the agent.
 
-## Related Docs
+## Next steps
 
 - [Wanaku environment variables](../reference/environment-variables.md#intercept-feature) — intercept redaction settings and environment variables
 - [Governance audit trail](./audit-trail.md) — audit redaction rule reference
-- [Evaluator engine](./evaluators.md) — how intent analysis uses conversation history
+- [Evaluators](./evaluators.md) — how intent analysis uses conversation history

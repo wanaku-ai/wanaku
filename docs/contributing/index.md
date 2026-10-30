@@ -1,3 +1,8 @@
+---
+title: Contributing to Wanaku
+description: "Contribute to Wanaku: find the development guides for each area, run the minimum validation workflow, and prepare a pull request."
+---
+
 # Contributing to Wanaku
 
 Thank you for your interest in contributing to Wanaku. This page directs contributors to the development guides and the minimum validation workflow.
@@ -21,6 +26,7 @@ For implementation work, read the guide that matches the area you plan to change
 - [Evaluators](../govern/evaluators.md): evaluator configuration, runtime management, and internals.
 - [Write evaluator actions in JavaScript](../extend/evaluator-actions-js.md) and [in Rust](../extend/evaluator-actions-rust.md): the action script guides.
 - [Testing](testing.md): the workspace, evaluator, semantic router, and Admin UI test suites.
+- [Write Wanaku documentation](documentation.md): the page conventions and the docs checks.
 
 ## Prerequisites
 

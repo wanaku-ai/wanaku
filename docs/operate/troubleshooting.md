@@ -1,3 +1,8 @@
+---
+title: FAQ and troubleshooting
+description: Find the cause of common Wanaku problems, from startup and configuration errors to denied tool calls and evaluators, and learn how to fix them.
+---
+
 # FAQ and Troubleshooting
 
 Common issues and solutions when running Wanaku.

@@ -1,10 +1,15 @@
+---
+title: Plugin catalog
+description: Publish Wanaku Admin UI plugins in a JSON catalog, configure catalog sources, and install plugins from the catalog in the Admin UI.
+---
+
 # Plugin Catalog
 
 The Plugin Catalog connects the Wanaku admin UI to a growing ecosystem of plugins. A catalog is a JSON document with explicit plugin metadata and archive URLs. Publishers can host plugin archives independently of Wanaku and independently of the catalog.
 
 ## Catalog sources
 
-Wanaku embeds the default catalog from [`features/plugins/plugin-catalog.json`](../../features/plugins/plugin-catalog.json). The default catalog contains Wanaku Barn and Deployment Debugger. Deployment Debugger connects directly to MCP, A2A, and inference listeners and requires no Barn backend service. Each entry has a short plugin description. GitHub release pages and release notes are not catalog sources.
+Wanaku embeds the default catalog from [`features/plugins/plugin-catalog.json`](https://github.com/wanaku-ai/wanaku/blob/main/features/plugins/plugin-catalog.json). The default catalog contains Wanaku Barn and Deployment Debugger. Deployment Debugger connects directly to MCP, A2A, and inference listeners and requires no Barn backend service. Each entry has a short plugin description. GitHub release pages and release notes are not catalog sources.
 
 The server selects one source at startup, in this order:
 

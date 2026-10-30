@@ -1,3 +1,8 @@
+---
+title: A2A proxy
+description: Register upstream A2A (Agent2Agent) agents in Wanaku, proxy requests to them, and apply action policies to agent-to-agent traffic.
+---
+
 # A2A Proxy
 
 Wanaku can register upstream A2A agents and proxy requests to them. The admin UI lets operators manage agents without editing a pipeline file. The proxy uses the Praxis A2A filter and the existing Wanaku action-policy engine.
@@ -88,7 +93,7 @@ Unknown or deleted agent routes do not dispatch a request. Registering an agent 
 
 For a fixed upstream, you can still use an explicit `--pipeline-config` file. A custom pipeline replaces the embedded pipeline. Include the MCP, inference, and managed A2A listeners in that file if the deployment also requires them. Registering an agent through the UI does not add a managed listener to a custom pipeline.
 
-Use [examples/a2a.yaml](../../examples/a2a.yaml) as a starting point. Set its upstream endpoint, `Host` header, and `public_url` for the deployment. The example binds the A2A listener to `127.0.0.1:8084` and forwards to `127.0.0.1:9000`.
+Use [examples/a2a.yaml](https://github.com/wanaku-ai/wanaku/blob/main/examples/a2a.yaml) as a starting point. Set its upstream endpoint, `Host` header, and `public_url` for the deployment. The example binds the A2A listener to `127.0.0.1:8084` and forwards to `127.0.0.1:9000`.
 
 Start the server with the pipeline and policy configuration:
 

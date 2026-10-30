@@ -17,7 +17,7 @@ The default value of `--wanaku-config` is `wanaku.yaml`. The server resolves thi
 
 If the file does not exist, the server logs the warning `wanaku config not found, using defaults` and starts with the fail-safe defaults. This also applies when you give the path explicitly. Check the startup log if your configuration seems to have no effect. A file that the server cannot read, or that is not valid YAML, stops startup.
 
-For a complete annotated file that combines forwards, credential bindings, connections, evaluators, action policies, and governance, see [`examples/governed-mcp`](../../examples/governed-mcp/README.md).
+For a complete annotated file that combines forwards, credential bindings, connections, evaluators, action policies, and governance, see [`examples/governed-mcp`](https://github.com/wanaku-ai/wanaku/blob/main/examples/governed-mcp/README.md).
 
 **Format:**
 

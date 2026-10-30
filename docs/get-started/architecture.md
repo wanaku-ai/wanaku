@@ -1,3 +1,8 @@
+---
+title: Architecture
+description: How Wanaku intercepts and governs tool calls, agent messages, and inference traffic, with the filter pipeline, registries, and features.
+---
+
 # Architecture
 
 Wanaku is a governed action proxy for AI agents, built in Rust on the Praxis proxy framework. It sits between agents and the systems they act on, intercepting every tool call, agent-to-agent message, and inference request. Policy, identity, data controls, and audit are enforced in the proxy — agents never touch backend systems directly.
@@ -44,7 +49,7 @@ Under the hood, Wanaku is an HTTP filter pipeline. Actions flow through a chain 
 
 ## The Filter Pipeline
 
-Filters are the heart of Praxis. Each request passes through a chain of filters defined in `server/src/default.yaml`. This listing shows the filter order of the `mcp_router` chain. It leaves out the filter options. Refer to [`server/src/default.yaml`](../../server/src/default.yaml) for the complete configuration:
+Filters are the heart of Praxis. Each request passes through a chain of filters defined in `server/src/default.yaml`. This listing shows the filter order of the `mcp_router` chain. It leaves out the filter options. Refer to [`server/src/default.yaml`](https://github.com/wanaku-ai/wanaku/blob/main/server/src/default.yaml) for the complete configuration:
 
 ```yaml
 filter_chains:
@@ -522,10 +527,10 @@ The variable applies to the embedded pipeline configuration. A custom `--pipelin
 
 These are all solvable (implement traits, add filters), but they're not in scope for the initial release.
 
-## Related Docs
+## Next steps
 
 - [Configuration](../reference/configuration.md) — all env vars and YAML options
 - [Action Policies](../govern/action-policies.md) — schema, matching, decisions, and revisions
-- [Features](../extend/feature-crates.md) — enable evaluators, create custom features
+- [Feature crates](../extend/feature-crates.md) — enable evaluators, create custom features
 - [Management API](../reference/management-api.md) — REST API reference
 - [Contributing: Admin UI](../contributing/admin-ui.md) — customize the embedded UI
