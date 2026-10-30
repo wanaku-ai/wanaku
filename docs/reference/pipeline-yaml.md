@@ -13,7 +13,7 @@ The pipeline configuration defines listeners, filter chains, and filter-specific
 wanaku-server --pipeline-config /path/to/pipeline.yaml
 ```
 
-A custom file replaces the complete embedded pipeline. Start from [`server/src/default.yaml`](../../server/src/default.yaml), which is the embedded default, and change only what you need.
+A custom file replaces the complete embedded pipeline. Start from [`server/src/default.yaml`](https://github.com/wanaku-ai/wanaku/blob/main/server/src/default.yaml), which is the embedded default, and change only what you need.
 
 **Format:**
 

@@ -9,6 +9,9 @@ on:
       - '.lycheeignore'
       - '.markdownlint-cli2.yaml'
       - '.github/workflows/lychee-links.yml'
+      - 'docs/nav.json'
+      - 'docs/redirects.txt'
+      - '.github/check-docs-nav.py'
   pull_request:
     branches:
       - main
@@ -17,6 +20,9 @@ on:
       - '.lycheeignore'
       - '.markdownlint-cli2.yaml'
       - '.github/workflows/lychee-links.yml'
+      - 'docs/nav.json'
+      - 'docs/redirects.txt'
+      - '.github/check-docs-nav.py'
 
 permissions:
   contents: read
@@ -47,3 +53,11 @@ jobs:
 
       - name: Lint Markdown
         uses: DavidAnson/markdownlint-cli2-action@696eb3f2509270d7b882d2aa68347bc676e7af34 # v25.0.0
+
+  docs-conventions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check docs navigation and frontmatter
+        run: python3 .github/check-docs-nav.py

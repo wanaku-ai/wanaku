@@ -293,7 +293,7 @@ The default `on_failure` value is `deny`.
 - The metrics store records the engine latency and the result for each evaluator.
 - Set `RUST_LOG=wanaku_feature_evaluator=debug` to log the decision path, outcome, and latency of each OPA query.
 
-For a runnable policy, Rego tests, and configuration, see [`examples/opa`](../../examples/opa/README.md).
+For a runnable policy, Rego tests, and configuration, see [`examples/opa`](https://github.com/wanaku-ai/wanaku/blob/main/examples/opa/README.md).
 
 ## Next steps
 

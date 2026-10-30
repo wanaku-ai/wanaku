@@ -1,3 +1,8 @@
+---
+title: Action policies
+description: Allow or deny MCP and A2A actions with deterministic Wanaku action policies, rule selectors, deny precedence, and policy revisions.
+---
+
 # Action Policies
 
 Action policies give Wanaku a deterministic authorization layer for MCP and A2A actions. They complement the MCP evaluator. Use action policies for rules that depend on known names, labels, URIs, and structured request values. Use evaluators for contextual or semantic MCP decisions. See [A2A Proxy](../connect/a2a.md) for the initial A2A scope and configuration.

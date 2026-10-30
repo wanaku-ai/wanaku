@@ -7,7 +7,7 @@ description: "Configure Wanaku evaluators: triggers, processors, resource limits
 
 The evaluator engine lets you build **trigger→evaluate→act** pipelines. When a request matches a trigger, an LLM, TypeSafe System One, or Open Policy Agent (OPA) engine evaluates the request. Wanaku then executes a WebAssembly action script that has access to the registry, conversation history, and response control.
 
-You write the logic in JavaScript or Rust. The engine compiles it to WASM and runs it in a sandboxed environment with a clean, versioned API defined by the [WIT interface](../../features/evaluator/wit/evaluator.wit).
+You write the logic in JavaScript or Rust. The engine compiles it to WASM and runs it in a sandboxed environment with a clean, versioned API defined by the [WIT interface](https://github.com/wanaku-ai/wanaku/blob/main/features/evaluator/wit/evaluator.wit).
 
 **Why this exists:** MCP tools can be dangerous. You want to block "restart production database" calls, or dynamically assemble a per-conversation tool catalog based on what the LLM thinks the user needs. Pure LLM-based gates are too brittle (hallucination, prompt injection). Pure rule-based gates are too rigid. This engine gives you both: LLM cognitive work + deterministic WASM execution.
 
@@ -97,9 +97,9 @@ Wanaku ships three prebuilt action scripts, so you can use evaluators without a 
 
 | File | Engine input | Behavior | Source |
 |------|--------------|----------|--------|
-| `safety_review_action.wasm` | `{"level": "green\|yellow\|red", "reason": "..."}` from an `llm` engine, or a TypeSafe System One result | Blocks `red`, warns on `yellow`, and passes `green`. For a TypeSafe System One result, blocks a probability below 0.5. Rejects any other result as malformed (`-32002`). | [`actions/safety-review`](../../actions/safety-review/src/lib.rs) |
-| `assembly_filter_action.wasm` | A JSON array of tool names | Moves the named tools from the `default` namespace into the request namespace and limits the tool list to them. Skips tools from other namespaces. Passes all tools if the input is not a JSON array. | [`actions/assembly-filter`](../../actions/assembly-filter/src/lib.rs) |
-| `opa_allow_action.wasm` | A normalized OPA decision from an `opa` engine | Passes only when the decision is `"allow": true`. Blocks all other input. | [`actions/opa-allow`](../../actions/opa-allow/src/lib.rs) |
+| `safety_review_action.wasm` | `{"level": "green\|yellow\|red", "reason": "..."}` from an `llm` engine, or a TypeSafe System One result | Blocks `red`, warns on `yellow`, and passes `green`. For a TypeSafe System One result, blocks a probability below 0.5. Rejects any other result as malformed (`-32002`). | [`actions/safety-review`](https://github.com/wanaku-ai/wanaku/blob/main/actions/safety-review/src/lib.rs) |
+| `assembly_filter_action.wasm` | A JSON array of tool names | Moves the named tools from the `default` namespace into the request namespace and limits the tool list to them. Skips tools from other namespaces. Passes all tools if the input is not a JSON array. | [`actions/assembly-filter`](https://github.com/wanaku-ai/wanaku/blob/main/actions/assembly-filter/src/lib.rs) |
+| `opa_allow_action.wasm` | A normalized OPA decision from an `opa` engine | Passes only when the decision is `"allow": true`. Blocks all other input. | [`actions/opa-allow`](https://github.com/wanaku-ai/wanaku/blob/main/actions/opa-allow/src/lib.rs) |
 
 The location of the files depends on how you install Wanaku:
 

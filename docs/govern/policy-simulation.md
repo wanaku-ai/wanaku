@@ -1,3 +1,8 @@
+---
+title: Policy simulation
+description: "Test Wanaku policy and evaluator candidates before activation: validate a candidate, simulate one MCP action, or replay a batch of actions."
+---
+
 # Policy Simulation
 
 A policy update can block a working tool or permit an action that an operator intended to deny. Simulation gives reviewers decision evidence before activation. Use it to validate a candidate, test one MCP action, or compare a bounded action set with the active configuration.
