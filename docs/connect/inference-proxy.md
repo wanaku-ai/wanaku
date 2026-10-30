@@ -14,7 +14,7 @@ it. Point it at a backend with `WANAKU_INFERENCE_UPSTREAM`:
 export WANAKU_INFERENCE_UPSTREAM=127.0.0.1:11434
 ```
 
-The [Wanaku Debugger plugin](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/deployment-debugger.md)
+The [Wanaku Debugger plugin](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/manage/deployment-debugger.md)
 provides the LLM Chat page. Install the plugin from the Admin UI Plugin Catalog.
 Open Debugger from the Developer navigation section. Select the LLM Chat tab.
 The page calls this port directly with a key you supply in the browser. See

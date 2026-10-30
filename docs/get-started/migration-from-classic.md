@@ -536,7 +536,7 @@ spec:
     image: quay.io/wanaku/wanaku-barn-backend:latest
 ```
 
-The operator creates the deployments, services, and ingress or routes for both components. The `spec.router` section is deprecated. Read the [operator documentation](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/operator.md) for the full specification, including `spec.exposure` and `spec.auth`.
+The operator creates the deployments, services, and ingress or routes for both components. The `spec.router` section is deprecated. Read the [operator documentation](https://github.com/wanaku-ai/wanaku-barn/blob/main/docs/operate/operator.md) for the full specification, including `spec.exposure` and `spec.auth`.
 
 ### Without the Operator
 
