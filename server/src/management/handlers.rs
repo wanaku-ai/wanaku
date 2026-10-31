@@ -673,7 +673,9 @@ pub async fn discover_and_update_forward(
     audit_sink: Option<&dyn CredentialAuditSink>,
     forward: &ForwardEntry,
 ) {
-    let prepared = prepare_forward_update(registry, broker, audit_sink, forward).await;
+    let mut prepared = prepare_forward_update(registry, broker, audit_sink, forward).await;
+    // The forward can be deleted or registered again while discovery runs.
+    prepared.only_if_unchanged = true;
     let (_, counts) = apply_forward_update(registry, prepared);
     info!(
         forward = %forward.name,
@@ -695,6 +697,9 @@ struct PreparedForwardUpdate {
     /// The complete replacement capability set. `None` when discovery failed or
     /// was incomplete: the previous capability set then stays in place.
     capabilities: Option<ForwardCapabilities>,
+    /// Publish only when the stored forward still has the address and the
+    /// namespace that discovery probed. Otherwise discard the update.
+    only_if_unchanged: bool,
 }
 
 /// Validated registry entries for every capability of one forward.
@@ -722,6 +727,7 @@ impl PreparedForwardUpdate {
         Self {
             forward,
             capabilities: None,
+            only_if_unchanged: false,
         }
     }
 }
@@ -788,6 +794,7 @@ fn prepare_from_discovery(
     PreparedForwardUpdate {
         forward,
         capabilities: Some(capabilities),
+        only_if_unchanged: false,
     }
 }
 
@@ -812,6 +819,11 @@ fn listing_items(listing: Listing) -> Result<Vec<serde_json::Value>, String> {
 /// name in the forward namespace, the entry is skipped, not replaced. The
 /// forward stays available and its status message names the skipped entries.
 ///
+/// With `only_if_unchanged`, the update is discarded when the forward was
+/// deleted, or registered again with another address or namespace, while
+/// discovery ran. The update then changes only the status fields of the stored
+/// forward.
+///
 /// Returns the stored forward and the number of published entries.
 #[expect(clippy::too_many_lines, reason = "sequential registry publication")]
 fn apply_forward_update(
@@ -821,15 +833,24 @@ fn apply_forward_update(
     let PreparedForwardUpdate {
         mut forward,
         capabilities,
+        only_if_unchanged,
     } = update;
     let forward_id = forward.forward_id().to_owned();
+    if only_if_unchanged
+        && !registry
+            .get_forward(&forward.name)
+            .is_some_and(|stored| same_registration(&stored, &forward))
+    {
+        info!(forward = %forward.name, "forward changed during discovery; discarded the discovery result");
+        return (forward, PublishedCounts::default());
+    }
     let Some(mut capabilities) = capabilities else {
         warn!(
             forward = %forward.name,
             status = forward.status_message.as_deref().unwrap_or_default(),
             "forward discovery failed; kept the previous capability set and marked the forward unavailable"
         );
-        registry.register_forward(forward.clone());
+        store_forward(registry, &forward, only_if_unchanged);
         return (forward, PublishedCounts::default());
     };
 
@@ -875,8 +896,44 @@ fn apply_forward_update(
         warn!(forward = %forward.name, status = %message, "forward discovery skipped entries that other owners hold");
         forward.status_message = Some(message);
     }
-    registry.register_forward(forward.clone());
+    if !store_forward(registry, &forward, only_if_unchanged) {
+        info!(forward = %forward.name, "forward changed during publication; discarded the discovery result");
+        if registry.get_forward(&forward.name).is_none() {
+            registry.remove_tools_owned_by(&forward_id);
+            registry.remove_resources_owned_by(&forward_id);
+            registry.remove_prompts_owned_by(&forward_id);
+        }
+        return (forward, PublishedCounts::default());
+    }
     (forward, counts)
+}
+
+/// Store the forward status. With `only_if_unchanged`, change only the status
+/// fields of the stored forward, and only when it is the same registration.
+/// Returns `false` when the stored forward was not changed.
+fn store_forward(
+    registry: &InMemoryRegistry,
+    forward: &ForwardEntry,
+    only_if_unchanged: bool,
+) -> bool {
+    if !only_if_unchanged {
+        registry.register_forward(forward.clone());
+        return true;
+    }
+    registry.update_forward_if(
+        &forward.name,
+        |stored| same_registration(stored, forward),
+        |stored| {
+            stored.available = forward.available;
+            stored.status_message.clone_from(&forward.status_message);
+            stored.server_info.clone_from(&forward.server_info);
+        },
+    )
+}
+
+/// Whether two forward entries describe the same upstream registration.
+fn same_registration(stored: &ForwardEntry, probed: &ForwardEntry) -> bool {
+    stored.address == probed.address && forward_namespace(stored) == forward_namespace(probed)
 }
 
 /// Names of the discovered entries that were not published because another
@@ -1103,6 +1160,79 @@ mod forward_helpers_tests {
         let mut names: Vec<_> = registry.list_tools().into_iter().map(|t| t.name).collect();
         names.sort();
         names
+    }
+
+    /// Publish a probe result for `probed` as the startup and reconnect path
+    /// does, after the registry may have changed during discovery.
+    fn publish_probe(registry: &InMemoryRegistry, probed: &ForwardEntry, succeeded: bool) {
+        let mut prepared = if succeeded {
+            let found = discovery(
+                complete(&[serde_json::json!({"name": "echo"})]),
+                Listing::Unsupported,
+                Listing::Unsupported,
+            );
+            prepare_from_discovery(probed, found)
+        } else {
+            PreparedForwardUpdate::failed(probed, "connection refused".to_owned())
+        };
+        prepared.only_if_unchanged = true;
+        apply_forward_update(registry, prepared);
+    }
+
+    #[test]
+    fn probe_result_does_not_restore_a_deleted_forward() {
+        for succeeded in [true, false] {
+            let registry = InMemoryRegistry::new();
+            let mut probed = forward_at("remote", "http://remote:8080/mcp");
+            probed.available = false;
+            registry.register_forward(probed.clone());
+            registry.remove_forward("remote");
+
+            publish_probe(&registry, &probed, succeeded);
+
+            assert!(registry.get_forward("remote").is_none());
+            assert!(tool_names(&registry).is_empty());
+        }
+    }
+
+    #[test]
+    fn probe_result_does_not_overwrite_a_new_registration() {
+        for succeeded in [true, false] {
+            let registry = InMemoryRegistry::new();
+            let mut probed = forward_at("remote", "http://old:8080/mcp");
+            probed.available = false;
+            registry.register_forward(probed.clone());
+            let mut current = forward_at("remote", "http://new:8080/mcp");
+            current.available = false;
+            current.status_message = Some("registered again".to_owned());
+            registry.register_forward(current);
+
+            publish_probe(&registry, &probed, succeeded);
+
+            let stored = registry.get_forward("remote").expect("forward");
+            assert_eq!(stored.address, "http://new:8080/mcp");
+            assert_eq!(stored.status_message.as_deref(), Some("registered again"));
+            assert!(tool_names(&registry).is_empty());
+        }
+    }
+
+    #[test]
+    fn probe_result_updates_status_of_an_unchanged_forward() {
+        let registry = InMemoryRegistry::new();
+        let mut probed = forward_at("remote", "http://remote:8080/mcp");
+        probed.available = false;
+        registry.register_forward(probed.clone());
+        // A label change during discovery is kept: only status fields change.
+        let mut relabeled = probed.clone();
+        relabeled.labels.insert("team".to_owned(), "a".to_owned());
+        registry.register_forward(relabeled);
+
+        publish_probe(&registry, &probed, true);
+
+        let stored = registry.get_forward("remote").expect("forward");
+        assert!(stored.available);
+        assert_eq!(stored.labels.get("team").map(String::as_str), Some("a"));
+        assert_eq!(tool_names(&registry), vec!["echo".to_owned()]);
     }
 
     #[test]

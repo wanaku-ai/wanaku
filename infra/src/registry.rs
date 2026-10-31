@@ -195,6 +195,30 @@ impl InMemoryRegistry {
         outcome
     }
 
+    /// Change a stored forward only when `predicate` holds for it.
+    ///
+    /// The check and the change run under one map write lock, so a concurrent
+    /// delete or upsert of the same name cannot occur between them. Returns
+    /// `true` when the forward was changed.
+    pub fn update_forward_if(
+        &self,
+        name: &str,
+        predicate: impl FnOnce(&ForwardEntry) -> bool,
+        update: impl FnOnce(&mut ForwardEntry),
+    ) -> bool {
+        let updated = match self.forwards.get_mut(name) {
+            Some(mut stored) if predicate(&stored) => {
+                update(&mut stored);
+                true
+            }
+            _ => false,
+        };
+        if updated {
+            self.persist();
+        }
+        updated
+    }
+
     pub fn enable_request_id_injection(&self) {
         self.inject_request_id.store(true, Ordering::Relaxed);
     }
