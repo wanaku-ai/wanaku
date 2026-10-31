@@ -3,10 +3,10 @@ use std::time::Duration;
 
 use http::{HeaderName, HeaderValue};
 use rmcp::{
-    ServiceExt as _,
+    ServiceError, ServiceExt as _,
     model::{
-        CallToolRequestParams, ClientConfig, GetPromptRequestParams, PaginatedRequestParams,
-        ProtocolVersion, ReadResourceRequestParams,
+        CallToolRequestParams, ClientConfig, ErrorCode, GetPromptRequestParams,
+        PaginatedRequestParams, ProtocolVersion, ReadResourceRequestParams,
     },
     service::ClientInitializeError,
     transport::{
@@ -540,13 +540,26 @@ pub async fn get_prompt(
     })
 }
 
+/// The result of one capability listing during forward discovery.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Listing {
+    /// The server returned the last page. The list is capped at the maximum
+    /// item count for its type.
+    Complete(Vec<Value>),
+    /// The server does not implement the listing method (JSON-RPC
+    /// method not found on the first page).
+    Unsupported,
+    /// The listing failed, timed out, or stopped before the last page.
+    Incomplete(String),
+}
+
 #[derive(Debug)]
 pub struct ForwardDiscovery {
     pub server_info: Option<McpServerInfo>,
-    pub tools: Vec<Value>,
-    pub resources: Vec<Value>,
-    pub resource_templates: Vec<Value>,
-    pub prompts: Vec<Value>,
+    pub tools: Listing,
+    pub resources: Listing,
+    pub resource_templates: Listing,
+    pub prompts: Listing,
 }
 
 #[expect(
@@ -615,10 +628,32 @@ pub async fn discover_forward(
         );
     }
 
-    let tools = discover_tools_on_session(&client, &url).await;
-    let resources = discover_resources_on_session(&client, &url).await;
-    let resource_templates = discover_resource_templates_on_session(&client, &url).await;
-    let prompts = discover_prompts_on_session(&client, &url).await;
+    let client = &*client;
+    let tools = list_all_pages("tools/list", &url, MAX_TOOLS, |params| async move {
+        let page = Box::pin(client.list_tools(Some(params))).await?;
+        Ok((page.tools, page.next_cursor))
+    })
+    .await;
+    let resources = list_all_pages("resources/list", &url, MAX_RESOURCES, |params| async move {
+        let page = Box::pin(client.list_resources(Some(params))).await?;
+        Ok((page.resources, page.next_cursor))
+    })
+    .await;
+    let resource_templates = list_all_pages(
+        "resources/templates/list",
+        &url,
+        MAX_RESOURCE_TEMPLATES,
+        |params| async move {
+            let page = Box::pin(client.list_resource_templates(Some(params))).await?;
+            Ok((page.resource_templates, page.next_cursor))
+        },
+    )
+    .await;
+    let prompts = list_all_pages("prompts/list", &url, MAX_PROMPTS, |params| async move {
+        let page = Box::pin(client.list_prompts(Some(params))).await?;
+        Ok((page.prompts, page.next_cursor))
+    })
+    .await;
 
     Ok(ForwardDiscovery {
         server_info,
@@ -629,200 +664,74 @@ pub async fn discover_forward(
     })
 }
 
+/// Maximum number of pages read for one listing. A listing that still has a
+/// next cursor after this many pages is incomplete.
+const MAX_PAGES: usize = 100;
+
+/// Read every page of one listing.
+///
+/// A JSON-RPC method-not-found error on the first page means the server does
+/// not offer the capability. Any other error, a timeout, or a cursor that does
+/// not end within [`MAX_PAGES`] pages makes the listing incomplete, so the
+/// caller never takes a partial list as the full set.
 #[expect(
     clippy::too_many_lines,
-    clippy::cognitive_complexity,
-    reason = "MCP paginated discovery with error handling"
+    reason = "paginated listing with error classification"
 )]
-async fn discover_tools_on_session(
-    client: &rmcp::service::Peer<rmcp::RoleClient>,
-    url: &str,
-) -> Vec<Value> {
-    let mut all_tools = Vec::new();
+async fn list_all_pages<T, F, Fut>(method: &str, url: &str, max_items: usize, fetch: F) -> Listing
+where
+    T: serde::Serialize,
+    F: Fn(PaginatedRequestParams) -> Fut,
+    Fut: Future<Output = Result<(Vec<T>, Option<String>), ServiceError>>,
+{
+    let mut items = Vec::new();
     let mut cursor = None;
 
-    for _ in 0..100 {
+    for page_index in 0..MAX_PAGES {
         let params = PaginatedRequestParams::default().with_cursor(cursor);
-        let page =
-            match tokio::time::timeout(TIMEOUT, Box::pin(client.list_tools(Some(params)))).await {
-                Ok(Ok(page)) => page,
-                Ok(Err(e)) => {
-                    tracing::warn!(url = %url, error = %e, "tools/list failed during discovery");
-                    break;
-                }
-                Err(_) => {
-                    tracing::warn!(url = %url, "tools/list timed out during discovery");
-                    break;
-                }
-            };
-
-        all_tools.extend(page.tools);
-        if all_tools.len() >= MAX_TOOLS {
-            all_tools.truncate(MAX_TOOLS);
-            break;
-        }
-
-        match page.next_cursor {
-            Some(next) if !next.is_empty() => cursor = Some(next),
-            _ => break,
-        }
-    }
-
-    tracing::debug!(url = %url, tool_count = all_tools.len(), "discovered tools");
-
-    all_tools
-        .into_iter()
-        .filter_map(|t| serde_json::to_value(t).ok())
-        .collect()
-}
-
-#[expect(
-    clippy::too_many_lines,
-    clippy::cognitive_complexity,
-    reason = "MCP paginated discovery with error handling"
-)]
-async fn discover_resources_on_session(
-    client: &rmcp::service::Peer<rmcp::RoleClient>,
-    url: &str,
-) -> Vec<Value> {
-    let mut all_resources = Vec::new();
-    let mut cursor = None;
-
-    for _ in 0..100 {
-        let params = PaginatedRequestParams::default().with_cursor(cursor);
-        let page = match tokio::time::timeout(
-            TIMEOUT,
-            Box::pin(client.list_resources(Some(params))),
-        )
-        .await
+        let (page, next_cursor) = match tokio::time::timeout(TIMEOUT, Box::pin(fetch(params))).await
         {
             Ok(Ok(page)) => page,
+            Ok(Err(ServiceError::McpError(e)))
+                if page_index == 0 && e.code == ErrorCode::METHOD_NOT_FOUND =>
+            {
+                tracing::debug!(url = %url, method, "listing not supported by the MCP server");
+                return Listing::Unsupported;
+            }
             Ok(Err(e)) => {
-                tracing::warn!(url = %url, error = %e, "resources/list failed during discovery");
-                break;
+                tracing::warn!(url = %url, method, error = %e, "listing failed during discovery");
+                return Listing::Incomplete(format!("{method} failed: {e}"));
             }
             Err(_) => {
-                tracing::warn!(url = %url, "resources/list timed out during discovery");
-                break;
+                tracing::warn!(url = %url, method, "listing timed out during discovery");
+                return Listing::Incomplete(format!("{method} timed out"));
             }
         };
 
-        all_resources.extend(page.resources);
-        if all_resources.len() >= MAX_RESOURCES {
-            all_resources.truncate(MAX_RESOURCES);
-            break;
+        items.extend(page);
+        if items.len() >= max_items {
+            tracing::warn!(url = %url, method, max_items, "listing capped at the maximum item count");
+            items.truncate(max_items);
+            return Listing::Complete(to_values(items));
         }
 
-        match page.next_cursor {
+        match next_cursor {
             Some(next) if !next.is_empty() => cursor = Some(next),
-            _ => break,
+            _ => {
+                tracing::debug!(url = %url, method, count = items.len(), "listing complete");
+                return Listing::Complete(to_values(items));
+            }
         }
     }
 
-    tracing::debug!(url = %url, resource_count = all_resources.len(), "discovered resources");
-
-    all_resources
-        .into_iter()
-        .filter_map(|r| serde_json::to_value(r).ok())
-        .collect()
+    tracing::warn!(url = %url, method, "listing did not end within the page limit");
+    Listing::Incomplete(format!("{method} did not end within {MAX_PAGES} pages"))
 }
 
-#[expect(
-    clippy::too_many_lines,
-    clippy::cognitive_complexity,
-    reason = "MCP paginated discovery with error handling"
-)]
-async fn discover_resource_templates_on_session(
-    client: &rmcp::service::Peer<rmcp::RoleClient>,
-    url: &str,
-) -> Vec<Value> {
-    let mut all_templates = Vec::new();
-    let mut cursor = None;
-
-    for _ in 0..100 {
-        let params = PaginatedRequestParams::default().with_cursor(cursor);
-        let page = match tokio::time::timeout(
-            TIMEOUT,
-            Box::pin(client.list_resource_templates(Some(params))),
-        )
-        .await
-        {
-            Ok(Ok(page)) => page,
-            Ok(Err(e)) => {
-                tracing::debug!(url = %url, error = %e, "resource_templates/list not supported");
-                break;
-            }
-            Err(_) => {
-                tracing::warn!(url = %url, "resource_templates/list timed out during discovery");
-                break;
-            }
-        };
-
-        all_templates.extend(page.resource_templates);
-        if all_templates.len() >= MAX_RESOURCE_TEMPLATES {
-            all_templates.truncate(MAX_RESOURCE_TEMPLATES);
-            break;
-        }
-
-        match page.next_cursor {
-            Some(next) if !next.is_empty() => cursor = Some(next),
-            _ => break,
-        }
-    }
-
-    tracing::debug!(url = %url, template_count = all_templates.len(), "discovered resource templates");
-
-    all_templates
+fn to_values<T: serde::Serialize>(items: Vec<T>) -> Vec<Value> {
+    items
         .into_iter()
-        .filter_map(|t| serde_json::to_value(t).ok())
-        .collect()
-}
-
-#[expect(
-    clippy::too_many_lines,
-    clippy::cognitive_complexity,
-    reason = "MCP paginated discovery with error handling"
-)]
-async fn discover_prompts_on_session(
-    client: &rmcp::service::Peer<rmcp::RoleClient>,
-    url: &str,
-) -> Vec<Value> {
-    let mut all_prompts = Vec::new();
-    let mut cursor = None;
-
-    for _ in 0..100 {
-        let params = PaginatedRequestParams::default().with_cursor(cursor);
-        let page = match tokio::time::timeout(TIMEOUT, Box::pin(client.list_prompts(Some(params))))
-            .await
-        {
-            Ok(Ok(page)) => page,
-            Ok(Err(e)) => {
-                tracing::warn!(url = %url, error = %e, "prompts/list failed during discovery");
-                break;
-            }
-            Err(_) => {
-                tracing::warn!(url = %url, "prompts/list timed out during discovery");
-                break;
-            }
-        };
-
-        all_prompts.extend(page.prompts);
-        if all_prompts.len() >= MAX_PROMPTS {
-            all_prompts.truncate(MAX_PROMPTS);
-            break;
-        }
-
-        match page.next_cursor {
-            Some(next) if !next.is_empty() => cursor = Some(next),
-            _ => break,
-        }
-    }
-
-    tracing::debug!(url = %url, prompt_count = all_prompts.len(), "discovered prompts");
-
-    all_prompts
-        .into_iter()
-        .filter_map(|p| serde_json::to_value(p).ok())
+        .filter_map(|item| serde_json::to_value(item).ok())
         .collect()
 }
 
@@ -884,6 +793,77 @@ mod tests {
 
         assert_eq!(tools.len(), 1);
         assert_eq!(tools[0]["name"], "echo");
+    }
+
+    fn error_reply(code: i64) -> impl Fn(&Request) -> ResponseTemplate {
+        move |request: &Request| {
+            let id = serde_json::from_slice::<Value>(&request.body)
+                .map_or(Value::Null, |body| body["id"].clone());
+            ResponseTemplate::new(200).set_body_json(json!({
+                "jsonrpc": "2.0", "id": id, "error": { "code": code, "message": "nope" }
+            }))
+        }
+    }
+
+    async fn mount(server: &MockServer, body: Value, response: impl wiremock::Respond + 'static) {
+        Mock::given(method("POST"))
+            .and(body_partial_json(body))
+            .respond_with(response)
+            .mount(server)
+            .await;
+    }
+
+    #[tokio::test]
+    #[expect(clippy::too_many_lines, reason = "mock setup for four listings")]
+    async fn discovery_separates_unsupported_and_incomplete_listings() {
+        let server = initialized_server().await;
+        // The second tools page fails after the first page succeeded.
+        mount(
+            &server,
+            json!({ "method": "tools/list", "params": { "cursor": "page-2" } }),
+            error_reply(-32603),
+        )
+        .await;
+        mount(
+            &server,
+            json!({ "method": "tools/list" }),
+            reply(json!({ "tools": [{ "name": "echo", "inputSchema": { "type": "object" } }], "nextCursor": "page-2" })),
+        )
+        .await;
+        mount(
+            &server,
+            json!({ "method": "resources/list" }),
+            reply(json!({ "resources": [{ "name": "doc", "uri": "file:///doc" }] })),
+        )
+        .await;
+        // Optional listings that the server does not implement.
+        mount(
+            &server,
+            json!({ "method": "resources/templates/list" }),
+            error_reply(-32601),
+        )
+        .await;
+        mount(
+            &server,
+            json!({ "method": "prompts/list" }),
+            error_reply(-32601),
+        )
+        .await;
+
+        let discovery = super::discover_forward(&server.uri(), Default::default())
+            .await
+            .expect("discovery");
+
+        assert!(
+            matches!(&discovery.tools, super::Listing::Incomplete(reason) if reason.contains("tools/list")),
+            "{:?}",
+            discovery.tools
+        );
+        assert!(
+            matches!(&discovery.resources, super::Listing::Complete(items) if items.len() == 1)
+        );
+        assert_eq!(discovery.resource_templates, super::Listing::Unsupported);
+        assert_eq!(discovery.prompts, super::Listing::Unsupported);
     }
 
     async fn tool_server(result: Value) -> MockServer {
