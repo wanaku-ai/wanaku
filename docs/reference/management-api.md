@@ -212,6 +212,32 @@ curl -sS -X POST http://localhost:8080/api/v1/forwards \
 
 `POST /api/v1/forwards/{name}/refreshes` returns a different shape: `refreshed` (the forward name) and the three counts. It does not return the forward. After a refresh, use `GET /api/v1/forwards/{name}` to check `available` and `statusMessage`.
 
+#### Discovery Failure Behavior
+
+Forward create, forward refresh, startup, and the background reconnect loop use the same discovery path. Wanaku runs discovery first. Discovery does not change the registry. Wanaku then publishes the result in one step.
+
+Discovery lists tools, resources, resource templates, and prompts. Each listing has one of these results:
+
+| Listing result | Example | Wanaku behavior |
+|---|---|---|
+| Complete | The upstream returns the last page. | Wanaku uses the entries. A listing stops at 500 entries. |
+| Not supported | The upstream returns the JSON-RPC error `-32601` (method not found) on the first page. | Wanaku records no entries of that type. Discovery continues. |
+| Incomplete | A transport error, a timeout, a JSON-RPC error on any page, or more than 100 pages. | The full discovery fails. |
+
+When discovery succeeds, Wanaku replaces the entries of the forward with the new entries. The forward is `available`, and `statusMessage` is empty. A disabled entry stays disabled.
+
+When discovery fails or is incomplete, Wanaku does not publish a partial list:
+
+- Wanaku keeps the previous entries of the forward in the registry. A new forward has no entries.
+- Wanaku sets `available` to `false` and writes the cause to `statusMessage`.
+- The response counts are zero.
+- The `tools/call`, `resources/read`, and `prompts/get` requests for entries of an unavailable forward return a JSON-RPC error. Wanaku does not call the upstream.
+- The background reconnect loop runs discovery again. When discovery succeeds, the forward becomes available again.
+
+Wanaku identifies the entries of a forward by `forwardId`, not by address. When two forwards use the same address, the discovery of one forward does not change the entries of the other forward.
+
+The publication is not atomic for concurrent readers. A concurrent reader can see the new forward status before the new entries.
+
 The request body can also contain `credentialBindings`, a map from purpose (`discovery`, `invocation`) to binding id. The bindings themselves must exist in `wanaku.yaml`, because the management API cannot create bindings. See [Credential Brokerage](../govern/credential-brokerage.md#attaching-a-binding-to-a-forward).
 
 ### Delete a Forward Conditionally
