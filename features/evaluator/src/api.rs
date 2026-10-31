@@ -39,25 +39,6 @@ pub struct EvaluatorRevisionResponse {
     pub evaluators: Vec<EvaluatorDef>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-pub struct BindNamespaceRequest {
-    pub conversation_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-pub struct NamespaceBinding {
-    pub namespace: String,
-    pub conversation_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-pub struct UnbindNamespaceResponse {
-    pub unbound: String,
-}
-
 pub type NamespaceBindings = HashMap<String, String>;
 
 /// Runtime readiness of the active evaluator configuration.

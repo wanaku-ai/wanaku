@@ -349,31 +349,6 @@ mod state {
         assert!(state.find_matching("tools/call", "default").is_none());
     }
 
-    #[test]
-    fn namespace_bindings() {
-        let state = EvaluatorState::new();
-
-        assert!(state.get_binding("finance").is_none());
-
-        state.bind_namespace("finance", "conv-123");
-        assert_eq!(state.get_binding("finance").as_deref(), Some("conv-123"));
-
-        state.unbind_namespace("finance");
-        assert!(state.get_binding("finance").is_none());
-    }
-
-    #[test]
-    fn list_bindings() {
-        let state = EvaluatorState::new();
-        state.bind_namespace("finance", "conv-1");
-        state.bind_namespace("engineering", "conv-2");
-
-        let bindings = state.list_bindings();
-        assert_eq!(bindings.len(), 2);
-        assert_eq!(bindings.get("finance").unwrap(), "conv-1");
-        assert_eq!(bindings.get("engineering").unwrap(), "conv-2");
-    }
-
     fn test_connection() -> LlmConnection {
         LlmConnection {
             name: "test-connection".to_owned(),

@@ -14,9 +14,6 @@ pub(crate) enum EvaluatorRoute {
     Status,
     UpdateEvaluators,
     ListLlmConnections,
-    ListBindings,
-    BindNamespace(String),
-    UnbindNamespace(String),
     ListRevisions,
     ActiveRevision,
     GetRevision(u64),
@@ -45,19 +42,14 @@ pub(crate) fn resolve_evaluator_route(method: &str, path: &str) -> EvaluatorRout
         };
     }
 
-    // Check for /revisions routes before /namespaces.
     if let Some(rev_suffix) = suffix.strip_prefix("/revisions") {
         return resolve_revision_route(method, rev_suffix);
     }
 
-    if let Some(conn_suffix) = suffix.strip_prefix("/llm-connections") {
-        return resolve_llm_connections_route(method, conn_suffix);
+    match suffix.strip_prefix("/llm-connections") {
+        Some(conn_suffix) => resolve_llm_connections_route(method, conn_suffix),
+        None => EvaluatorRoute::NotFound,
     }
-
-    let Some(ns_suffix) = suffix.strip_prefix("/namespaces") else {
-        return EvaluatorRoute::NotFound;
-    };
-    resolve_namespace_route(method, ns_suffix)
 }
 
 fn resolve_llm_connections_route(method: &str, suffix: &str) -> EvaluatorRoute {
@@ -66,25 +58,6 @@ fn resolve_llm_connections_route(method: &str, suffix: &str) -> EvaluatorRoute {
     }
     match method {
         "GET" => EvaluatorRoute::ListLlmConnections,
-        _ => EvaluatorRoute::NotFound,
-    }
-}
-
-fn resolve_namespace_route(method: &str, ns_suffix: &str) -> EvaluatorRoute {
-    if ns_suffix.is_empty() || ns_suffix == "/" {
-        return match method {
-            "GET" => EvaluatorRoute::ListBindings,
-            _ => EvaluatorRoute::NotFound,
-        };
-    }
-
-    let name = ns_suffix
-        .strip_prefix('/')
-        .filter(|s| !s.is_empty() && !s.contains('/'));
-
-    match (method, name) {
-        ("PUT", Some(n)) => EvaluatorRoute::BindNamespace(n.to_owned()),
-        ("DELETE", Some(n)) => EvaluatorRoute::UnbindNamespace(n.to_owned()),
         _ => EvaluatorRoute::NotFound,
     }
 }
@@ -274,77 +247,9 @@ fn revision_error_response(err: RevisionError) -> Response<Vec<u8>> {
     }
 }
 
-pub(crate) fn handle_list_bindings(state: &EvaluatorState) -> Response<Vec<u8>> {
-    json_ok(&serde_json::json!(state.list_bindings()))
-}
-
-pub(crate) fn handle_bind_namespace(
-    state: &EvaluatorState,
-    namespace: &str,
-    body: &str,
-) -> Response<Vec<u8>> {
-    #[derive(serde::Deserialize)]
-    struct BindRequest {
-        conversation_id: String,
-    }
-
-    let req: BindRequest = match serde_json::from_str(body) {
-        Ok(r) => r,
-        Err(e) => {
-            return json_err(
-                StatusCode::BAD_REQUEST,
-                &format!("invalid bind request: {e}"),
-            );
-        }
-    };
-
-    info!(
-        namespace = %namespace,
-        conversation_id = %req.conversation_id,
-        "namespace bound to conversation"
-    );
-    state.bind_namespace(namespace, &req.conversation_id);
-
-    json_ok(&serde_json::json!({
-        "namespace": namespace,
-        "conversation_id": req.conversation_id,
-    }))
-}
-
-pub(crate) fn handle_unbind_namespace(
-    state: &EvaluatorState,
-    namespace: &str,
-) -> Response<Vec<u8>> {
-    if !state.unbind_namespace(namespace) {
-        return json_err(
-            StatusCode::NOT_FOUND,
-            &format!("namespace binding not found: {namespace}"),
-        );
-    }
-    info!(namespace = %namespace, "namespace unbound");
-    json_ok(&serde_json::json!({"unbound": namespace}))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn unbind_of_unknown_namespace_returns_404() {
-        let state = EvaluatorState::new();
-        let response = handle_unbind_namespace(&state, "never-bound");
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
-
-        state.bind_namespace("prod", "conv-1");
-        assert_eq!(
-            handle_unbind_namespace(&state, "prod").status(),
-            StatusCode::OK
-        );
-        assert_eq!(
-            handle_unbind_namespace(&state, "prod").status(),
-            StatusCode::NOT_FOUND
-        );
-    }
 
     #[test]
     fn misspelled_update_does_not_clear_configuration() {
@@ -437,39 +342,14 @@ mod tests {
     }
 
     #[test]
-    fn namespace_bindings_list() {
-        assert_eq!(
-            resolve("GET", "/api/v1/evaluators/namespaces"),
-            EvaluatorRoute::ListBindings
-        );
-        assert_eq!(
-            resolve("GET", "/api/v1/evaluators/namespaces/"),
-            EvaluatorRoute::ListBindings
-        );
-    }
-
-    #[test]
-    fn namespace_bind_and_unbind() {
-        assert_eq!(
-            resolve("PUT", "/api/v1/evaluators/namespaces/prod"),
-            EvaluatorRoute::BindNamespace("prod".to_owned())
-        );
-        assert_eq!(
-            resolve("DELETE", "/api/v1/evaluators/namespaces/prod"),
-            EvaluatorRoute::UnbindNamespace("prod".to_owned())
-        );
-    }
-
-    #[test]
-    fn namespace_with_nested_segment_is_not_found() {
-        assert_eq!(
-            resolve("PUT", "/api/v1/evaluators/namespaces/a/b"),
-            EvaluatorRoute::NotFound
-        );
-        assert_eq!(
-            resolve("POST", "/api/v1/evaluators/namespaces/prod"),
-            EvaluatorRoute::NotFound
-        );
+    fn removed_namespace_binding_routes_are_not_found() {
+        for (method, path) in [
+            ("GET", "/api/v1/evaluators/namespaces"),
+            ("PUT", "/api/v1/evaluators/namespaces/prod"),
+            ("DELETE", "/api/v1/evaluators/namespaces/prod"),
+        ] {
+            assert_eq!(resolve(method, path), EvaluatorRoute::NotFound);
+        }
     }
 
     #[test]

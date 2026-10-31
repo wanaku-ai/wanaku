@@ -9,7 +9,7 @@ Wanaku records governance decisions in a dedicated audit store. Audit events are
 
 The current schema version is `1.0`. Each event contains an event ID, a stream ID, a sequence number, an ISO 8601 UTC timestamp, a correlation ID, a decision, and a reason code. An event can also contain the namespace, operation, normalized target, actor, evaluator or filter, policy revision, response status, and duration. Administrative events use a separate category.
 
-Wanaku records action-policy and evaluator decisions. Wanaku also records evaluator configuration updates, revision activations, namespace bindings, and namespace unbindings. Action-policy events retain all matched rule IDs and deny reason codes. The response to the caller still contains only the selected safe reason.
+Wanaku records action-policy and evaluator decisions. Wanaku also records evaluator configuration updates and revision activations. Action-policy events retain all matched rule IDs and deny reason codes. The response to the caller still contains only the selected safe reason.
 
 Wanaku also records credential brokerage decisions. Each brokerage attempt that reaches the broker records one event. Each fail-closed denial that happens before the broker runs also records one event with the `block` decision. The `filter` field is `wanaku_credentials`. The `operation` field is `credential/discovery` or `credential/invocation`. The `target` field is the forward id and the `target_type` field is `forward`. A resolved or cached credential maps to the `allow` decision. A denied credential maps to the `block` decision. A failed resolution maps to the `error` decision. The event carries only non-secret metadata. See [Credential Brokerage](credential-brokerage.md).
 

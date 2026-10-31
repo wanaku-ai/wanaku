@@ -10,8 +10,6 @@ import type {
   ActivateEvaluatorRevision200,
   ActivateRevisionRequest,
   AgentEntry,
-  BindEvaluatorNamespace200,
-  BindNamespaceRequest,
   CancelPolicyReplay200,
   ConfigurePluginRequest,
   CreateForwardParams,
@@ -42,7 +40,6 @@ import type {
   ListActionPolicyRevisions200Item,
   ListAgentsParams,
   ListAuditEventsParams,
-  ListEvaluatorBindings200,
   ListEvaluatorRevisions200Item,
   ListEvaluators200Item,
   ListPluginCatalog200Item,
@@ -58,7 +55,6 @@ import type {
   SimulationRequest,
   StartPolicyReplay202,
   ToolEntry,
-  UnbindEvaluatorNamespace200,
   UpdateActionPolicy200,
   UpdateActionPolicyRequest,
   UpdateEvaluators200,
@@ -1098,141 +1094,6 @@ export const listEvaluatorLlmConnections = async (
     {
       ...options,
       method: "GET",
-    },
-  );
-};
-
-export type listEvaluatorBindingsResponse200 = {
-  data: ListEvaluatorBindings200;
-  status: 200;
-};
-
-export type listEvaluatorBindingsResponseSuccess =
-  listEvaluatorBindingsResponse200 & {
-    headers: Headers;
-  };
-export type listEvaluatorBindingsResponse =
-  listEvaluatorBindingsResponseSuccess;
-
-export const getListEvaluatorBindingsUrl = () => {
-  return `/api/v1/evaluators/namespaces`;
-};
-
-export const listEvaluatorBindings = async (
-  options?: Parameters<typeof customFetch>[1],
-): Promise<listEvaluatorBindingsResponse> => {
-  return customFetch<listEvaluatorBindingsResponse>(
-    getListEvaluatorBindingsUrl(),
-    {
-      ...options,
-      method: "GET",
-    },
-  );
-};
-
-export type bindEvaluatorNamespaceResponse200 = {
-  data: BindEvaluatorNamespace200;
-  status: 200;
-};
-
-export type bindEvaluatorNamespaceResponse400 = {
-  data: ManagementErrorResponse;
-  status: 400;
-};
-
-export type bindEvaluatorNamespaceResponseSuccess =
-  bindEvaluatorNamespaceResponse200 & {
-    headers: Headers;
-  };
-export type bindEvaluatorNamespaceResponseError =
-  bindEvaluatorNamespaceResponse400 & {
-    headers: Headers;
-  };
-
-export type bindEvaluatorNamespaceResponse =
-  | bindEvaluatorNamespaceResponseSuccess
-  | bindEvaluatorNamespaceResponseError;
-
-export const getBindEvaluatorNamespaceUrl = (namespace: string) => {
-  return `/api/v1/evaluators/namespaces/${namespace}`;
-};
-
-export const bindEvaluatorNamespace = async (
-  namespace: string,
-  bindNamespaceRequest: BindNamespaceRequest,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<bindEvaluatorNamespaceResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<
-      string | readonly string[] | undefined
-    >(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-  return customFetch<bindEvaluatorNamespaceResponse>(
-    getBindEvaluatorNamespaceUrl(namespace),
-    {
-      ...options,
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        ...getHeaders(options?.headers),
-      },
-      body: JSON.stringify(bindNamespaceRequest),
-    },
-  );
-};
-
-export type unbindEvaluatorNamespaceResponse200 = {
-  data: UnbindEvaluatorNamespace200;
-  status: 200;
-};
-
-export type unbindEvaluatorNamespaceResponse404 = {
-  data: ManagementErrorResponse;
-  status: 404;
-};
-
-export type unbindEvaluatorNamespaceResponseSuccess =
-  unbindEvaluatorNamespaceResponse200 & {
-    headers: Headers;
-  };
-export type unbindEvaluatorNamespaceResponseError =
-  unbindEvaluatorNamespaceResponse404 & {
-    headers: Headers;
-  };
-
-export type unbindEvaluatorNamespaceResponse =
-  | unbindEvaluatorNamespaceResponseSuccess
-  | unbindEvaluatorNamespaceResponseError;
-
-export const getUnbindEvaluatorNamespaceUrl = (namespace: string) => {
-  return `/api/v1/evaluators/namespaces/${namespace}`;
-};
-
-export const unbindEvaluatorNamespace = async (
-  namespace: string,
-  options?: Parameters<typeof customFetch>[1],
-): Promise<unbindEvaluatorNamespaceResponse> => {
-  return customFetch<unbindEvaluatorNamespaceResponse>(
-    getUnbindEvaluatorNamespaceUrl(namespace),
-    {
-      ...options,
-      method: "DELETE",
     },
   );
 };

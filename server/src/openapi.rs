@@ -18,9 +18,8 @@ use wanaku_feature_action_policy::{
     ActionPolicy, Effect, MatchExpression, MatchKind, Predicate, Rule, Selectors, TargetType,
 };
 use wanaku_feature_evaluator::api::{
-    ActivateRevisionRequest as ActivateEvaluatorRevisionRequest, BindNamespaceRequest,
-    EvaluatorReadiness, EvaluatorRevisionResponse, EvaluatorStatus, NamespaceBinding,
-    UnbindNamespaceResponse, UpdateEvaluatorsRequest,
+    ActivateRevisionRequest as ActivateEvaluatorRevisionRequest, EvaluatorReadiness,
+    EvaluatorRevisionResponse, EvaluatorStatus, UpdateEvaluatorsRequest,
 };
 use wanaku_feature_evaluator::config::{
     EvaluatorDef, LlmDef, LlmOperation, NoulCriteria, NoulDef, OpaDef, ProcessorRef, SystemOneDef,
@@ -479,26 +478,6 @@ const fn update_evaluators() {}
 )]
 const fn list_evaluator_llm_connections() {}
 
-#[utoipa::path(get, path = "/api/v1/evaluators/namespaces", tag = "Evaluators",
-    responses((status = 200, description = "Namespace to evaluator bindings", body = WanakuResponse<std::collections::HashMap<String, String>>))
-)]
-const fn list_evaluator_bindings() {}
-
-#[utoipa::path(put, path = "/api/v1/evaluators/namespaces/{namespace}", tag = "Evaluators",
-    params(("namespace" = String, Path)), request_body = BindNamespaceRequest,
-    responses((status = 200, description = "Namespace bound to evaluator", body = WanakuResponse<NamespaceBinding>), (status = 400, description = "Invalid namespace binding", body = ManagementErrorResponse))
-)]
-const fn bind_evaluator_namespace() {}
-
-#[utoipa::path(delete, path = "/api/v1/evaluators/namespaces/{namespace}", tag = "Evaluators",
-    params(("namespace" = String, Path)),
-    responses(
-        (status = 200, description = "Namespace unbound from evaluator", body = WanakuResponse<UnbindNamespaceResponse>),
-        (status = 404, description = "Namespace has no evaluator binding", body = ManagementErrorResponse),
-    )
-)]
-const fn unbind_evaluator_namespace() {}
-
 #[utoipa::path(get, path = "/api/v1/evaluators/revisions", tag = "Evaluators",
     responses((status = 200, description = "Evaluator revision history", body = WanakuResponse<Vec<RevisionMetadata>>))
 )]
@@ -745,9 +724,6 @@ const fn delete_policy_replay() {}
         get_evaluator_status,
         update_evaluators,
         list_evaluator_llm_connections,
-        list_evaluator_bindings,
-        bind_evaluator_namespace,
-        unbind_evaluator_namespace,
         list_evaluator_revisions,
         get_active_evaluator_revision,
         get_evaluator_revision,
@@ -827,9 +803,6 @@ const fn delete_policy_replay() {}
         UpdateEvaluatorsRequest,
         ActivateEvaluatorRevisionRequest,
         EvaluatorRevisionResponse,
-        BindNamespaceRequest,
-        NamespaceBinding,
-        UnbindNamespaceResponse,
         RevisionMetadata,
         RevisionOrigin,
         ActivationStatus,
@@ -1164,7 +1137,6 @@ mod tests {
             ("/api/v1/forwards", "post", "400"),
             ("/api/v1/forwards", "post", "409"),
             ("/api/v1/audit/events", "get", "400"),
-            ("/api/v1/evaluators/namespaces/{namespace}", "delete", "404"),
         ] {
             assert_eq!(
                 value["paths"][path][method]["responses"][status]["content"]["application/json"]["schema"]
@@ -1233,8 +1205,6 @@ mod tests {
             "/api/v1/evaluators",
             "/api/v1/evaluators/status",
             "/api/v1/evaluators/llm-connections",
-            "/api/v1/evaluators/namespaces",
-            "/api/v1/evaluators/namespaces/{namespace}",
             "/api/v1/evaluators/revisions",
             "/api/v1/evaluators/revisions/active",
             "/api/v1/evaluators/revisions/{id}",

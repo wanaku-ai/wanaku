@@ -10,7 +10,5 @@ export interface GaugeSnapshot {
   /** @minimum 0 */
   evaluators_loaded: number;
   /** @minimum 0 */
-  namespace_bindings: number;
-  /** @minimum 0 */
   wasm_compiled: number;
 }
