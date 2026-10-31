@@ -11,6 +11,7 @@ use wanaku_types::governance::{
 use wanaku_types::registry::{DEFAULT_NAMESPACE, ToolRegistry};
 use wanaku_types::{PROMPTS_GET, RESOURCES_READ, TOOLS_CALL};
 
+use crate::revision::RevisionId;
 use crate::{
     ActionContext, ActionPolicyState, PolicyDecision, PolicyEngine, PolicySnapshot, PolicyState,
     TargetType,
@@ -63,7 +64,7 @@ impl ActionPolicyFilter {
         }
         let Some(state) = ctx.extensions.get::<ActionPolicyState>() else {
             record_simple_decision(
-                ctx,
+                DecisionAuditContext::from_http(ctx, None).as_ref(),
                 body.as_ref(),
                 AuditDecision::Error,
                 INVALID_POLICY_REASON_CODE,
@@ -89,11 +90,12 @@ fn evaluate_snapshot(
     posture: &GovernancePosture,
     id: &serde_json::Value,
 ) -> FilterAction {
-    let policy = match snapshot {
-        PolicySnapshot::Valid(policy) => policy,
+    let audit = DecisionAuditContext::from_http(ctx, snapshot.revision_id());
+    let active = match snapshot {
+        PolicySnapshot::Valid(active) => active,
         PolicySnapshot::Unconfigured => {
             record_simple_decision(
-                ctx,
+                audit.as_ref(),
                 body,
                 no_match_audit_decision(posture),
                 NO_MATCH_REASON_CODE,
@@ -103,7 +105,7 @@ fn evaluate_snapshot(
         }
         PolicySnapshot::Invalid => {
             record_simple_decision(
-                ctx,
+                audit.as_ref(),
                 body,
                 AuditDecision::Error,
                 INVALID_POLICY_REASON_CODE,
@@ -114,7 +116,7 @@ fn evaluate_snapshot(
     };
     let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
         record_simple_decision(
-            ctx,
+            audit.as_ref(),
             body,
             AuditDecision::Error,
             INVALID_POLICY_REASON_CODE,
@@ -122,8 +124,8 @@ fn evaluate_snapshot(
         );
         return apply_failure(posture, id);
     };
-    evaluate_request_audited(
-        ctx,
+    evaluate_request_impl(
+        audit.as_ref(),
         RequestEvaluation {
             method: ctx
                 .get_metadata("a2a.method")
@@ -133,7 +135,7 @@ fn evaluate_snapshot(
                 .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
                 .unwrap_or(DEFAULT_NAMESPACE),
             body,
-            policy: &policy,
+            policy: active.policy(),
             posture,
             registry,
             id,
@@ -167,25 +169,30 @@ struct RequestEvaluation<'a> {
 struct DecisionAuditContext<'a> {
     store: &'a dyn AuditStore,
     request_id: Option<&'a str>,
+    operation: Option<&'a str>,
+    namespace: Option<&'a str>,
     target: Option<&'a str>,
     a2a_version: Option<&'a str>,
     policy_revision: Option<String>,
 }
 
 impl<'a> DecisionAuditContext<'a> {
-    fn from_http(ctx: &'a HttpFilterContext<'_>) -> Option<Self> {
+    /// Build the audit context for one request. `policy_revision` must come from the
+    /// snapshot that the request captured, never from the current active revision.
+    fn from_http(
+        ctx: &'a HttpFilterContext<'_>,
+        policy_revision: Option<RevisionId>,
+    ) -> Option<Self> {
         Some(Self {
             store: ctx.extensions.get::<AuditHandle>()?,
             request_id: ctx.request_id(),
+            operation: governed_method(ctx),
+            namespace: ctx.get_metadata(wanaku_types::NAMESPACE_METADATA_KEY),
             a2a_version: ctx.get_metadata("wanaku.a2a.version"),
             target: ctx
                 .get_metadata("wanaku.a2a.agent")
                 .or_else(|| ctx.get_metadata(wanaku_filters::MCP_NAME_KEY)),
-            policy_revision: ctx
-                .extensions
-                .get::<ActionPolicyState>()
-                .and_then(|state| state.revision_store().active_revision_id())
-                .map(|revision| revision.to_string()),
+            policy_revision: policy_revision.map(|revision| revision.to_string()),
         })
     }
 }
@@ -193,14 +200,6 @@ impl<'a> DecisionAuditContext<'a> {
 #[cfg(test)]
 fn evaluate_request(input: RequestEvaluation<'_>) -> FilterAction {
     evaluate_request_impl(None, input)
-}
-
-fn evaluate_request_audited(
-    ctx: &HttpFilterContext<'_>,
-    input: RequestEvaluation<'_>,
-) -> FilterAction {
-    let audit = DecisionAuditContext::from_http(ctx);
-    evaluate_request_impl(audit.as_ref(), input)
 }
 
 fn evaluate_request_impl(
@@ -404,22 +403,22 @@ pub const fn enforcement_action(
 }
 
 fn record_simple_decision(
-    ctx: &HttpFilterContext<'_>,
+    audit: Option<&DecisionAuditContext<'_>>,
     body: Option<&Bytes>,
     decision: AuditDecision,
     reason_code: &str,
     explanation: &str,
 ) {
-    let Some(method) = governed_method(ctx) else {
+    let Some(audit) = audit else {
         return;
     };
-    let Some(audit) = DecisionAuditContext::from_http(ctx) else {
+    let Some(method) = audit.operation else {
         return;
     };
     record_event(
-        &audit,
+        audit,
         body,
-        ctx.get_metadata(wanaku_types::NAMESPACE_METADATA_KEY),
+        audit.namespace,
         AuditEvent::new(
             AuditCategory::Decision,
             decision,
@@ -816,6 +815,8 @@ mod tests {
             }),
         );
         let allow_audit = DecisionAuditContext {
+            operation: None,
+            namespace: None,
             a2a_version: None,
             store: &store,
             request_id: Some("request-allow"),
@@ -855,6 +856,8 @@ mod tests {
             }),
         );
         let deny_audit = DecisionAuditContext {
+            operation: None,
+            namespace: None,
             a2a_version: None,
             store: &store,
             request_id: Some("request-deny"),
@@ -1077,6 +1080,8 @@ mod tests {
         let body = request(TOOLS_CALL, &serde_json::json!({"name": "unsafe"}));
         let id = serde_json::json!(7);
         let audit = DecisionAuditContext {
+            operation: None,
+            namespace: None,
             a2a_version: None,
             store: &store,
             request_id: Some("audit-mode-request"),
@@ -1161,6 +1166,8 @@ mod tests {
         let body = request("GetTask", &serde_json::json!({"id": "t1"}));
         let id = serde_json::json!(7);
         let audit = DecisionAuditContext {
+            operation: None,
+            namespace: None,
             a2a_version: Some("1.0"),
             store: &store,
             request_id: Some("http-request"),
@@ -1305,13 +1312,14 @@ mod tests {
             id: &id,
             agent: None,
         };
+        let audit = DecisionAuditContext::from_http(&ctx, Some(1));
         assert_denied(
-            evaluate_request_audited(&ctx, input),
+            evaluate_request_impl(audit.as_ref(), input),
             DEFAULT_DENY_REASON_CODE,
         );
         let malformed = Bytes::from_static(b"not json");
-        let malformed_action = evaluate_request_audited(
-            &ctx,
+        let malformed_action = evaluate_request_impl(
+            audit.as_ref(),
             RequestEvaluation {
                 body: Some(&malformed),
                 ..input
@@ -1336,7 +1344,111 @@ mod tests {
             denied.attributes["deny_rule_ids"],
             serde_json::json!(["deny-unsafe"])
         );
+        assert_eq!(denied.policy_revision.as_deref(), Some("1"));
         assert_eq!(events[1].decision, AuditDecision::RejectMalformed);
         assert_eq!(events[1].reason_code, INVALID_ACTION_REASON_CODE);
+        assert_eq!(events[1].policy_revision.as_deref(), Some("1"));
+    }
+
+    fn activate(state: &ActionPolicyState, rule: &serde_json::Value, expected: Option<u64>) -> u64 {
+        let policy: crate::ActionPolicy =
+            serde_json::from_value(serde_json::json!({ "rules": [rule] })).expect("valid policy");
+        state
+            .try_activate(
+                policy,
+                crate::state::ActivatePolicyParams {
+                    origin: crate::revision::RevisionOrigin::Api,
+                    actor: None,
+                    expected_revision: expected,
+                },
+            )
+            .expect("activate")
+            .metadata
+            .id
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "fixture builds a real request context and checks each snapshot state"
+    )]
+    fn captured_snapshot_labels_audit_with_its_own_revision() {
+        let state = ActionPolicyState::new();
+        let deny_a = activate(
+            &state,
+            &serde_json::json!({"id": "deny-a", "effect": "deny", "selectors": {"operation": TOOLS_CALL}}),
+            None,
+        );
+        let captured = state.snapshot();
+        let allow_b = activate(
+            &state,
+            &serde_json::json!({"id": "allow-b", "effect": "allow", "selectors": {"operation": TOOLS_CALL}}),
+            Some(deny_a),
+        );
+        assert_eq!(state.revision_store().active_revision_id(), Some(allow_b));
+
+        let recorder = std::sync::Arc::new(RecordingAuditStore::default());
+        let filters = praxis_filter::FilterRegistry::with_builtins();
+        let pipeline = praxis_filter::FilterPipeline::build(&mut [], &filters).expect("pipeline");
+        let http_request = praxis_filter::Request {
+            method: http::Method::POST,
+            uri: http::Uri::from_static("/mcp"),
+            headers: http::HeaderMap::new(),
+        };
+        let mut protocol = praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+        let mut ctx = protocol.build_filter_context(&pipeline, &http_request, None);
+        ctx.extensions.insert(AuditHandle::new(recorder.clone()));
+        ctx.extensions.insert(state.clone());
+        ctx.extensions.insert(InMemoryRegistry::new());
+        ctx.set_metadata(wanaku_filters::MCP_METHOD_KEY, TOOLS_CALL);
+        ctx.set_metadata(wanaku_filters::MCP_NAME_KEY, "safe");
+        let posture = GovernancePosture::default();
+        let id = serde_json::json!(7);
+        let body = request(
+            TOOLS_CALL,
+            &serde_json::json!({"name": "safe", "arguments": {}}),
+        );
+
+        assert_denied(
+            evaluate_snapshot(&ctx, Some(&body), captured, &posture, &id),
+            DEFAULT_DENY_REASON_CODE,
+        );
+        assert!(matches!(
+            evaluate_snapshot(&ctx, Some(&body), state.snapshot(), &posture, &id),
+            FilterAction::Continue
+        ));
+        assert_denied(
+            evaluate_snapshot(
+                &ctx,
+                Some(&body),
+                PolicySnapshot::Unconfigured,
+                &posture,
+                &id,
+            ),
+            NO_MATCH_REASON_CODE,
+        );
+        assert_denied(
+            evaluate_snapshot(&ctx, Some(&body), PolicySnapshot::Invalid, &posture, &id),
+            INVALID_POLICY_REASON_CODE,
+        );
+
+        let events = recorder.events.lock().expect("recorded events");
+        assert_eq!(events.len(), 4);
+        let deny_a = deny_a.to_string();
+        let allow_b = allow_b.to_string();
+        assert_eq!(events[0].policy_revision.as_deref(), Some(deny_a.as_str()));
+        assert_eq!(
+            events[0].attributes["deny_rule_ids"],
+            serde_json::json!(["deny-a"])
+        );
+        assert_eq!(events[1].policy_revision.as_deref(), Some(allow_b.as_str()));
+        assert_eq!(
+            events[1].attributes["matched_rule_ids"],
+            serde_json::json!(["allow-b"])
+        );
+        assert_eq!(events[2].reason_code, NO_MATCH_REASON_CODE);
+        assert_eq!(events[2].policy_revision, None);
+        assert_eq!(events[3].reason_code, INVALID_POLICY_REASON_CODE);
+        assert_eq!(events[3].policy_revision, None);
     }
 }

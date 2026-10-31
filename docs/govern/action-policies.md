@@ -215,6 +215,22 @@ Wanaku stores policy revisions in `action-policy-revisions.json` under `WANAKU_P
 
 At startup, Wanaku immediately validates and installs the persisted active policy. If `wanaku.yaml` contains a different valid policy, Wanaku activates a new startup revision. If the policy is unchanged, Wanaku does not create a duplicate revision. An invalid startup policy does not replace a persisted last-known-good policy.
 
+### Runtime policy snapshot
+
+Each request evaluates one immutable runtime policy snapshot. The snapshot has one of three states:
+
+| State | Content | Audit `policy_revision` |
+| --- | --- | --- |
+| Valid | The compiled policy, the revision ID, and the revision checksum. | The revision ID of the snapshot. |
+| Unconfigured | No policy. | Empty. |
+| Invalid | No usable policy. | Empty. |
+
+Wanaku builds a valid snapshot from the exact revision that activation returns. API updates, rollback, startup restoration, and startup reconciliation use the same rule. Wanaku does not create revision metadata for an unconfigured or invalid snapshot.
+
+The filter captures the snapshot once at the start of evaluation. The decision and its audit event use that captured snapshot. Wanaku does not read the active revision again to label the audit event. Thus, an activation that occurs during evaluation cannot change the revision of an in-flight decision. The next request captures the new snapshot.
+
+A rejected activation and a revision conflict do not change the snapshot.
+
 ## Deferred work
 
 Governance audit events and external decision evidence belong to [#1869](https://github.com/wanaku-ai/wanaku/issues/1869). Action-policy decisions already retain rule IDs and reason codes for that integration. Wanaku does not copy structured request values into management responses.

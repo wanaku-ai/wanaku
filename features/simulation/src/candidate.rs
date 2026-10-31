@@ -17,7 +17,8 @@ use crate::{
 
 pub(crate) struct PreparedCandidate {
     pub report: ValidationReport,
-    pub policy: PolicySnapshot,
+    /// Compiled candidate policy. `None` means that no policy is configured.
+    pub policy: Option<Arc<CompiledPolicy>>,
     pub evaluators: PreparedEvaluators,
 }
 
@@ -61,9 +62,7 @@ pub(crate) fn prepare_limited(
     match evaluators {
         Ok(evaluators) if report.valid => Ok(PreparedCandidate {
             report,
-            policy: compiled.map_or(PolicySnapshot::Unconfigured, |p| {
-                PolicySnapshot::Valid(Arc::new(p))
-            }),
+            policy: compiled.map(Arc::new),
             evaluators,
         }),
         _ => Err(Box::new(report)),

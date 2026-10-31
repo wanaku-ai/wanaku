@@ -1,16 +1,60 @@
 use std::sync::{Arc, Mutex, RwLock};
 
 use crate::revision::{
-    ActionPolicyRevision, RecordRevisionParams, RevisionError, RevisionOrigin, RevisionStore,
-    policy_checksum,
+    ActionPolicyRevision, RecordRevisionParams, RevisionError, RevisionId, RevisionMetadata,
+    RevisionOrigin, RevisionStore, policy_checksum,
 };
 use crate::{ActionPolicy, CompiledPolicy};
 
+/// Runtime policy state that one request captures and uses for evaluation and audit.
 #[derive(Clone)]
 pub enum PolicySnapshot {
     Unconfigured,
-    Valid(Arc<CompiledPolicy>),
+    Valid(Arc<ActivePolicy>),
     Invalid,
+}
+
+impl PolicySnapshot {
+    /// Revision ID of the captured policy. Only a valid snapshot has one.
+    #[must_use]
+    pub fn revision_id(&self) -> Option<RevisionId> {
+        match self {
+            Self::Valid(active) => Some(active.revision_id),
+            Self::Unconfigured | Self::Invalid => None,
+        }
+    }
+}
+
+/// Compiled policy bound to the exact revision it was compiled from.
+pub struct ActivePolicy {
+    revision_id: RevisionId,
+    checksum: String,
+    policy: CompiledPolicy,
+}
+
+impl ActivePolicy {
+    fn new(metadata: &RevisionMetadata, policy: CompiledPolicy) -> Self {
+        Self {
+            revision_id: metadata.id,
+            checksum: metadata.checksum.clone(),
+            policy,
+        }
+    }
+
+    #[must_use]
+    pub const fn revision_id(&self) -> RevisionId {
+        self.revision_id
+    }
+
+    #[must_use]
+    pub fn checksum(&self) -> &str {
+        &self.checksum
+    }
+
+    #[must_use]
+    pub const fn policy(&self) -> &CompiledPolicy {
+        &self.policy
+    }
 }
 
 #[derive(Clone)]
@@ -87,7 +131,8 @@ impl ActionPolicyState {
             activate: true,
             failure_reason: None,
         })?;
-        self.install(PolicySnapshot::Valid(Arc::new(compiled)))?;
+        let active = ActivePolicy::new(&revision.metadata, compiled);
+        self.install(PolicySnapshot::Valid(Arc::new(active)))?;
         self.revisions.persist();
         Ok(revision)
     }
@@ -179,16 +224,22 @@ impl ActionPolicyState {
     }
 
     fn reinstall_active_or_invalid(&self) {
+        let Ok(_guard) = self.activation.lock() else {
+            tracing::error!("action policy activation lock is unavailable");
+            return;
+        };
         let Some(revision) = self.revisions.active_revision() else {
             let _ = self.install(PolicySnapshot::Invalid);
             return;
         };
-        match revision.policy.compile() {
+        let ActionPolicyRevision { metadata, policy } = revision;
+        match policy.compile() {
             Ok(compiled) => {
-                let _ = self.install(PolicySnapshot::Valid(Arc::new(compiled)));
+                let active = ActivePolicy::new(&metadata, compiled);
+                let _ = self.install(PolicySnapshot::Valid(Arc::new(active)));
             }
             Err(error) => {
-                tracing::error!(revision_id = revision.metadata.id, error = %error, "persisted action policy revision is invalid");
+                tracing::error!(revision_id = metadata.id, error = %error, "persisted action policy revision is invalid");
                 let _ = self.install(PolicySnapshot::Invalid);
             }
         }
@@ -223,6 +274,18 @@ mod tests {
     use super::*;
     fn policy(id: &str) -> ActionPolicy {
         serde_json::from_value(serde_json::json!({"rules": [{"id": id, "effect": "deny", "selectors": {"operation": "tools/call"}}]})).expect("valid policy")
+    }
+
+    /// Assert that the valid snapshot carries the exact metadata of `revision`.
+    fn assert_snapshot_matches(state: &ActionPolicyState, revision: &ActionPolicyRevision) {
+        let active = match state.snapshot() {
+            PolicySnapshot::Valid(active) => Some(active),
+            PolicySnapshot::Unconfigured | PolicySnapshot::Invalid => None,
+        }
+        .expect("valid snapshot");
+        assert_eq!(active.revision_id(), revision.metadata.id);
+        assert_eq!(active.checksum(), revision.metadata.checksum);
+        assert_eq!(active.policy().rules().len(), revision.policy.rules.len());
     }
 
     fn activate(
@@ -260,6 +323,7 @@ mod tests {
             state.revision_store().active_revision_id(),
             Some(first.metadata.id)
         );
+        assert_snapshot_matches(&state, &first);
         assert_eq!(state.revision_store().list_revisions().len(), 2);
     }
 
@@ -273,12 +337,14 @@ mod tests {
             .expect("rollback");
         assert!(restored.metadata.id > second.metadata.id);
         assert_eq!(restored.policy.rules[0].id, "first");
+        assert_eq!(restored.metadata.checksum, first.metadata.checksum);
+        assert_snapshot_matches(&state, &restored);
     }
 
     #[test]
     fn startup_reconciliation_preserves_active_policy() {
         let state = ActionPolicyState::new();
-        activate(&state, policy("first"), None).expect("activate");
+        let first = activate(&state, policy("first"), None).expect("activate");
         let invalid = serde_yaml::from_str::<serde_yaml::Value>("rules: invalid").expect("yaml");
         state.reconcile_startup(Some(&invalid));
         assert!(matches!(state.snapshot(), PolicySnapshot::Valid(_)));
@@ -290,7 +356,26 @@ mod tests {
         assert!(matches!(state.snapshot(), PolicySnapshot::Valid(_)));
         assert_eq!(state.revision_store().list_revisions().len(), 2);
         state.reconcile_startup(None);
-        assert!(matches!(state.snapshot(), PolicySnapshot::Valid(_)));
+        assert_snapshot_matches(&state, &first);
+        let startup = serde_yaml::from_str::<serde_yaml::Value>(
+            "rules:\n  - id: startup\n    effect: deny\n    selectors:\n      operation: tools/call",
+        )
+        .expect("yaml");
+        state.reconcile_startup(Some(&startup));
+        let active = state
+            .revision_store()
+            .active_revision()
+            .expect("startup revision");
+        assert_eq!(active.metadata.origin, RevisionOrigin::Startup);
+        assert_snapshot_matches(&state, &active);
+    }
+
+    #[test]
+    fn unconfigured_snapshot_has_no_revision() {
+        let state = ActionPolicyState::new();
+        state.reconcile_startup(None);
+        assert!(matches!(state.snapshot(), PolicySnapshot::Unconfigured));
+        assert_eq!(state.snapshot().revision_id(), None);
     }
 
     #[test]
@@ -309,9 +394,9 @@ mod tests {
             restored.revision_store().active_revision_id(),
             Some(revision.metadata.id)
         );
-        assert!(matches!(restored.snapshot(), PolicySnapshot::Valid(_)));
+        assert_snapshot_matches(&restored, &revision);
         restored.reconcile_startup(None);
-        assert!(matches!(restored.snapshot(), PolicySnapshot::Valid(_)));
+        assert_snapshot_matches(&restored, &revision);
         let next = activate(&restored, policy("next"), Some(revision.metadata.id)).expect("next");
         assert!(next.metadata.id > revision.metadata.id);
         let _ = std::fs::remove_dir_all(directory);
@@ -329,6 +414,7 @@ mod tests {
             Err(RevisionError::ValidationFailed(_))
         ));
         assert!(matches!(state.snapshot(), PolicySnapshot::Invalid));
+        assert_eq!(state.snapshot().revision_id(), None);
         assert!(state.revision_store().active_revision().is_none());
         assert_eq!(state.revision_store().list_revisions().len(), 1);
     }
