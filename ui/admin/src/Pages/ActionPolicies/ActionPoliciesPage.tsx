@@ -32,17 +32,13 @@ export const ActionPoliciesPage = () => {
   const load = useCallback(async () => {
     setState({ status: 'loading' });
     try {
-      const revisionsResponse = await listRevisions();
-      let active: ActionPolicyRevision | undefined;
-      try {
-        active = (await getActivePolicy()).data;
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to load the active action policy';
-        if (!message.includes('no action policy revision found')) throw error;
-      }
-      const details = await Promise.all(revisionsResponse.data.map(({ id }) => getRevision(id)));
-      setState({ status: 'success', active, revisions: details.map(({ data }) => data) });
+      const [revisionsResponse, activePolicy] = await Promise.all([
+        listRevisions(),
+        getActivePolicy(),
+      ]);
+      const revisions = await Promise.all(revisionsResponse.data.map(({ id }) => getRevision(id)));
+      const active = activePolicy.state === 'active' ? activePolicy.revision : undefined;
+      setState({ status: 'success', active, revisions });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load action policies';
       setState({ status: 'error', message });

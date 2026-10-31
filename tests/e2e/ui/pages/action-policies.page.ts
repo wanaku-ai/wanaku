@@ -17,4 +17,8 @@ export class ActionPoliciesPage extends BasePage {
   revisionHistory(): Locator {
     return this.page.getByRole("region", { name: "Revision history" });
   }
+
+  errorNotification(): Locator {
+    return this.page.locator(".cds--inline-notification--error");
+  }
 }

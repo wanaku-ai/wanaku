@@ -34,6 +34,9 @@ jobs:
       - name: Check UI formatting
         working-directory: ui/admin
         run: yarn run format:check
+      - name: Run UI unit tests
+        working-directory: ui/admin
+        run: yarn run test
 
   clippy:
     runs-on: ubuntu-latest
