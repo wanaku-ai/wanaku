@@ -93,6 +93,16 @@ impl PromptGetFilter {
                     &format!("forward not found for prompt: {prompt_name}"),
                 ));
             };
+            // A forward whose last discovery failed keeps its previous entries,
+            // but it is unavailable: refuse the call until discovery succeeds.
+            if !forward.available {
+                warn!(prompt = %prompt_name, forward_id = %forward_id, "forward unavailable for prompt provenance");
+                return Ok(crate::response::json_rpc_error(
+                    &parsed.id,
+                    crate::response::JSONRPC_INTERNAL_ERROR,
+                    &format!("forward unavailable for prompt: {prompt_name}"),
+                ));
+            }
             let address = forward.address.clone();
             let invoker = match crate::invoker::invoker_from_extensions(ctx, &parsed.id) {
                 Ok(invoker) => invoker,
@@ -437,6 +447,17 @@ mod filter_tests {
         let registry = registry(None, None);
         registry.register_prompt(prompt(Some("fwd-missing"), true));
         assert_not_invoked(&registry, "forward not found").await;
+    }
+
+    #[tokio::test]
+    async fn unavailable_forward_does_not_invoke() {
+        let registry = registry(None, None);
+        registry.register_prompt(prompt(Some(FORWARD_ID), true));
+        use wanaku_types::registry::ForwardRegistry as _;
+        let mut forward = registry.get_forward(FORWARD_ID).unwrap();
+        forward.available = false;
+        registry.register_forward(forward);
+        assert_not_invoked(&registry, "forward unavailable").await;
     }
 
     #[tokio::test]

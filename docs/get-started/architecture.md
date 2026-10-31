@@ -291,9 +291,11 @@ When you POST to `/api/v1/forwards`:
 
 The management API:
 
-1. Registers the forward
-2. Calls `mcp_client::list_tools(address)` to discover tools
-3. Auto-registers each tool with `type: "mcp-forward"` and a `forwardId` that identifies the forward
+1. Calls `mcp_client::discover_forward(address, headers)` to list tools, resources, resource templates, and prompts. This step does not change the registry.
+2. Converts the discovered items into registry entries with `type: "mcp-forward"` and a `forwardId` that identifies the forward
+3. Publishes the forward and its entries through one function, `apply_forward_update` (`server/src/management/handlers.rs`)
+
+Startup, forward refresh, and the background reconnect loop use the same two steps.
 
 Now when an LLM calls one of those tools, Wanaku resolves the owning forward from `forwardId` and forwards the request to its address.
 
@@ -305,7 +307,7 @@ To re-discover tools after upstream changes:
 wanaku forwards refresh --name upstream-mcp --no-auth
 ```
 
-This removes all tools previously discovered from that forward and re-queries the upstream server.
+This re-queries the upstream server. When discovery succeeds, Wanaku replaces the entries that the forward owns (same `forwardId`). When discovery fails or is incomplete, Wanaku keeps the previous entries, marks the forward unavailable, and refuses calls to it. See [Discovery Failure Behavior](../reference/management-api.md#discovery-failure-behavior).
 
 ## The Feature System
 

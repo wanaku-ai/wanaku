@@ -10,9 +10,6 @@ mod routes;
 mod ui;
 
 pub use handlers::discover_and_update_forward;
-pub use handlers::discover_prompts_from_forward;
-pub use handlers::discover_resources_from_forward;
-pub use handlers::discover_tools_from_forward;
 pub use persistence::{RegistryPersistenceService, registry_persistence_service};
 pub use reconnect::{ForwardReconnectService, reconnect_service};
 

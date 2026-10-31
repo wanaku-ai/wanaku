@@ -8,7 +8,7 @@ use wanaku_infra::credentials::{
     CredentialAuditSink, CredentialBroker, CredentialRedactor, DiscoveryExchange,
     resolve_discovery_headers,
 };
-use wanaku_infra::mcp_client::{ForwardDiscovery, McpClientError};
+use wanaku_infra::mcp_client::{ForwardDiscovery, Listing, McpClientError};
 use wanaku_infra::registry::{ConditionalRemoval, InMemoryRegistry};
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::NormalizedOrigin;
@@ -293,9 +293,8 @@ pub(super) fn handle_forward_get(registry: &InMemoryRegistry, name: &str) -> Res
 }
 
 #[expect(
-    clippy::cognitive_complexity,
     clippy::too_many_lines,
-    reason = "sequential discovery and registration"
+    reason = "sequential validation before discovery"
 )]
 pub(super) async fn handle_forward_create(
     registry: &InMemoryRegistry,
@@ -305,7 +304,7 @@ pub(super) async fn handle_forward_create(
     replace: bool,
 ) -> Response<Vec<u8>> {
     tracing::debug!(body = %body, "forward create request body");
-    let mut forward: ForwardEntry = match serde_json::from_str(body) {
+    let forward: ForwardEntry = match serde_json::from_str(body) {
         Ok(f) => f,
         Err(e) => {
             warn!(error = %e, "invalid forward JSON");
@@ -342,71 +341,16 @@ pub(super) async fn handle_forward_create(
         }
     }
 
-    let DiscoveryExchange {
-        headers: discovery_headers,
-        redactor,
-    } = match discovery_headers_or_status(registry, broker, audit_sink, &forward).await {
-        Ok(exchange) => exchange,
-        Err(message) => {
-            warn!(forward = %forward.name, "forward discovery credential brokerage failed");
-            forward.available = false;
-            forward.status_message = Some(message);
-            registry.register_forward(forward.clone());
-            return json_ok(&serde_json::json!({
-                "forward": &forward,
-                "tools_discovered": 0,
-                "resources_discovered": 0,
-                "prompts_discovered": 0,
-            }));
-        }
-    };
-
-    let discovery =
-        match wanaku_infra::mcp_client::discover_forward(&forward.address, discovery_headers).await
-        {
-            Ok(d) => d,
-            Err(e) => {
-                // Redact any injected discovery secret the upstream echoed into
-                // its error before it reaches the operator or the logs.
-                let message = discovery_failure_message(&forward, &redactor, &e);
-                warn!(forward = %forward.name, error = %message, "forward discovery failed");
-                forward.available = false;
-                forward.status_message = Some(message);
-                registry.register_forward(forward.clone());
-                return json_ok(&serde_json::json!({
-                    "forward": &forward,
-                    "tools_discovered": 0,
-                    "resources_discovered": 0,
-                    "prompts_discovered": 0,
-                }));
-            }
-        };
-
-    let discovery = redact_discovery(&redactor, discovery);
-    forward.server_info = discovery.server_info;
-    forward.available = true;
-    forward.status_message = None;
+    let prepared = prepare_forward_update(registry, broker, audit_sink, &forward).await;
+    let forward = prepared.forward.clone();
     info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
-    registry.register_forward(forward.clone());
-
-    let disabled = DisabledEntries::capture(registry, forward.forward_id());
-    let tools_count =
-        register_discovered_tools(registry, &forward, &discovery.tools, &disabled.tools);
-    let resources_count = register_discovered_resources(
-        registry,
-        &forward,
-        &discovery.resources,
-        &discovery.resource_templates,
-        &disabled.resources,
-    );
-    let prompts_count =
-        register_discovered_prompts(registry, &forward, &discovery.prompts, &disabled.prompts);
+    let counts = apply_forward_update(registry, prepared);
 
     json_ok(&serde_json::json!({
         "forward": &forward,
-        "tools_discovered": tools_count,
-        "resources_discovered": resources_count,
-        "prompts_discovered": prompts_count,
+        "tools_discovered": counts.tools,
+        "resources_discovered": counts.resources,
+        "prompts_discovered": counts.prompts,
     }))
 }
 
@@ -473,74 +417,19 @@ pub(super) async fn handle_forward_refresh(
     audit_sink: Option<&dyn CredentialAuditSink>,
     name: &str,
 ) -> Response<Vec<u8>> {
-    let Some(mut forward) = registry.get_forward(name) else {
+    let Some(forward) = registry.get_forward(name) else {
         return json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}"));
     };
 
-    // Capture before the removal below, so rediscovered entries stay disabled.
-    let disabled = DisabledEntries::capture(registry, forward.forward_id());
-    remove_forwarded_tools(registry, forward.forward_id());
-    remove_forwarded_resources(registry, forward.forward_id());
-    remove_forwarded_prompts(registry, forward.forward_id());
+    // Discovery runs before any registry change. A failed or incomplete
+    // discovery keeps the previous capability set and marks the forward
+    // unavailable.
+    let prepared = prepare_forward_update(registry, broker, audit_sink, &forward).await;
+    let counts = apply_forward_update(registry, prepared);
 
-    let DiscoveryExchange {
-        headers: discovery_headers,
-        redactor,
-    } = match discovery_headers_or_status(registry, broker, audit_sink, &forward).await {
-        Ok(exchange) => exchange,
-        Err(message) => {
-            warn!(forward = %name, "forward refresh credential brokerage failed");
-            forward.available = false;
-            forward.status_message = Some(message);
-            registry.register_forward(forward.clone());
-            return json_ok(
-                &serde_json::json!({"refreshed": name, "tools_discovered": 0, "resources_discovered": 0, "prompts_discovered": 0}),
-            );
-        }
-    };
-
-    let discovery = match wanaku_infra::mcp_client::discover_forward(
-        &forward.address,
-        discovery_headers,
-    )
-    .await
-    {
-        Ok(d) => d,
-        Err(e) => {
-            // Redact any injected discovery secret the upstream echoed into its
-            // error before it reaches the operator or the logs.
-            let message = discovery_failure_message(&forward, &redactor, &e);
-            warn!(forward = %name, error = %message, "forward refresh discovery failed");
-            forward.available = false;
-            forward.status_message = Some(message);
-            registry.register_forward(forward.clone());
-            return json_ok(
-                &serde_json::json!({"refreshed": name, "tools_discovered": 0, "resources_discovered": 0, "prompts_discovered": 0}),
-            );
-        }
-    };
-
-    let discovery = redact_discovery(&redactor, discovery);
-    forward.server_info = discovery.server_info;
-    forward.available = true;
-    forward.status_message = None;
-    registry.register_forward(forward.clone());
-
-    let tools_count =
-        register_discovered_tools(registry, &forward, &discovery.tools, &disabled.tools);
-    let resources_count = register_discovered_resources(
-        registry,
-        &forward,
-        &discovery.resources,
-        &discovery.resource_templates,
-        &disabled.resources,
-    );
-    let prompts_count =
-        register_discovered_prompts(registry, &forward, &discovery.prompts, &disabled.prompts);
-
-    info!(forward = %name, tools_discovered = tools_count, resources_discovered = resources_count, prompts_discovered = prompts_count, "refreshed forward");
+    info!(forward = %name, tools_discovered = counts.tools, resources_discovered = counts.resources, prompts_discovered = counts.prompts, "refreshed forward");
     json_ok(
-        &serde_json::json!({"refreshed": name, "tools_discovered": tools_count, "resources_discovered": resources_count, "prompts_discovered": prompts_count}),
+        &serde_json::json!({"refreshed": name, "tools_discovered": counts.tools, "resources_discovered": counts.resources, "prompts_discovered": counts.prompts}),
     )
 }
 
@@ -644,10 +533,18 @@ fn redact_discovery(
         server_info: discovery
             .server_info
             .map(|info| redact_server_info(redactor, info)),
-        tools: redactor.redact_json_each(&discovery.tools),
-        resources: redactor.redact_json_each(&discovery.resources),
-        resource_templates: redactor.redact_json_each(&discovery.resource_templates),
-        prompts: redactor.redact_json_each(&discovery.prompts),
+        tools: redact_listing(redactor, discovery.tools),
+        resources: redact_listing(redactor, discovery.resources),
+        resource_templates: redact_listing(redactor, discovery.resource_templates),
+        prompts: redact_listing(redactor, discovery.prompts),
+    }
+}
+
+fn redact_listing(redactor: &CredentialRedactor, listing: Listing) -> Listing {
+    match listing {
+        Listing::Complete(items) => Listing::Complete(redactor.redact_json_each(&items)),
+        Listing::Unsupported => Listing::Unsupported,
+        Listing::Incomplete(reason) => Listing::Incomplete(redactor.redact(&reason)),
     }
 }
 
@@ -710,290 +607,345 @@ impl DisabledEntries {
     }
 }
 
+/// Discover a forward and publish the result.
+///
+/// Startup and the background reconnect loop use this function. It shares
+/// [`prepare_forward_update`] and [`apply_forward_update`] with the forward
+/// create and refresh endpoints.
 pub async fn discover_and_update_forward(
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
     audit_sink: Option<&dyn CredentialAuditSink>,
     forward: &ForwardEntry,
 ) {
-    let DiscoveryExchange {
-        headers: discovery_headers,
-        redactor,
-    } = match discovery_headers_or_status(registry, broker, audit_sink, forward).await {
-        Ok(exchange) => exchange,
-        Err(message) => {
-            warn!(forward = %forward.name, "forward discovery credential brokerage failed");
-            let mut unavailable = forward.clone();
-            unavailable.available = false;
-            unavailable.status_message = Some(message);
-            registry.register_forward(unavailable);
-            return;
-        }
-    };
-
-    let discovery = match wanaku_infra::mcp_client::discover_forward(
-        &forward.address,
-        discovery_headers,
-    )
-    .await
-    {
-        Ok(d) => d,
-        Err(e) => {
-            // Redact any injected discovery secret the upstream echoed into
-            // its error before it reaches the operator or the logs.
-            let message = discovery_failure_message(forward, &redactor, &e);
-            warn!(forward = %forward.name, error = %message, "forward discovery failed at startup");
-            let mut unavailable = forward.clone();
-            unavailable.available = false;
-            unavailable.status_message = Some(message);
-            registry.register_forward(unavailable);
-            return;
-        }
-    };
-
-    let discovery = redact_discovery(&redactor, discovery);
-    let mut updated = forward.clone();
-    updated.server_info = discovery.server_info;
-    updated.available = true;
-    updated.status_message = None;
-    registry.register_forward(updated.clone());
-
-    let disabled = DisabledEntries::capture(registry, updated.forward_id());
-    let tools_count =
-        register_discovered_tools(registry, &updated, &discovery.tools, &disabled.tools);
-    let resources_count = register_discovered_resources(
-        registry,
-        &updated,
-        &discovery.resources,
-        &discovery.resource_templates,
-        &disabled.resources,
-    );
-    let prompts_count =
-        register_discovered_prompts(registry, &updated, &discovery.prompts, &disabled.prompts);
-
+    let prepared = prepare_forward_update(registry, broker, audit_sink, forward).await;
+    let counts = apply_forward_update(registry, prepared);
     info!(
         forward = %forward.name,
-        tools_discovered = tools_count,
-        resources_discovered = resources_count,
-        prompts_discovered = prompts_count,
-        "forward discovery complete"
+        tools_discovered = counts.tools,
+        resources_discovered = counts.resources,
+        prompts_discovered = counts.prompts,
+        "forward discovery finished"
     );
 }
 
-pub async fn discover_tools_from_forward(
+/// A forward status and capability set that is ready to publish.
+///
+/// Preparation reads the registry but does not change it. Only
+/// [`apply_forward_update`] publishes a prepared update.
+struct PreparedForwardUpdate {
+    /// The forward with its intended availability, status message, and server
+    /// identity.
+    forward: ForwardEntry,
+    /// The complete replacement capability set. `None` when discovery failed or
+    /// was incomplete: the previous capability set then stays in place.
+    capabilities: Option<ForwardCapabilities>,
+}
+
+/// Validated registry entries for every capability of one forward.
+struct ForwardCapabilities {
+    tools: Vec<ToolEntry>,
+    resources: Vec<ResourceEntry>,
+    prompts: Vec<PromptEntry>,
+}
+
+/// Number of entries that a forward update published.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+struct PublishedCounts {
+    tools: usize,
+    resources: usize,
+    prompts: usize,
+}
+
+impl PreparedForwardUpdate {
+    /// An update that marks the forward unavailable and keeps its previous
+    /// capability set.
+    fn failed(forward: &ForwardEntry, message: String) -> Self {
+        let mut forward = forward.clone();
+        forward.available = false;
+        forward.status_message = Some(message);
+        Self {
+            forward,
+            capabilities: None,
+        }
+    }
+}
+
+/// Run discovery for a forward and prepare the update, without changing the
+/// registry.
+async fn prepare_forward_update(
     registry: &InMemoryRegistry,
+    broker: &CredentialBroker,
+    audit_sink: Option<&dyn CredentialAuditSink>,
     forward: &ForwardEntry,
-) -> usize {
-    let tools = match wanaku_infra::mcp_client::list_tools(&forward.address).await {
-        Ok(t) => t,
-        Err(e) => {
-            warn!(forward = %forward.name, error = %e, "failed to discover tools from forward");
-            return 0;
+) -> PreparedForwardUpdate {
+    let DiscoveryExchange { headers, redactor } =
+        match discovery_headers_or_status(registry, broker, audit_sink, forward).await {
+            Ok(exchange) => exchange,
+            Err(message) => return PreparedForwardUpdate::failed(forward, message),
+        };
+
+    match wanaku_infra::mcp_client::discover_forward(&forward.address, headers).await {
+        Ok(discovery) => prepare_from_discovery(forward, redact_discovery(&redactor, discovery)),
+        // Redact any injected discovery secret the upstream echoed into its
+        // error before it reaches the operator or the logs.
+        Err(e) => PreparedForwardUpdate::failed(
+            forward,
+            discovery_failure_message(forward, &redactor, &e),
+        ),
+    }
+}
+
+/// Convert a discovery result into a prepared update.
+///
+/// An unsupported listing gives no entries of that type. An incomplete listing
+/// fails the whole update, so a partial list never replaces a complete one.
+fn prepare_from_discovery(
+    forward: &ForwardEntry,
+    discovery: ForwardDiscovery,
+) -> PreparedForwardUpdate {
+    let (tools, resources, templates, prompts) = match (
+        listing_items(discovery.tools),
+        listing_items(discovery.resources),
+        listing_items(discovery.resource_templates),
+        listing_items(discovery.prompts),
+    ) {
+        (Ok(tools), Ok(resources), Ok(templates), Ok(prompts)) => {
+            (tools, resources, templates, prompts)
+        }
+        (Err(reason), ..) | (_, Err(reason), ..) | (_, _, Err(reason), _) | (.., Err(reason)) => {
+            return PreparedForwardUpdate::failed(
+                forward,
+                format!("forward discovery incomplete: {reason}"),
+            );
         }
     };
 
-    let disabled = DisabledEntries::capture(registry, forward.forward_id());
-    register_discovered_tools(registry, forward, &tools, &disabled.tools)
+    let mut forward = forward.clone();
+    forward.server_info = discovery.server_info;
+    forward.available = true;
+    forward.status_message = None;
+    let capabilities = ForwardCapabilities {
+        tools: tool_entries(&forward, &tools),
+        resources: resource_entries(&forward, &resources, &templates),
+        prompts: prompt_entries(&forward, &prompts),
+    };
+    PreparedForwardUpdate {
+        forward,
+        capabilities: Some(capabilities),
+    }
 }
 
-#[expect(clippy::too_many_lines, reason = "sequential tool registration")]
-fn register_discovered_tools(
+fn listing_items(listing: Listing) -> Result<Vec<serde_json::Value>, String> {
+    match listing {
+        Listing::Complete(items) => Ok(items),
+        Listing::Unsupported => Ok(Vec::new()),
+        Listing::Incomplete(reason) => Err(reason),
+    }
+}
+
+/// Publish a prepared forward update.
+///
+/// This is the only function that changes the registry after discovery. It
+/// always stores the forward status. With a capability set, it replaces the
+/// entries that the forward owns (matched by `forwardId`, not by address) and
+/// keeps operator-disabled entries disabled. Without a capability set, it keeps
+/// the previous entries; the forward is then unavailable, and the invocation
+/// filters refuse calls to it.
+#[expect(clippy::too_many_lines, reason = "sequential registry publication")]
+fn apply_forward_update(
     registry: &InMemoryRegistry,
-    forward: &ForwardEntry,
-    tools: &[serde_json::Value],
-    disabled: &HashSet<String>,
-) -> usize {
-    let namespace = forward
+    update: PreparedForwardUpdate,
+) -> PublishedCounts {
+    let PreparedForwardUpdate {
+        forward,
+        capabilities,
+    } = update;
+    let forward_id = forward.forward_id().to_owned();
+    let Some(mut capabilities) = capabilities else {
+        warn!(
+            forward = %forward.name,
+            status = forward.status_message.as_deref().unwrap_or_default(),
+            "forward discovery failed; kept the previous capability set and marked the forward unavailable"
+        );
+        registry.register_forward(forward);
+        return PublishedCounts::default();
+    };
+    registry.register_forward(forward);
+
+    let disabled = DisabledEntries::capture(registry, &forward_id);
+    remove_forwarded_tools(registry, &forward_id);
+    remove_forwarded_resources(registry, &forward_id);
+    remove_forwarded_prompts(registry, &forward_id);
+
+    for tool in &mut capabilities.tools {
+        tool.enabled = !disabled.tools.contains(&tool.name);
+    }
+    for resource in &mut capabilities.resources {
+        resource.enabled = !disabled.resources.contains(&resource.name);
+    }
+    for prompt in &mut capabilities.prompts {
+        prompt.enabled = !disabled.prompts.contains(&prompt.name);
+    }
+    let counts = PublishedCounts {
+        tools: capabilities.tools.len(),
+        resources: capabilities.resources.len(),
+        prompts: capabilities.prompts.len(),
+    };
+    registry.register_tools_batch(capabilities.tools);
+    registry.register_resources_batch(capabilities.resources);
+    registry.register_prompts_batch(capabilities.prompts);
+    counts
+}
+
+fn forward_namespace(forward: &ForwardEntry) -> String {
+    forward
         .namespace
         .as_deref()
-        .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
-    let mut batch = Vec::with_capacity(tools.len());
+        .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE)
+        .to_owned()
+}
 
-    for tool_json in tools {
-        let name = match tool_json
-            .get("name")
-            .and_then(|n| n.as_str())
-            .map(str::trim)
-        {
-            Some(n) if !n.is_empty() => n,
-            _ => {
+/// Read a required, non-empty string field of a discovered item.
+fn required_str<'a>(item: &'a serde_json::Value, key: &str) -> Option<&'a str> {
+    item.get(key)
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+}
+
+/// Read an optional string field of a discovered item.
+fn optional_str<'a>(item: &'a serde_json::Value, key: &str) -> &'a str {
+    item.get(key).and_then(|v| v.as_str()).unwrap_or_default()
+}
+
+/// Convert discovered tools into registry entries. Items without a name are
+/// skipped.
+fn tool_entries(forward: &ForwardEntry, tools: &[serde_json::Value]) -> Vec<ToolEntry> {
+    let namespace = forward_namespace(forward);
+    tools
+        .iter()
+        .filter_map(|tool_json| {
+            let Some(name) = required_str(tool_json, "name") else {
                 warn!(forward = %forward.name, "skipping forwarded tool with missing or empty name");
-                continue;
-            }
-        };
-        let description = tool_json
-            .get("description")
-            .and_then(|d| d.as_str())
-            .unwrap_or_default();
-        let input_schema = tool_json
-            .get("inputSchema")
-            .cloned()
-            .unwrap_or(serde_json::json!({"type": "object"}));
-
-        info!(tool = %name, forward = %forward.name, "discovered forwarded tool");
-        batch.push(ToolEntry {
-            name: name.to_owned(),
-            description: description.to_owned(),
-            uri: forward.address.clone(),
-            type_: MCP_FORWARD_TYPE.to_owned(),
-            input_schema,
-            labels: forward.labels.clone(),
-            id: None,
-            namespace: Some(namespace.to_owned()),
-            forward_id: Some(forward.forward_id().to_owned()),
-            enabled: !disabled.contains(name),
-        });
-    }
-
-    let count = batch.len();
-    registry.register_tools_batch(batch);
-    count
+                return None;
+            };
+            info!(tool = %name, forward = %forward.name, "discovered forwarded tool");
+            Some(ToolEntry {
+                name: name.to_owned(),
+                description: optional_str(tool_json, "description").to_owned(),
+                uri: forward.address.clone(),
+                type_: MCP_FORWARD_TYPE.to_owned(),
+                input_schema: tool_json
+                    .get("inputSchema")
+                    .cloned()
+                    .unwrap_or(serde_json::json!({"type": "object"})),
+                labels: forward.labels.clone(),
+                id: None,
+                namespace: Some(namespace.clone()),
+                forward_id: Some(forward.forward_id().to_owned()),
+                enabled: true,
+            })
+        })
+        .collect()
 }
 
-pub async fn discover_resources_from_forward(
-    registry: &InMemoryRegistry,
-    forward: &ForwardEntry,
-) -> usize {
-    let resources = match wanaku_infra::mcp_client::list_resources(&forward.address).await {
-        Ok(r) => r,
-        Err(e) => {
-            warn!(forward = %forward.name, error = %e, "failed to discover resources from forward");
-            return 0;
-        }
-    };
-
-    let templates = match wanaku_infra::mcp_client::list_resource_templates(&forward.address).await
-    {
-        Ok(t) => t,
-        Err(e) => {
-            tracing::debug!(forward = %forward.name, error = %e, "no resource templates from forward (may not be supported)");
-            Vec::new()
-        }
-    };
-
-    let disabled = DisabledEntries::capture(registry, forward.forward_id());
-    register_discovered_resources(
-        registry,
-        forward,
-        &resources,
-        &templates,
-        &disabled.resources,
-    )
-}
-
-#[expect(
-    clippy::cognitive_complexity,
-    clippy::too_many_lines,
-    reason = "sequential resource and template registration"
-)]
-fn register_discovered_resources(
-    registry: &InMemoryRegistry,
+/// Convert discovered resources and resource templates into registry entries.
+/// Items without a name or a URI (or URI template) are skipped.
+#[expect(clippy::too_many_lines, reason = "resource and template conversion")]
+fn resource_entries(
     forward: &ForwardEntry,
     resources: &[serde_json::Value],
     templates: &[serde_json::Value],
-    disabled: &HashSet<String>,
-) -> usize {
-    let namespace = forward
-        .namespace
-        .as_deref()
-        .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
-    let mut batch = Vec::with_capacity(resources.len() + templates.len());
+) -> Vec<ResourceEntry> {
+    let namespace = forward_namespace(forward);
+    let entry = |item: &serde_json::Value, name: &str, location: &str, labels| ResourceEntry {
+        name: name.to_owned(),
+        description: optional_str(item, "description").to_owned(),
+        location: location.to_owned(),
+        type_: MCP_FORWARD_TYPE.to_owned(),
+        mime_type: optional_str(item, "mimeType").to_owned(),
+        labels,
+        id: None,
+        namespace: Some(namespace.clone()),
+        forward_id: Some(forward.forward_id().to_owned()),
+        enabled: true,
+    };
 
-    for res_json in resources {
-        let name = match res_json.get("name").and_then(|n| n.as_str()).map(str::trim) {
-            Some(n) if !n.is_empty() => n,
-            _ => {
-                warn!(forward = %forward.name, "skipping forwarded resource with missing or empty name");
-                continue;
+    let plain = resources.iter().filter_map(|res_json| {
+        match (required_str(res_json, "name"), required_str(res_json, "uri")) {
+            (Some(name), Some(uri)) => {
+                info!(resource = %name, forward = %forward.name, "discovered forwarded resource");
+                Some(entry(res_json, name, uri, HashMap::new()))
             }
-        };
-        let description = res_json
-            .get("description")
-            .and_then(|d| d.as_str())
-            .unwrap_or_default();
-        let uri = match res_json.get("uri").and_then(|u| u.as_str()).map(str::trim) {
-            Some(u) if !u.is_empty() => u,
             _ => {
-                warn!(forward = %forward.name, resource = %name, "skipping forwarded resource with missing or empty uri");
-                continue;
+                warn!(forward = %forward.name, "skipping forwarded resource with missing or empty name or uri");
+                None
             }
-        };
-        let mime_type = res_json
-            .get("mimeType")
-            .and_then(|m| m.as_str())
-            .unwrap_or_default();
-
-        info!(resource = %name, forward = %forward.name, "discovered forwarded resource");
-        batch.push(ResourceEntry {
-            name: name.to_owned(),
-            description: description.to_owned(),
-            location: uri.to_owned(),
-            type_: MCP_FORWARD_TYPE.to_owned(),
-            mime_type: mime_type.to_owned(),
-            labels: std::collections::HashMap::new(),
-            id: None,
-            namespace: Some(namespace.to_owned()),
-            forward_id: Some(forward.forward_id().to_owned()),
-            enabled: !disabled.contains(name),
-        });
-    }
-
-    for tmpl_json in templates {
-        let name = match tmpl_json
-            .get("name")
-            .and_then(|n| n.as_str())
-            .map(str::trim)
-        {
-            Some(n) if !n.is_empty() => n,
+        }
+    });
+    let templated = templates.iter().filter_map(|tmpl_json| {
+        match (required_str(tmpl_json, "name"), required_str(tmpl_json, "uriTemplate")) {
+            (Some(name), Some(uri_template)) => {
+                info!(template = %name, uri_template = %uri_template, forward = %forward.name, "discovered forwarded resource template");
+                let labels = HashMap::from([(
+                    wanaku_types::registry::IS_TEMPLATE_LABEL.to_owned(),
+                    "true".to_owned(),
+                )]);
+                Some(entry(tmpl_json, name, uri_template, labels))
+            }
             _ => {
-                warn!(forward = %forward.name, "skipping forwarded template with missing or empty name");
-                continue;
+                warn!(forward = %forward.name, "skipping forwarded template with missing or empty name or uriTemplate");
+                None
             }
-        };
-        let uri_template = match tmpl_json
-            .get("uriTemplate")
-            .and_then(|u| u.as_str())
-            .map(str::trim)
-        {
-            Some(u) if !u.is_empty() => u,
-            _ => {
-                warn!(forward = %forward.name, template = %name, "skipping forwarded template with missing or empty uriTemplate");
-                continue;
-            }
-        };
-        let description = tmpl_json
-            .get("description")
-            .and_then(|d| d.as_str())
-            .unwrap_or_default();
-        let mime_type = tmpl_json
-            .get("mimeType")
-            .and_then(|m| m.as_str())
-            .unwrap_or_default();
+        }
+    });
+    plain.chain(templated).collect()
+}
 
-        let mut labels = std::collections::HashMap::new();
-        labels.insert(
-            wanaku_types::registry::IS_TEMPLATE_LABEL.to_owned(),
-            "true".to_owned(),
-        );
-
-        info!(template = %name, uri_template = %uri_template, forward = %forward.name, "discovered forwarded resource template");
-        batch.push(ResourceEntry {
-            name: name.to_owned(),
-            description: description.to_owned(),
-            location: uri_template.to_owned(),
-            type_: MCP_FORWARD_TYPE.to_owned(),
-            mime_type: mime_type.to_owned(),
-            labels,
-            id: None,
-            namespace: Some(namespace.to_owned()),
-            forward_id: Some(forward.forward_id().to_owned()),
-            enabled: !disabled.contains(name),
-        });
-    }
-
-    let count = batch.len();
-    registry.register_resources_batch(batch);
-    count
+/// Convert discovered prompts into registry entries. Items without a name are
+/// skipped.
+#[expect(clippy::too_many_lines, reason = "prompt and argument conversion")]
+fn prompt_entries(forward: &ForwardEntry, prompts: &[serde_json::Value]) -> Vec<PromptEntry> {
+    let namespace = forward_namespace(forward);
+    prompts
+        .iter()
+        .filter_map(|prompt_json| {
+            let Some(name) = required_str(prompt_json, "name") else {
+                warn!(forward = %forward.name, "skipping forwarded prompt with missing or empty name");
+                return None;
+            };
+            let arguments = prompt_json
+                .get("arguments")
+                .and_then(|a| a.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|arg| {
+                            Some(wanaku_types::registry::PromptArgument {
+                                name: arg.get("name")?.as_str()?.to_owned(),
+                                description: optional_str(arg, "description").to_owned(),
+                                required: arg
+                                    .get("required")
+                                    .and_then(serde_json::Value::as_bool)
+                                    .unwrap_or(false),
+                            })
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            info!(prompt = %name, forward = %forward.name, "discovered forwarded prompt");
+            Some(PromptEntry {
+                name: name.to_owned(),
+                description: optional_str(prompt_json, "description").to_owned(),
+                arguments,
+                messages: Vec::new(),
+                id: None,
+                namespace: Some(namespace.clone()),
+                forward_id: Some(forward.forward_id().to_owned()),
+                enabled: true,
+            })
+        })
+        .collect()
 }
 
 fn remove_forwarded_resources(registry: &InMemoryRegistry, forward_id: &str) {
@@ -1016,96 +968,6 @@ fn remove_forwarded_tools(registry: &InMemoryRegistry, forward_id: &str) {
         .collect();
 
     registry.remove_tools_batch(&forwarded);
-}
-
-pub async fn discover_prompts_from_forward(
-    registry: &InMemoryRegistry,
-    forward: &ForwardEntry,
-) -> usize {
-    let prompts = match wanaku_infra::mcp_client::list_prompts(&forward.address).await {
-        Ok(p) => p,
-        Err(e) => {
-            warn!(forward = %forward.name, error = %e, "failed to discover prompts from forward");
-            return 0;
-        }
-    };
-
-    let disabled = DisabledEntries::capture(registry, forward.forward_id());
-    register_discovered_prompts(registry, forward, &prompts, &disabled.prompts)
-}
-
-#[expect(clippy::too_many_lines, reason = "sequential prompt registration")]
-fn register_discovered_prompts(
-    registry: &InMemoryRegistry,
-    forward: &ForwardEntry,
-    prompts: &[serde_json::Value],
-    disabled: &HashSet<String>,
-) -> usize {
-    let namespace = forward
-        .namespace
-        .as_deref()
-        .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
-    let mut batch = Vec::with_capacity(prompts.len());
-
-    for prompt_json in prompts {
-        let name = match prompt_json
-            .get("name")
-            .and_then(|n| n.as_str())
-            .map(str::trim)
-        {
-            Some(n) if !n.is_empty() => n,
-            _ => {
-                warn!(forward = %forward.name, "skipping forwarded prompt with missing or empty name");
-                continue;
-            }
-        };
-        let description = prompt_json
-            .get("description")
-            .and_then(|d| d.as_str())
-            .unwrap_or_default();
-
-        let arguments: Vec<wanaku_types::registry::PromptArgument> = prompt_json
-            .get("arguments")
-            .and_then(|a| a.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|arg| {
-                        let arg_name = arg.get("name")?.as_str()?;
-                        Some(wanaku_types::registry::PromptArgument {
-                            name: arg_name.to_owned(),
-                            description: arg
-                                .get("description")
-                                .and_then(|d| d.as_str())
-                                .unwrap_or_default()
-                                .to_owned(),
-                            required: arg
-                                .get("required")
-                                .and_then(serde_json::Value::as_bool)
-                                .unwrap_or(false),
-                        })
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
-
-        let prompt = PromptEntry {
-            name: name.to_owned(),
-            description: description.to_owned(),
-            arguments,
-            messages: Vec::new(),
-            id: None,
-            namespace: Some(namespace.to_owned()),
-            forward_id: Some(forward.forward_id().to_owned()),
-            enabled: !disabled.contains(name),
-        };
-
-        info!(prompt = %name, forward = %forward.name, "discovered forwarded prompt");
-        batch.push(prompt);
-    }
-
-    let count = batch.len();
-    registry.register_prompts_batch(batch);
-    count
 }
 
 fn remove_forwarded_prompts(registry: &InMemoryRegistry, forward_id: &str) {
@@ -1164,30 +1026,258 @@ mod forward_helpers_tests {
         assert!(registry.get_resource("local-res").is_some());
     }
 
+    fn forward_at(name: &str, address: &str) -> ForwardEntry {
+        serde_json::from_value(serde_json::json!({"name": name, "address": address}))
+            .expect("forward")
+    }
+
+    fn complete(items: &[serde_json::Value]) -> Listing {
+        Listing::Complete(items.to_vec())
+    }
+
+    fn discovery(tools: Listing, resources: Listing, prompts: Listing) -> ForwardDiscovery {
+        ForwardDiscovery {
+            server_info: None,
+            tools,
+            resources,
+            resource_templates: Listing::Unsupported,
+            prompts,
+        }
+    }
+
+    /// Publish a successful discovery of `tools` and `prompts` for `forward`.
+    fn publish(
+        registry: &InMemoryRegistry,
+        forward: &ForwardEntry,
+        tools: &[serde_json::Value],
+        prompts: &[serde_json::Value],
+    ) -> PublishedCounts {
+        let found = discovery(complete(tools), Listing::Unsupported, complete(prompts));
+        apply_forward_update(registry, prepare_from_discovery(forward, found))
+    }
+
+    fn tool_names(registry: &InMemoryRegistry) -> Vec<String> {
+        let mut names: Vec<_> = registry.list_tools().into_iter().map(|t| t.name).collect();
+        names.sort();
+        names
+    }
+
+    #[test]
+    #[expect(clippy::too_many_lines, reason = "covers every capability type")]
+    fn conversion_builds_entries_and_skips_invalid_items() {
+        let forward = forward_at("remote", "http://remote:8080/mcp");
+        let tools = tool_entries(
+            &forward,
+            &[
+                serde_json::json!({"name": " echo ", "description": "d"}),
+                serde_json::json!({"name": ""}),
+                serde_json::json!({"description": "no name"}),
+            ],
+        );
+        assert_eq!(tools.len(), 1);
+        assert_eq!(tools[0].name, "echo");
+        assert_eq!(tools[0].uri, "http://remote:8080/mcp");
+        assert_eq!(tools[0].forward_id.as_deref(), Some("remote"));
+        assert_eq!(tools[0].namespace.as_deref(), Some("default"));
+        assert_eq!(tools[0].input_schema, serde_json::json!({"type": "object"}));
+
+        let resources = resource_entries(
+            &forward,
+            &[
+                serde_json::json!({"name": "doc", "uri": "file:///doc", "mimeType": "text/plain"}),
+                serde_json::json!({"name": "no-uri"}),
+            ],
+            &[serde_json::json!({"name": "tmpl", "uriTemplate": "file:///{id}"})],
+        );
+        assert_eq!(resources.len(), 2);
+        assert_eq!(resources[0].location, "file:///doc");
+        assert!(resources[0].labels.is_empty());
+        assert_eq!(resources[1].location, "file:///{id}");
+        assert_eq!(
+            resources[1]
+                .labels
+                .get(wanaku_types::registry::IS_TEMPLATE_LABEL)
+                .map(String::as_str),
+            Some("true")
+        );
+
+        let prompts = prompt_entries(
+            &forward,
+            &[serde_json::json!({
+                "name": "greet",
+                "arguments": [{"name": "who", "required": true}, {"description": "no name"}]
+            })],
+        );
+        assert_eq!(prompts.len(), 1);
+        assert_eq!(prompts[0].arguments.len(), 1);
+        assert!(prompts[0].arguments[0].required);
+    }
+
+    #[test]
+    fn preparation_does_not_mutate_the_registry() {
+        let registry = InMemoryRegistry::new();
+        let forward = forward_at("remote", "http://remote:8080/mcp");
+        let found = discovery(
+            complete(&[serde_json::json!({"name": "echo"})]),
+            Listing::Unsupported,
+            Listing::Unsupported,
+        );
+        let prepared = prepare_from_discovery(&forward, found);
+        assert!(prepared.forward.available);
+        assert!(registry.list_forwards().is_empty());
+        assert!(registry.list_tools().is_empty());
+    }
+
+    #[test]
+    fn unsupported_optional_listing_is_not_a_failure() {
+        let registry = InMemoryRegistry::new();
+        let forward = forward_at("remote", "http://remote:8080/mcp");
+        let counts = publish(
+            &registry,
+            &forward,
+            &[serde_json::json!({"name": "echo"})],
+            &[],
+        );
+        assert_eq!(
+            counts,
+            PublishedCounts {
+                tools: 1,
+                resources: 0,
+                prompts: 0
+            }
+        );
+        let stored = registry.get_forward("remote").expect("forward");
+        assert!(stored.available);
+        assert!(stored.status_message.is_none());
+    }
+
+    #[test]
+    fn incomplete_listing_keeps_previous_capabilities_and_marks_unavailable() {
+        let registry = InMemoryRegistry::new();
+        let forward = forward_at("remote", "http://remote:8080/mcp");
+        let tools = [
+            serde_json::json!({"name": "a"}),
+            serde_json::json!({"name": "b"}),
+        ];
+        publish(
+            &registry,
+            &forward,
+            &tools,
+            &[serde_json::json!({"name": "p"})],
+        );
+
+        // The second page of prompts failed: the replacement must not publish
+        // the partial tool or prompt list.
+        let found = discovery(
+            complete(&[serde_json::json!({"name": "a"})]),
+            Listing::Unsupported,
+            Listing::Incomplete("prompts/list failed: page 2".to_owned()),
+        );
+        let counts = apply_forward_update(&registry, prepare_from_discovery(&forward, found));
+
+        assert_eq!(counts, PublishedCounts::default());
+        assert_eq!(tool_names(&registry), ["a", "b"]);
+        assert!(registry.get_prompt("p").is_some());
+        let stored = registry.get_forward("remote").expect("forward");
+        assert!(!stored.available);
+        let status = stored.status_message.expect("status message");
+        assert!(status.contains("incomplete"), "{status}");
+        assert!(status.contains("prompts/list"), "{status}");
+    }
+
+    #[test]
+    fn successful_rediscovery_replaces_stale_entries_and_restores_availability() {
+        let registry = InMemoryRegistry::new();
+        let mut forward = forward_at("remote", "http://remote:8080/mcp");
+        publish(
+            &registry,
+            &forward,
+            &[serde_json::json!({"name": "old"})],
+            &[],
+        );
+        forward.available = false;
+        forward.status_message = Some("down".to_owned());
+        registry.register_forward(forward.clone());
+
+        publish(
+            &registry,
+            &forward,
+            &[serde_json::json!({"name": "new"})],
+            &[],
+        );
+
+        assert_eq!(tool_names(&registry), ["new"]);
+        let stored = registry.get_forward("remote").expect("forward");
+        assert!(stored.available);
+        assert!(stored.status_message.is_none());
+    }
+
+    #[test]
+    fn replacement_keeps_other_forwards_with_the_same_address() {
+        let registry = InMemoryRegistry::new();
+        let address = "http://shared:8080/mcp";
+        let first = forward_at("first", address);
+        let second = forward_at("second", address);
+        publish(
+            &registry,
+            &first,
+            &[serde_json::json!({"name": "first-tool"})],
+            &[],
+        );
+        publish(
+            &registry,
+            &second,
+            &[serde_json::json!({"name": "second-tool"})],
+            &[],
+        );
+
+        publish(&registry, &first, &[], &[]);
+
+        assert_eq!(tool_names(&registry), ["second-tool"]);
+        let kept = registry.get_tool("second-tool").expect("tool");
+        assert_eq!(kept.forward_id.as_deref(), Some("second"));
+    }
+
+    #[tokio::test]
+    async fn failed_refresh_keeps_capabilities_and_marks_forward_unavailable() {
+        let registry = InMemoryRegistry::new();
+        // An unroutable address makes discovery fail fast.
+        let forward = forward_at("remote", "http://127.0.0.1:1/mcp");
+        publish(
+            &registry,
+            &forward,
+            &[serde_json::json!({"name": "echo"})],
+            &[],
+        );
+        let broker = CredentialBroker::new(wanaku_types::credentials::ResolverRegistry::new());
+
+        let response = handle_forward_refresh(&registry, &broker, None, "remote").await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body: serde_json::Value = serde_json::from_slice(response.body()).expect("json");
+        assert_eq!(body["data"]["refreshed"], "remote");
+        assert_eq!(body["data"]["tools_discovered"], 0);
+        assert_eq!(tool_names(&registry), ["echo"]);
+        let stored = registry.get_forward("remote").expect("forward");
+        assert!(!stored.available);
+        assert!(stored.status_message.is_some());
+    }
+
     #[test]
     fn rediscovery_keeps_disabled_entries_disabled() {
         let registry = InMemoryRegistry::new();
-        let forward: ForwardEntry = serde_json::from_value(serde_json::json!({
-            "name": "remote-forward", "address": "http://remote:8080/mcp"
-        }))
-        .expect("forward");
+        let forward = forward_at("remote-forward", "http://remote:8080/mcp");
         let tools = [
             serde_json::json!({"name": "off"}),
             serde_json::json!({"name": "on"}),
         ];
         let prompts = [serde_json::json!({"name": "prompt-off"})];
-        register_discovered_tools(&registry, &forward, &tools, &HashSet::new());
-        register_discovered_prompts(&registry, &forward, &prompts, &HashSet::new());
+        publish(&registry, &forward, &tools, &prompts);
         let response = handle_tool_set_enabled(&registry, "off", false);
         assert_eq!(response.status(), StatusCode::OK);
         assert!(registry.set_prompt_enabled("prompt-off", false));
 
-        // Same sequence as a forward refresh.
-        let disabled = DisabledEntries::capture(&registry, forward.forward_id());
-        remove_forwarded_tools(&registry, forward.forward_id());
-        remove_forwarded_prompts(&registry, forward.forward_id());
-        register_discovered_tools(&registry, &forward, &tools, &disabled.tools);
-        register_discovered_prompts(&registry, &forward, &prompts, &disabled.prompts);
+        publish(&registry, &forward, &tools, &prompts);
 
         assert_eq!(registry.get_tool("off").map(|t| t.enabled), Some(false));
         assert_eq!(registry.get_tool("on").map(|t| t.enabled), Some(true));
