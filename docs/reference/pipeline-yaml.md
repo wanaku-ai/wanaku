@@ -52,6 +52,14 @@ filter_chains:
 
 The `cors` filter requires `allow_origins`. The `static_response` filter requires `status`. Praxis rejects unknown keys in both filters, so the server does not start if a key is missing or misspelled.
 
+## Praxis admin and metrics listeners
+
+Wanaku builds Praxis without the `admin-api` feature.
+The Praxis admin, health, and metrics listeners are disabled.
+`admin.address` and `admin.metrics_address` do not start listeners.
+The Wanaku management API uses `WANAKU_MGMT_LISTEN`.
+Use the Wanaku management API `/healthz` route for health checks.
+
 ## Listener Configuration
 
 **Change MCP port:**

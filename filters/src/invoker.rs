@@ -257,6 +257,7 @@ pub mod testing {
             filter_state: HashMap::new(),
             grpc_completion: None,
             health_registry: None,
+            hedge_policy: None,
             id_generator: &TEST_ID_GENERATOR,
             kv_stores: None,
             session_stores: None,
