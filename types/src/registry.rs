@@ -346,51 +346,78 @@ pub fn inject_request_id_arg(schema: &mut serde_json::Value) {
     }
 }
 
+/// Stores tools by namespace and name. A name is unique in one namespace.
 pub trait ToolRegistry: Send + Sync {
     fn list_tools(&self) -> Vec<ToolEntry>;
     /// List the enabled tools in a namespace. MCP filters use this method.
     fn list_tools_in_namespace(&self, namespace: &str) -> Vec<ToolEntry>;
-    fn get_tool(&self, name: &str) -> Option<ToolEntry>;
+    /// Get a tool by namespace and name, enabled or not. The management API
+    /// uses this method.
+    fn get_tool(&self, namespace: &str, name: &str) -> Option<ToolEntry>;
     /// Get an enabled tool in a namespace. MCP filters use this method.
     fn get_tool_in_namespace(&self, namespace: &str, name: &str) -> Option<ToolEntry>;
     fn register_tool(&self, tool: ToolEntry);
     fn register_tools_batch(&self, tools: Vec<ToolEntry>);
-    fn remove_tool(&self, name: &str) -> bool;
+    /// Register each tool unless another owner already holds its namespace and
+    /// name. Two entries have the same owner when their `forwardId` values are
+    /// equal, including when both have no `forwardId`. Returns the skipped tools.
+    fn register_tools_unless_taken(&self, tools: Vec<ToolEntry>) -> Vec<ToolEntry>;
+    fn remove_tool(&self, namespace: &str, name: &str) -> bool;
     /// Set whether a tool is enabled. Returns `false` when the tool does not exist.
-    fn set_tool_enabled(&self, name: &str, enabled: bool) -> bool;
-    fn remove_tools_batch(&self, names: &[String]) -> usize;
+    fn set_tool_enabled(&self, namespace: &str, name: &str, enabled: bool) -> bool;
+    /// Remove every tool that the forward with this `forwardId` owns, in all
+    /// namespaces. Returns the number of removed tools.
+    fn remove_tools_owned_by(&self, forward_id: &str) -> usize;
     fn tool_count(&self) -> usize;
 }
 
+/// Stores resources by namespace and name. A name is unique in one namespace.
 pub trait ResourceRegistry: Send + Sync {
     fn list_resources(&self) -> Vec<ResourceEntry>;
     /// List the enabled resources in a namespace. MCP filters use this method.
     fn list_resources_in_namespace(&self, namespace: &str) -> Vec<ResourceEntry>;
-    fn get_resource(&self, name: &str) -> Option<ResourceEntry>;
+    /// Get a resource by namespace and name, enabled or not. The management API
+    /// uses this method.
+    fn get_resource(&self, namespace: &str, name: &str) -> Option<ResourceEntry>;
     /// Get an enabled resource in a namespace. MCP filters use this method.
     fn get_resource_in_namespace(&self, namespace: &str, name: &str) -> Option<ResourceEntry>;
     fn register_resource(&self, resource: ResourceEntry);
     fn register_resources_batch(&self, resources: Vec<ResourceEntry>);
-    fn remove_resource(&self, name: &str) -> bool;
+    /// Register each resource unless another owner already holds its namespace and
+    /// name. Two entries have the same owner when their `forwardId` values are
+    /// equal, including when both have no `forwardId`. Returns the skipped resources.
+    fn register_resources_unless_taken(&self, resources: Vec<ResourceEntry>) -> Vec<ResourceEntry>;
+    fn remove_resource(&self, namespace: &str, name: &str) -> bool;
     /// Set whether a resource is enabled. Returns `false` when the resource does not exist.
-    fn set_resource_enabled(&self, name: &str, enabled: bool) -> bool;
-    fn remove_resources_batch(&self, names: &[String]) -> usize;
+    fn set_resource_enabled(&self, namespace: &str, name: &str, enabled: bool) -> bool;
+    /// Remove every resource that the forward with this `forwardId` owns, in all
+    /// namespaces. Returns the number of removed resources.
+    fn remove_resources_owned_by(&self, forward_id: &str) -> usize;
     fn resource_count(&self) -> usize;
 }
 
+/// Stores prompts by namespace and name. A name is unique in one namespace.
 pub trait PromptRegistry: Send + Sync {
     fn list_prompts(&self) -> Vec<PromptEntry>;
     /// List the enabled prompts in a namespace. MCP filters use this method.
     fn list_prompts_in_namespace(&self, namespace: &str) -> Vec<PromptEntry>;
-    fn get_prompt(&self, name: &str) -> Option<PromptEntry>;
+    /// Get a prompt by namespace and name, enabled or not. The management API
+    /// uses this method.
+    fn get_prompt(&self, namespace: &str, name: &str) -> Option<PromptEntry>;
     /// Get an enabled prompt in a namespace. MCP filters use this method.
     fn get_prompt_in_namespace(&self, namespace: &str, name: &str) -> Option<PromptEntry>;
     fn register_prompt(&self, prompt: PromptEntry);
     fn register_prompts_batch(&self, prompts: Vec<PromptEntry>);
-    fn remove_prompt(&self, name: &str) -> bool;
+    /// Register each prompt unless another owner already holds its namespace and
+    /// name. Two entries have the same owner when their `forwardId` values are
+    /// equal, including when both have no `forwardId`. Returns the skipped prompts.
+    fn register_prompts_unless_taken(&self, prompts: Vec<PromptEntry>) -> Vec<PromptEntry>;
+    fn remove_prompt(&self, namespace: &str, name: &str) -> bool;
     /// Set whether a prompt is enabled. Returns `false` when the prompt does not exist.
-    fn set_prompt_enabled(&self, name: &str, enabled: bool) -> bool;
-    fn remove_prompts_batch(&self, names: &[String]) -> usize;
+    fn set_prompt_enabled(&self, namespace: &str, name: &str, enabled: bool) -> bool;
+    /// Remove every prompt that the forward with this `forwardId` owns, in all
+    /// namespaces. Returns the number of removed prompts.
+    fn remove_prompts_owned_by(&self, forward_id: &str) -> usize;
     fn prompt_count(&self) -> usize;
 }
 

@@ -18,8 +18,10 @@ export const useResources = () => {
    * Enable or disable a resource. MCP clients cannot list or use a disabled resource.
    */
   const setResourceEnabled = useCallback(
-    (name: string, enabled: boolean, options?: RequestInit) => {
-      return enabled ? enableResource(name, options) : disableResource(name, options);
+    (name: string, namespace: string, enabled: boolean, options?: RequestInit) => {
+      return enabled
+        ? enableResource(name, { namespace }, options)
+        : disableResource(name, { namespace }, options);
     },
     [],
   );

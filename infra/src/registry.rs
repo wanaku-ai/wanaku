@@ -23,12 +23,50 @@ pub enum ConditionalRemoval<T> {
     PreconditionFailed,
 }
 
+/// Registry key of a tool, resource, or prompt: `(namespace, name)`.
+type EntryKey = (String, String);
+
+fn entry_key(namespace: &str, name: &str) -> EntryKey {
+    (namespace.to_owned(), name.to_owned())
+}
+
+/// Set the default namespace on an entry without one and return its key.
+fn normalize_key(namespace: &mut Option<String>, name: &str) -> EntryKey {
+    let namespace = namespace.get_or_insert_with(|| DEFAULT_NAMESPACE.to_owned());
+    entry_key(namespace, name)
+}
+
+/// Insert `entry` unless another owner holds `key`. Returns the entry when it
+/// was skipped. Owners are compared by `forwardId`.
+fn insert_unless_taken<T>(
+    map: &DashMap<EntryKey, T>,
+    key: EntryKey,
+    entry: T,
+    owner: fn(&T) -> Option<&str>,
+) -> Option<T> {
+    match map.entry(key) {
+        dashmap::mapref::entry::Entry::Occupied(occupied)
+            if owner(occupied.get()) != owner(&entry) =>
+        {
+            Some(entry)
+        }
+        dashmap::mapref::entry::Entry::Occupied(mut occupied) => {
+            occupied.insert(entry);
+            None
+        }
+        dashmap::mapref::entry::Entry::Vacant(vacant) => {
+            vacant.insert(entry);
+            None
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct InMemoryRegistry {
     agents: Arc<DashMap<String, crate::agents::RegisteredAgent>>,
-    tools: Arc<DashMap<String, ToolEntry>>,
-    resources: Arc<DashMap<String, ResourceEntry>>,
-    prompts: Arc<DashMap<String, PromptEntry>>,
+    tools: Arc<DashMap<EntryKey, ToolEntry>>,
+    resources: Arc<DashMap<EntryKey, ResourceEntry>>,
+    prompts: Arc<DashMap<EntryKey, PromptEntry>>,
     forwards: Arc<DashMap<String, ForwardEntry>>,
     namespaces: Arc<DashMap<String, NamespaceEntry>>,
     bindings: Arc<DashMap<String, CredentialBinding>>,
@@ -209,24 +247,21 @@ impl InMemoryRegistry {
                 Err(error) => tracing::warn!(%error, "invalid persisted agent skipped"),
             }
         }
+        // Snapshots store entries as lists, so snapshots written before entries
+        // were keyed by namespace load unchanged. An entry without a namespace
+        // goes to the default namespace.
         for mut tool in snapshot.tools {
-            if tool.namespace.is_none() {
-                tool.namespace = Some(DEFAULT_NAMESPACE.to_owned());
-            }
+            let key = normalize_key(&mut tool.namespace, &tool.name);
             inject_request_id_arg(&mut tool.input_schema);
-            self.tools.insert(tool.name.clone(), tool);
+            self.tools.insert(key, tool);
         }
         for mut resource in snapshot.resources {
-            if resource.namespace.is_none() {
-                resource.namespace = Some(DEFAULT_NAMESPACE.to_owned());
-            }
-            self.resources.insert(resource.name.clone(), resource);
+            let key = normalize_key(&mut resource.namespace, &resource.name);
+            self.resources.insert(key, resource);
         }
         for mut prompt in snapshot.prompts {
-            if prompt.namespace.is_none() {
-                prompt.namespace = Some(DEFAULT_NAMESPACE.to_owned());
-            }
-            self.prompts.insert(prompt.name.clone(), prompt);
+            let key = normalize_key(&mut prompt.namespace, &prompt.name);
+            self.prompts.insert(key, prompt);
         }
         for namespace in snapshot.namespaces {
             self.namespaces.insert(namespace.name.clone(), namespace);
@@ -539,10 +574,6 @@ impl Default for InMemoryRegistry {
     }
 }
 
-fn effective_namespace(ns: &Option<String>) -> &str {
-    ns.as_deref().unwrap_or(DEFAULT_NAMESPACE)
-}
-
 impl ToolRegistry for InMemoryRegistry {
     fn list_tools(&self) -> Vec<ToolEntry> {
         self.tools
@@ -554,33 +585,23 @@ impl ToolRegistry for InMemoryRegistry {
     fn list_tools_in_namespace(&self, namespace: &str) -> Vec<ToolEntry> {
         self.tools
             .iter()
-            .filter(|entry| {
-                entry.value().enabled && effective_namespace(&entry.value().namespace) == namespace
-            })
+            .filter(|entry| entry.value().enabled && entry.key().0 == namespace)
             .map(|entry| entry.value().clone())
             .collect()
     }
 
-    fn get_tool(&self, name: &str) -> Option<ToolEntry> {
-        self.tools.get(name).map(|entry| entry.value().clone())
+    fn get_tool(&self, namespace: &str, name: &str) -> Option<ToolEntry> {
+        self.tools
+            .get(&entry_key(namespace, name))
+            .map(|entry| entry.value().clone())
     }
 
     fn get_tool_in_namespace(&self, namespace: &str, name: &str) -> Option<ToolEntry> {
-        self.tools
-            .get(name)
-            .map(|entry| entry.value().clone())
-            .filter(|tool| tool.enabled && effective_namespace(&tool.namespace) == namespace)
+        self.get_tool(namespace, name).filter(|tool| tool.enabled)
     }
 
-    fn register_tool(&self, mut tool: ToolEntry) {
-        if tool.namespace.is_none() {
-            tool.namespace = Some(DEFAULT_NAMESPACE.to_owned());
-        }
-        if self.inject_request_id.load(Ordering::Relaxed) {
-            inject_request_id_arg(&mut tool.input_schema);
-        }
-        self.tools.insert(tool.name.clone(), tool);
-        self.persist();
+    fn register_tool(&self, tool: ToolEntry) {
+        self.register_tools_batch(vec![tool]);
     }
 
     fn register_tools_batch(&self, tools: Vec<ToolEntry>) {
@@ -588,29 +609,45 @@ impl ToolRegistry for InMemoryRegistry {
             return;
         }
         let inject = self.inject_request_id.load(Ordering::Relaxed);
-        let default_ns = DEFAULT_NAMESPACE.to_owned();
         for mut tool in tools {
-            if tool.namespace.is_none() {
-                tool.namespace = Some(default_ns.clone());
-            }
+            let key = normalize_key(&mut tool.namespace, &tool.name);
             if inject {
                 inject_request_id_arg(&mut tool.input_schema);
             }
-            self.tools.insert(tool.name.clone(), tool);
+            self.tools.insert(key, tool);
         }
         self.persist();
     }
 
-    fn remove_tool(&self, name: &str) -> bool {
-        let removed = self.tools.remove(name).is_some();
+    fn register_tools_unless_taken(&self, tools: Vec<ToolEntry>) -> Vec<ToolEntry> {
+        if tools.is_empty() {
+            return Vec::new();
+        }
+        let inject = self.inject_request_id.load(Ordering::Relaxed);
+        let mut skipped = Vec::new();
+        for mut tool in tools {
+            let key = normalize_key(&mut tool.namespace, &tool.name);
+            if inject {
+                inject_request_id_arg(&mut tool.input_schema);
+            }
+            skipped.extend(insert_unless_taken(&self.tools, key, tool, |e| {
+                e.forward_id.as_deref()
+            }));
+        }
+        self.persist();
+        skipped
+    }
+
+    fn remove_tool(&self, namespace: &str, name: &str) -> bool {
+        let removed = self.tools.remove(&entry_key(namespace, name)).is_some();
         if removed {
             self.persist();
         }
         removed
     }
 
-    fn set_tool_enabled(&self, name: &str, enabled: bool) -> bool {
-        let Some(mut entry) = self.tools.get_mut(name) else {
+    fn set_tool_enabled(&self, namespace: &str, name: &str, enabled: bool) -> bool {
+        let Some(mut entry) = self.tools.get_mut(&entry_key(namespace, name)) else {
             return false;
         };
         entry.enabled = enabled;
@@ -620,13 +657,13 @@ impl ToolRegistry for InMemoryRegistry {
         true
     }
 
-    fn remove_tools_batch(&self, names: &[String]) -> usize {
+    fn remove_tools_owned_by(&self, forward_id: &str) -> usize {
         let mut count = 0;
-        for name in names {
-            if self.tools.remove(name.as_str()).is_some() {
-                count += 1;
-            }
-        }
+        self.tools.retain(|_, entry| {
+            let owned = entry.forward_id.as_deref() == Some(forward_id);
+            count += usize::from(owned);
+            !owned
+        });
         if count > 0 {
             self.persist();
         }
@@ -649,56 +686,62 @@ impl ResourceRegistry for InMemoryRegistry {
     fn list_resources_in_namespace(&self, namespace: &str) -> Vec<ResourceEntry> {
         self.resources
             .iter()
-            .filter(|entry| {
-                entry.value().enabled && effective_namespace(&entry.value().namespace) == namespace
-            })
+            .filter(|entry| entry.value().enabled && entry.key().0 == namespace)
             .map(|entry| entry.value().clone())
             .collect()
     }
 
-    fn get_resource(&self, name: &str) -> Option<ResourceEntry> {
-        self.resources.get(name).map(|entry| entry.value().clone())
+    fn get_resource(&self, namespace: &str, name: &str) -> Option<ResourceEntry> {
+        self.resources
+            .get(&entry_key(namespace, name))
+            .map(|entry| entry.value().clone())
     }
 
     fn get_resource_in_namespace(&self, namespace: &str, name: &str) -> Option<ResourceEntry> {
-        self.resources
-            .get(name)
-            .map(|entry| entry.value().clone())
-            .filter(|res| res.enabled && effective_namespace(&res.namespace) == namespace)
+        self.get_resource(namespace, name)
+            .filter(|resource| resource.enabled)
     }
 
-    fn register_resource(&self, mut resource: ResourceEntry) {
-        if resource.namespace.is_none() {
-            resource.namespace = Some(DEFAULT_NAMESPACE.to_owned());
-        }
-        self.resources.insert(resource.name.clone(), resource);
-        self.persist();
+    fn register_resource(&self, resource: ResourceEntry) {
+        self.register_resources_batch(vec![resource]);
     }
 
     fn register_resources_batch(&self, resources: Vec<ResourceEntry>) {
         if resources.is_empty() {
             return;
         }
-        let default_ns = DEFAULT_NAMESPACE.to_owned();
         for mut resource in resources {
-            if resource.namespace.is_none() {
-                resource.namespace = Some(default_ns.clone());
-            }
-            self.resources.insert(resource.name.clone(), resource);
+            let key = normalize_key(&mut resource.namespace, &resource.name);
+            self.resources.insert(key, resource);
         }
         self.persist();
     }
 
-    fn remove_resource(&self, name: &str) -> bool {
-        let removed = self.resources.remove(name).is_some();
+    fn register_resources_unless_taken(&self, resources: Vec<ResourceEntry>) -> Vec<ResourceEntry> {
+        if resources.is_empty() {
+            return Vec::new();
+        }
+        let mut skipped = Vec::new();
+        for mut resource in resources {
+            let key = normalize_key(&mut resource.namespace, &resource.name);
+            skipped.extend(insert_unless_taken(&self.resources, key, resource, |e| {
+                e.forward_id.as_deref()
+            }));
+        }
+        self.persist();
+        skipped
+    }
+
+    fn remove_resource(&self, namespace: &str, name: &str) -> bool {
+        let removed = self.resources.remove(&entry_key(namespace, name)).is_some();
         if removed {
             self.persist();
         }
         removed
     }
 
-    fn set_resource_enabled(&self, name: &str, enabled: bool) -> bool {
-        let Some(mut entry) = self.resources.get_mut(name) else {
+    fn set_resource_enabled(&self, namespace: &str, name: &str, enabled: bool) -> bool {
+        let Some(mut entry) = self.resources.get_mut(&entry_key(namespace, name)) else {
             return false;
         };
         entry.enabled = enabled;
@@ -708,13 +751,13 @@ impl ResourceRegistry for InMemoryRegistry {
         true
     }
 
-    fn remove_resources_batch(&self, names: &[String]) -> usize {
+    fn remove_resources_owned_by(&self, forward_id: &str) -> usize {
         let mut count = 0;
-        for name in names {
-            if self.resources.remove(name.as_str()).is_some() {
-                count += 1;
-            }
-        }
+        self.resources.retain(|_, entry| {
+            let owned = entry.forward_id.as_deref() == Some(forward_id);
+            count += usize::from(owned);
+            !owned
+        });
         if count > 0 {
             self.persist();
         }
@@ -737,56 +780,62 @@ impl PromptRegistry for InMemoryRegistry {
     fn list_prompts_in_namespace(&self, namespace: &str) -> Vec<PromptEntry> {
         self.prompts
             .iter()
-            .filter(|entry| {
-                entry.value().enabled && effective_namespace(&entry.value().namespace) == namespace
-            })
+            .filter(|entry| entry.value().enabled && entry.key().0 == namespace)
             .map(|entry| entry.value().clone())
             .collect()
     }
 
-    fn get_prompt(&self, name: &str) -> Option<PromptEntry> {
-        self.prompts.get(name).map(|entry| entry.value().clone())
+    fn get_prompt(&self, namespace: &str, name: &str) -> Option<PromptEntry> {
+        self.prompts
+            .get(&entry_key(namespace, name))
+            .map(|entry| entry.value().clone())
     }
 
     fn get_prompt_in_namespace(&self, namespace: &str, name: &str) -> Option<PromptEntry> {
-        self.prompts
-            .get(name)
-            .map(|entry| entry.value().clone())
-            .filter(|prompt| prompt.enabled && effective_namespace(&prompt.namespace) == namespace)
+        self.get_prompt(namespace, name)
+            .filter(|prompt| prompt.enabled)
     }
 
-    fn register_prompt(&self, mut prompt: PromptEntry) {
-        if prompt.namespace.is_none() {
-            prompt.namespace = Some(DEFAULT_NAMESPACE.to_owned());
-        }
-        self.prompts.insert(prompt.name.clone(), prompt);
-        self.persist();
+    fn register_prompt(&self, prompt: PromptEntry) {
+        self.register_prompts_batch(vec![prompt]);
     }
 
     fn register_prompts_batch(&self, prompts: Vec<PromptEntry>) {
         if prompts.is_empty() {
             return;
         }
-        let default_ns = DEFAULT_NAMESPACE.to_owned();
         for mut prompt in prompts {
-            if prompt.namespace.is_none() {
-                prompt.namespace = Some(default_ns.clone());
-            }
-            self.prompts.insert(prompt.name.clone(), prompt);
+            let key = normalize_key(&mut prompt.namespace, &prompt.name);
+            self.prompts.insert(key, prompt);
         }
         self.persist();
     }
 
-    fn remove_prompt(&self, name: &str) -> bool {
-        let removed = self.prompts.remove(name).is_some();
+    fn register_prompts_unless_taken(&self, prompts: Vec<PromptEntry>) -> Vec<PromptEntry> {
+        if prompts.is_empty() {
+            return Vec::new();
+        }
+        let mut skipped = Vec::new();
+        for mut prompt in prompts {
+            let key = normalize_key(&mut prompt.namespace, &prompt.name);
+            skipped.extend(insert_unless_taken(&self.prompts, key, prompt, |e| {
+                e.forward_id.as_deref()
+            }));
+        }
+        self.persist();
+        skipped
+    }
+
+    fn remove_prompt(&self, namespace: &str, name: &str) -> bool {
+        let removed = self.prompts.remove(&entry_key(namespace, name)).is_some();
         if removed {
             self.persist();
         }
         removed
     }
 
-    fn set_prompt_enabled(&self, name: &str, enabled: bool) -> bool {
-        let Some(mut entry) = self.prompts.get_mut(name) else {
+    fn set_prompt_enabled(&self, namespace: &str, name: &str, enabled: bool) -> bool {
+        let Some(mut entry) = self.prompts.get_mut(&entry_key(namespace, name)) else {
             return false;
         };
         entry.enabled = enabled;
@@ -796,13 +845,13 @@ impl PromptRegistry for InMemoryRegistry {
         true
     }
 
-    fn remove_prompts_batch(&self, names: &[String]) -> usize {
+    fn remove_prompts_owned_by(&self, forward_id: &str) -> usize {
         let mut count = 0;
-        for name in names {
-            if self.prompts.remove(name.as_str()).is_some() {
-                count += 1;
-            }
-        }
+        self.prompts.retain(|_, entry| {
+            let owned = entry.forward_id.as_deref() == Some(forward_id);
+            count += usize::from(owned);
+            !owned
+        });
         if count > 0 {
             self.persist();
         }
@@ -971,7 +1020,7 @@ mod tests {
     fn get_tool_by_name() {
         let registry = InMemoryRegistry::new();
         registry.register_tool(sample_tool());
-        let tool = registry.get_tool("test-tool");
+        let tool = registry.get_tool(DEFAULT_NAMESPACE, "test-tool");
         assert!(tool.is_some());
         assert_eq!(
             tool.as_ref().map(|t| t.uri.as_str()),
@@ -982,15 +1031,19 @@ mod tests {
     #[test]
     fn get_missing_tool_returns_none() {
         let registry = InMemoryRegistry::new();
-        assert!(registry.get_tool("nonexistent").is_none());
+        assert!(
+            registry
+                .get_tool(DEFAULT_NAMESPACE, "nonexistent")
+                .is_none()
+        );
     }
 
     #[test]
     fn remove_tool() {
         let registry = InMemoryRegistry::new();
         registry.register_tool(sample_tool());
-        assert!(registry.remove_tool("test-tool"));
-        assert!(registry.get_tool("test-tool").is_none());
+        assert!(registry.remove_tool(DEFAULT_NAMESPACE, "test-tool"));
+        assert!(registry.get_tool(DEFAULT_NAMESPACE, "test-tool").is_none());
     }
 
     #[test]
@@ -998,7 +1051,7 @@ mod tests {
         let registry = InMemoryRegistry::new();
         registry.register_tool(sample_tool());
 
-        assert!(registry.set_tool_enabled("test-tool", false));
+        assert!(registry.set_tool_enabled(DEFAULT_NAMESPACE, "test-tool", false));
         assert!(
             registry
                 .list_tools_in_namespace(DEFAULT_NAMESPACE)
@@ -1013,7 +1066,7 @@ mod tests {
         assert_eq!(listed.len(), 1);
         assert!(!listed[0].enabled);
 
-        assert!(registry.set_tool_enabled("test-tool", true));
+        assert!(registry.set_tool_enabled(DEFAULT_NAMESPACE, "test-tool", true));
         assert_eq!(registry.list_tools_in_namespace(DEFAULT_NAMESPACE).len(), 1);
         assert!(
             registry
@@ -1025,9 +1078,121 @@ mod tests {
     #[test]
     fn set_enabled_on_missing_entry_returns_false() {
         let registry = InMemoryRegistry::new();
-        assert!(!registry.set_tool_enabled("missing", false));
-        assert!(!registry.set_resource_enabled("missing", false));
-        assert!(!registry.set_prompt_enabled("missing", false));
+        assert!(!registry.set_tool_enabled(DEFAULT_NAMESPACE, "missing", false));
+        assert!(!registry.set_resource_enabled(DEFAULT_NAMESPACE, "missing", false));
+        assert!(!registry.set_prompt_enabled(DEFAULT_NAMESPACE, "missing", false));
+    }
+
+    fn owned_tool(name: &str, namespace: &str, forward_id: &str) -> ToolEntry {
+        ToolEntry {
+            name: name.to_owned(),
+            namespace: Some(namespace.to_owned()),
+            forward_id: Some(forward_id.to_owned()),
+            ..sample_tool()
+        }
+    }
+
+    #[test]
+    fn same_name_in_two_namespaces_keeps_both_entries() {
+        let registry = InMemoryRegistry::new();
+        registry.register_tool(owned_tool("echo", "default", "a"));
+        registry.register_tool(owned_tool("echo", "other", "b"));
+
+        assert_eq!(registry.tool_count(), 2);
+        let in_default = registry.get_tool_in_namespace("default", "echo");
+        let in_other = registry.get_tool_in_namespace("other", "echo");
+        assert_eq!(in_default.and_then(|t| t.forward_id).as_deref(), Some("a"));
+        assert_eq!(in_other.and_then(|t| t.forward_id).as_deref(), Some("b"));
+        assert_eq!(registry.list_tools_in_namespace("default").len(), 1);
+        assert_eq!(registry.list_tools_in_namespace("other").len(), 1);
+        assert!(registry.get_tool("missing-ns", "echo").is_none());
+
+        assert!(registry.set_tool_enabled("other", "echo", false));
+        assert!(registry.get_tool_in_namespace("other", "echo").is_none());
+        assert!(registry.get_tool_in_namespace("default", "echo").is_some());
+
+        assert!(registry.remove_tool("other", "echo"));
+        assert!(registry.get_tool("default", "echo").is_some());
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "covers skip, replacement, and local owners"
+    )]
+    fn register_unless_taken_keeps_the_entry_of_another_owner() {
+        let registry = InMemoryRegistry::new();
+        registry.register_tool(owned_tool("echo", "default", "a"));
+
+        let skipped = registry.register_tools_unless_taken(vec![
+            owned_tool("echo", "default", "b"),
+            owned_tool("echo", "other", "b"),
+            owned_tool("only-b", "default", "b"),
+        ]);
+
+        assert_eq!(skipped.len(), 1);
+        assert_eq!(skipped[0].forward_id.as_deref(), Some("b"));
+        assert_eq!(
+            registry
+                .get_tool("default", "echo")
+                .and_then(|t| t.forward_id)
+                .as_deref(),
+            Some("a")
+        );
+        assert!(registry.get_tool("other", "echo").is_some());
+        assert!(registry.get_tool("default", "only-b").is_some());
+
+        // The same owner replaces its own entry.
+        let mut updated = owned_tool("echo", "default", "a");
+        updated.description = "updated".to_owned();
+        assert!(
+            registry
+                .register_tools_unless_taken(vec![updated])
+                .is_empty()
+        );
+        assert_eq!(
+            registry
+                .get_tool("default", "echo")
+                .map(|t| t.description)
+                .as_deref(),
+            Some("updated")
+        );
+
+        // An entry without a forwardId is a different owner from a forward.
+        registry.register_tool(ToolEntry {
+            name: "local".to_owned(),
+            ..sample_tool()
+        });
+        let skipped =
+            registry.register_tools_unless_taken(vec![owned_tool("local", "default", "a")]);
+        assert_eq!(skipped.len(), 1);
+    }
+
+    #[test]
+    fn remove_owned_by_keeps_entries_of_other_owners() {
+        let registry = InMemoryRegistry::new();
+        registry.register_tool(owned_tool("echo", "default", "a"));
+        registry.register_tool(owned_tool("echo", "other", "b"));
+        registry.register_tool(owned_tool("extra", "third", "b"));
+        registry.register_resource(ResourceEntry {
+            namespace: Some("other".to_owned()),
+            forward_id: Some("b".to_owned()),
+            ..sample_resource()
+        });
+        registry.register_resource(ResourceEntry {
+            forward_id: Some("a".to_owned()),
+            ..sample_resource()
+        });
+
+        assert_eq!(registry.remove_tools_owned_by("b"), 2);
+        assert_eq!(registry.remove_resources_owned_by("b"), 1);
+        assert_eq!(registry.remove_prompts_owned_by("b"), 0);
+
+        assert!(registry.get_tool("default", "echo").is_some());
+        assert!(registry.get_tool("other", "echo").is_none());
+        assert!(registry.get_tool("third", "extra").is_none());
+        assert!(registry.get_resource("default", "test-resource").is_some());
+        assert!(registry.get_resource("other", "test-resource").is_none());
     }
 
     #[test]
@@ -1035,7 +1200,7 @@ mod tests {
         let registry = InMemoryRegistry::new();
         registry.register_resource(sample_resource());
 
-        assert!(registry.set_resource_enabled("test-resource", false));
+        assert!(registry.set_resource_enabled(DEFAULT_NAMESPACE, "test-resource", false));
         assert!(
             registry
                 .list_resources_in_namespace(DEFAULT_NAMESPACE)
@@ -1063,7 +1228,7 @@ mod tests {
             enabled: true,
         });
 
-        assert!(registry.set_prompt_enabled("test-prompt", false));
+        assert!(registry.set_prompt_enabled(DEFAULT_NAMESPACE, "test-prompt", false));
         assert!(
             registry
                 .list_prompts_in_namespace(DEFAULT_NAMESPACE)
@@ -1090,7 +1255,7 @@ mod tests {
     fn get_resource_by_name() {
         let registry = InMemoryRegistry::new();
         registry.register_resource(sample_resource());
-        let res = registry.get_resource("test-resource");
+        let res = registry.get_resource(DEFAULT_NAMESPACE, "test-resource");
         assert!(res.is_some());
         assert_eq!(
             res.as_ref().map(|r| r.location.as_str()),
@@ -1102,31 +1267,12 @@ mod tests {
     fn remove_resource() {
         let registry = InMemoryRegistry::new();
         registry.register_resource(sample_resource());
-        assert!(registry.remove_resource("test-resource"));
-        assert!(registry.get_resource("test-resource").is_none());
-    }
-
-    #[test]
-    fn remove_resources_batch() {
-        let registry = InMemoryRegistry::new();
-        registry.register_resource(ResourceEntry {
-            name: "r1".to_owned(),
-            ..sample_resource()
-        });
-        registry.register_resource(ResourceEntry {
-            name: "r2".to_owned(),
-            ..sample_resource()
-        });
-        registry.register_resource(ResourceEntry {
-            name: "r3".to_owned(),
-            ..sample_resource()
-        });
-
-        let removed = registry.remove_resources_batch(&["r1".to_owned(), "r3".to_owned()]);
-        assert_eq!(removed, 2);
-        assert!(registry.get_resource("r1").is_none());
-        assert!(registry.get_resource("r2").is_some());
-        assert!(registry.get_resource("r3").is_none());
+        assert!(registry.remove_resource(DEFAULT_NAMESPACE, "test-resource"));
+        assert!(
+            registry
+                .get_resource(DEFAULT_NAMESPACE, "test-resource")
+                .is_none()
+        );
     }
 
     #[test]
@@ -1150,7 +1296,9 @@ mod tests {
             enabled: true,
         };
         registry.register_tool(tool);
-        let stored = registry.get_tool("test").expect("tool should exist");
+        let stored = registry
+            .get_tool(DEFAULT_NAMESPACE, "test")
+            .expect("tool should exist");
         let props = stored.input_schema["properties"]
             .as_object()
             .expect("has properties");
@@ -1183,7 +1331,9 @@ mod tests {
             enabled: true,
         };
         registry.register_tool(tool);
-        let stored = registry.get_tool("test").expect("tool should exist");
+        let stored = registry
+            .get_tool(DEFAULT_NAMESPACE, "test")
+            .expect("tool should exist");
         let props = stored.input_schema["properties"]
             .as_object()
             .expect("has properties");
@@ -1483,6 +1633,65 @@ mod tests {
             registry.get_namespace("persisted-ns").is_some(),
             "a persisted forward namespace should be registered when the snapshot omits it"
         );
+    }
+
+    struct FixedSnapshot(serde_json::Value);
+
+    impl PersistenceBackend for FixedSnapshot {
+        fn load(&self) -> Result<RegistrySnapshot, PersistenceError> {
+            serde_json::from_value(self.0.clone())
+                .map_err(|error| PersistenceError::Coordination(error.to_string()))
+        }
+
+        fn save(&self, _snapshot: &RegistrySnapshot) -> Result<(), PersistenceError> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn load_persisted_reads_snapshot_written_before_namespace_keys() {
+        // Earlier versions stored entries with unique names and often without
+        // a namespace.
+        let backend = Arc::new(FixedSnapshot(serde_json::json!({
+            "tools": [
+                {"name": "legacy", "description": "", "uri": "u", "type": "mcp-forward",
+                 "inputSchema": {"type": "object"}},
+                {"name": "scoped", "description": "", "uri": "u", "type": "mcp-forward",
+                 "inputSchema": {"type": "object"}, "namespace": "finance"}
+            ],
+            "resources": [{"name": "r", "location": "l", "type": "mcp-forward"}],
+            "prompts": [{"name": "p"}]
+        })));
+        let registry = InMemoryRegistry::with_persistence(backend);
+        registry.load_persisted();
+
+        let legacy = registry.get_tool(DEFAULT_NAMESPACE, "legacy");
+        assert_eq!(
+            legacy.and_then(|t| t.namespace).as_deref(),
+            Some(DEFAULT_NAMESPACE)
+        );
+        assert!(registry.get_tool("finance", "scoped").is_some());
+        assert!(registry.get_tool(DEFAULT_NAMESPACE, "scoped").is_none());
+        assert!(registry.get_resource(DEFAULT_NAMESPACE, "r").is_some());
+        assert!(registry.get_prompt(DEFAULT_NAMESPACE, "p").is_some());
+    }
+
+    #[test]
+    fn load_persisted_keeps_same_name_in_two_namespaces() {
+        let tool = |namespace: &str, forward_id: &str| {
+            serde_json::json!({"name": "echo", "description": "", "uri": "u",
+                "type": "mcp-forward", "inputSchema": {"type": "object"},
+                "namespace": namespace, "forwardId": forward_id})
+        };
+        let backend = Arc::new(FixedSnapshot(serde_json::json!({
+            "tools": [tool("default", "a"), tool("other", "b")]
+        })));
+        let registry = InMemoryRegistry::with_persistence(backend);
+        registry.load_persisted();
+
+        assert_eq!(registry.tool_count(), 2);
+        assert!(registry.get_tool("default", "echo").is_some());
+        assert!(registry.get_tool("other", "echo").is_some());
     }
 
     struct BlockingBackend {

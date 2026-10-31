@@ -1034,8 +1034,8 @@ mod filter_tests {
 
     use super::ToolCallFilter;
     use crate::invoker::testing::{
-        ADDRESS, FORWARD_ID, RecordingInvoker, SECRET, filter_context, registry, request,
-        response_json,
+        ADDRESS, FORWARD_ID, Invocation, RecordingInvoker, SECRET, filter_context, registry,
+        request, response_json,
     };
 
     const BODY: &str = r#"{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"echo","arguments":{"message":"hi"}}}"#;
@@ -1171,6 +1171,49 @@ mod filter_tests {
         forward.available = false;
         registry.register_forward(forward);
         assert_not_invoked(&registry, "forward unavailable").await;
+    }
+
+    /// Call `echo` in `namespace` and return the invocations.
+    async fn invocations_in(registry: &InMemoryRegistry, namespace: &str) -> Vec<Invocation> {
+        let invoker = RecordingInvoker::succeeding(json!({"content": []}));
+        let req = request(&[]);
+        let mut ctx = filter_context(&req, crate::TOOLS_CALL, registry, &invoker);
+        ctx.set_metadata(crate::MCP_NAME_KEY, "echo");
+        ctx.set_metadata(crate::namespace::NAMESPACE_METADATA_KEY, namespace);
+        let filter = ToolCallFilter {
+            max_body_bytes: 1024,
+        };
+        let mut body = Some(bytes::Bytes::from_static(BODY.as_bytes()));
+        let action = filter.handle_body(&mut ctx, &mut body).await.unwrap();
+        assert!(matches!(action, FilterAction::Reject(_)));
+        invoker.calls()
+    }
+
+    #[tokio::test]
+    async fn lookup_uses_the_request_namespace() {
+        use wanaku_types::registry::ForwardRegistry as _;
+        const OTHER_ADDRESS: &str = "https://other.example.com/mcp";
+        let registry = registry(None, None);
+        registry.register_forward(
+            serde_json::from_value(json!({
+                "name": "fwd-b", "address": OTHER_ADDRESS, "namespace": "other"
+            }))
+            .unwrap(),
+        );
+        // The same tool name in two namespaces, owned by two forwards.
+        registry.register_tool(tool(Some(FORWARD_ID), true));
+        let mut other = tool(Some("fwd-b"), true);
+        other.namespace = Some("other".to_owned());
+        registry.register_tool(other);
+
+        let calls = invocations_in(&registry, "default").await;
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].address, ADDRESS);
+        let calls = invocations_in(&registry, "other").await;
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].address, OTHER_ADDRESS);
+        // A namespace without the tool does not reach any forward.
+        assert!(invocations_in(&registry, "third").await.is_empty());
     }
 
     #[tokio::test]

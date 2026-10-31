@@ -24,7 +24,7 @@ import { PAGE_SIZES, useSearchPagination } from '../../hooks/search-pagination';
 
 interface ToolListProps {
   fetchedData: ToolEntry[];
-  onSetEnabled: (toolName: string, enabled: boolean) => void;
+  onSetEnabled: (toolName: string, namespace: string, enabled: boolean) => void;
 }
 
 const toolSearchableText = (tool: ToolEntry) => [
@@ -53,7 +53,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = memo(
     function toolsToRows() {
       return pageItems.map((tool: ToolEntry, index: number) => ({
         ...tool,
-        id: tool.name || tool.id || `tool-${index}`,
+        id: `${tool.namespace ?? 'default'}/${tool.name || tool.id || `tool-${index}`}`,
       }));
     }
 
@@ -86,6 +86,7 @@ export const ToolsTable: FunctionComponent<ToolListProps> = memo(
           <TableCell>
             <EnabledToggle
               name={tool.name}
+              namespace={tool.namespace}
               enabled={tool.enabled !== false}
               onSetEnabled={onSetEnabled}
             />
@@ -121,7 +122,9 @@ export const ToolsTable: FunctionComponent<ToolListProps> = memo(
                 </TableHead>
                 <TableBody>
                   {rows.map((row) => {
-                    const tool = fetchedData.find((item) => (item.name || item.id) === row.id);
+                    const tool = fetchedData.find(
+                      (item) => `${item.namespace ?? 'default'}/${item.name || item.id}` === row.id,
+                    );
                     if (tool) {
                       return <TableRow {...getRowProps({ row })}>{tableCells(tool)}</TableRow>;
                     }

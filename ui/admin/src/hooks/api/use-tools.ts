@@ -17,9 +17,14 @@ export const useTools = () => {
   /**
    * Enable or disable a tool. MCP clients cannot list or use a disabled tool.
    */
-  const setToolEnabled = useCallback((name: string, enabled: boolean, options?: RequestInit) => {
-    return enabled ? enableTool(name, options) : disableTool(name, options);
-  }, []);
+  const setToolEnabled = useCallback(
+    (name: string, namespace: string, enabled: boolean, options?: RequestInit) => {
+      return enabled
+        ? enableTool(name, { namespace }, options)
+        : disableTool(name, { namespace }, options);
+    },
+    [],
+  );
 
   return {
     listTools,

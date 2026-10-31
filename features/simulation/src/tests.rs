@@ -188,13 +188,16 @@ fn simulation_registry_snapshot_is_detached() {
     let tool=serde_json::from_value(serde_json::json!({"name":"example","description":"","uri":"example","type":"mcp-forward","inputSchema":{"type":"object"},"labels":{"access":"private"}})).expect("tool");
     d.registry.register_tool(tool);
     let snapshot = snapshot::capture(&d, &SimulationLimits::default()).expect("snapshot");
-    let mut tool = d.registry.get_tool("example").expect("original tool");
+    let mut tool = d
+        .registry
+        .get_tool("default", "example")
+        .expect("original tool");
     tool.labels.insert("access".to_owned(), "public".to_owned());
     d.registry.register_tool(tool);
     assert_eq!(
         snapshot
             .registry
-            .get_tool("example")
+            .get_tool("default", "example")
             .expect("snapshot tool")
             .labels
             .get("access")
@@ -203,7 +206,7 @@ fn simulation_registry_snapshot_is_detached() {
     );
     assert_eq!(
         d.registry
-            .get_tool("example")
+            .get_tool("default", "example")
             .expect("original tool")
             .labels
             .get("access")

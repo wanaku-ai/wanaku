@@ -22,4 +22,9 @@ export class ToolsPage extends BasePage {
   async clickEnabledToggle(name: string) {
     await this.rowWithText(name).locator(Carbon.toggleAppearance).click();
   }
+
+  /** The row of a tool in one namespace. The same name can exist in more than one namespace. */
+  rowInNamespace(name: string, namespace: string) {
+    return this.rowWithText(name).filter({ hasText: namespace });
+  }
 }

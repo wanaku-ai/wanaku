@@ -14,9 +14,14 @@ export const usePrompts = () => {
   /**
    * Enable or disable a prompt. MCP clients cannot list or use a disabled prompt.
    */
-  const setPromptEnabled = useCallback((name: string, enabled: boolean, options?: RequestInit) => {
-    return enabled ? enablePrompt(name, options) : disablePrompt(name, options);
-  }, []);
+  const setPromptEnabled = useCallback(
+    (name: string, namespace: string, enabled: boolean, options?: RequestInit) => {
+      return enabled
+        ? enablePrompt(name, { namespace }, options)
+        : disablePrompt(name, { namespace }, options);
+    },
+    [],
+  );
 
   return {
     listPrompts,
