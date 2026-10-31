@@ -30,16 +30,47 @@ const getHeaders = (headers?: HeadersInit): HeadersInit => {
 const REDIRECT_TS_KEY = 'wanaku_auth_redirect_ts';
 const REDIRECT_LOOP_MS = 10_000;
 
+/**
+ * An unsuccessful HTTP response. `status` is the HTTP status. `data` is the `data` member of the
+ * server error envelope, or `undefined` when the body is empty, is not JSON, or has no `data`.
+ * `message` is the envelope `error`, a `reason_code` in `data`, or a generic status message.
+ */
 export class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly data: unknown,
-  ) {
+  readonly status: number;
+  readonly data: unknown;
+
+  constructor(message: string, status: number, data?: unknown) {
     super(message);
     this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
   }
 }
+
+const parseJson = (text: string): unknown => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+};
+
+const toApiError = async (response: Response): Promise<ApiError> => {
+  const body = parseJson(await response.text());
+  const envelope =
+    typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
+  const data = envelope.data ?? undefined;
+  const reason =
+    typeof data === 'object' &&
+    data !== null &&
+    'reason_code' in data &&
+    typeof data.reason_code === 'string'
+      ? data.reason_code
+      : undefined;
+  const error = typeof envelope.error === 'string' && envelope.error ? envelope.error : undefined;
+  const message = error ?? reason ?? `Request failed with status ${response.status}`;
+  return new ApiError(message, response.status, data);
+};
 
 export const customFetch = async <T>(url: string, options: RequestInit): Promise<T> => {
   const requestUrl = getUrl(url);
@@ -64,26 +95,10 @@ export const customFetch = async <T>(url: string, options: RequestInit): Promise
     throw new Error('Redirecting to login');
   }
 
-  if (response.ok) {
-    sessionStorage.removeItem(REDIRECT_TS_KEY);
-  }
+  if (!response.ok) throw await toApiError(response);
+  sessionStorage.removeItem(REDIRECT_TS_KEY);
 
   const body = await getBody<Record<string, unknown>>(response);
-
-  if (!response.ok) {
-    const data = body?.data;
-    const reason =
-      data &&
-      typeof data === 'object' &&
-      'reason_code' in data &&
-      typeof data.reason_code === 'string'
-        ? data.reason_code
-        : undefined;
-    const message =
-      (body?.error as string) || reason || `Request failed with status ${response.status}`;
-    throw new ApiError(message, response.status, data);
-  }
-
   const data = body?.data !== undefined ? body.data : body;
 
   return { status: response.status, data, headers: response.headers } as T;
