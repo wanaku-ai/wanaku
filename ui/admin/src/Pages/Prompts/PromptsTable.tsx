@@ -21,7 +21,7 @@ import { PAGE_SIZES, useSearchPagination } from '../../hooks/search-pagination';
 
 interface PromptsListProps {
   fetchedData: PromptEntry[];
-  onSetEnabled: (promptName: string, enabled: boolean) => void;
+  onSetEnabled: (promptName: string, namespace: string, enabled: boolean) => void;
 }
 
 const formatMessages = (messages?: any[]) => {
@@ -56,7 +56,7 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = memo(
 
     function promptsToRows() {
       return pageItems.map((prompt: PromptEntry, index: number) => ({
-        id: prompt.name || `prompt-${index}`,
+        id: `${prompt.namespace ?? 'default'}/${prompt.name || `prompt-${index}`}`,
         name: prompt.name,
         description: prompt.description,
         messages: formatMessages(prompt.messages),
@@ -94,7 +94,9 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = memo(
                   </TableHead>
                   <TableBody>
                     {rows.map((row) => {
-                      const prompt = fetchedData.find((item) => item.name === row.id);
+                      const prompt = fetchedData.find(
+                        (item) => `${item.namespace ?? 'default'}/${item.name}` === row.id,
+                      );
                       return (
                         <TableRow {...getRowProps({ row })}>
                           {row.cells.map((cell) => {
@@ -110,6 +112,7 @@ export const PromptsTable: FunctionComponent<PromptsListProps> = memo(
                                 <TableCell key={cell.id}>
                                   <EnabledToggle
                                     name={prompt.name}
+                                    namespace={prompt.namespace}
                                     enabled={prompt.enabled !== false}
                                     onSetEnabled={onSetEnabled}
                                   />

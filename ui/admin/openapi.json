@@ -2411,6 +2411,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the prompt. Default: `default`",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2443,6 +2452,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the prompt. Default: `default`",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2467,6 +2485,15 @@
             "in": "path",
             "description": "Prompt name",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the prompt. Default: `default`",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2501,6 +2528,15 @@
             "in": "path",
             "description": "Prompt name",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the prompt. Default: `default`",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2561,6 +2597,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the resource. Default: `default`",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2593,6 +2638,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the resource. Default: `default`",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2617,6 +2671,15 @@
             "in": "path",
             "description": "Resource name",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the resource. Default: `default`",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2651,6 +2714,15 @@
             "in": "path",
             "description": "Resource name",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the resource. Default: `default`",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2711,6 +2783,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the tool. Default: `default`",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2743,6 +2824,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the tool. Default: `default`",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2767,6 +2857,15 @@
             "in": "path",
             "description": "Tool name",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the tool. Default: `default`",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2801,6 +2900,15 @@
             "in": "path",
             "description": "Tool name",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "description": "Namespace of the tool. Default: `default`",
+            "required": false,
             "schema": {
               "type": "string"
             }

@@ -27,7 +27,7 @@ export interface RefreshHandle {
 }
 
 interface ResourcesTableProps {
-  onSetEnabled: (resourceName: string, enabled: boolean) => void;
+  onSetEnabled: (resourceName: string, namespace: string, enabled: boolean) => void;
   onError?: (message: string) => void;
   ref?: RefObject<RefreshHandle>;
 }
@@ -89,7 +89,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = memo(
 
     function resourcesToRows() {
       return pageItems.map((resource: ResourceEntry, index: number) => ({
-        id: resource.name || resource.id || `resource-${index}`,
+        id: `${resource.namespace ?? 'default'}/${resource.name || resource.id || `resource-${index}`}`,
         name: resource.name,
         location: resource.location,
         type: resource.type,
@@ -111,6 +111,7 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = memo(
           <TableCell>
             <EnabledToggle
               name={resource.name}
+              namespace={resource.namespace}
               enabled={resource.enabled !== false}
               onSetEnabled={onSetEnabled}
             />
@@ -148,7 +149,9 @@ export const ResourcesTable: React.FC<ResourcesTableProps> = memo(
                 </TableHead>
                 <TableBody>
                   {rows.map((row) => {
-                    const resource = resources.find((item) => (item.name || item.id) === row.id);
+                    const resource = resources.find(
+                      (item) => `${item.namespace ?? 'default'}/${item.name || item.id}` === row.id,
+                    );
                     if (resource) {
                       return <TableRow {...getRowProps({ row })}>{tableCells(resource)}</TableRow>;
                     }
