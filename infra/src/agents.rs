@@ -57,6 +57,7 @@ fn endpoint(address: &str) -> Result<AgentEndpoint, String> {
                 http::HeaderValue::from_str(authority).map_err(|error| error.to_string())?,
             ),
             connection: Arc::new(ConnectionOptions::default()),
+            base_path: None,
             tls,
         },
         path: uri
