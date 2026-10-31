@@ -18,6 +18,13 @@ test.describe('Evaluators', () => {
     expect(title).toBe('Evaluators');
   });
 
+  test('does not offer namespace to conversation bindings', async ({ page }) => {
+    await evaluators.goto();
+    await expect(page.getByRole('heading', { name: 'Evaluators', level: 1 })).toBeVisible();
+    await expect(page.getByText('Namespace Bindings')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add Binding' })).toHaveCount(0);
+  });
+
   test('LLM connection select is enabled and populated from configured connections', async () => {
     // The e2e server loads the repository wanaku.yaml, which configures
     // llm_connections. The select must therefore be enabled and list them.

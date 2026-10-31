@@ -61,7 +61,7 @@ console.log(`Running on host API ${host.version}`);
 
 ### host.navigation.add(entry)
 
-Adds a navigation entry to the sidebar. The host puts plugin entries in a sidebar menu with the `section` name. The default section is **Extensions**. The `order` value controls the position of the entry. Lower values appear first. If multiple plugins use the same value, the host uses registration order.
+Adds a navigation entry to the sidebar. The host puts plugin entries in a sidebar menu with the `section` name. The default section is **Extensions**. The host sorts the entries of a menu alphabetically by `label`. The `order` value controls the position of the menu. The menu with the lowest `order` value of its entries appears first.
 
 **Parameters:**
 
@@ -72,7 +72,7 @@ Adds a navigation entry to the sidebar. The host puts plugin entries in a sideba
 | `route` | string | yes | Route to navigate to (must start with `/`) |
 | `icon` | string | no | Icon name (not used) |
 | `section` | string | no | Sidebar menu for the entry (default: `"Extensions"`) |
-| `order` | number | no | Sort order (default: 0) |
+| `order` | number | no | Position of the menu (default: 0) |
 
 **Returns:** `Disposable`
 

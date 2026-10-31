@@ -1,20 +1,16 @@
-import { InlineNotification, Modal } from '@carbon/react';
+import { InlineNotification } from '@carbon/react';
 import { PageSkeleton } from '../../components/PageSkeleton';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { EvaluatorDef, useEvaluators } from '../../hooks/api/use-evaluators';
 import { EvaluatorsTable } from './EvaluatorsTable';
 import { EvaluatorModal } from './EvaluatorModal';
-import { BindingsTable, BindingEntry } from './BindingsTable';
-import { BindingModal } from './BindingModal';
 import { useErrorNotification } from '../../hooks/error-notifications';
 import { ErrorNotification } from '../../components/ErrorNotification';
-import { NamespaceEntry } from '../../models';
 import { DeleteConfirmationModal } from '../../components/DeleteConfirmationModal';
 
 const EvaluatorsPage: React.FC = () => {
   const [evaluators, setEvaluators] = useState<EvaluatorDef[]>([]);
   const [connections, setConnections] = useState<string[]>([]);
-  const [bindings, setBindings] = useState<BindingEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const { errorMessage, setErrorMessage } = useErrorNotification();
@@ -22,23 +18,13 @@ const EvaluatorsPage: React.FC = () => {
 
   const [isEvaluatorModalOpen, setIsEvaluatorModalOpen] = useState(false);
   const [openedEvaluator, setOpenedEvaluator] = useState<EvaluatorDef>();
-  const [isBindingModalOpen, setIsBindingModalOpen] = useState(false);
 
   const [evaluatorDeletion, setEvaluatorDeletion] = useState<EvaluatorDef>();
-  const [bindingUpdate, setBindingUpdate] = useState<BindingEntry>();
-  const [bindingDeletion, setBindingDeletion] = useState<BindingEntry>();
 
   const evaluatorsRef = useRef(evaluators);
   evaluatorsRef.current = evaluators;
 
-  const {
-    listEvaluators,
-    updateEvaluators,
-    listLlmConnections,
-    listBindings,
-    bindNamespace,
-    unbindNamespace,
-  } = useEvaluators();
+  const { listEvaluators, updateEvaluators, listLlmConnections } = useEvaluators();
 
   const fetchEvaluators = useCallback(async () => {
     try {
@@ -67,27 +53,9 @@ const EvaluatorsPage: React.FC = () => {
     }
   }, [listLlmConnections]);
 
-  const fetchBindings = useCallback(async () => {
-    try {
-      const result = await listBindings();
-      if (result.status === 200 && result.data) {
-        const entries: BindingEntry[] = Object.entries(result.data).map(
-          ([namespace, conversationId]) => ({ namespace, conversationId }),
-        );
-        setBindings(entries);
-      } else {
-        setBindings([]);
-      }
-    } catch {
-      setBindings([]);
-    }
-  }, [listBindings]);
-
   useEffect(() => {
-    Promise.all([fetchEvaluators(), fetchConnections(), fetchBindings()]).finally(() =>
-      setIsLoading(false),
-    );
-  }, [fetchEvaluators, fetchConnections, fetchBindings]);
+    Promise.all([fetchEvaluators(), fetchConnections()]).finally(() => setIsLoading(false));
+  }, [fetchEvaluators, fetchConnections]);
 
   useEffect(() => {
     if (successMessage) {
@@ -143,66 +111,9 @@ const EvaluatorsPage: React.FC = () => {
     }
   };
 
-  async function handleBindingSubmit(namespace: NamespaceEntry, conversationId: string) {
-    const binding = { namespace: namespace.name, conversationId };
-    if (bindings.find((item) => item.namespace === namespace.name)) {
-      setIsBindingModalOpen(false);
-      requestBindingUpdateConfirmation(binding);
-    } else {
-      await submitBinding(binding);
-    }
-  }
-
-  async function submitBinding(binding: BindingEntry) {
-    if (isMutating) {
-      return;
-    }
-    setIsMutating(true);
-
-    try {
-      const { namespace, conversationId } = binding;
-      const result = await bindNamespace(namespace, conversationId);
-      if (result.status === 200) {
-        setSuccessMessage(`Namespace "${binding.namespace}" bound`);
-        await fetchBindings();
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to bind namespace');
-    } finally {
-      setIsBindingModalOpen(false);
-      setIsMutating(false);
-    }
-  }
-
   function requestEvaluatorDeleteConfirmation(evaluator: EvaluatorDef) {
     setEvaluatorDeletion(evaluator);
   }
-
-  function requestBindingUpdateConfirmation(binding: BindingEntry) {
-    setBindingUpdate(binding);
-  }
-
-  function requestBindingDeleteConfirmation(binding: BindingEntry) {
-    setBindingDeletion(binding);
-  }
-
-  const handleBindingDelete = async (binding: BindingEntry) => {
-    if (isMutating) return;
-    setIsMutating(true);
-
-    try {
-      const result = await unbindNamespace(binding.namespace);
-      if (result.status === 200) {
-        setSuccessMessage(`Namespace "${binding.namespace}" unbound`);
-        await fetchBindings();
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to unbind namespace');
-    } finally {
-      setIsMutating(false);
-      setBindingDeletion(undefined);
-    }
-  };
 
   if (isLoading) return <PageSkeleton title="Evaluators" />;
 
@@ -238,20 +149,6 @@ const EvaluatorsPage: React.FC = () => {
           onDelete={requestEvaluatorDeleteConfirmation}
           disabled={isMutating}
         />
-
-        <h2 className="title" style={{ marginTop: '2rem' }}>
-          Namespace Bindings
-        </h2>
-        <p className="description">
-          Bind namespaces to conversation IDs for evaluator context tracking.
-        </p>
-
-        <BindingsTable
-          bindings={bindings}
-          onAdd={() => setIsBindingModalOpen(true)}
-          onDelete={requestBindingDeleteConfirmation}
-          disabled={isMutating}
-        />
       </div>
 
       {isEvaluatorModalOpen && (
@@ -273,38 +170,6 @@ const EvaluatorsPage: React.FC = () => {
           text={`Are you sure you want to delete evaluator "${evaluatorDeletion.name}"?`}
           onConfirm={() => handleEvaluatorDelete(evaluatorDeletion)}
           onCancel={() => setEvaluatorDeletion(undefined)}
-        />
-      )}
-
-      {isBindingModalOpen && (
-        <BindingModal
-          onRequestClose={() => setIsBindingModalOpen(false)}
-          onSubmit={handleBindingSubmit}
-        />
-      )}
-
-      {bindingUpdate && (
-        <Modal
-          open={true}
-          modalHeading="Update existing binding"
-          primaryButtonText={'OK'}
-          secondaryButtonText="Cancel"
-          onRequestSubmit={() => {
-            setBindingUpdate(undefined);
-            submitBinding(bindingUpdate);
-          }}
-          onRequestClose={() => setBindingUpdate(undefined)}
-        >
-          <div>{`Namespace ${bindingUpdate.namespace} is already bound to a conversation id. Do you want to update this binding with the new data?`}</div>
-        </Modal>
-      )}
-
-      {bindingDeletion && (
-        <DeleteConfirmationModal
-          heading="Delete binding"
-          text={`Are you sure you want to delete binding of namespace "${bindingDeletion.namespace}" to conversation ID "${bindingDeletion.conversationId}"?`}
-          onConfirm={() => handleBindingDelete(bindingDeletion)}
-          onCancel={() => setBindingDeletion(undefined)}
         />
       )}
     </div>

@@ -1,6 +1,7 @@
 import { SideNav, SideNavItems, SideNavMenu, SideNavMenuItem } from '@carbon/react';
 import { Link } from 'react-router-dom';
 import { useNavigation } from '../contexts/NavigationContext';
+import { sectionItems } from '../navigation/section-items';
 
 interface SideNavComponentProps {
   isSideNavExpanded: boolean;
@@ -12,7 +13,7 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }: SideNavCo
 
   const ungroupedItems = items.filter((item) => !item.section);
   const sections = Array.from(
-    new Set(items.filter((item) => item.section).map((item) => item.section)),
+    new Set(items.flatMap((item) => (item.section ? [item.section] : []))),
   );
 
   return (
@@ -34,10 +35,9 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }: SideNavCo
           </SideNavMenuItem>
         ))}
         {sections.map((section) => {
-          const sectionItems = items.filter((item) => item.section === section);
           return (
-            <SideNavMenu key={section} title={section || ''}>
-              {sectionItems.map((item) => (
+            <SideNavMenu key={section} title={section}>
+              {sectionItems(items, section).map((item) => (
                 <SideNavMenuItem
                   key={item.id}
                   element={Link}
