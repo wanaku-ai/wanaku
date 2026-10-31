@@ -31,7 +31,7 @@ use self::handlers::{
     handle_namespace_update, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
     handle_prompt_set_enabled, handle_resource_delete, handle_resource_get, handle_resource_list,
     handle_resource_set_enabled, handle_statistics, handle_tool_delete, handle_tool_get,
-    handle_tool_list, handle_tool_set_enabled, replace_requested,
+    handle_tool_list, handle_tool_set_enabled, namespace_param, replace_requested,
 };
 #[cfg(feature = "ui")]
 use self::response::redirect_response;
@@ -161,30 +161,45 @@ pub(crate) async fn dispatch(
 
     match resolve_tool_route(ctx.method, ctx.path) {
         ToolRoute::List => return handle_tool_list(registry),
-        ToolRoute::GetByName(name) => return handle_tool_get(registry, &name),
-        ToolRoute::Delete(name) => return handle_tool_delete(registry, &name),
+        ToolRoute::GetByName(name) => {
+            return handle_tool_get(registry, &namespace_param(ctx.query), &name);
+        }
+        ToolRoute::Delete(name) => {
+            return handle_tool_delete(registry, &namespace_param(ctx.query), &name);
+        }
         ToolRoute::SetEnabled(name, enabled) => {
-            return handle_tool_set_enabled(registry, &name, enabled);
+            let namespace = namespace_param(ctx.query);
+            return handle_tool_set_enabled(registry, &namespace, &name, enabled);
         }
         ToolRoute::NotFound => {}
     }
 
     match resolve_resource_route(ctx.method, ctx.path) {
         ResourceRoute::List => return handle_resource_list(registry),
-        ResourceRoute::GetByName(name) => return handle_resource_get(registry, &name),
-        ResourceRoute::Delete(name) => return handle_resource_delete(registry, &name),
+        ResourceRoute::GetByName(name) => {
+            return handle_resource_get(registry, &namespace_param(ctx.query), &name);
+        }
+        ResourceRoute::Delete(name) => {
+            return handle_resource_delete(registry, &namespace_param(ctx.query), &name);
+        }
         ResourceRoute::SetEnabled(name, enabled) => {
-            return handle_resource_set_enabled(registry, &name, enabled);
+            let namespace = namespace_param(ctx.query);
+            return handle_resource_set_enabled(registry, &namespace, &name, enabled);
         }
         ResourceRoute::NotFound => {}
     }
 
     match resolve_prompt_route(ctx.method, ctx.path) {
         PromptRoute::List => return handle_prompt_list(registry),
-        PromptRoute::GetByName(name) => return handle_prompt_get(registry, &name),
-        PromptRoute::Delete(name) => return handle_prompt_delete(registry, &name),
+        PromptRoute::GetByName(name) => {
+            return handle_prompt_get(registry, &namespace_param(ctx.query), &name);
+        }
+        PromptRoute::Delete(name) => {
+            return handle_prompt_delete(registry, &namespace_param(ctx.query), &name);
+        }
         PromptRoute::SetEnabled(name, enabled) => {
-            return handle_prompt_set_enabled(registry, &name, enabled);
+            let namespace = namespace_param(ctx.query);
+            return handle_prompt_set_enabled(registry, &namespace, &name, enabled);
         }
         PromptRoute::NotFound => {}
     }

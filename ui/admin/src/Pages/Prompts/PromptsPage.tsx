@@ -32,9 +32,9 @@ export const PromptsPage: React.FC = () => {
   }, [updatePrompts]);
 
   const handleSetPromptEnabled = useCallback(
-    async (promptName: string, enabled: boolean) => {
+    async (promptName: string, namespace: string, enabled: boolean) => {
       try {
-        await setPromptEnabled(promptName, enabled);
+        await setPromptEnabled(promptName, namespace, enabled);
         await updatePrompts();
       } catch {
         setErrorMessage(`Failed to ${enabled ? 'enable' : 'disable'} prompt: ${promptName}`);

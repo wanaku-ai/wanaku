@@ -45,20 +45,20 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `GET` | `/api/v1/management/info` | Get the server name and version. |
 | `GET` | `/api/v1/management/statistics` | Get registry counts. |
 | `GET` | `/api/v1/tools` | List tools. |
-| `GET` | `/api/v1/tools/{name}` | Get a tool. |
-| `DELETE` | `/api/v1/tools/{name}` | Delete a tool. |
-| `PUT` | `/api/v1/tools/{name}/enable` | Enable a tool. |
-| `PUT` | `/api/v1/tools/{name}/disable` | Disable a tool. |
+| `GET` | `/api/v1/tools/{name}` | Get a tool. Use the optional `namespace` query parameter. |
+| `DELETE` | `/api/v1/tools/{name}` | Delete a tool. Use the optional `namespace` query parameter. |
+| `PUT` | `/api/v1/tools/{name}/enable` | Enable a tool. Use the optional `namespace` query parameter. |
+| `PUT` | `/api/v1/tools/{name}/disable` | Disable a tool. Use the optional `namespace` query parameter. |
 | `GET` | `/api/v1/resources` | List resources. |
-| `GET` | `/api/v1/resources/{name}` | Get a resource. |
-| `DELETE` | `/api/v1/resources/{name}` | Delete a resource. |
-| `PUT` | `/api/v1/resources/{name}/enable` | Enable a resource. |
-| `PUT` | `/api/v1/resources/{name}/disable` | Disable a resource. |
+| `GET` | `/api/v1/resources/{name}` | Get a resource. Use the optional `namespace` query parameter. |
+| `DELETE` | `/api/v1/resources/{name}` | Delete a resource. Use the optional `namespace` query parameter. |
+| `PUT` | `/api/v1/resources/{name}/enable` | Enable a resource. Use the optional `namespace` query parameter. |
+| `PUT` | `/api/v1/resources/{name}/disable` | Disable a resource. Use the optional `namespace` query parameter. |
 | `GET` | `/api/v1/prompts` | List prompts. |
-| `GET` | `/api/v1/prompts/{name}` | Get a prompt. |
-| `DELETE` | `/api/v1/prompts/{name}` | Delete a prompt. |
-| `PUT` | `/api/v1/prompts/{name}/enable` | Enable a prompt. |
-| `PUT` | `/api/v1/prompts/{name}/disable` | Disable a prompt. |
+| `GET` | `/api/v1/prompts/{name}` | Get a prompt. Use the optional `namespace` query parameter. |
+| `DELETE` | `/api/v1/prompts/{name}` | Delete a prompt. Use the optional `namespace` query parameter. |
+| `PUT` | `/api/v1/prompts/{name}/enable` | Enable a prompt. Use the optional `namespace` query parameter. |
+| `PUT` | `/api/v1/prompts/{name}/disable` | Disable a prompt. Use the optional `namespace` query parameter. |
 | `GET` | `/api/v1/namespaces` | List namespaces. |
 | `GET` | `/api/v1/namespaces/{name}` | Get a namespace. |
 | `POST` | `/api/v1/namespaces` | Create a namespace from the JSON request body. |
@@ -78,6 +78,20 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `GET` | `/api/v1/bindings/{id}` | Get a credential binding. |
 
 Wanaku discovers tools, resources, and prompts when you create or refresh a forward. The API does not have create routes for these entries. Tools and resources are read-only. You cannot edit them through the API.
+
+### Namespaces of Tools, Resources, and Prompts
+
+Wanaku identifies each tool, resource, and prompt by its namespace and its name. The same name can exist in more than one namespace. For example, two forwards in different namespaces can point to the same upstream. Each namespace then has its own copy of the entries.
+
+The routes that address one entry by name use the `namespace` query parameter. The default value is `default`. Thus, a request without the parameter addresses the `default` namespace, as in earlier versions:
+
+```bash
+curl http://localhost:8080/api/v1/tools/echo
+curl 'http://localhost:8080/api/v1/tools/echo?namespace=finance'
+curl -X PUT 'http://localhost:8080/api/v1/tools/echo/disable?namespace=finance'
+```
+
+If the entry does not exist in the namespace, the server returns `404`. The list routes return the entries of all namespaces. Each entry has a `namespace` field.
 
 ### Enable and Disable Tools, Resources, and Prompts
 
@@ -235,6 +249,17 @@ When discovery fails or is incomplete, Wanaku does not publish a partial list:
 - The background reconnect loop runs discovery again. When discovery succeeds, the forward becomes available again.
 
 Wanaku identifies the entries of a forward by `forwardId`, not by address. When two forwards use the same address, the discovery of one forward does not change the entries of the other forward.
+
+#### Name Conflicts in a Namespace
+
+A name is unique in one namespace. When a forward discovers an entry, and a different owner already has an entry with the same type and name in the same namespace, Wanaku does not replace the existing entry:
+
+- Wanaku keeps the existing entry and skips the discovered entry. The first owner keeps the name.
+- Wanaku writes a warning to the log.
+- The forward stays `available`. Its `statusMessage` names each skipped entry, for example `skipped 1 discovered entries because other owners already use the names in namespace default: tool echo`.
+- The response counts do not include the skipped entries.
+
+Entries in different namespaces do not conflict. When you delete a forward, Wanaku removes only the entries that the forward owns. The entries of other forwards stay. After the owner of a name is deleted, refresh the other forward to publish its entry with that name.
 
 The publication is not atomic for concurrent readers. A concurrent reader can see the new forward status before the new entries.
 
@@ -425,6 +450,8 @@ Wanaku enables file persistence by default. It stores registry snapshots in `$HO
 Set `WANAKU_PERSIST_BACKEND=none` to disable persistence. Set `WANAKU_PERSIST_PATH` to use a different directory.
 
 File persistence supports one writer. Do not run multiple replicas against the same persistence directory.
+
+The snapshot stores tools, resources, and prompts as lists. Each entry has its `namespace` field. Wanaku loads snapshots from earlier versions without changes. An entry without a namespace goes to the `default` namespace.
 
 ## Status Codes
 

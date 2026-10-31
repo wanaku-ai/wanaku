@@ -32,9 +32,9 @@ export const ToolsPage: React.FC = () => {
   }, [updateTools]);
 
   const handleSetToolEnabled = useCallback(
-    async (toolName: string, enabled: boolean) => {
+    async (toolName: string, namespace: string, enabled: boolean) => {
       try {
-        await setToolEnabled(toolName, enabled);
+        await setToolEnabled(toolName, namespace, enabled);
         await updateTools();
       } catch {
         setErrorMessage(`Failed to ${enabled ? 'enable' : 'disable'} tool: ${toolName}`);

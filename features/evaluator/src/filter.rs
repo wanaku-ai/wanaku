@@ -1276,9 +1276,10 @@ mod tests {
             let (result, event) = Box::pin(processor_result(&state, posture, &registry)).await;
             assert!(matches!(result, FilterAction::Continue));
             assert_eq!(event.reason_code, "evaluator_evaluated");
+            assert!(registry.get_tool("default", "tool").is_some());
             assert_eq!(
-                registry.get_tool("tool").unwrap().namespace.as_deref(),
-                Some(namespace)
+                registry.get_tool("prod", "tool").is_some(),
+                namespace == "prod"
             );
         }
     }

@@ -917,9 +917,8 @@ mod host {
     fn host_applies_registry_write_when_side_effects_allowed() {
         let registry = registry_with_tool();
         assert!(!run_side_effects(&registry, true));
-        assert_eq!(
-            registry.get_tool("tool").unwrap().namespace.as_deref(),
-            Some("prod"),
+        assert!(
+            registry.get_tool("prod", "tool").is_some(),
             "allowed host call must apply the registry write"
         );
     }

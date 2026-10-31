@@ -62,12 +62,14 @@ interface registry {
     /// List tools in a specific namespace.
     list-tools-in-namespace: func(namespace: string) -> list<tool-entry>;
 
-    /// Get a single tool by name. Returns none if not found.
+    /// Get a single tool by name. The `default` namespace comes first;
+    /// otherwise the tool from the first namespace in name order.
+    /// Returns none if not found.
     get-tool: func(name: string) -> option<tool-entry>;
 
-    /// Copy a tool into a target namespace. The tool keeps its name
-    /// but its namespace field is updated. Returns true if the tool
-    /// was found and copied, false if the source tool does not exist.
+    /// Copy a tool, found as `get-tool` finds it, into a target namespace.
+    /// The source tool stays. Returns false if the source tool does not
+    /// exist or another owner holds the name in the target namespace.
     copy-tool-to-namespace: func(tool-name: string, target-namespace: string) -> bool;
 }
 

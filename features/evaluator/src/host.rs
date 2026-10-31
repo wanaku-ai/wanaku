@@ -9,7 +9,7 @@ pub use wanaku::evaluator::types;
 
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::interactions::{InMemoryInteractionStore, InteractionStore};
-use wanaku_types::registry::ToolRegistry;
+use wanaku_types::registry::{DEFAULT_NAMESPACE, ToolRegistry};
 
 use std::sync::Arc;
 
@@ -31,6 +31,23 @@ pub struct HostState {
     pub wasi_table: wasmtime::component::ResourceTable,
 }
 
+impl HostState {
+    /// Find a tool by name for the name-only host functions.
+    ///
+    /// The registry keys tools by namespace and name. The `default` namespace
+    /// (the shared catalog) comes first. Otherwise the tool from the first
+    /// namespace in name order is returned.
+    fn find_tool(&self, name: &str) -> Option<wanaku_types::registry::ToolEntry> {
+        self.registry.get_tool(DEFAULT_NAMESPACE, name).or_else(|| {
+            self.registry
+                .list_tools()
+                .into_iter()
+                .filter(|tool| tool.name == name)
+                .min_by(|a, b| a.namespace.cmp(&b.namespace))
+        })
+    }
+}
+
 impl wanaku::evaluator::registry::Host for HostState {
     fn list_tools(&mut self) -> Vec<types::ToolEntry> {
         self.registry
@@ -49,7 +66,7 @@ impl wanaku::evaluator::registry::Host for HostState {
     }
 
     fn get_tool(&mut self, name: String) -> Option<types::ToolEntry> {
-        self.registry.get_tool(&name).map(tool_entry_to_wit)
+        self.find_tool(&name).map(tool_entry_to_wit)
     }
 
     fn copy_tool_to_namespace(&mut self, tool_name: String, target_namespace: String) -> bool {
@@ -57,12 +74,15 @@ impl wanaku::evaluator::registry::Host for HostState {
             self.side_effects_suppressed = true;
             return false;
         }
-        if let Some(mut tool) = self.registry.get_tool(&tool_name) {
-            tool.namespace = Some(target_namespace);
-            self.registry.register_tool(tool);
-            true
-        } else {
-            false
+        match self.find_tool(&tool_name) {
+            Some(mut tool) => {
+                tool.namespace = Some(target_namespace);
+                // Never replace a tool that another owner holds in the target.
+                self.registry
+                    .register_tools_unless_taken(vec![tool])
+                    .is_empty()
+            }
+            None => false,
         }
     }
 }
@@ -302,15 +322,50 @@ mod tests {
     }
 
     #[test]
-    fn copy_tool_to_namespace_moves_and_reports() {
+    fn copy_tool_to_namespace_copies_and_reports() {
         let mut state = host_state();
         state.registry.register_tool(sample_tool("alpha"));
         assert!(state.copy_tool_to_namespace("alpha".to_owned(), "prod".to_owned()));
         let copied = state
-            .get_tool("alpha".to_owned())
+            .registry
+            .get_tool("prod", "alpha")
             .expect("copied tool present");
         assert_eq!(copied.namespace.as_deref(), Some("prod"));
+        assert!(
+            state
+                .registry
+                .get_tool(DEFAULT_NAMESPACE, "alpha")
+                .is_some()
+        );
         assert!(!state.copy_tool_to_namespace("missing".to_owned(), "prod".to_owned()));
+    }
+
+    #[test]
+    fn get_tool_prefers_the_default_namespace() {
+        let mut state = host_state();
+        let mut scoped = sample_tool("alpha");
+        scoped.namespace = Some("prod".to_owned());
+        state.registry.register_tool(scoped);
+        let found = state.get_tool("alpha".to_owned()).expect("tool present");
+        assert_eq!(found.namespace.as_deref(), Some("prod"));
+
+        state.registry.register_tool(sample_tool("alpha"));
+        let found = state.get_tool("alpha".to_owned()).expect("tool present");
+        assert_eq!(found.namespace.as_deref(), Some(DEFAULT_NAMESPACE));
+    }
+
+    #[test]
+    fn copy_tool_to_namespace_keeps_a_tool_of_another_owner() {
+        let mut state = host_state();
+        state.registry.register_tool(sample_tool("alpha"));
+        let mut owned = sample_tool("alpha");
+        owned.namespace = Some("prod".to_owned());
+        owned.forward_id = Some("prod-forward".to_owned());
+        state.registry.register_tool(owned);
+
+        assert!(!state.copy_tool_to_namespace("alpha".to_owned(), "prod".to_owned()));
+        let kept = state.registry.get_tool("prod", "alpha").expect("tool");
+        assert_eq!(kept.forward_id.as_deref(), Some("prod-forward"));
     }
 
     #[test]
@@ -319,12 +374,15 @@ mod tests {
         state.allow_side_effects = false;
         state.registry.register_tool(sample_tool("alpha"));
         let shared_registry = state.registry.clone();
-        let original_namespace = shared_registry.get_tool("alpha").unwrap().namespace;
+        let original_namespace = shared_registry
+            .get_tool(DEFAULT_NAMESPACE, "alpha")
+            .unwrap()
+            .namespace;
         assert!(!state.copy_tool_to_namespace("alpha".to_owned(), "prod".to_owned()));
         assert!(state.side_effects_suppressed);
         assert_eq!(
             shared_registry
-                .get_tool("alpha")
+                .get_tool(DEFAULT_NAMESPACE, "alpha")
                 .expect("existing tool")
                 .namespace,
             original_namespace

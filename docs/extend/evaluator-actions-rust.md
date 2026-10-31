@@ -104,6 +104,9 @@ use bindings::wanaku::evaluator::{registry, response, validation, conversation, 
 
 // Registry
 let tools = registry::list_tools();
+// get_tool and copy_tool_to_namespace use the `default` namespace first.
+// The copy keeps the source tool. It returns false when another owner holds
+// the name in the target namespace.
 let tool = registry::get_tool("restart-database");
 let copied = registry::copy_tool_to_namespace("read-balance", "finance");
 

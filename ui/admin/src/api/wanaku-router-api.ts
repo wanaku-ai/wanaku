@@ -16,6 +16,15 @@ import type {
   ConfigurePluginRequest,
   CreateForwardParams,
   CredentialBinding,
+  DeletePromptParams,
+  DeleteResourceParams,
+  DeleteToolParams,
+  DisablePromptParams,
+  DisableResourceParams,
+  DisableToolParams,
+  EnablePromptParams,
+  EnableResourceParams,
+  EnableToolParams,
   ForwardEntry,
   GetActionPolicyRevision200,
   GetActiveActionPolicyRevision200,
@@ -25,6 +34,9 @@ import type {
   GetEvaluatorStatus200,
   GetEvaluatorStatusParams,
   GetPolicyReplay200,
+  GetPromptParams,
+  GetResourceParams,
+  GetToolParams,
   InstallPlugin200,
   InstallPluginRequest,
   ListActionPolicyRevisions200Item,
@@ -2633,15 +2645,28 @@ export type getPromptResponse =
   | getPromptResponseSuccess
   | getPromptResponseError;
 
-export const getGetPromptUrl = (name: string) => {
-  return `/api/v1/prompts/${name}`;
+export const getGetPromptUrl = (name: string, params?: GetPromptParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/prompts/${name}?${stringifiedParams}`
+    : `/api/v1/prompts/${name}`;
 };
 
 export const getPrompt = async (
   name: string,
+  params?: GetPromptParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<getPromptResponse> => {
-  return customFetch<getPromptResponse>(getGetPromptUrl(name), {
+  return customFetch<getPromptResponse>(getGetPromptUrl(name, params), {
     ...options,
     method: "GET",
   });
@@ -2668,15 +2693,31 @@ export type deletePromptResponse =
   | deletePromptResponseSuccess
   | deletePromptResponseError;
 
-export const getDeletePromptUrl = (name: string) => {
-  return `/api/v1/prompts/${name}`;
+export const getDeletePromptUrl = (
+  name: string,
+  params?: DeletePromptParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/prompts/${name}?${stringifiedParams}`
+    : `/api/v1/prompts/${name}`;
 };
 
 export const deletePrompt = async (
   name: string,
+  params?: DeletePromptParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<deletePromptResponse> => {
-  return customFetch<deletePromptResponse>(getDeletePromptUrl(name), {
+  return customFetch<deletePromptResponse>(getDeletePromptUrl(name, params), {
     ...options,
     method: "DELETE",
   });
@@ -2703,15 +2744,31 @@ export type disablePromptResponse =
   | disablePromptResponseSuccess
   | disablePromptResponseError;
 
-export const getDisablePromptUrl = (name: string) => {
-  return `/api/v1/prompts/${name}/disable`;
+export const getDisablePromptUrl = (
+  name: string,
+  params?: DisablePromptParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/prompts/${name}/disable?${stringifiedParams}`
+    : `/api/v1/prompts/${name}/disable`;
 };
 
 export const disablePrompt = async (
   name: string,
+  params?: DisablePromptParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<disablePromptResponse> => {
-  return customFetch<disablePromptResponse>(getDisablePromptUrl(name), {
+  return customFetch<disablePromptResponse>(getDisablePromptUrl(name, params), {
     ...options,
     method: "PUT",
   });
@@ -2738,15 +2795,31 @@ export type enablePromptResponse =
   | enablePromptResponseSuccess
   | enablePromptResponseError;
 
-export const getEnablePromptUrl = (name: string) => {
-  return `/api/v1/prompts/${name}/enable`;
+export const getEnablePromptUrl = (
+  name: string,
+  params?: EnablePromptParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/prompts/${name}/enable?${stringifiedParams}`
+    : `/api/v1/prompts/${name}/enable`;
 };
 
 export const enablePrompt = async (
   name: string,
+  params?: EnablePromptParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<enablePromptResponse> => {
-  return customFetch<enablePromptResponse>(getEnablePromptUrl(name), {
+  return customFetch<enablePromptResponse>(getEnablePromptUrl(name, params), {
     ...options,
     method: "PUT",
   });
@@ -2796,15 +2869,28 @@ export type getResourceResponse =
   | getResourceResponseSuccess
   | getResourceResponseError;
 
-export const getGetResourceUrl = (name: string) => {
-  return `/api/v1/resources/${name}`;
+export const getGetResourceUrl = (name: string, params?: GetResourceParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/resources/${name}?${stringifiedParams}`
+    : `/api/v1/resources/${name}`;
 };
 
 export const getResource = async (
   name: string,
+  params?: GetResourceParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<getResourceResponse> => {
-  return customFetch<getResourceResponse>(getGetResourceUrl(name), {
+  return customFetch<getResourceResponse>(getGetResourceUrl(name, params), {
     ...options,
     method: "GET",
   });
@@ -2831,18 +2917,37 @@ export type deleteResourceResponse =
   | deleteResourceResponseSuccess
   | deleteResourceResponseError;
 
-export const getDeleteResourceUrl = (name: string) => {
-  return `/api/v1/resources/${name}`;
+export const getDeleteResourceUrl = (
+  name: string,
+  params?: DeleteResourceParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/resources/${name}?${stringifiedParams}`
+    : `/api/v1/resources/${name}`;
 };
 
 export const deleteResource = async (
   name: string,
+  params?: DeleteResourceParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<deleteResourceResponse> => {
-  return customFetch<deleteResourceResponse>(getDeleteResourceUrl(name), {
-    ...options,
-    method: "DELETE",
-  });
+  return customFetch<deleteResourceResponse>(
+    getDeleteResourceUrl(name, params),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
 };
 
 export type disableResourceResponse200 = {
@@ -2866,18 +2971,37 @@ export type disableResourceResponse =
   | disableResourceResponseSuccess
   | disableResourceResponseError;
 
-export const getDisableResourceUrl = (name: string) => {
-  return `/api/v1/resources/${name}/disable`;
+export const getDisableResourceUrl = (
+  name: string,
+  params?: DisableResourceParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/resources/${name}/disable?${stringifiedParams}`
+    : `/api/v1/resources/${name}/disable`;
 };
 
 export const disableResource = async (
   name: string,
+  params?: DisableResourceParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<disableResourceResponse> => {
-  return customFetch<disableResourceResponse>(getDisableResourceUrl(name), {
-    ...options,
-    method: "PUT",
-  });
+  return customFetch<disableResourceResponse>(
+    getDisableResourceUrl(name, params),
+    {
+      ...options,
+      method: "PUT",
+    },
+  );
 };
 
 export type enableResourceResponse200 = {
@@ -2901,18 +3025,37 @@ export type enableResourceResponse =
   | enableResourceResponseSuccess
   | enableResourceResponseError;
 
-export const getEnableResourceUrl = (name: string) => {
-  return `/api/v1/resources/${name}/enable`;
+export const getEnableResourceUrl = (
+  name: string,
+  params?: EnableResourceParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/resources/${name}/enable?${stringifiedParams}`
+    : `/api/v1/resources/${name}/enable`;
 };
 
 export const enableResource = async (
   name: string,
+  params?: EnableResourceParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<enableResourceResponse> => {
-  return customFetch<enableResourceResponse>(getEnableResourceUrl(name), {
-    ...options,
-    method: "PUT",
-  });
+  return customFetch<enableResourceResponse>(
+    getEnableResourceUrl(name, params),
+    {
+      ...options,
+      method: "PUT",
+    },
+  );
 };
 
 export type listToolsResponse200 = {
@@ -2957,15 +3100,28 @@ export type getToolResponseError = getToolResponse404 & {
 
 export type getToolResponse = getToolResponseSuccess | getToolResponseError;
 
-export const getGetToolUrl = (name: string) => {
-  return `/api/v1/tools/${name}`;
+export const getGetToolUrl = (name: string, params?: GetToolParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/tools/${name}?${stringifiedParams}`
+    : `/api/v1/tools/${name}`;
 };
 
 export const getTool = async (
   name: string,
+  params?: GetToolParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<getToolResponse> => {
-  return customFetch<getToolResponse>(getGetToolUrl(name), {
+  return customFetch<getToolResponse>(getGetToolUrl(name, params), {
     ...options,
     method: "GET",
   });
@@ -2992,15 +3148,28 @@ export type deleteToolResponse =
   | deleteToolResponseSuccess
   | deleteToolResponseError;
 
-export const getDeleteToolUrl = (name: string) => {
-  return `/api/v1/tools/${name}`;
+export const getDeleteToolUrl = (name: string, params?: DeleteToolParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/tools/${name}?${stringifiedParams}`
+    : `/api/v1/tools/${name}`;
 };
 
 export const deleteTool = async (
   name: string,
+  params?: DeleteToolParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<deleteToolResponse> => {
-  return customFetch<deleteToolResponse>(getDeleteToolUrl(name), {
+  return customFetch<deleteToolResponse>(getDeleteToolUrl(name, params), {
     ...options,
     method: "DELETE",
   });
@@ -3027,15 +3196,28 @@ export type disableToolResponse =
   | disableToolResponseSuccess
   | disableToolResponseError;
 
-export const getDisableToolUrl = (name: string) => {
-  return `/api/v1/tools/${name}/disable`;
+export const getDisableToolUrl = (name: string, params?: DisableToolParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/tools/${name}/disable?${stringifiedParams}`
+    : `/api/v1/tools/${name}/disable`;
 };
 
 export const disableTool = async (
   name: string,
+  params?: DisableToolParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<disableToolResponse> => {
-  return customFetch<disableToolResponse>(getDisableToolUrl(name), {
+  return customFetch<disableToolResponse>(getDisableToolUrl(name, params), {
     ...options,
     method: "PUT",
   });
@@ -3062,15 +3244,28 @@ export type enableToolResponse =
   | enableToolResponseSuccess
   | enableToolResponseError;
 
-export const getEnableToolUrl = (name: string) => {
-  return `/api/v1/tools/${name}/enable`;
+export const getEnableToolUrl = (name: string, params?: EnableToolParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/tools/${name}/enable?${stringifiedParams}`
+    : `/api/v1/tools/${name}/enable`;
 };
 
 export const enableTool = async (
   name: string,
+  params?: EnableToolParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<enableToolResponse> => {
-  return customFetch<enableToolResponse>(getEnableToolUrl(name), {
+  return customFetch<enableToolResponse>(getEnableToolUrl(name, params), {
     ...options,
     method: "PUT",
   });
