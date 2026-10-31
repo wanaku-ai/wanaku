@@ -26,6 +26,10 @@ test.describe('A2A agents', () => {
     expect(await agents.getPageTitle()).toBe('A2A agents');
     await agents.clickAddAgent();
     expect(await agents.getModalHeading()).toBe('Add A2A agent');
+    await expect(agents.modal().locator('#agent-name')).toHaveAttribute('placeholder', 'e.g. travel-agent');
+    await expect(agents.modal().locator('#agent-address')).toHaveAttribute('placeholder', 'e.g. http://host:port/a2a');
+    await expect(agents.modal().locator('#agent-description')).toHaveAttribute('placeholder', /^e\.g\. /);
+    await expect(agents.modal().locator('#agent-card-address')).toHaveAttribute('placeholder', /agent-card\.json$/);
     await agents.cancelModal();
   });
 

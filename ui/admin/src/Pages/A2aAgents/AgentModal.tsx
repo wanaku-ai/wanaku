@@ -72,6 +72,7 @@ export function AgentModal({ agent, onClose, onSave }: AgentModalProps) {
         <TextInput
           id="agent-name"
           labelText="Name"
+          placeholder="e.g. travel-agent"
           helperText="Use up to 63 lowercase letters, numbers, or hyphens. Start and end with a letter or number."
           value={name}
           disabled={Boolean(agent) || saving}
@@ -86,6 +87,7 @@ export function AgentModal({ agent, onClose, onSave }: AgentModalProps) {
           <NamespaceSelect
             id="agent-namespace"
             labelText="Namespace"
+            helperText="Choose the namespace of this agent."
             value={namespace}
             onChange={(selected) => setNamespace(selected.name)}
             required
@@ -94,6 +96,7 @@ export function AgentModal({ agent, onClose, onSave }: AgentModalProps) {
         <TextInput
           id="agent-address"
           labelText="Upstream A2A endpoint"
+          placeholder="e.g. http://host:port/a2a"
           helperText="Enter the HTTP or HTTPS JSON-RPC endpoint of the upstream agent."
           value={address}
           disabled={saving}
@@ -105,6 +108,8 @@ export function AgentModal({ agent, onClose, onSave }: AgentModalProps) {
         <TextArea
           id="agent-description"
           labelText="Description"
+          placeholder="e.g. Books flights and hotels for business trips"
+          helperText="Describe what the agent does (optional)."
           value={description}
           disabled={saving}
           onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value)}
@@ -112,6 +117,7 @@ export function AgentModal({ agent, onClose, onSave }: AgentModalProps) {
         <TextInput
           id="agent-card-address"
           labelText="Agent card URL (optional)"
+          placeholder="e.g. http://host:port/.well-known/agent-card.json"
           helperText="Edit the suggested URL if needed. Leave empty to use the upstream agent's standard discovery path."
           value={cardAddress}
           disabled={saving}

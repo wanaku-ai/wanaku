@@ -17,6 +17,7 @@ import { ExternalLinks } from '../router/links.models';
 import { LogoGithub, Logout, Notification, Search } from '@carbon/icons-react';
 import wanakuLogo from '../assets/wanaku.svg';
 import { useNavigation } from '../contexts/NavigationContext';
+import { sectionItems } from '../navigation/section-items';
 
 interface HeaderComponentProps {
   onClickSideNavExpand: () => void;
@@ -34,7 +35,7 @@ const HeaderComponent = memo(function HeaderComponent({
 
   const ungroupedItems = items.filter((item) => !item.section);
   const sections = Array.from(
-    new Set(items.filter((item) => item.section).map((item) => item.section)),
+    new Set(items.flatMap((item) => (item.section ? [item.section] : []))),
   );
 
   return (
@@ -58,10 +59,9 @@ const HeaderComponent = memo(function HeaderComponent({
           </HeaderMenuItem>
         ))}
         {sections.map((section) => {
-          const sectionItems = items.filter((item) => item.section === section);
           return (
-            <HeaderMenu key={section} aria-label={section || ''} menuLinkName={section || ''}>
-              {sectionItems.map((item) => (
+            <HeaderMenu key={section} aria-label={section} menuLinkName={section}>
+              {sectionItems(items, section).map((item) => (
                 <HeaderMenuItem key={item.id} as={Link} to={item.route}>
                   {item.label}
                 </HeaderMenuItem>
