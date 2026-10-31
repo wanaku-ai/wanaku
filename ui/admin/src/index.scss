@@ -1,6 +1,19 @@
+@use "sass:string";
+
+// Use the wanaku.ai website typefaces instead of IBM Plex.
+// This must load before Carbon so that Carbon uses the new font families.
+@use "@carbon/type/scss/font-family" with (
+  $font-families: (
+    "sans": string.unquote("'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif"),
+    "sans-condensed": string.unquote("'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif"),
+    "serif": string.unquote("'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif"),
+    "mono": string.unquote("ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace"),
+  )
+);
+
 // Bring in all the styles for Carbon
 @use "@carbon/react" with (
-  $font-path: "@ibm/plex"
+  $css--font-face: false
 );
 
 @use "@carbon/react/scss/reset";
@@ -19,6 +32,78 @@
   :root {
     @include theme.theme(themes.$g100);
   }
+}
+
+// wanaku.ai website colors (VitePress default theme with the Wanaku brand blue).
+:root {
+  --cds-background: #f6f6f7;
+  --cds-layer-01: #ffffff;
+  --cds-layer-02: #f6f6f7;
+  --cds-layer-accent-01: #ebebef;
+  --cds-border-subtle-00: #e2e2e3;
+  --cds-border-subtle-01: #e2e2e3;
+  --cds-text-primary: #3c3c43;
+  --cds-text-secondary: #67676c;
+  --cds-interactive: #5b8def;
+  --cds-focus: #5b8def;
+  --cds-border-interactive: #5b8def;
+  --cds-background-brand: #3968d0;
+  --cds-link-primary: #3968d0;
+  --cds-link-primary-hover: #4a7ae0;
+  --cds-button-primary: #3968d0;
+  --cds-button-primary-hover: #4a7ae0;
+  --cds-button-primary-active: #5b8def;
+  --cds-button-secondary: #ebebef;
+  --cds-button-secondary-hover: #e4e4e9;
+  --cds-button-secondary-active: #dddde3;
+  --cds-button-tertiary: #3968d0;
+  --cds-button-tertiary-hover: #4a7ae0;
+  --cds-button-tertiary-active: #5b8def;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cds-background: #161618;
+    --cds-layer-01: #1b1b1f;
+    --cds-layer-02: #202127;
+    --cds-layer-accent-01: #2e2e32;
+    --cds-field-01: #202127;
+    --cds-border-subtle-00: #2e2e32;
+    --cds-border-subtle-01: #2e2e32;
+    --cds-text-primary: #dfdfd6;
+    --cds-text-secondary: #98989f;
+    --cds-link-primary: #5b8def;
+    --cds-link-primary-hover: #7ca4f3;
+    --cds-button-secondary: #32363f;
+    --cds-button-secondary-hover: #414853;
+    --cds-button-secondary-active: #515c67;
+    --cds-button-tertiary: #ffffff;
+  }
+}
+
+// Softer shapes, as on the website.
+.cds--btn {
+  border-radius: 8px;
+}
+
+// Light secondary buttons, like the website "alt" buttons.
+.cds--btn--secondary,
+.cds--btn--secondary:hover,
+.cds--btn--secondary:focus {
+  color: var(--cds-text-primary);
+}
+
+.cds--modal-footer .cds--btn {
+  border-radius: 0;
+}
+
+.cds--tile,
+.cds--modal-container {
+  border-radius: 12px;
+}
+
+.cds--modal-container {
+  overflow: hidden;
 }
 
 body {

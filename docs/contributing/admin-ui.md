@@ -18,7 +18,7 @@ The UI is not a separate deployment. The management API server provides the comp
 - **Component library:** IBM Carbon Design System (`@carbon/react`)
 - **Icons:** `@carbon/icons-react`
 - **Routing:** `react-router-dom` v7, hash-based (`createHashRouter`)
-- **Styling:** SCSS with Carbon theme tokens (`$g10` light / `$g100` dark)
+- **Styling:** SCSS with Carbon theme tokens (`$g10` light / `$g100` dark), adjusted to match the wanaku.ai website
 - **API client:** Orval 8, generated from the Rust server OpenAPI spec (`openapi.json`)
 - **Package manager:** Yarn (classic, not Berry)
 
@@ -430,6 +430,16 @@ The UI uses Carbon theme tokens, not hardcoded colors.
 - `$text-primary`, `$text-secondary` — text colors
 - `$interactive-01`, `$interactive-02` — buttons, links
 - `$border-subtle`, `$border-strong` — borders
+
+**Website look:**
+
+The UI follows the wanaku.ai website, not the default Carbon look. `src/index.scss` sets these overrides:
+
+- The Inter typeface replaces IBM Plex. The `@fontsource-variable/inter` package supplies the font files, so the UI does not load fonts from the internet.
+- The `--cds-*` custom properties set the website neutral colors and the brand blue (`#5b8def`).
+- Buttons, tiles, and modals have rounded corners.
+
+To change a color, change the `--cds-*` custom property in `src/index.scss`. Do not set colors in page styles.
 
 ## Router Configuration
 

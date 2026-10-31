@@ -25,6 +25,7 @@
     "@carbon/icons-react": "^11.76.0",
     "@carbon/layout": "^11.49.0",
     "@carbon/react": "^1.103.0",
+    "@fontsource-variable/inter": "^5",
     "highlight.js": "^11.12.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
