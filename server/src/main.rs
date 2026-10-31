@@ -113,19 +113,6 @@ fn setup_management_service(
             .unwrap_or_else(|e| fatal(&e));
     }
 
-    if let Some(admin_addr) = &config.admin.address {
-        praxis_protocol::http::pingora::health::add_admin_endpoints_to_pingora_server(
-            server.server_mut(),
-            admin_addr,
-            praxis_protocol::http::pingora::health::AdminEndpointOptions {
-                health_registry: Some(app.health_registry),
-                kv_registry: Some(app.kv_stores),
-                verbose: config.admin.verbose,
-                ..Default::default()
-            },
-        );
-    }
-
     let mgmt_addr = &wanaku_types::config::ENV.mgmt_listen;
     let mut mgmt_service = pingora_core::services::listening::Service::new(
         "wanaku-management".to_owned(),

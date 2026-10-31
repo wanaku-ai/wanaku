@@ -45,14 +45,14 @@ tokio = { version = "1", features = ["macros", "rt"] }
 tracing = "0.1.44"
 zeroize = "1.8"
 
-praxis-core = { version = "0.7.3", package = "praxis-proxy-core" }
-praxis-filter = { version = "0.7.3", package = "praxis-proxy-filter" }
-praxis-protocol = { version = "0.7.3", package = "praxis-proxy-protocol", features = ["admin-api"] }
-praxis-proxy = { version = "0.7.3", package = "praxis-proxy" }
-praxis-tls = { version = "0.7.3", package = "praxis-proxy-tls" }
+praxis-core = { version = "0.7.5", package = "praxis-proxy-core" }
+praxis-filter = { version = "0.7.5", package = "praxis-proxy-filter" }
+praxis-protocol = { version = "0.7.5", package = "praxis-proxy-protocol" }
+praxis-proxy = { version = "0.7.5", package = "praxis-proxy" }
+praxis-tls = { version = "0.7.5", package = "praxis-proxy-tls" }
 
-praxis-ai-apis = { version = "0.5.1", git = "https://github.com/praxis-proxy/ai", rev = "f1cf680d35e8ffea1aa3bfe966641404a97ff1b5", default-features = false }
-praxis-ai-filters = { version = "0.5.1", git = "https://github.com/praxis-proxy/ai", rev = "f1cf680d35e8ffea1aa3bfe966641404a97ff1b5", default-features = false }
+praxis-ai-apis = { version = "0.7.0", git = "https://github.com/praxis-proxy/ai", rev = "28f37a91663cc87b36e27e5497ac06f1be773cc2", default-features = false }
+praxis-ai-filters = { version = "0.7.0", git = "https://github.com/praxis-proxy/ai", rev = "28f37a91663cc87b36e27e5497ac06f1be773cc2", default-features = false }
 
 wanaku-infra = { version = "0.3.0", path = "infra" }
 wanaku-types = { version = "0.3.0", path = "types" }
