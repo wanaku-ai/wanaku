@@ -5,7 +5,7 @@ use crate::{
 };
 use bytes::Bytes;
 use std::{collections::HashMap, time::Instant};
-use wanaku_feature_action_policy::{PolicyDecision, PolicyEngine, PolicySnapshot, PolicyState};
+use wanaku_feature_action_policy::{PolicyDecision, PolicyEngine, PolicyState};
 use wanaku_feature_evaluator::{
     action::ActionResult,
     outcome::{Allowance, Outcome},
@@ -127,9 +127,8 @@ fn policy_decision(
     )
     .map_err(|_| "invalid_action_request")?;
     Ok(match &candidate.policy {
-        PolicySnapshot::Valid(p) => PolicyEngine::evaluate(PolicyState::Available(p), &context),
-        PolicySnapshot::Unconfigured => PolicyDecision::NoMatch,
-        PolicySnapshot::Invalid => PolicyDecision::PolicyInvalid,
+        Some(p) => PolicyEngine::evaluate(PolicyState::Available(p), &context),
+        None => PolicyDecision::NoMatch,
     })
 }
 fn target(view: &McpRequestView, method: &str) -> Result<Option<String>, &'static str> {

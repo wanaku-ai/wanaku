@@ -33,7 +33,7 @@ pub use schema::{
 };
 pub use validation::{CompiledPolicy, CompiledRule, ValidationError};
 
-pub use state::{ActionPolicyState, PolicySnapshot};
+pub use state::{ActionPolicyState, ActivePolicy, PolicySnapshot};
 
 /// Startup-configured action-policy feature.
 pub struct ActionPolicyFeature {
