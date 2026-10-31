@@ -7,7 +7,7 @@ description: "Test Wanaku policy and evaluator candidates before activation: val
 
 A policy update can block a working tool or permit an action that an operator intended to deny. Simulation gives reviewers decision evidence before activation. Use it to validate a candidate, test one MCP action, or compare a bounded action set with the active configuration.
 
-Simulation does not activate or persist a candidate as policy. It does not forward MCP requests, resolve credentials, change registry entries, or change namespace bindings. A successful report does not authorize activation. The activation API validates the configuration again.
+Simulation does not activate or persist a candidate as policy. It does not forward MCP requests, resolve credentials, or change registry entries. A successful report does not authorize activation. The activation API validates the configuration again.
 
 ## Admin UI
 

@@ -134,12 +134,11 @@ impl ActiveSnapshot {
 }
 
 /// Shared state for the evaluator engine.
-/// Holds the active configuration snapshot, namespace-to-conversation
-/// bindings, LLM connections, and the revision store.
+/// Holds the active configuration snapshot, LLM connections, and the
+/// revision store.
 #[derive(Clone)]
 pub struct EvaluatorState {
     active: Arc<RwLock<Arc<ActiveSnapshot>>>,
-    bindings: Arc<RwLock<HashMap<String, String>>>,
     connections: Arc<RwLock<HashMap<String, LlmConnection>>>,
     system_one_connections: Arc<RwLock<HashMap<String, SystemOneConnection>>>,
     opa_clients: Arc<RwLock<HashMap<String, wanaku_infra::opa::OpaClient>>>,
@@ -157,7 +156,6 @@ impl EvaluatorState {
     pub fn new() -> Self {
         Self {
             active: Arc::new(RwLock::new(Arc::new(ActiveSnapshot::default()))),
-            bindings: Arc::new(RwLock::new(HashMap::new())),
             connections: Arc::new(RwLock::new(HashMap::new())),
             system_one_connections: Arc::new(RwLock::new(HashMap::new())),
             opa_clients: Arc::new(RwLock::new(HashMap::new())),
@@ -603,8 +601,7 @@ impl EvaluatorState {
     }
 
     pub fn try_active_config(&self) -> Result<Arc<ActiveSnapshot>, &'static str> {
-        if self.bindings.is_poisoned()
-            || self.connections.is_poisoned()
+        if self.connections.is_poisoned()
             || self.system_one_connections.is_poisoned()
             || self.opa_clients.is_poisoned()
             || self.activation.is_poisoned()
@@ -676,42 +673,6 @@ impl EvaluatorState {
 
     pub fn get_compiled(&self, path: &Path) -> Option<Arc<CompiledEvaluator>> {
         self.active_config().get_compiled(path)
-    }
-
-    pub fn bind_namespace(&self, namespace: &str, conversation_id: &str) {
-        if let Ok(mut guard) = self.bindings.write() {
-            guard.insert(namespace.to_owned(), conversation_id.to_owned());
-            if let Some(ref store) = self.metrics {
-                store.set_namespace_bindings(guard.len() as u64);
-            }
-        }
-    }
-
-    /// Removes the binding of a namespace. Returns `false` when the namespace
-    /// had no binding.
-    pub fn unbind_namespace(&self, namespace: &str) -> bool {
-        let Ok(mut guard) = self.bindings.write() else {
-            return false;
-        };
-        let removed = guard.remove(namespace).is_some();
-        if let Some(ref store) = self.metrics {
-            store.set_namespace_bindings(guard.len() as u64);
-        }
-        removed
-    }
-
-    pub fn get_binding(&self, namespace: &str) -> Option<String> {
-        self.bindings
-            .read()
-            .ok()
-            .and_then(|guard| guard.get(namespace).cloned())
-    }
-
-    pub fn list_bindings(&self) -> HashMap<String, String> {
-        self.bindings
-            .read()
-            .map(|guard| guard.clone())
-            .unwrap_or_default()
     }
 
     /// Validate the selected engine for every evaluator.
@@ -1238,32 +1199,6 @@ mod tests {
             ])
             .unwrap();
         assert_eq!(state.list_llm_connections(), vec!["alpha", "mid", "zeta"]);
-    }
-
-    // ---- namespace bindings ----
-
-    #[test]
-    fn bind_get_unbind_namespace() {
-        let state = EvaluatorState::new();
-        assert!(state.get_binding("prod").is_none());
-
-        state.bind_namespace("prod", "wk-123");
-        assert_eq!(state.get_binding("prod").as_deref(), Some("wk-123"));
-
-        let all = state.list_bindings();
-        assert_eq!(all.get("prod").map(String::as_str), Some("wk-123"));
-
-        assert!(state.unbind_namespace("prod"));
-        assert!(state.get_binding("prod").is_none());
-    }
-
-    #[test]
-    fn bind_namespace_overwrites_existing() {
-        let state = EvaluatorState::new();
-        state.bind_namespace("prod", "wk-1");
-        state.bind_namespace("prod", "wk-2");
-        assert_eq!(state.get_binding("prod").as_deref(), Some("wk-2"));
-        assert_eq!(state.list_bindings().len(), 1);
     }
 
     // ---- validate_llm_connections ----

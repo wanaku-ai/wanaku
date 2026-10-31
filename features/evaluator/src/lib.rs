@@ -26,10 +26,9 @@ use wanaku_types::feature::{Feature, HttpContext};
 
 use crate::config::EvaluatorsConfig;
 use crate::routes::{
-    EvaluatorRoute, handle_activate_revision, handle_active_revision, handle_bind_namespace,
-    handle_get_revision, handle_list_bindings, handle_list_evaluators, handle_list_llm_connections,
-    handle_list_revisions, handle_unbind_namespace, handle_update_evaluators,
-    resolve_evaluator_route,
+    EvaluatorRoute, handle_activate_revision, handle_active_revision, handle_get_revision,
+    handle_list_evaluators, handle_list_llm_connections, handle_list_revisions,
+    handle_update_evaluators, resolve_evaluator_route,
 };
 use crate::state::EvaluatorState;
 
@@ -207,11 +206,6 @@ impl Feature for EvaluatorFeature {
             EvaluatorRoute::ActivateRevision(id) => {
                 handle_activate_revision(&self.state, id, ctx.body.unwrap_or(""))
             }
-            EvaluatorRoute::ListBindings => handle_list_bindings(&self.state),
-            EvaluatorRoute::BindNamespace(ns) => {
-                handle_bind_namespace(&self.state, &ns, ctx.body.unwrap_or(""))
-            }
-            EvaluatorRoute::UnbindNamespace(ns) => handle_unbind_namespace(&self.state, &ns),
             EvaluatorRoute::NotFound => return None,
         };
         if let Some(operation) = administrative_operation {
@@ -271,8 +265,6 @@ const fn administrative_operation(route: &EvaluatorRoute) -> Option<&'static str
     match route {
         EvaluatorRoute::UpdateEvaluators => Some("evaluator.update"),
         EvaluatorRoute::ActivateRevision(_) => Some("evaluator.revision.activate"),
-        EvaluatorRoute::BindNamespace(_) => Some("evaluator.namespace.bind"),
-        EvaluatorRoute::UnbindNamespace(_) => Some("evaluator.namespace.unbind"),
         _ => None,
     }
 }

@@ -326,9 +326,6 @@ There is no create, update, or delete route for bindings in this release. Bindin
 | `GET` | `/api/v1/evaluators/status` | Get runtime readiness, revision, safe reason code, and effective posture. The optional `namespace` query parameter defaults to `default`. |
 | `PUT` | `/api/v1/evaluators` | Replace evaluator definitions. The body uses the `evaluators` configuration schema. |
 | `GET` | `/api/v1/evaluators/llm-connections` | List configured LLM connection names only, never the model, URL, or credential. Connections are config-only. Set them in `wanaku.yaml`, not through this API. |
-| `GET` | `/api/v1/evaluators/namespaces` | List namespace-to-conversation bindings. |
-| `PUT` | `/api/v1/evaluators/namespaces/{namespace}` | Bind a namespace to a conversation. |
-| `DELETE` | `/api/v1/evaluators/namespaces/{namespace}` | Remove a namespace binding. |
 | `GET` | `/api/v1/evaluators/revisions` | List evaluator revision metadata. |
 | `GET` | `/api/v1/evaluators/revisions/active` | Get the active evaluator revision. |
 | `GET` | `/api/v1/evaluators/revisions/{id}` | Get one evaluator revision. |
@@ -337,16 +334,6 @@ There is no create, update, or delete route for bindings in this release. Bindin
 The `PUT /api/v1/evaluators` body is `{"evaluators": [...], "expected_revision": N}`. `expected_revision` is optional. Unknown keys return `400`. A revision mismatch returns `409`. A configuration that does not validate or compile returns `422`, and the active revision does not change. See [Update Evaluators](../govern/evaluators.md#update-evaluators-hot-reload) for an example.
 
 The `activate` body is optional. To prevent a lost update, send `{"expected_revision": N}`. A mismatch returns `409`.
-
-Bind a namespace to a conversation:
-
-```bash
-curl -X PUT http://localhost:8080/api/v1/evaluators/namespaces/finance \
-  -H 'Content-Type: application/json' \
-  -d '{"conversation_id": "conversation-123"}'
-```
-
-`DELETE /api/v1/evaluators/namespaces/{namespace}` returns `404` when the namespace has no binding.
 
 See [Evaluator Engine](../govern/evaluators.md) for the evaluator configuration schema.
 

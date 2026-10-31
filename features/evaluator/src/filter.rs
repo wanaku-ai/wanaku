@@ -135,8 +135,7 @@ impl EvaluatorFilter {
         let arguments = string_arguments(&raw_arguments);
         let conversation_id = arguments
             .get(wanaku_types::correlation::REQUEST_ID_ARG)
-            .cloned()
-            .or_else(|| state.get_binding(&namespace));
+            .cloned();
         let history = conversation_id
             .as_ref()
             .map(|id| interactions.get_by_conversation_id(id))

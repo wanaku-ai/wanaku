@@ -123,7 +123,7 @@ In the container image, the bundled files are in `/data/evaluators/`. If you mou
 
 ## Manage evaluators at runtime
 
-Hot-reload evaluators and manage namespace bindings without restarting the server.
+Hot-reload evaluators without restarting the server.
 
 ### List Evaluators
 
@@ -245,40 +245,6 @@ so this endpoint has nothing about your LLM backend worth leaking. There is no
 endpoint to create, update, or delete a connection; edit `wanaku.yaml` and restart
 the server.
 
-### List Namespace Bindings
-
-```bash
-curl http://localhost:8080/api/v1/evaluators/namespaces
-```
-
-**Response:**
-
-```json
-{
-  "data": {
-    "finance-team": "conv-finance-2024",
-    "engineering": "conv-eng-0815"
-  },
-  "error": null
-}
-```
-
-### Bind Namespace to Conversation
-
-```bash
-curl -X PUT http://localhost:8080/api/v1/evaluators/namespaces/finance-team \
-  -H "Content-Type: application/json" \
-  -d '{"conversation_id": "conv-finance-2024"}'
-```
-
-**Use case:** You want the evaluator to retrieve conversation history for a specific namespace. When a request arrives for the `finance-team` namespace, the evaluator looks up the binding, resolves the conversation ID, and fetches the matching interaction history to include in the LLM prompt.
-
-### Unbind Namespace
-
-```bash
-curl -X DELETE http://localhost:8080/api/v1/evaluators/namespaces/finance-team
-```
-
 ## How It Works (Internals)
 
 You do not need these internal details to use the engine. Use them to diagnose execution problems.
@@ -380,18 +346,6 @@ trigger:
 
 This evaluator only fires for requests to `/production/mcp`. The WASM action can use `filterTools()` to curate the tool catalog for that namespace.
 
-### Namespace-Conversation Binding
-
-Bind a namespace to a conversation ID so the evaluator can retrieve relevant interaction history:
-
-```bash
-curl -X PUT http://localhost:8080/api/v1/evaluators/namespaces/finance-team \
-  -H "Content-Type: application/json" \
-  -d '{"conversation_id": "conv-finance-2024"}'
-```
-
-When a request arrives for the `finance-team` namespace, the evaluator resolves the conversation ID from the binding and includes the matching interaction history in the LLM prompt. This gives the LLM context about what the user has been doing in this session.
-
 ### Metadata Propagation
 
 Set metadata in your WASM action:
@@ -421,7 +375,6 @@ Downstream filters can read this metadata and make decisions (e.g., extra loggin
 - **WASM is sandboxed** — actions cannot access the filesystem, network, or system calls beyond what the WIT interface exposes.
 - **LLM prompts can be attacked** — sanitize user input, use system prompts that are robust to injection, and fail open if unsure.
 - **WASM actions are deterministic** — the same input always produces the same output. Use this property to test your logic thoroughly.
-- **Namespace bindings are ephemeral** — they live in memory, not persisted. If the server restarts, you lose bindings.
 - **Evaluator revisions persist when persistence is enabled** — revision history and the active revision survive a restart. The server writes `evaluator-revisions.json` after every change and restores the active revision at startup. See [Evaluator Revision Persistence](../operate/persistence.md#evaluator-revision-persistence). When persistence is disabled, revisions live only in memory and the server rebuilds the active revision from `wanaku.yaml` on each restart.
 - **OPA connection credentials never transit the management API.** The `url`, `token`, and `ca_cert` fields live only in `opa_connections` in `wanaku.yaml`. The OPA input document does not contain headers or credentials.
 - **LLM credentials never transit the management API.** `model`, `url`, and `api_key` live only in `llm_connections` in `wanaku.yaml`, loaded once at startup. Evaluators refer to a connection by name. No route can set, update, or read an `api_key`, not on evaluator create or update, and not in evaluator revision history. To rotate a credential, edit `wanaku.yaml` and restart the server.

@@ -153,7 +153,6 @@ struct PipelineCounters {
 struct GaugeValues {
     evaluators_loaded: AtomicGauge,
     wasm_compiled: AtomicGauge,
-    namespace_bindings: AtomicGauge,
 }
 
 // ---------------------------------------------------------------------------
@@ -339,10 +338,6 @@ impl MetricsStore {
         self.0.gauges.wasm_compiled.set(count);
     }
 
-    pub fn set_namespace_bindings(&self, count: u64) {
-        self.0.gauges.namespace_bindings.set(count);
-    }
-
     #[must_use]
     #[expect(
         clippy::too_many_lines,
@@ -432,7 +427,6 @@ impl MetricsStore {
         let gauges = GaugeSnapshot {
             evaluators_loaded: g.evaluators_loaded.get(),
             wasm_compiled: g.wasm_compiled.get(),
-            namespace_bindings: g.namespace_bindings.get(),
         };
 
         MetricsSnapshot {
@@ -587,7 +581,6 @@ pub struct PipelineSnapshot {
 pub struct GaugeSnapshot {
     pub evaluators_loaded: u64,
     pub wasm_compiled: u64,
-    pub namespace_bindings: u64,
 }
 
 #[cfg(test)]
@@ -722,12 +715,10 @@ mod tests {
         let store = MetricsStore::new();
         store.set_evaluators_loaded(3);
         store.set_wasm_compiled(2);
-        store.set_namespace_bindings(1);
 
         let snap = store.snapshot();
         assert_eq!(snap.gauges.evaluators_loaded, 3);
         assert_eq!(snap.gauges.wasm_compiled, 2);
-        assert_eq!(snap.gauges.namespace_bindings, 1);
     }
 
     #[test]

@@ -1071,114 +1071,6 @@
         }
       }
     },
-    "/api/v1/evaluators/namespaces": {
-      "get": {
-        "tags": [
-          "Evaluators"
-        ],
-        "operationId": "list_evaluator_bindings",
-        "responses": {
-          "200": {
-            "description": "Namespace to evaluator bindings",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WanakuResponse_HashMap_String_String"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/evaluators/namespaces/{namespace}": {
-      "put": {
-        "tags": [
-          "Evaluators"
-        ],
-        "operationId": "bind_evaluator_namespace",
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BindNamespaceRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Namespace bound to evaluator",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WanakuResponse_NamespaceBinding"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid namespace binding",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ManagementErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Evaluators"
-        ],
-        "operationId": "unbind_evaluator_namespace",
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Namespace unbound from evaluator",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WanakuResponse_UnbindNamespaceResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Namespace has no evaluator binding",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ManagementErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/evaluators/revisions": {
       "get": {
         "tags": [
@@ -3392,17 +3284,6 @@
           }
         }
       },
-      "BindNamespaceRequest": {
-        "type": "object",
-        "required": [
-          "conversation_id"
-        ],
-        "properties": {
-          "conversation_id": {
-            "type": "string"
-          }
-        }
-      },
       "BindingRestrictions": {
         "type": "object",
         "description": "Optional restrictions that further constrain where a binding may be used.\nAn empty vector means \"no restriction on this dimension\".",
@@ -4053,16 +3934,10 @@
         "type": "object",
         "required": [
           "evaluators_loaded",
-          "wasm_compiled",
-          "namespace_bindings"
+          "wasm_compiled"
         ],
         "properties": {
           "evaluators_loaded": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "namespace_bindings": {
             "type": "integer",
             "format": "int64",
             "minimum": 0
@@ -4412,21 +4287,6 @@
           },
           "pipeline": {
             "$ref": "#/components/schemas/PipelineSnapshot"
-          }
-        }
-      },
-      "NamespaceBinding": {
-        "type": "object",
-        "required": [
-          "namespace",
-          "conversation_id"
-        ],
-        "properties": {
-          "conversation_id": {
-            "type": "string"
-          },
-          "namespace": {
-            "type": "string"
           }
         }
       },
@@ -5958,17 +5818,6 @@
         },
         "additionalProperties": false
       },
-      "UnbindNamespaceResponse": {
-        "type": "object",
-        "required": [
-          "unbound"
-        ],
-        "properties": {
-          "unbound": {
-            "type": "string"
-          }
-        }
-      },
       "UpdateActionPolicyRequest": {
         "type": "object",
         "required": [
@@ -6464,26 +6313,6 @@
           }
         }
       },
-      "WanakuResponse_HashMap_String_String": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "error": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
       "WanakuResponse_InstallPluginResponse": {
         "type": "object",
         "properties": {
@@ -6495,32 +6324,6 @@
             "properties": {
               "manifest": {
                 "$ref": "#/components/schemas/PluginManifest"
-              }
-            }
-          },
-          "error": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "WanakuResponse_NamespaceBinding": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "object",
-            "required": [
-              "namespace",
-              "conversation_id"
-            ],
-            "properties": {
-              "conversation_id": {
-                "type": "string"
-              },
-              "namespace": {
-                "type": "string"
               }
             }
           },
@@ -6782,28 +6585,6 @@
                   "string",
                   "null"
                 ]
-              }
-            }
-          },
-          "error": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "WanakuResponse_UnbindNamespaceResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "object",
-            "required": [
-              "unbound"
-            ],
-            "properties": {
-              "unbound": {
-                "type": "string"
               }
             }
           },

@@ -28,7 +28,6 @@ struct PreparedEvaluator {
 
 pub struct PreparedEvaluators {
     evaluators: Vec<PreparedEvaluator>,
-    bindings: HashMap<String, String>,
     limits: SimulationLimits,
 }
 
@@ -133,7 +132,6 @@ fn reuse_active(
         .collect::<Option<Vec<_>>>()?;
     Some(PreparedEvaluators {
         evaluators,
-        bindings: state.list_bindings(),
         limits: SimulationLimits::default(),
     })
 }
@@ -166,7 +164,6 @@ pub fn prepare(
     if issues.is_empty() {
         Ok(PreparedEvaluators {
             evaluators,
-            bindings: state.list_bindings(),
             limits: SimulationLimits::default(),
         })
     } else {
@@ -233,18 +230,17 @@ impl PreparedEvaluators {
                 Outcome::Skipped(Skip::ExternalEngineNotSimulated),
             );
         }
-        self.run_processor(evaluator, input, registry, limits)
+        Self::run_processor(evaluator, input, registry, limits)
     }
 
     fn run_processor(
-        &self,
         evaluator: &PreparedEvaluator,
         input: &SimulationInput<'_>,
         registry: &InMemoryRegistry,
         limits: SimulationLimits,
     ) -> SimulationOutcome {
         let definition = Some(&evaluator.definition);
-        let Some(context) = self.processor_context(input) else {
+        let Some(context) = Self::processor_context(input) else {
             return SimulationOutcome::new(
                 definition,
                 Outcome::Failure(EvaluatorFailure::Engine(EvaluationError::Internal)),
@@ -269,7 +265,6 @@ impl PreparedEvaluators {
     }
 
     fn processor_context(
-        &self,
         input: &SimulationInput<'_>,
     ) -> Option<crate::wit_types::EvaluationContext> {
         let mcp = McpContext::new(input.method, input.target, input.arguments, &[], &[]);
@@ -286,8 +281,7 @@ impl PreparedEvaluators {
             conversation_id: input
                 .arguments
                 .get(wanaku_types::correlation::REQUEST_ID_ARG)
-                .cloned()
-                .or_else(|| self.bindings.get(input.namespace).cloned()),
+                .cloned(),
         })
     }
 }
@@ -457,7 +451,6 @@ mod tests {
     #[test]
     fn resource_passthrough_proposes_pass_without_changing_state() {
         let state = EvaluatorState::new();
-        state.bind_namespace("default", "conversation");
         let mut def = definition("resources/read");
         def.processor.path =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pass.wat");
@@ -474,10 +467,6 @@ mod tests {
         );
         assert_eq!(result.reason_code(), "evaluator_simulated");
         assert!(matches!(result.outcome.action(), Some(ActionResult::Pass)));
-        assert_eq!(
-            state.get_binding("default").as_deref(),
-            Some("conversation")
-        );
         assert!(state.list_evaluators().is_empty());
         assert_eq!(state.active_config().revision_id, None);
     }

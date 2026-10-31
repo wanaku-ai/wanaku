@@ -271,10 +271,8 @@ export const DashboardPage: React.FC = () => {
                     <span className="card-value">{metrics.gauges.evaluators_loaded}</span>
                     <span className="card-sep">/</span>
                     <span className="card-value">{metrics.gauges.wasm_compiled}</span>
-                    <span className="card-sep">/</span>
-                    <span className="card-value">{metrics.gauges.namespace_bindings}</span>
                   </div>
-                  <div className="card-label">Evaluators / WASM / Namespaces</div>
+                  <div className="card-label">Evaluators / WASM</div>
                 </Tile>
               )}
             </div>
