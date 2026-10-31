@@ -194,9 +194,9 @@ This listing shows the main maps. Refer to `infra/src/registry.rs` for the compl
 ```rust
 pub struct InMemoryRegistry {
     agents: Arc<DashMap<String, RegisteredAgent>>,
-    tools: Arc<DashMap<String, ToolEntry>>,
-    resources: Arc<DashMap<String, ResourceEntry>>,
-    prompts: Arc<DashMap<String, PromptEntry>>,
+    tools: Arc<DashMap<(String, String), ToolEntry>>,         // (namespace, name)
+    resources: Arc<DashMap<(String, String), ResourceEntry>>, // (namespace, name)
+    prompts: Arc<DashMap<(String, String), PromptEntry>>,     // (namespace, name)
     forwards: Arc<DashMap<String, ForwardEntry>>,
     namespaces: Arc<DashMap<String, NamespaceEntry>>,
     persistence: Option<Arc<dyn PersistenceBackend>>,
@@ -206,17 +206,16 @@ pub struct InMemoryRegistry {
 
 **Namespace isolation:**
 
-Tools, resources, and prompts all have a `namespace` field (defaults to `"default"`). When a filter queries the registry, it filters by namespace:
+Tools, resources, and prompts all have a `namespace` field. The default value is `"default"`. The registry keys these entries by namespace and name. The same name can exist in more than one namespace, so the same upstream can be exposed in more than one namespace. The MCP filters read the `wanaku.namespace` metadata and use the namespace-scoped registry methods:
 
 ```rust
-let tools = registry.list_tools()?;
-let tools_in_namespace: Vec<_> = tools
-    .into_iter()
-    .filter(|t| t.namespace == namespace)
-    .collect();
+let tools = registry.list_tools_in_namespace(namespace);
+let tool = registry.get_tool_in_namespace(namespace, &tool_name);
 ```
 
-This is how `/finance/mcp` only sees tools registered in the `"finance"` namespace.
+These methods return only enabled entries. This is how `/finance/mcp` only sees tools registered in the `"finance"` namespace.
+
+A name is unique in one namespace. Forward discovery publishes entries with `register_*_unless_taken`. This method does not replace an entry that a different owner (a different `forwardId`) holds in the same namespace. The discovery skips that entry and records it in the forward `statusMessage`. See [Name Conflicts in a Namespace](../reference/management-api.md#name-conflicts-in-a-namespace).
 
 **Persistence:**
 
@@ -258,7 +257,7 @@ Audit code has two owners: a contract in `wanaku-types` and a runtime in `wanaku
 
 All tool execution in Wanaku happens via MCP forwarding. When a tool call arrives (`tools/call`), the tool_call filter:
 
-1. Looks up the tool in the registry by name
+1. Looks up the tool in the registry by the request namespace and the tool name
 2. Resolves the upstream address from the tool `forwardId` provenance
 3. Maps allowed client headers to arguments, then injects brokered credentials into the outbound headers
 4. Calls `McpInvoker::call_tool(address, name, arguments, headers)` to forward the request to the upstream MCP server
@@ -293,7 +292,7 @@ The management API:
 
 1. Calls `mcp_client::discover_forward(address, headers)` to list tools, resources, resource templates, and prompts. This step does not change the registry.
 2. Converts the discovered items into registry entries with `type: "mcp-forward"` and a `forwardId` that identifies the forward
-3. Publishes the forward and its entries through one function, `apply_forward_update` (`server/src/management/handlers.rs`)
+3. Publishes the forward and its entries through one function, `apply_forward_update` (`server/src/management/handlers.rs`). It removes the entries that the forward owns (by `forwardId`) and adds the new entries. It skips a name that a different owner already holds in the same namespace.
 
 Startup, forward refresh, and the background reconnect loop use the same two steps.
 

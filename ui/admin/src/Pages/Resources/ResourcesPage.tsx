@@ -15,9 +15,9 @@ export const ResourcesPage: React.FC = () => {
   }, []);
 
   const handleSetResourceEnabled = useCallback(
-    async (resourceName: string, enabled: boolean) => {
+    async (resourceName: string, namespace: string, enabled: boolean) => {
       try {
-        await setResourceEnabled(resourceName, enabled);
+        await setResourceEnabled(resourceName, namespace, enabled);
       } catch (error) {
         setErrorMessage(
           `Error ${enabled ? 'enabling' : 'disabling'} resource: ${getErrorMessage(error)}`,

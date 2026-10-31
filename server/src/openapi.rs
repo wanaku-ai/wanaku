@@ -127,7 +127,8 @@ const fn delete_agent() {}
 const fn list_tools() {}
 
 #[utoipa::path(get, path = "/api/v1/tools/{name}", tag = "Tools",
-    params(("name" = String, Path, description = "Tool name")),
+    params(("name" = String, Path, description = "Tool name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the tool. Default: `default`")),
     responses(
         (status = 200, description = "Tool found", body = ToolEntry),
         (status = 404, description = "Tool not found"),
@@ -136,7 +137,8 @@ const fn list_tools() {}
 const fn get_tool() {}
 
 #[utoipa::path(delete, path = "/api/v1/tools/{name}", tag = "Tools",
-    params(("name" = String, Path, description = "Tool name")),
+    params(("name" = String, Path, description = "Tool name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the tool. Default: `default`")),
     responses(
         (status = 200, description = "Tool removed"),
         (status = 404, description = "Tool not found"),
@@ -145,7 +147,8 @@ const fn get_tool() {}
 const fn delete_tool() {}
 
 #[utoipa::path(put, path = "/api/v1/tools/{name}/enable", tag = "Tools",
-    params(("name" = String, Path, description = "Tool name")),
+    params(("name" = String, Path, description = "Tool name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the tool. Default: `default`")),
     responses(
         (status = 200, description = "Tool enabled. MCP clients can list and use it.", body = ToolEntry),
         (status = 404, description = "Tool not found"),
@@ -154,7 +157,8 @@ const fn delete_tool() {}
 const fn enable_tool() {}
 
 #[utoipa::path(put, path = "/api/v1/tools/{name}/disable", tag = "Tools",
-    params(("name" = String, Path, description = "Tool name")),
+    params(("name" = String, Path, description = "Tool name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the tool. Default: `default`")),
     responses(
         (status = 200, description = "Tool disabled. MCP clients cannot list or use it.", body = ToolEntry),
         (status = 404, description = "Tool not found"),
@@ -170,7 +174,8 @@ const fn disable_tool() {}
 const fn list_resources() {}
 
 #[utoipa::path(get, path = "/api/v1/resources/{name}", tag = "Resources",
-    params(("name" = String, Path, description = "Resource name")),
+    params(("name" = String, Path, description = "Resource name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the resource. Default: `default`")),
     responses(
         (status = 200, description = "Resource found", body = ResourceEntry),
         (status = 404, description = "Resource not found"),
@@ -179,7 +184,8 @@ const fn list_resources() {}
 const fn get_resource() {}
 
 #[utoipa::path(delete, path = "/api/v1/resources/{name}", tag = "Resources",
-    params(("name" = String, Path, description = "Resource name")),
+    params(("name" = String, Path, description = "Resource name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the resource. Default: `default`")),
     responses(
         (status = 200, description = "Resource removed"),
         (status = 404, description = "Resource not found"),
@@ -188,7 +194,8 @@ const fn get_resource() {}
 const fn delete_resource() {}
 
 #[utoipa::path(put, path = "/api/v1/resources/{name}/enable", tag = "Resources",
-    params(("name" = String, Path, description = "Resource name")),
+    params(("name" = String, Path, description = "Resource name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the resource. Default: `default`")),
     responses(
         (status = 200, description = "Resource enabled. MCP clients can list and use it.", body = ResourceEntry),
         (status = 404, description = "Resource not found"),
@@ -197,7 +204,8 @@ const fn delete_resource() {}
 const fn enable_resource() {}
 
 #[utoipa::path(put, path = "/api/v1/resources/{name}/disable", tag = "Resources",
-    params(("name" = String, Path, description = "Resource name")),
+    params(("name" = String, Path, description = "Resource name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the resource. Default: `default`")),
     responses(
         (status = 200, description = "Resource disabled. MCP clients cannot list or use it.", body = ResourceEntry),
         (status = 404, description = "Resource not found"),
@@ -213,7 +221,8 @@ const fn disable_resource() {}
 const fn list_prompts() {}
 
 #[utoipa::path(get, path = "/api/v1/prompts/{name}", tag = "Prompts",
-    params(("name" = String, Path, description = "Prompt name")),
+    params(("name" = String, Path, description = "Prompt name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the prompt. Default: `default`")),
     responses(
         (status = 200, description = "Prompt found", body = PromptEntry),
         (status = 404, description = "Prompt not found"),
@@ -222,7 +231,8 @@ const fn list_prompts() {}
 const fn get_prompt() {}
 
 #[utoipa::path(delete, path = "/api/v1/prompts/{name}", tag = "Prompts",
-    params(("name" = String, Path, description = "Prompt name")),
+    params(("name" = String, Path, description = "Prompt name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the prompt. Default: `default`")),
     responses(
         (status = 200, description = "Prompt removed"),
         (status = 404, description = "Prompt not found"),
@@ -231,7 +241,8 @@ const fn get_prompt() {}
 const fn delete_prompt() {}
 
 #[utoipa::path(put, path = "/api/v1/prompts/{name}/enable", tag = "Prompts",
-    params(("name" = String, Path, description = "Prompt name")),
+    params(("name" = String, Path, description = "Prompt name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the prompt. Default: `default`")),
     responses(
         (status = 200, description = "Prompt enabled. MCP clients can list and use it.", body = PromptEntry),
         (status = 404, description = "Prompt not found"),
@@ -240,7 +251,8 @@ const fn delete_prompt() {}
 const fn enable_prompt() {}
 
 #[utoipa::path(put, path = "/api/v1/prompts/{name}/disable", tag = "Prompts",
-    params(("name" = String, Path, description = "Prompt name")),
+    params(("name" = String, Path, description = "Prompt name"),
+        ("namespace" = Option<String>, Query, description = "Namespace of the prompt. Default: `default`")),
     responses(
         (status = 200, description = "Prompt disabled. MCP clients cannot list or use it.", body = PromptEntry),
         (status = 404, description = "Prompt not found"),
@@ -1288,6 +1300,28 @@ mod tests {
                     .is_some(),
                 "{schema} must expose enabled"
             );
+        }
+    }
+
+    #[test]
+    fn single_entry_routes_accept_an_optional_namespace() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        for kind in ["tools", "resources", "prompts"] {
+            for (suffix, method) in [
+                ("", "get"),
+                ("", "delete"),
+                ("~1enable", "put"),
+                ("~1disable", "put"),
+            ] {
+                let pointer =
+                    format!("/paths/~1api~1v1~1{kind}~1{{name}}{suffix}/{method}/parameters");
+                let parameters = value.pointer(&pointer).and_then(|p| p.as_array());
+                let namespace = parameters
+                    .and_then(|p| p.iter().find(|p| p["name"] == "namespace"))
+                    .unwrap_or(&serde_json::Value::Null);
+                assert_eq!(namespace["in"], "query", "{pointer}");
+                assert_eq!(namespace["required"], false, "{pointer}");
+            }
         }
     }
 

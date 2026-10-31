@@ -23,10 +23,17 @@ pub(super) fn handle_tool_list(registry: &InMemoryRegistry) -> Response<Vec<u8>>
     json_ok(&serde_json::json!(tools))
 }
 
-pub(super) fn handle_tool_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
-    match registry.get_tool(name) {
+pub(super) fn handle_tool_get(
+    registry: &InMemoryRegistry,
+    namespace: &str,
+    name: &str,
+) -> Response<Vec<u8>> {
+    match registry.get_tool(namespace, name) {
         Some(tool) => json_ok(&serde_json::json!(tool)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("tool not found: {name}")),
+        None => json_err(
+            StatusCode::NOT_FOUND,
+            &format!("tool not found: {name} in namespace {namespace}"),
+        ),
     }
 }
 
@@ -34,28 +41,39 @@ pub(super) fn handle_tool_get(registry: &InMemoryRegistry, name: &str) -> Respon
 /// MCP clients cannot list or use it.
 pub(super) fn handle_tool_set_enabled(
     registry: &InMemoryRegistry,
+    namespace: &str,
     name: &str,
     enabled: bool,
 ) -> Response<Vec<u8>> {
     match registry
-        .set_tool_enabled(name, enabled)
-        .then(|| registry.get_tool(name))
+        .set_tool_enabled(namespace, name, enabled)
+        .then(|| registry.get_tool(namespace, name))
         .flatten()
     {
         Some(entry) => {
-            info!(tool = %name, enabled, "changed tool state via management API");
+            info!(tool = %name, namespace = %namespace, enabled, "changed tool state via management API");
             json_ok(&serde_json::json!(entry))
         }
-        None => json_err(StatusCode::NOT_FOUND, &format!("tool not found: {name}")),
+        None => json_err(
+            StatusCode::NOT_FOUND,
+            &format!("tool not found: {name} in namespace {namespace}"),
+        ),
     }
 }
 
-pub(super) fn handle_tool_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
-    if registry.remove_tool(name) {
-        info!(tool = %name, "removed tool via management API");
+pub(super) fn handle_tool_delete(
+    registry: &InMemoryRegistry,
+    namespace: &str,
+    name: &str,
+) -> Response<Vec<u8>> {
+    if registry.remove_tool(namespace, name) {
+        info!(tool = %name, namespace = %namespace, "removed tool via management API");
         json_ok(&serde_json::json!({"removed": name}))
     } else {
-        json_err(StatusCode::NOT_FOUND, &format!("tool not found: {name}"))
+        json_err(
+            StatusCode::NOT_FOUND,
+            &format!("tool not found: {name} in namespace {namespace}"),
+        )
     }
 }
 
@@ -64,12 +82,16 @@ pub(super) fn handle_resource_list(registry: &InMemoryRegistry) -> Response<Vec<
     json_ok(&serde_json::json!(resources))
 }
 
-pub(super) fn handle_resource_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
-    match registry.get_resource(name) {
+pub(super) fn handle_resource_get(
+    registry: &InMemoryRegistry,
+    namespace: &str,
+    name: &str,
+) -> Response<Vec<u8>> {
+    match registry.get_resource(namespace, name) {
         Some(resource) => json_ok(&serde_json::json!(resource)),
         None => json_err(
             StatusCode::NOT_FOUND,
-            &format!("resource not found: {name}"),
+            &format!("resource not found: {name} in namespace {namespace}"),
         ),
     }
 }
@@ -78,33 +100,38 @@ pub(super) fn handle_resource_get(registry: &InMemoryRegistry, name: &str) -> Re
 /// MCP clients cannot list or use it.
 pub(super) fn handle_resource_set_enabled(
     registry: &InMemoryRegistry,
+    namespace: &str,
     name: &str,
     enabled: bool,
 ) -> Response<Vec<u8>> {
     match registry
-        .set_resource_enabled(name, enabled)
-        .then(|| registry.get_resource(name))
+        .set_resource_enabled(namespace, name, enabled)
+        .then(|| registry.get_resource(namespace, name))
         .flatten()
     {
         Some(entry) => {
-            info!(resource = %name, enabled, "changed resource state via management API");
+            info!(resource = %name, namespace = %namespace, enabled, "changed resource state via management API");
             json_ok(&serde_json::json!(entry))
         }
         None => json_err(
             StatusCode::NOT_FOUND,
-            &format!("resource not found: {name}"),
+            &format!("resource not found: {name} in namespace {namespace}"),
         ),
     }
 }
 
-pub(super) fn handle_resource_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
-    if registry.remove_resource(name) {
-        info!(resource = %name, "removed resource via management API");
+pub(super) fn handle_resource_delete(
+    registry: &InMemoryRegistry,
+    namespace: &str,
+    name: &str,
+) -> Response<Vec<u8>> {
+    if registry.remove_resource(namespace, name) {
+        info!(resource = %name, namespace = %namespace, "removed resource via management API");
         json_ok(&serde_json::json!({"removed": name}))
     } else {
         json_err(
             StatusCode::NOT_FOUND,
-            &format!("resource not found: {name}"),
+            &format!("resource not found: {name} in namespace {namespace}"),
         )
     }
 }
@@ -114,10 +141,17 @@ pub(super) fn handle_prompt_list(registry: &InMemoryRegistry) -> Response<Vec<u8
     json_ok(&serde_json::json!(prompts))
 }
 
-pub(super) fn handle_prompt_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
-    match registry.get_prompt(name) {
+pub(super) fn handle_prompt_get(
+    registry: &InMemoryRegistry,
+    namespace: &str,
+    name: &str,
+) -> Response<Vec<u8>> {
+    match registry.get_prompt(namespace, name) {
         Some(prompt) => json_ok(&serde_json::json!(prompt)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("prompt not found: {name}")),
+        None => json_err(
+            StatusCode::NOT_FOUND,
+            &format!("prompt not found: {name} in namespace {namespace}"),
+        ),
     }
 }
 
@@ -125,28 +159,39 @@ pub(super) fn handle_prompt_get(registry: &InMemoryRegistry, name: &str) -> Resp
 /// MCP clients cannot list or use it.
 pub(super) fn handle_prompt_set_enabled(
     registry: &InMemoryRegistry,
+    namespace: &str,
     name: &str,
     enabled: bool,
 ) -> Response<Vec<u8>> {
     match registry
-        .set_prompt_enabled(name, enabled)
-        .then(|| registry.get_prompt(name))
+        .set_prompt_enabled(namespace, name, enabled)
+        .then(|| registry.get_prompt(namespace, name))
         .flatten()
     {
         Some(entry) => {
-            info!(prompt = %name, enabled, "changed prompt state via management API");
+            info!(prompt = %name, namespace = %namespace, enabled, "changed prompt state via management API");
             json_ok(&serde_json::json!(entry))
         }
-        None => json_err(StatusCode::NOT_FOUND, &format!("prompt not found: {name}")),
+        None => json_err(
+            StatusCode::NOT_FOUND,
+            &format!("prompt not found: {name} in namespace {namespace}"),
+        ),
     }
 }
 
-pub(super) fn handle_prompt_delete(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
-    if registry.remove_prompt(name) {
-        info!(prompt = %name, "removed prompt via management API");
+pub(super) fn handle_prompt_delete(
+    registry: &InMemoryRegistry,
+    namespace: &str,
+    name: &str,
+) -> Response<Vec<u8>> {
+    if registry.remove_prompt(namespace, name) {
+        info!(prompt = %name, namespace = %namespace, "removed prompt via management API");
         json_ok(&serde_json::json!({"removed": name}))
     } else {
-        json_err(StatusCode::NOT_FOUND, &format!("prompt not found: {name}"))
+        json_err(
+            StatusCode::NOT_FOUND,
+            &format!("prompt not found: {name} in namespace {namespace}"),
+        )
     }
 }
 
@@ -342,9 +387,8 @@ pub(super) async fn handle_forward_create(
     }
 
     let prepared = prepare_forward_update(registry, broker, audit_sink, &forward).await;
-    let forward = prepared.forward.clone();
+    let (forward, counts) = apply_forward_update(registry, prepared);
     info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
-    let counts = apply_forward_update(registry, prepared);
 
     json_ok(&serde_json::json!({
         "forward": &forward,
@@ -359,6 +403,17 @@ pub(super) async fn handle_forward_create(
 pub(super) fn replace_requested(query: Option<&str>) -> bool {
     form_urlencoded::parse(query.unwrap_or_default().as_bytes())
         .any(|(key, value)| key == "replace" && value == "true")
+}
+
+/// The namespace of a tool, resource, or prompt route (`namespace` query
+/// parameter). Without the parameter, the namespace is `default`.
+pub(super) fn namespace_param(query: Option<&str>) -> String {
+    form_urlencoded::parse(query.unwrap_or_default().as_bytes())
+        .find(|(key, _)| key == "namespace")
+        .map_or_else(
+            || wanaku_types::registry::DEFAULT_NAMESPACE.to_owned(),
+            |(_, value)| value.into_owned(),
+        )
 }
 
 /// Build the label precondition of a conditional delete from the
@@ -403,9 +458,9 @@ pub(super) fn handle_forward_delete(
 
     // Drop credentials cached for the forward so no secret outlives it.
     broker.cache().invalidate_forward(fwd.forward_id());
-    remove_forwarded_tools(registry, fwd.forward_id());
-    remove_forwarded_resources(registry, fwd.forward_id());
-    remove_forwarded_prompts(registry, fwd.forward_id());
+    registry.remove_tools_owned_by(fwd.forward_id());
+    registry.remove_resources_owned_by(fwd.forward_id());
+    registry.remove_prompts_owned_by(fwd.forward_id());
 
     info!(forward = %name, "removed forward via management API");
     json_ok(&serde_json::json!({"removed": name}))
@@ -425,7 +480,7 @@ pub(super) async fn handle_forward_refresh(
     // discovery keeps the previous capability set and marks the forward
     // unavailable.
     let prepared = prepare_forward_update(registry, broker, audit_sink, &forward).await;
-    let counts = apply_forward_update(registry, prepared);
+    let (_, counts) = apply_forward_update(registry, prepared);
 
     info!(forward = %name, tools_discovered = counts.tools, resources_discovered = counts.resources, prompts_discovered = counts.prompts, "refreshed forward");
     json_ok(
@@ -619,7 +674,7 @@ pub async fn discover_and_update_forward(
     forward: &ForwardEntry,
 ) {
     let prepared = prepare_forward_update(registry, broker, audit_sink, forward).await;
-    let counts = apply_forward_update(registry, prepared);
+    let (_, counts) = apply_forward_update(registry, prepared);
     info!(
         forward = %forward.name,
         tools_discovered = counts.tools,
@@ -752,13 +807,19 @@ fn listing_items(listing: Listing) -> Result<Vec<serde_json::Value>, String> {
 /// keeps operator-disabled entries disabled. Without a capability set, it keeps
 /// the previous entries; the forward is then unavailable, and the invocation
 /// filters refuse calls to it.
+///
+/// Entries are keyed by namespace and name. When another owner already holds a
+/// name in the forward namespace, the entry is skipped, not replaced. The
+/// forward stays available and its status message names the skipped entries.
+///
+/// Returns the stored forward and the number of published entries.
 #[expect(clippy::too_many_lines, reason = "sequential registry publication")]
 fn apply_forward_update(
     registry: &InMemoryRegistry,
     update: PreparedForwardUpdate,
-) -> PublishedCounts {
+) -> (ForwardEntry, PublishedCounts) {
     let PreparedForwardUpdate {
-        forward,
+        mut forward,
         capabilities,
     } = update;
     let forward_id = forward.forward_id().to_owned();
@@ -768,15 +829,14 @@ fn apply_forward_update(
             status = forward.status_message.as_deref().unwrap_or_default(),
             "forward discovery failed; kept the previous capability set and marked the forward unavailable"
         );
-        registry.register_forward(forward);
-        return PublishedCounts::default();
+        registry.register_forward(forward.clone());
+        return (forward, PublishedCounts::default());
     };
-    registry.register_forward(forward);
 
     let disabled = DisabledEntries::capture(registry, &forward_id);
-    remove_forwarded_tools(registry, &forward_id);
-    remove_forwarded_resources(registry, &forward_id);
-    remove_forwarded_prompts(registry, &forward_id);
+    registry.remove_tools_owned_by(&forward_id);
+    registry.remove_resources_owned_by(&forward_id);
+    registry.remove_prompts_owned_by(&forward_id);
 
     for tool in &mut capabilities.tools {
         tool.enabled = !disabled.tools.contains(&tool.name);
@@ -787,15 +847,70 @@ fn apply_forward_update(
     for prompt in &mut capabilities.prompts {
         prompt.enabled = !disabled.prompts.contains(&prompt.name);
     }
-    let counts = PublishedCounts {
+    let discovered = PublishedCounts {
         tools: capabilities.tools.len(),
         resources: capabilities.resources.len(),
         prompts: capabilities.prompts.len(),
     };
-    registry.register_tools_batch(capabilities.tools);
-    registry.register_resources_batch(capabilities.resources);
-    registry.register_prompts_batch(capabilities.prompts);
-    counts
+    let skipped = SkippedEntries {
+        tools: entry_names(
+            registry.register_tools_unless_taken(capabilities.tools),
+            |t| t.name,
+        ),
+        resources: entry_names(
+            registry.register_resources_unless_taken(capabilities.resources),
+            |r| r.name,
+        ),
+        prompts: entry_names(
+            registry.register_prompts_unless_taken(capabilities.prompts),
+            |p| p.name,
+        ),
+    };
+    let counts = PublishedCounts {
+        tools: discovered.tools.saturating_sub(skipped.tools.len()),
+        resources: discovered.resources.saturating_sub(skipped.resources.len()),
+        prompts: discovered.prompts.saturating_sub(skipped.prompts.len()),
+    };
+    if let Some(message) = skipped.status_message(&forward_namespace(&forward)) {
+        warn!(forward = %forward.name, status = %message, "forward discovery skipped entries that other owners hold");
+        forward.status_message = Some(message);
+    }
+    registry.register_forward(forward.clone());
+    (forward, counts)
+}
+
+/// Names of the discovered entries that were not published because another
+/// owner already holds the name in the same namespace.
+struct SkippedEntries {
+    tools: Vec<String>,
+    resources: Vec<String>,
+    prompts: Vec<String>,
+}
+
+impl SkippedEntries {
+    /// The forward status message that names the skipped entries, or `None`
+    /// when no entry was skipped.
+    fn status_message(&self, namespace: &str) -> Option<String> {
+        let names: Vec<String> = [
+            ("tool", &self.tools),
+            ("resource", &self.resources),
+            ("prompt", &self.prompts),
+        ]
+        .into_iter()
+        .flat_map(|(kind, names)| names.iter().map(move |name| format!("{kind} {name}")))
+        .collect();
+        (!names.is_empty()).then(|| {
+            format!(
+                "skipped {} discovered entries because other owners already use the names in namespace {namespace}: {}",
+                names.len(),
+                names.join(", ")
+            )
+        })
+    }
+}
+
+fn entry_names<T>(entries: Vec<T>, name: fn(T) -> String) -> Vec<String> {
+    entries.into_iter().map(name).collect()
 }
 
 fn forward_namespace(forward: &ForwardEntry) -> String {
@@ -948,83 +1063,11 @@ fn prompt_entries(forward: &ForwardEntry, prompts: &[serde_json::Value]) -> Vec<
         .collect()
 }
 
-fn remove_forwarded_resources(registry: &InMemoryRegistry, forward_id: &str) {
-    let forwarded: Vec<String> = registry
-        .list_resources()
-        .iter()
-        .filter(|r| r.is_mcp_forward() && r.forward_id.as_deref() == Some(forward_id))
-        .map(|r| r.name.clone())
-        .collect();
-
-    registry.remove_resources_batch(&forwarded);
-}
-
-fn remove_forwarded_tools(registry: &InMemoryRegistry, forward_id: &str) {
-    let forwarded: Vec<String> = registry
-        .list_tools()
-        .iter()
-        .filter(|t| t.is_mcp_forward() && t.forward_id.as_deref() == Some(forward_id))
-        .map(|t| t.name.clone())
-        .collect();
-
-    registry.remove_tools_batch(&forwarded);
-}
-
-fn remove_forwarded_prompts(registry: &InMemoryRegistry, forward_id: &str) {
-    let forwarded: Vec<String> = registry
-        .list_prompts()
-        .iter()
-        .filter(|p| p.forward_id.as_deref() == Some(forward_id))
-        .map(|p| p.name.clone())
-        .collect();
-
-    registry.remove_prompts_batch(&forwarded);
-}
-
 #[cfg(test)]
 mod forward_helpers_tests {
     use super::*;
-    use std::collections::HashMap;
     use wanaku_infra::registry::InMemoryRegistry;
-    use wanaku_types::registry::{
-        PromptEntry, PromptRegistry, ResourceRegistry, ToolEntry, ToolRegistry,
-    };
-
-    #[test]
-    fn remove_forwarded_resources_clears_matching_resources() {
-        let registry = InMemoryRegistry::new();
-        let forward_id = "remote-forward";
-
-        registry.register_resource(ResourceEntry {
-            name: "fwd-res".to_owned(),
-            description: "forwarded".to_owned(),
-            location: "file:///data/report.csv".to_owned(),
-            type_: MCP_FORWARD_TYPE.to_owned(),
-            mime_type: "text/csv".to_owned(),
-            labels: HashMap::new(),
-            id: None,
-            namespace: None,
-            forward_id: Some(forward_id.to_owned()),
-            enabled: true,
-        });
-        registry.register_resource(ResourceEntry {
-            name: "local-res".to_owned(),
-            description: "local".to_owned(),
-            location: "/tmp/local.txt".to_owned(),
-            type_: "file".to_owned(),
-            mime_type: "text/plain".to_owned(),
-            labels: HashMap::new(),
-            id: None,
-            namespace: None,
-            forward_id: None,
-            enabled: true,
-        });
-
-        remove_forwarded_resources(&registry, forward_id);
-
-        assert!(registry.get_resource("fwd-res").is_none());
-        assert!(registry.get_resource("local-res").is_some());
-    }
+    use wanaku_types::registry::{PromptRegistry, ToolRegistry};
 
     fn forward_at(name: &str, address: &str) -> ForwardEntry {
         serde_json::from_value(serde_json::json!({"name": name, "address": address}))
@@ -1053,7 +1096,7 @@ mod forward_helpers_tests {
         prompts: &[serde_json::Value],
     ) -> PublishedCounts {
         let found = discovery(complete(tools), Listing::Unsupported, complete(prompts));
-        apply_forward_update(registry, prepare_from_discovery(forward, found))
+        apply_forward_update(registry, prepare_from_discovery(forward, found)).1
     }
 
     fn tool_names(registry: &InMemoryRegistry) -> Vec<String> {
@@ -1173,11 +1216,11 @@ mod forward_helpers_tests {
             Listing::Unsupported,
             Listing::Incomplete("prompts/list failed: page 2".to_owned()),
         );
-        let counts = apply_forward_update(&registry, prepare_from_discovery(&forward, found));
+        let (_, counts) = apply_forward_update(&registry, prepare_from_discovery(&forward, found));
 
         assert_eq!(counts, PublishedCounts::default());
         assert_eq!(tool_names(&registry), ["a", "b"]);
-        assert!(registry.get_prompt("p").is_some());
+        assert!(registry.get_prompt("default", "p").is_some());
         let stored = registry.get_forward("remote").expect("forward");
         assert!(!stored.available);
         let status = stored.status_message.expect("status message");
@@ -1234,8 +1277,171 @@ mod forward_helpers_tests {
         publish(&registry, &first, &[], &[]);
 
         assert_eq!(tool_names(&registry), ["second-tool"]);
-        let kept = registry.get_tool("second-tool").expect("tool");
+        let kept = registry.get_tool("default", "second-tool").expect("tool");
         assert_eq!(kept.forward_id.as_deref(), Some("second"));
+    }
+
+    fn forward_in(name: &str, namespace: &str) -> ForwardEntry {
+        serde_json::from_value(serde_json::json!({
+            "name": name,
+            "address": "http://shared:8080/mcp",
+            "namespace": namespace,
+        }))
+        .expect("forward")
+    }
+
+    fn owner(registry: &InMemoryRegistry, namespace: &str, name: &str) -> Option<String> {
+        registry
+            .get_tool(namespace, name)
+            .and_then(|tool| tool.forward_id)
+    }
+
+    #[test]
+    fn same_upstream_is_exposed_in_two_namespaces() {
+        let registry = InMemoryRegistry::new();
+        let broker = CredentialBroker::new(wanaku_types::credentials::ResolverRegistry::new());
+        let tools = [serde_json::json!({"name": "echo"})];
+        let prompts = [serde_json::json!({"name": "greet"})];
+        publish(&registry, &forward_in("a", "default"), &tools, &prompts);
+        publish(&registry, &forward_in("b", "other"), &tools, &prompts);
+
+        assert_eq!(owner(&registry, "default", "echo").as_deref(), Some("a"));
+        assert_eq!(owner(&registry, "other", "echo").as_deref(), Some("b"));
+        assert_eq!(registry.list_tools_in_namespace("default").len(), 1);
+        assert_eq!(registry.list_tools_in_namespace("other").len(), 1);
+        assert!(
+            registry
+                .get_forward("b")
+                .and_then(|f| f.status_message)
+                .is_none()
+        );
+
+        let response = handle_forward_delete(&registry, &broker, "b", None);
+        assert_eq!(response.status(), StatusCode::OK);
+
+        assert_eq!(owner(&registry, "default", "echo").as_deref(), Some("a"));
+        assert!(registry.get_tool("other", "echo").is_none());
+        assert!(registry.get_prompt("default", "greet").is_some());
+        assert!(registry.get_prompt("other", "greet").is_none());
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "covers conflict, refresh, and removal"
+    )]
+    fn same_name_in_one_namespace_is_not_overwritten_and_is_reported() {
+        let registry = InMemoryRegistry::new();
+        let broker = CredentialBroker::new(wanaku_types::credentials::ResolverRegistry::new());
+        let first = forward_at("first", "http://one:8080/mcp");
+        let second = forward_at("second", "http://two:8080/mcp");
+        publish(
+            &registry,
+            &first,
+            &[serde_json::json!({"name": "echo"})],
+            &[],
+        );
+
+        let counts = publish(
+            &registry,
+            &second,
+            &[
+                serde_json::json!({"name": "echo"}),
+                serde_json::json!({"name": "only-second"}),
+            ],
+            &[],
+        );
+
+        assert_eq!(counts.tools, 1);
+        assert_eq!(
+            owner(&registry, "default", "echo").as_deref(),
+            Some("first")
+        );
+        assert_eq!(
+            owner(&registry, "default", "only-second").as_deref(),
+            Some("second")
+        );
+        let stored = registry.get_forward("second").expect("forward");
+        assert!(stored.available);
+        let status = stored.status_message.expect("conflict status");
+        assert!(status.contains("tool echo"), "{status}");
+        assert!(status.contains("namespace default"), "{status}");
+
+        // A refresh of the first forward keeps its entry; removing the second
+        // forward does not delete the entry of the first forward.
+        publish(
+            &registry,
+            &first,
+            &[serde_json::json!({"name": "echo"})],
+            &[],
+        );
+        assert_eq!(
+            owner(&registry, "default", "echo").as_deref(),
+            Some("first")
+        );
+        let response = handle_forward_delete(&registry, &broker, "second", None);
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            owner(&registry, "default", "echo").as_deref(),
+            Some("first")
+        );
+        assert!(registry.get_tool("default", "only-second").is_none());
+    }
+
+    #[test]
+    fn freed_name_is_published_on_the_next_refresh() {
+        let registry = InMemoryRegistry::new();
+        let broker = CredentialBroker::new(wanaku_types::credentials::ResolverRegistry::new());
+        let first = forward_at("first", "http://one:8080/mcp");
+        let second = forward_at("second", "http://two:8080/mcp");
+        let tools = [serde_json::json!({"name": "echo"})];
+        publish(&registry, &first, &tools, &[]);
+        publish(&registry, &second, &tools, &[]);
+
+        let response = handle_forward_delete(&registry, &broker, "first", None);
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(registry.get_tool("default", "echo").is_none());
+
+        publish(&registry, &second, &tools, &[]);
+        assert_eq!(
+            owner(&registry, "default", "echo").as_deref(),
+            Some("second")
+        );
+        let stored = registry.get_forward("second").expect("forward");
+        assert!(stored.status_message.is_none());
+    }
+
+    #[test]
+    fn management_lookups_use_the_namespace_parameter() {
+        let registry = InMemoryRegistry::new();
+        let tools = [serde_json::json!({"name": "echo"})];
+        publish(&registry, &forward_in("a", "default"), &tools, &[]);
+        publish(&registry, &forward_in("b", "other"), &tools, &[]);
+
+        assert_eq!(namespace_param(None), "default");
+        assert_eq!(namespace_param(Some("replace=true")), "default");
+        assert_eq!(namespace_param(Some("namespace=other")), "other");
+
+        let body = |response: Response<Vec<u8>>| -> serde_json::Value {
+            serde_json::from_slice(response.body()).expect("json")
+        };
+        let found = body(handle_tool_get(&registry, "other", "echo"));
+        assert_eq!(found["data"]["forwardId"], "b");
+        let found = body(handle_tool_get(&registry, "default", "echo"));
+        assert_eq!(found["data"]["forwardId"], "a");
+
+        let response = handle_tool_set_enabled(&registry, "other", "echo", false);
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(registry.get_tool_in_namespace("other", "echo").is_none());
+        assert!(registry.get_tool_in_namespace("default", "echo").is_some());
+
+        let response = handle_tool_delete(&registry, "other", "echo");
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            handle_tool_get(&registry, "other", "echo").status(),
+            StatusCode::NOT_FOUND
+        );
+        assert_eq!(owner(&registry, "default", "echo").as_deref(), Some("a"));
     }
 
     #[tokio::test]
@@ -1273,15 +1479,21 @@ mod forward_helpers_tests {
         ];
         let prompts = [serde_json::json!({"name": "prompt-off"})];
         publish(&registry, &forward, &tools, &prompts);
-        let response = handle_tool_set_enabled(&registry, "off", false);
+        let response = handle_tool_set_enabled(&registry, "default", "off", false);
         assert_eq!(response.status(), StatusCode::OK);
-        assert!(registry.set_prompt_enabled("prompt-off", false));
+        assert!(registry.set_prompt_enabled("default", "prompt-off", false));
 
         publish(&registry, &forward, &tools, &prompts);
 
-        assert_eq!(registry.get_tool("off").map(|t| t.enabled), Some(false));
-        assert_eq!(registry.get_tool("on").map(|t| t.enabled), Some(true));
-        let prompt = registry.get_prompt("prompt-off");
+        assert_eq!(
+            registry.get_tool("default", "off").map(|t| t.enabled),
+            Some(false)
+        );
+        assert_eq!(
+            registry.get_tool("default", "on").map(|t| t.enabled),
+            Some(true)
+        );
+        let prompt = registry.get_prompt("default", "prompt-off");
         assert_eq!(prompt.map(|p| p.enabled), Some(false));
     }
 
@@ -1289,107 +1501,16 @@ mod forward_helpers_tests {
     fn set_enabled_on_missing_entry_is_not_found() {
         let registry = InMemoryRegistry::new();
         assert_eq!(
-            handle_tool_set_enabled(&registry, "missing", true).status(),
+            handle_tool_set_enabled(&registry, "default", "missing", true).status(),
             StatusCode::NOT_FOUND
         );
         assert_eq!(
-            handle_resource_set_enabled(&registry, "missing", true).status(),
+            handle_resource_set_enabled(&registry, "default", "missing", true).status(),
             StatusCode::NOT_FOUND
         );
         assert_eq!(
-            handle_prompt_set_enabled(&registry, "missing", true).status(),
+            handle_prompt_set_enabled(&registry, "default", "missing", true).status(),
             StatusCode::NOT_FOUND
-        );
-    }
-
-    #[test]
-    fn remove_forwarded_tools_clears_matching_tools() {
-        let registry = InMemoryRegistry::new();
-        let forward_id = "remote-forward";
-
-        registry.register_tool(ToolEntry {
-            name: "fwd-tool".to_owned(),
-            description: "forwarded".to_owned(),
-            uri: "http://remote:8080".to_owned(),
-            type_: MCP_FORWARD_TYPE.to_owned(),
-            input_schema: serde_json::json!({"type": "object"}),
-            labels: HashMap::new(),
-            id: None,
-            namespace: None,
-            forward_id: Some(forward_id.to_owned()),
-            enabled: true,
-        });
-        registry.register_tool(ToolEntry {
-            name: "local-tool".to_owned(),
-            description: "local".to_owned(),
-            uri: "echo://test".to_owned(),
-            type_: "echo".to_owned(),
-            input_schema: serde_json::json!({"type": "object"}),
-            labels: HashMap::new(),
-            id: None,
-            namespace: None,
-            forward_id: None,
-            enabled: true,
-        });
-
-        remove_forwarded_tools(&registry, forward_id);
-
-        assert!(registry.get_tool("fwd-tool").is_none());
-        assert!(registry.get_tool("local-tool").is_some());
-    }
-
-    #[test]
-    fn remove_forwarded_prompts_clears_matching_prompts() {
-        let registry = InMemoryRegistry::new();
-        let forward_id = "remote-forward";
-
-        registry.register_prompt(PromptEntry {
-            name: "fwd-prompt".to_owned(),
-            description: "forwarded".to_owned(),
-            arguments: Vec::new(),
-            messages: Vec::new(),
-            id: None,
-            namespace: None,
-            forward_id: Some(forward_id.to_owned()),
-            enabled: true,
-        });
-        registry.register_prompt(PromptEntry {
-            name: "local-prompt".to_owned(),
-            description: "local".to_owned(),
-            arguments: Vec::new(),
-            messages: Vec::new(),
-            id: None,
-            namespace: None,
-            forward_id: None,
-            enabled: true,
-        });
-
-        remove_forwarded_prompts(&registry, forward_id);
-
-        assert!(registry.get_prompt("fwd-prompt").is_none());
-        assert!(registry.get_prompt("local-prompt").is_some());
-    }
-
-    #[test]
-    fn remove_forwarded_prompts_preserves_prompts_from_other_forwards() {
-        let registry = InMemoryRegistry::new();
-
-        registry.register_prompt(PromptEntry {
-            name: "other-prompt".to_owned(),
-            description: "from another forward".to_owned(),
-            arguments: Vec::new(),
-            messages: Vec::new(),
-            id: None,
-            namespace: None,
-            forward_id: Some("other-forward".to_owned()),
-            enabled: true,
-        });
-
-        remove_forwarded_prompts(&registry, "remote-forward");
-
-        assert!(
-            registry.get_prompt("other-prompt").is_some(),
-            "prompt from a different forward must not be removed"
         );
     }
 
@@ -1557,7 +1678,7 @@ mod tests {
     #[test]
     fn tool_get_nonexistent_returns_404() {
         let registry = InMemoryRegistry::new();
-        let resp = handle_tool_get(&registry, "no-such-tool");
+        let resp = handle_tool_get(&registry, "default", "no-such-tool");
         assert_eq!(resp.status(), 404);
     }
 
@@ -1566,16 +1687,22 @@ mod tests {
         let registry = InMemoryRegistry::new();
         registry.register_tool(test_tool("to-delete"));
 
-        let resp = handle_tool_delete(&registry, "to-delete");
+        let resp = handle_tool_delete(&registry, "default", "to-delete");
         assert_eq!(resp.status(), 200);
 
-        assert_eq!(handle_tool_get(&registry, "to-delete").status(), 404);
+        assert_eq!(
+            handle_tool_get(&registry, "default", "to-delete").status(),
+            404
+        );
     }
 
     #[test]
     fn tool_delete_nonexistent_returns_404() {
         let registry = InMemoryRegistry::new();
-        assert_eq!(handle_tool_delete(&registry, "ghost").status(), 404);
+        assert_eq!(
+            handle_tool_delete(&registry, "default", "ghost").status(),
+            404
+        );
     }
 
     // ---- Resource handlers ----
@@ -1602,7 +1729,10 @@ mod tests {
     #[test]
     fn resource_get_nonexistent_returns_404() {
         let registry = InMemoryRegistry::new();
-        assert_eq!(handle_resource_get(&registry, "nope").status(), 404);
+        assert_eq!(
+            handle_resource_get(&registry, "default", "nope").status(),
+            404
+        );
     }
 
     #[test]
@@ -1610,14 +1740,23 @@ mod tests {
         let registry = InMemoryRegistry::new();
         registry.register_resource(test_resource("del-res"));
 
-        assert_eq!(handle_resource_delete(&registry, "del-res").status(), 200);
-        assert_eq!(handle_resource_get(&registry, "del-res").status(), 404);
+        assert_eq!(
+            handle_resource_delete(&registry, "default", "del-res").status(),
+            200
+        );
+        assert_eq!(
+            handle_resource_get(&registry, "default", "del-res").status(),
+            404
+        );
     }
 
     #[test]
     fn resource_delete_nonexistent_returns_404() {
         let registry = InMemoryRegistry::new();
-        assert_eq!(handle_resource_delete(&registry, "nope").status(), 404);
+        assert_eq!(
+            handle_resource_delete(&registry, "default", "nope").status(),
+            404
+        );
     }
 
     // ---- Prompt handlers ----
@@ -1644,21 +1783,33 @@ mod tests {
     #[test]
     fn prompt_get_nonexistent_returns_404() {
         let registry = InMemoryRegistry::new();
-        assert_eq!(handle_prompt_get(&registry, "nope").status(), 404);
+        assert_eq!(
+            handle_prompt_get(&registry, "default", "nope").status(),
+            404
+        );
     }
 
     #[test]
     fn prompt_delete_existing() {
         let registry = InMemoryRegistry::new();
         registry.register_prompt(test_prompt("del-p"));
-        assert_eq!(handle_prompt_delete(&registry, "del-p").status(), 200);
-        assert_eq!(handle_prompt_get(&registry, "del-p").status(), 404);
+        assert_eq!(
+            handle_prompt_delete(&registry, "default", "del-p").status(),
+            200
+        );
+        assert_eq!(
+            handle_prompt_get(&registry, "default", "del-p").status(),
+            404
+        );
     }
 
     #[test]
     fn prompt_delete_nonexistent_returns_404() {
         let registry = InMemoryRegistry::new();
-        assert_eq!(handle_prompt_delete(&registry, "nope").status(), 404);
+        assert_eq!(
+            handle_prompt_delete(&registry, "default", "nope").status(),
+            404
+        );
     }
 
     // ---- Namespace handlers ----
@@ -1757,7 +1908,7 @@ mod tests {
         let resp = create_forward(&registry, body).await;
 
         assert_eq!(resp.status(), 409);
-        assert!(registry.get_tool("owned-tool").is_some());
+        assert!(registry.get_tool("default", "owned-tool").is_some());
         let kept = registry.get_forward("owned-fwd").map(|f| f.address);
         assert_eq!(kept, Some(cached_forward("owned-fwd").address));
     }
@@ -2042,7 +2193,7 @@ mod tests {
         assert_eq!(resp.status(), 200);
         assert_eq!(data_field(&resp)["removed"], "owned-fwd");
         assert!(registry.get_forward("owned-fwd").is_none());
-        assert!(registry.get_tool("owned-tool").is_none());
+        assert!(registry.get_tool("default", "owned-tool").is_none());
     }
 
     #[test]
@@ -2057,7 +2208,7 @@ mod tests {
         );
         assert!(parse_body(&resp)["data"].is_null());
         assert!(registry.get_forward("owned-fwd").is_some());
-        assert!(registry.get_tool("owned-tool").is_some());
+        assert!(registry.get_tool("default", "owned-tool").is_some());
     }
 
     #[test]
@@ -2067,7 +2218,7 @@ mod tests {
         let resp = conditional_delete(&registry, "label.cic.instance=pod-a&label.zone=eu");
         assert_eq!(resp.status(), 409);
         assert!(registry.get_forward("owned-fwd").is_some());
-        assert!(registry.get_tool("owned-tool").is_some());
+        assert!(registry.get_tool("default", "owned-tool").is_some());
     }
 
     #[test]
@@ -2085,7 +2236,7 @@ mod tests {
         register_owned_forward(&registry, "pod-b");
         assert_eq!(conditional_delete(&registry, "unrelated=1").status(), 200);
         assert!(registry.get_forward("owned-fwd").is_none());
-        assert!(registry.get_tool("owned-tool").is_none());
+        assert!(registry.get_tool("default", "owned-tool").is_none());
     }
 
     #[test]
@@ -2238,7 +2389,7 @@ mod tests {
             serde_json::json!({"type":"object","properties":{"msg":{"type":"string"}}});
         registry.register_tool(tool);
 
-        let data = data_field(&handle_tool_get(&registry, "cc"));
+        let data = data_field(&handle_tool_get(&registry, "default", "cc"));
         assert!(
             data.get("inputSchema").is_some(),
             "expected camelCase key 'inputSchema' in serialized output"
@@ -2256,7 +2407,7 @@ mod tests {
         tool.forward_id = Some("remote-forward".to_owned());
         registry.register_tool(tool);
 
-        let data = data_field(&handle_tool_get(&registry, "cc-opt"));
+        let data = data_field(&handle_tool_get(&registry, "default", "cc-opt"));
         assert_eq!(
             data.get("forwardId").and_then(|v| v.as_str()),
             Some("remote-forward")
@@ -2271,7 +2422,7 @@ mod tests {
         res.mime_type = "text/plain".to_owned();
         registry.register_resource(res);
 
-        let data = data_field(&handle_resource_get(&registry, "cc-res"));
+        let data = data_field(&handle_resource_get(&registry, "default", "cc-res"));
         assert!(
             data.get("mimeType").is_some(),
             "expected camelCase key 'mimeType' in serialized output"
@@ -2296,7 +2447,7 @@ mod tests {
     #[test]
     fn error_response_has_null_data() {
         let registry = InMemoryRegistry::new();
-        let resp = handle_tool_get(&registry, "nonexistent");
+        let resp = handle_tool_get(&registry, "default", "nonexistent");
         let body = parse_body(&resp);
         assert!(body.get("data").is_some());
         assert!(body["data"].is_null());

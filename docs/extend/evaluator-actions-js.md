@@ -69,8 +69,10 @@ const financeTools = listToolsInNamespace("finance");
 const tool = getTool("restart-database");  // {name, description, ...} or undefined
 
 // Copy a tool into a target namespace (for assembly)
-const copied = copyToolToNamespace("read-balance", "finance-team");  // true if found
+const copied = copyToolToNamespace("read-balance", "finance-team");  // true if copied
 ```
+
+The registry keys tools by namespace and name. `getTool(name)` and `copyToolToNamespace(name, target)` take only a name. They use the tool in the `default` namespace. If the `default` namespace does not have the tool, they use the tool from the first namespace in name order. `copyToolToNamespace` adds a copy to the target namespace and keeps the source tool. It returns `false` when the tool does not exist, or when a different owner already has a tool with that name in the target namespace.
 
 ### Response (`wanaku:evaluator/response`)
 

@@ -599,10 +599,8 @@ mod tests {
         );
         assert_eq!(result.reason_code(), "evaluator_simulated");
         assert!(result.outcome.side_effects_suppressed());
-        assert_eq!(
-            registry.get_tool("tool").unwrap().namespace.as_deref(),
-            Some("default")
-        );
+        assert_eq!(registry.tool_count(), 1);
+        assert!(registry.get_tool("default", "tool").is_some());
     }
 
     #[test]

@@ -277,14 +277,10 @@ fn assembly_action_skips_tools_from_other_namespaces() {
         "only the shared tool should be assembled, got: {:?}",
         result.action
     );
-    assert_eq!(
-        registry.get_tool("private").unwrap().namespace.as_deref(),
-        Some("tenant-b")
-    );
-    assert_eq!(
-        registry.get_tool("shared").unwrap().namespace.as_deref(),
-        Some("curated")
-    );
+    assert!(registry.get_tool("tenant-b", "private").is_some());
+    assert!(registry.get_tool("curated", "private").is_none());
+    assert!(registry.get_tool("curated", "shared").is_some());
+    assert!(registry.get_tool("default", "shared").is_some());
 }
 
 #[test]
