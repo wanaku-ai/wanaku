@@ -51,6 +51,7 @@ ui/admin/
 │   ├── router/                 # Route constants
 │   │   └── links.models.ts     # const enum Links
 │   ├── utils/                  # Utility functions
+│   ├── test/                   # Unit test support (browser stubs, import resolver)
 │   ├── custom-fetch.ts         # Fetch wrapper with error handling
 │   ├── router.tsx              # Hash-based router setup
 │   ├── App.tsx                 # Root component
@@ -484,6 +485,20 @@ Orval overwrites `src/api/wanaku-router-api.ts` and `src/models/`. Never edit th
 
 The Rust management API wraps all responses in `{"data": ..., "error": ...}`. The `customFetch` function in `src/custom-fetch.ts` unwraps this automatically, so API hooks and pages access `response.data` directly (not `response.data.data`).
 
+### Error Responses
+
+`customFetch` rejects an unsuccessful response with an `ApiError`. `ApiError` extends `Error`, so code that reads `error.message` continues to work. `ApiError` has these properties:
+
+- `status`: the HTTP status.
+- `data`: the `data` member of the error envelope, as `unknown`. It is `undefined` when the body is empty, is not JSON, or has no `data`.
+- `message`: the envelope `error`, or a `reason_code` in `data`. If the body has neither, the message is `Request failed with status <status>`.
+
+A malformed or non-JSON error body does not change the status.
+
+Do not compare `error.message` with server text to find a state. Examine `error.status` with `instanceof ApiError` in the domain hook, and give the page an explicit result. For example, `getActivePolicy` in `src/hooks/api/use-action-policies.ts` returns `{ state: 'absent' }` for a 404 from the active-policy endpoint. A 404 for a policy revision stays an error. `actionPolicyErrorKind` maps a failed action-policy request to `not_found`, `conflict` (409), `validation` (422), `invalid_request` (400), or `unexpected`.
+
+The authentication redirect responses do not give an `ApiError`. Refer to [Authentication](#authentication).
+
 The base URL is dynamic. The UI uses `VITE_API_URL` when it is set. Otherwise, it uses `window.location.origin`. This supports localhost and other backend addresses.
 
 ## Authentication
@@ -591,6 +606,22 @@ export const CORE_NAV_ITEMS: NavItem[] = [
 ```
 
 Rebuild and the page appears in the UI. Add E2E tests for the page. Refer to [E2E Tests](#e2e-tests).
+
+## Unit Tests
+
+Unit tests use the Node.js test runner (`node:test`). Node.js runs the TypeScript files directly, so the tests do not need more dependencies. Put a unit test next to its source file, with the name `<name>.test.ts`.
+
+Run the unit tests from `ui/admin`:
+
+```bash
+yarn run test
+```
+
+The `test` script loads `src/test/ts-resolve.mjs`. This hook resolves the extensionless imports in the sources and the generated client. `src/test/browser-stub.ts` replaces `fetch`, `window`, `sessionStorage`, and `VITE_API_URL`. In a test file, import local modules with the `.ts` extension.
+
+Node.js removes the type annotations but does not compile other TypeScript syntax. Do not use `enum` or constructor parameter properties in a module that a unit test loads.
+
+Unit tests do not render React components. Put logic that needs tests in plain functions, for example in a domain hook module. Use the E2E tests for page behavior.
 
 ## E2E Tests
 

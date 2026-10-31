@@ -256,3 +256,29 @@ export const simulationAuditEvent = (id: string) => ({
   coverage_complete: true,
   dropped_events: 0,
 });
+
+export const actionPolicyRevision = (
+  overrides?: Partial<{ id: number; activated_at: string | null; status: string; failure_reason: string | null }>,
+) => ({
+  id: 1,
+  created_at: "2026-08-27T10:00:00Z",
+  activated_at: "2026-08-27T10:00:00Z",
+  status: "active",
+  checksum: "test-checksum",
+  origin: "startup",
+  actor: null,
+  failure_reason: null,
+  ...overrides,
+});
+export const actionPolicy = {
+  rules: [{
+    id: "protect-production",
+    description: "Protect production services",
+    effect: "deny",
+    selectors: { operation: "tools/call", target_type: "tool", target_name: { matcher: "glob", value: "restart*" } },
+    predicates: [{ operator: "equals", pointer: "/arguments/service", value: "production" }],
+    reason_code: "production_restart_denied",
+    message: "Production restarts are not permitted.",
+    metadata: { owner: "platform" },
+  }],
+};

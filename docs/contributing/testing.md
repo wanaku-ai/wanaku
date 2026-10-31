@@ -101,7 +101,7 @@ Run Barn's browser tests separately. Use the documented model evaluation procedu
 
 ## Admin UI tests
 
-The Admin UI has Playwright end-to-end tests in `tests/e2e/ui/`. Read [E2E Tests](admin-ui.md#e2e-tests) in the Admin UI development guide.
+The Admin UI has unit tests in `ui/admin/src/` and Playwright end-to-end tests in `tests/e2e/ui/`. Read [Unit Tests](admin-ui.md#unit-tests) and [E2E Tests](admin-ui.md#e2e-tests) in the Admin UI development guide.
 
 ## Next steps
 
