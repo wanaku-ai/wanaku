@@ -2,7 +2,7 @@ name: release
 
 # Stable, tagged releases handled by JReleaser.
 #
-# This workflow builds 5-platform archives (full + headless) and hands them
+# This workflow builds 4-platform archives (full + headless) and hands them
 # to JReleaser. It also pushes the <version> container images (full + headless,
 # linux x86_64 + aarch64 manifests) before the GitHub release is created.
 # The early-access workflow uses the same release mechanism for its rolling
@@ -68,8 +68,6 @@ jobs:
             platform: macos-x86_64
           - os: macos-15
             platform: macos-aarch64
-          - os: windows-2025
-            platform: windows-x86_64
     env:
       VERSION: ${{ needs.setup.outputs.version }}
     steps:
@@ -114,8 +112,7 @@ jobs:
       - name: Build release binary
         run: cargo build --release --locked -p wanaku-server
 
-      - name: Package release binary (Unix)
-        if: runner.os != 'Windows'
+      - name: Package release binary
         env:
           PLATFORM: ${{ matrix.platform }}
         run: |
@@ -129,27 +126,10 @@ jobs:
           tar -C dist -czf "dist/$archive.tar.gz" "$archive"
           rm -rf "dist/$archive"
 
-      - name: Package release binary (Windows)
-        if: runner.os == 'Windows'
-        env:
-          PLATFORM: ${{ matrix.platform }}
-        shell: pwsh
-        run: |
-          $archive = "wanaku-server-$env:VERSION-$env:PLATFORM"
-          New-Item -ItemType Directory -Path "dist/$archive" -Force
-          Copy-Item target/release/wanaku-server.exe "dist/$archive/wanaku-server.exe"
-          Copy-Item LICENSE, README.md "dist/$archive/"
-          New-Item -ItemType Directory -Path "dist/$archive/evaluators" -Force
-          Copy-Item actions/dist/*.wasm "dist/$archive/evaluators/"
-          (Get-Content wanaku.yaml) -replace 'actions/dist/', 'evaluators/' | Set-Content "dist/$archive/wanaku.yaml"
-          Compress-Archive -Path "dist/$archive" -DestinationPath "dist/$archive.zip"
-          Remove-Item -Recurse -Force "dist/$archive"
-
       - name: Build headless release binary
         run: cargo build --release --locked -p wanaku-server --no-default-features
 
-      - name: Package headless release binary (Unix)
-        if: runner.os != 'Windows'
+      - name: Package headless release binary
         env:
           PLATFORM: ${{ matrix.platform }}
         run: |
@@ -162,22 +142,6 @@ jobs:
           sed 's|actions/dist/|evaluators/|' wanaku.yaml > "dist/$archive/wanaku.yaml"
           tar -C dist -czf "dist/$archive.tar.gz" "$archive"
           rm -rf "dist/$archive"
-
-      - name: Package headless release binary (Windows)
-        if: runner.os == 'Windows'
-        env:
-          PLATFORM: ${{ matrix.platform }}
-        shell: pwsh
-        run: |
-          $archive = "wanaku-server-headless-$env:VERSION-$env:PLATFORM"
-          New-Item -ItemType Directory -Path "dist/$archive" -Force
-          Copy-Item target/release/wanaku-server.exe "dist/$archive/wanaku-server.exe"
-          Copy-Item LICENSE, README.md "dist/$archive/"
-          New-Item -ItemType Directory -Path "dist/$archive/evaluators" -Force
-          Copy-Item actions/dist/*.wasm "dist/$archive/evaluators/"
-          (Get-Content wanaku.yaml) -replace 'actions/dist/', 'evaluators/' | Set-Content "dist/$archive/wanaku.yaml"
-          Compress-Archive -Path "dist/$archive" -DestinationPath "dist/$archive.zip"
-          Remove-Item -Recurse -Force "dist/$archive"
 
       - name: Package evaluator bundle
         # WASM components are platform-neutral, so one platform ships the bundle.
@@ -199,7 +163,6 @@ jobs:
           name: wanaku-server-${{ matrix.platform }}
           path: |
             dist/*.tar.gz
-            dist/*.zip
           if-no-files-found: error
 
       # A release always publishes its images, so missing registry credentials fail the build.
