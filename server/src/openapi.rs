@@ -437,8 +437,21 @@ const fn get_audit_health() {}
 
 // -- Info ---------------------------------------------------------------------
 
+/// Server name, version, and public addresses.
+#[derive(serde::Serialize, utoipa::ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct ManagementInfo {
+    /// Server package name.
+    name: String,
+    /// Server version.
+    version: String,
+    /// Public base URL of the MCP endpoint, from `WANAKU_MCP_PUBLIC_URL`.
+    /// `null` when the variable is not set.
+    mcp_public_url: Option<String>,
+}
+
 #[utoipa::path(get, path = "/api/v1/management/info", tag = "Management",
-    responses((status = 200, description = "Server name and version", body = serde_json::Value))
+    responses((status = 200, description = "Server name, version, and public MCP URL", body = WanakuResponse<ManagementInfo>))
 )]
 const fn get_info() {}
 
@@ -1066,6 +1079,26 @@ mod tests {
         assert_eq!(
             schema_ref("/responses/400/content/application~1json/schema/$ref"),
             "#/components/schemas/ManagementErrorResponse"
+        );
+    }
+
+    #[tokio::test]
+    async fn info_response_matches_runtime() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        assert_eq!(
+            value
+                .pointer("/paths/~1api~1v1~1management~1info/get/responses/200/content/application~1json/schema/$ref")
+                .cloned()
+                .unwrap_or_default(),
+            "#/components/schemas/WanakuResponse_ManagementInfo"
+        );
+        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let (status, response) =
+            dispatch_namespace(&registry, "GET", "/api/v1/management/info", None).await;
+        assert_eq!(status, 200);
+        assert_eq!(
+            body_keys(&response["data"]),
+            schema_properties(&value, "ManagementInfo")
         );
     }
 

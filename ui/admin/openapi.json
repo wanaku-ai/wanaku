@@ -1465,10 +1465,12 @@
         "operationId": "get_info",
         "responses": {
           "200": {
-            "description": "Server name and version",
+            "description": "Server name, version, and public MCP URL",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_ManagementInfo"
+                }
               }
             }
           }
@@ -4174,6 +4176,31 @@
           }
         }
       },
+      "ManagementInfo": {
+        "type": "object",
+        "description": "Server name, version, and public addresses.",
+        "required": [
+          "name",
+          "version"
+        ],
+        "properties": {
+          "mcpPublicUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Public base URL of the MCP endpoint, from `WANAKU_MCP_PUBLIC_URL`.\n`null` when the variable is not set."
+          },
+          "name": {
+            "type": "string",
+            "description": "Server package name."
+          },
+          "version": {
+            "type": "string",
+            "description": "Server version."
+          }
+        }
+      },
       "MatchExpression": {
         "type": "object",
         "description": "A named matcher and its literal pattern.",
@@ -6324,6 +6351,42 @@
             "properties": {
               "manifest": {
                 "$ref": "#/components/schemas/PluginManifest"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_ManagementInfo": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Server name, version, and public addresses.",
+            "required": [
+              "name",
+              "version"
+            ],
+            "properties": {
+              "mcpPublicUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Public base URL of the MCP endpoint, from `WANAKU_MCP_PUBLIC_URL`.\n`null` when the variable is not set."
+              },
+              "name": {
+                "type": "string",
+                "description": "Server package name."
+              },
+              "version": {
+                "type": "string",
+                "description": "Server version."
               }
             }
           },

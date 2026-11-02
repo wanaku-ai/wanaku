@@ -1707,9 +1707,15 @@ pub(super) fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>
 }
 
 pub(super) fn handle_info() -> Response<Vec<u8>> {
+    info_response(wanaku_types::config::ENV.mcp_public_url.as_deref())
+}
+
+/// Builds the info body. `mcpPublicUrl` is `null` when `WANAKU_MCP_PUBLIC_URL` is unset.
+fn info_response(mcp_public_url: Option<&str>) -> Response<Vec<u8>> {
     json_ok(&serde_json::json!({
         "name": env!("CARGO_PKG_NAME"),
         "version": env!("CARGO_PKG_VERSION"),
+        "mcpPublicUrl": mcp_public_url,
     }))
 }
 
@@ -1731,7 +1737,7 @@ mod tests {
         handle_namespace_delete, handle_namespace_get, handle_namespace_list,
         handle_namespace_update, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
         handle_resource_delete, handle_resource_get, handle_resource_list, handle_statistics,
-        handle_tool_delete, handle_tool_get, handle_tool_list,
+        handle_tool_delete, handle_tool_get, handle_tool_list, info_response,
     };
 
     fn test_broker() -> CredentialBroker {
@@ -2591,5 +2597,20 @@ mod tests {
         let data = data_field(&resp);
         assert!(data.get("name").and_then(|v| v.as_str()).is_some());
         assert!(data.get("version").and_then(|v| v.as_str()).is_some());
+    }
+
+    #[test]
+    fn info_returns_the_public_mcp_url() {
+        let data = data_field(&info_response(Some("https://mcp.example.com")));
+        assert_eq!(data["mcpPublicUrl"], "https://mcp.example.com");
+    }
+
+    #[test]
+    fn info_returns_null_public_mcp_url_when_unset() {
+        let data = data_field(&info_response(None));
+        assert!(
+            data.get("mcpPublicUrl")
+                .is_some_and(serde_json::Value::is_null)
+        );
     }
 }

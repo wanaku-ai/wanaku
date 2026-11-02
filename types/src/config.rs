@@ -47,6 +47,12 @@ const WANAKU_FORWARD_HEADERS: &str = "WANAKU_FORWARD_HEADERS";
 /// background reconnect loop entirely.
 const WANAKU_FORWARD_HEALTHCHECK_INTERVAL: &str = "WANAKU_FORWARD_HEALTHCHECK_INTERVAL";
 
+/// Public HTTP or HTTPS base URL of the MCP endpoint, as clients reach it
+/// (e.g. `https://mcp.example.com`). The management API returns it so the
+/// admin UI can show namespace MCP addresses. Unset keeps the UI default,
+/// which derives the address from the browser location and port 8081.
+const WANAKU_MCP_PUBLIC_URL: &str = "WANAKU_MCP_PUBLIC_URL";
+
 /// Default interval (seconds) between background forward reconnect probes.
 const DEFAULT_FORWARD_HEALTHCHECK_INTERVAL_SECS: u64 = 30;
 
@@ -66,6 +72,9 @@ pub struct WanakuEnv {
     pub a2a_listen: String,
     /// Public origin used for managed A2A URLs.
     pub a2a_public_url: String,
+    /// Public base URL of the MCP endpoint, without a trailing slash.
+    /// `None` when unset or invalid.
+    pub mcp_public_url: Option<String>,
     /// Inference upstream `host:port` for the proxy load-balancer endpoint.
     pub inference_upstream: String,
     /// Path prefix extracted from the upstream URL (e.g. `/api` from
@@ -113,6 +122,9 @@ impl WanakuEnv {
                 .unwrap_or_else(|_| "0.0.0.0:8084".to_owned()),
             a2a_public_url: std::env::var("WANAKU_A2A_PUBLIC_URL")
                 .unwrap_or_else(|_| "http://127.0.0.1:8084/".to_owned()),
+            mcp_public_url: parse_mcp_public_url(
+                std::env::var(WANAKU_MCP_PUBLIC_URL).ok().as_deref(),
+            ),
             mgmt_listen: std::env::var(WANAKU_MGMT_LISTEN)
                 .unwrap_or_else(|_| "0.0.0.0:8080".to_owned()),
             inference_upstream: parsed.host_port,
@@ -134,6 +146,19 @@ impl WanakuEnv {
             ),
         }
     }
+}
+
+/// Parses the public MCP base URL from its raw env value.
+///
+/// Returns `None` when the value is absent, blank, or not an HTTP(S) URL.
+/// Removes trailing slashes so callers can append `/<namespace>/mcp`.
+fn parse_mcp_public_url(raw: Option<&str>) -> Option<String> {
+    let value = raw.map(str::trim).filter(|v| !v.is_empty())?;
+    let has_host = value
+        .strip_prefix("https://")
+        .or_else(|| value.strip_prefix("http://"))
+        .is_some_and(|rest| !rest.is_empty() && !rest.starts_with('/'));
+    has_host.then(|| value.trim_end_matches('/').to_owned())
 }
 
 /// Parses the forward health-check interval from its raw env value.
@@ -216,8 +241,34 @@ fn split_authority(authority: &str) -> (&str, Option<&str>) {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_healthcheck_interval, parse_upstream};
+    use super::{parse_healthcheck_interval, parse_mcp_public_url, parse_upstream};
     use std::time::Duration;
+
+    #[test]
+    fn mcp_public_url_is_unset_when_absent_or_blank() {
+        assert_eq!(parse_mcp_public_url(None), None);
+        assert_eq!(parse_mcp_public_url(Some("  ")), None);
+    }
+
+    #[test]
+    fn mcp_public_url_strips_trailing_slashes() {
+        assert_eq!(
+            parse_mcp_public_url(Some(" https://mcp.example.com/ ")),
+            Some("https://mcp.example.com".to_owned())
+        );
+        assert_eq!(
+            parse_mcp_public_url(Some("http://10.0.0.5:30081/proxy//")),
+            Some("http://10.0.0.5:30081/proxy".to_owned())
+        );
+    }
+
+    #[test]
+    fn mcp_public_url_rejects_non_http_values() {
+        assert_eq!(parse_mcp_public_url(Some("mcp.example.com")), None);
+        assert_eq!(parse_mcp_public_url(Some("ftp://mcp.example.com")), None);
+        assert_eq!(parse_mcp_public_url(Some("https://")), None);
+        assert_eq!(parse_mcp_public_url(Some("https:///path")), None);
+    }
 
     #[test]
     fn healthcheck_interval_defaults_when_absent() {

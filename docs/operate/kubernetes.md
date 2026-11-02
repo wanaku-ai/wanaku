@@ -135,6 +135,8 @@ MCP clients in the cluster use `http://wanaku-server:8081/<namespace>/mcp`. To u
 kubectl port-forward deployment/wanaku-server 8080:8080
 ```
 
+If clients reach the MCP endpoint through an Ingress or a Route, set `WANAKU_MCP_PUBLIC_URL` on the server container to the external base URL, for example `https://wanaku-mcp.apps.example.com`. The admin UI then shows the correct MCP address for each namespace. See [Public MCP URL](../reference/environment-variables.md#public-mcp-url).
+
 To use a custom pipeline, add a `pipeline.yaml` key to the ConfigMap and pass it to the server. The server does not read a pipeline file without this argument:
 
 ```yaml

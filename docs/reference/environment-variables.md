@@ -16,6 +16,7 @@ These control core server behavior:
 | `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Management API listen address (host:port) |
 | `WANAKU_A2A_LISTEN` | `0.0.0.0:8084` | Registered A2A agents listen address in the embedded pipeline. |
 | `WANAKU_A2A_PUBLIC_URL` | `http://127.0.0.1:8084/` | Public HTTP or HTTPS origin for registered agent proxy URLs and Agent Cards. |
+| `WANAKU_MCP_PUBLIC_URL` | _(unset = admin UI host and port `8081`)_ | Public HTTP or HTTPS base URL of the MCP endpoint. The admin UI uses it to show namespace MCP addresses. See [Public MCP URL](#public-mcp-url). |
 | `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Upstream for the inference-proxy pipeline (port 8083), an OpenAI-compatible passthrough. Clients call this port directly and supply their own bearer token. |
 | `WANAKU_PERSIST_BACKEND` | `file` | File-based registry persistence. Only the exact value `none` disables persistence. Any other value uses file persistence. |
 | `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | Directory where Wanaku reads and writes `registry.json`. The default plugins path is `<WANAKU_PERSIST_PATH>/plugins`. |
@@ -58,6 +59,20 @@ Useful when running Wanaku behind a reverse proxy (nginx, Envoy) that handles ex
 ```bash
 export WANAKU_MGMT_LISTEN=10.0.1.42:8080
 ```
+
+### Public MCP URL
+
+The **Namespaces** page of the admin UI shows an MCP address for each namespace. The address has the form `<base>/<namespace>/mcp`.
+
+When `WANAKU_MCP_PUBLIC_URL` is not set, the admin UI uses the protocol and host of the admin UI page and port `8081` as the base. This is correct for a local deployment.
+
+When clients reach the MCP endpoint at a different host or port, set `WANAKU_MCP_PUBLIC_URL` to that base URL. Examples are an OpenShift Route, a Kubernetes Ingress, or a reverse proxy:
+
+```bash
+export WANAKU_MCP_PUBLIC_URL=https://wanaku-mcp.apps.example.com
+```
+
+The value must start with `http://` or `https://`. The server removes trailing slashes. The server ignores a value that is not an HTTP or HTTPS URL. The server does not use this value to route traffic. The management API returns it in the `mcpPublicUrl` field of `GET /api/v1/management/info`.
 
 ### Admin UI Override
 
