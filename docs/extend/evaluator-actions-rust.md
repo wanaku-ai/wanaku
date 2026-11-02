@@ -7,6 +7,8 @@ description: Write a Wanaku evaluator action script in Rust with wit-bindgen and
 
 Rust gives you type safety and better tooling for complex logic. The trade-off is more boilerplate.
 
+To start a new action, use the [evaluator template](https://github.com/wanaku-ai/wanaku-evaluator-template). Its `rust/` folder contains a working crate with unit tests. Its CI builds the component and runs it in a Wanaku server. This page explains the parts of that crate.
+
 ## Prerequisites
 
 ```bash
@@ -146,6 +148,15 @@ Output: `target/wasm32-wasip1/release/safety_review_action.wasm`
 
 The filename comes from your `[package] name` with `_` replacing `-`.
 
+[Policy simulation](../govern/policy-simulation.md) does not run a `wasm32-wasip1` component. The WASI adapter adds imports that simulation rejects with `evaluator_processor_capability_unsupported`. To test the action in simulation, build it for `wasm32-unknown-unknown`:
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo component build --release --target wasm32-unknown-unknown
+```
+
+The output is in `target/wasm32-unknown-unknown/release/`. Live enforcement runs both builds.
+
 ## Step 5: Deploy
 
 Same as JavaScript — reference the WASM file in your evaluator config:
@@ -272,6 +283,7 @@ bindings::export!(SafetyReview with_types_in bindings);
 
 ## Next steps
 
+- [Evaluator template](https://github.com/wanaku-ai/wanaku-evaluator-template): a starter repository with tests and CI.
 - [Rust example](https://github.com/wanaku-ai/wanaku/blob/main/actions/safety-review): the source of the bundled safety-review action.
 - [cargo-component](https://github.com/bytecodealliance/cargo-component): the build tool documentation.
 - [Evaluators](../govern/evaluators.md): configure the evaluator that runs your action.

@@ -9,6 +9,7 @@ These pages are for developers who add features to Wanaku.
 
 ## Evaluator actions
 
+- [Evaluator template](https://github.com/wanaku-ai/wanaku-evaluator-template): start a new policy from a Rust, JavaScript, or Rego starter, with tests and CI.
 - [Write evaluator actions in JavaScript](evaluator-actions-js.md): write, compile, and test a JavaScript action script.
 - [Write evaluator actions in Rust](evaluator-actions-rust.md): build an action script with wit-bindgen and cargo-component.
 

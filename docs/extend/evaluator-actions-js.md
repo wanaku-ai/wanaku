@@ -7,6 +7,8 @@ description: Write a Wanaku evaluator action script in JavaScript, compile it to
 
 JavaScript is the fastest path from idea to working WASM. You write normal JS, compile it with `jco`, and the engine runs it.
 
+To start a new action, use the [evaluator template](https://github.com/wanaku-ai/wanaku-evaluator-template). Its `js/` folder contains a working action, unit tests that stub the host imports, and a build script. Its CI runs the action in a Wanaku server. This page explains the parts of that action.
+
 ## Prerequisites
 
 ```bash
@@ -420,6 +422,7 @@ echo "Done."
 
 ## Next steps
 
+- [Evaluator template](https://github.com/wanaku-ai/wanaku-evaluator-template): a starter repository with tests and CI.
 - [WIT interface](https://github.com/wanaku-ai/wanaku/blob/main/features/evaluator/wit/evaluator.wit) and [TypeScript definitions](https://github.com/wanaku-ai/wanaku/blob/main/sdk/js/wanaku-actions.d.ts): the authoritative API reference.
 - [JavaScript examples](https://github.com/wanaku-ai/wanaku/blob/main/actions/js-examples): more example action scripts.
 - [jco](https://github.com/bytecodealliance/jco): the componentize tool documentation.
