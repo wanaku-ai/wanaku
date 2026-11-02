@@ -95,6 +95,22 @@ For admin UI changes, follow the [E2E Tests](admin-ui.md#e2e-tests) section in A
 
 Before you submit a pull request, review the diff for unrelated changes. Keep related corrections in the existing commit when the project maintainers ask for amended commits.
 
+## Version Convention
+
+Use a SemVer prerelease suffix for development package versions, such as `0.4.0-dev`.
+Use numbered suffixes for published test releases, such as `0.4.0-alpha.1`, `0.4.0-beta.1`, and `0.4.0-rc.1`.
+Remove the suffix for a stable release, such as `0.4.0`.
+After the stable release is published, set the next development version, such as `0.5.0-dev`.
+
+Update these files together when you change the version:
+
+- The workspace package version and internal dependency requirements in `Cargo.toml`.
+- The workspace package versions in `Cargo.lock`.
+- The admin UI package version in `ui/admin/package.json`.
+
+Use the complete development version as the `currentDevelopmentVersion` input of the `early-access` workflow.
+The workflow publishes the rolling `early-access` release with that version.
+
 ## Code of Conduct
 
 We are committed to providing a welcoming and inclusive environment. Please be respectful and professional in all interactions.
