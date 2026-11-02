@@ -119,7 +119,7 @@ Each GitHub release also includes `wanaku-evaluators-<version>.tar.gz`. This arc
 - `sdk/js/wanaku-actions.d.ts`: the TypeScript definitions for JavaScript action scripts.
 - `examples/js/`: the JavaScript example sources. These examples are not compiled.
 
-In the container image, the bundled files are in `/data/evaluators/`. If you mount a volume on `/data`, the volume hides these files. Mount the persistence volume on `/data/registry` instead. To add your own action scripts, mount them on a different path, for example `/data/evaluators-custom/`.
+In the container image, the bundled files are in `/data/evaluators/`. If you mount a volume on `/data`, the volume hides these files. Mount the persistence volume on `/data/registry` instead. To add your own action scripts, mount them on a different path, for example `/data/evaluators-custom/`. To write your own action script, start from the [evaluator template](https://github.com/wanaku-ai/wanaku-evaluator-template). It has Rust, JavaScript, and Rego starters.
 
 ## Manage evaluators at runtime
 
@@ -383,5 +383,6 @@ Downstream filters can read this metadata and make decisions (e.g., extra loggin
 
 - [Evaluator engines](evaluator-engines.md): configure the LLM, TypeSafe System One, OPA, and passthrough engines.
 - [Write evaluator actions in JavaScript](../extend/evaluator-actions-js.md): build your own processor.
+- [Evaluator template](https://github.com/wanaku-ai/wanaku-evaluator-template): start a new policy from a starter with tests and CI.
 - [Governance Posture](governance-posture.md): set the failure behavior for evaluators.
 - [Action Policies](action-policies.md): combine evaluators with deterministic rules.

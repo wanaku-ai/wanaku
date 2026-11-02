@@ -100,6 +100,7 @@ To use the boolean decision, set `decision_path: "wanaku/tool_call/allow"`. The 
 
 ## Next steps
 
+- [Evaluator template](https://github.com/wanaku-ai/wanaku-evaluator-template): start a new Rego policy, with tests and CI, from the `opa/` starter.
 - [Evaluator engines](evaluator-engines.md#open-policy-agent): find the OPA connection keys, the input document, and the decision contract.
 - [Evaluators](evaluators.md): learn how triggers and processors work.
 - [Govern an MCP server](govern-an-mcp-server.md): combine an evaluator with action-policy rules and a credential binding.
