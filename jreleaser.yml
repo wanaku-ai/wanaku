@@ -88,8 +88,6 @@ distributions:
         platform: osx-x86_64
       - path: dist/wanaku-server-{{projectVersion}}-macos-aarch64.tar.gz
         platform: osx-aarch_64
-      - path: dist/wanaku-server-{{projectVersion}}-windows-x86_64.zip
-        platform: windows-x86_64
 
   # Headless Wanaku Server binary (built with --no-default-features).
   wanaku-server-headless:
@@ -105,8 +103,6 @@ distributions:
         platform: osx-x86_64
       - path: dist/wanaku-server-headless-{{projectVersion}}-macos-aarch64.tar.gz
         platform: osx-aarch_64
-      - path: dist/wanaku-server-headless-{{projectVersion}}-windows-x86_64.zip
-        platform: windows-x86_64
 
 # Platform-neutral assets: signed and listed in checksums_sha256.txt.
 files:
