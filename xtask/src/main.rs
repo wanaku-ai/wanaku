@@ -12,9 +12,12 @@
 //! cargo build-image-headless                 # shorthand for --variant headless
 //! cargo build-image-headless --push
 //! cargo build-image-manifest                 # assemble multi-arch manifest list
+//! cargo set-version 0.4.0                    # set the project version everywhere
 //! ```
 
 use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, anyhow, bail};
@@ -25,6 +28,7 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Commands::BuildImage(args) => build_image(&args),
         Commands::BuildImageManifest(args) => build_image_manifest(&args),
+        Commands::SetVersion(args) => set_version(&args.version),
     }
 }
 
@@ -56,6 +60,20 @@ enum Commands {
     /// Requires both `<tag>-aarch64` and `<tag>-x86_64` to already be in the
     /// registry. Assembles them into a single manifest list at `<tag>`.
     BuildImageManifest(BuildImageManifestArgs),
+
+    /// Set the project version in every file that carries it.
+    ///
+    /// Updates the workspace version and the internal crate references in
+    /// Cargo.toml, the admin UI package.json, the committed OpenAPI document,
+    /// and the headers of the generated admin UI client, then refreshes
+    /// Cargo.lock.
+    SetVersion(SetVersionArgs),
+}
+
+#[derive(Debug, Parser)]
+pub struct SetVersionArgs {
+    /// The new version, for example 0.4.0.
+    version: String,
 }
 
 #[derive(Debug, Parser)]
@@ -712,4 +730,128 @@ fn require_tool(tool: &str, install_url: &str) -> anyhow::Result<()> {
         bail!("`{tool}` not found on PATH. Install it from: {install_url}");
     }
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// set-version
+// ---------------------------------------------------------------------------
+
+const GENERATED_CLIENT_DIRS: [&str; 2] = ["ui/admin/src/api", "ui/admin/src/models"];
+
+fn set_version(new: &str) -> anyhow::Result<()> {
+    if !is_plain_version(new) {
+        bail!("version must look like 1.2.3, got {new:?}");
+    }
+    let cargo_toml =
+        fs::read_to_string("Cargo.toml").context("run this from the repository root")?;
+    let old = workspace_version(&cargo_toml)
+        .ok_or_else(|| anyhow!("no version in [workspace.package] of Cargo.toml"))?;
+    if old == new {
+        bail!("the version is already {new}");
+    }
+
+    bump_cargo_toml(&cargo_toml, &old, new)?;
+    bump_admin_ui(&old, new)?;
+
+    let status = Command::new("cargo")
+        .args(["update", "--workspace"])
+        .status()
+        .context("run cargo update --workspace")?;
+    if !status.success() {
+        bail!("cargo update --workspace failed");
+    }
+    println!("Version changed from {old} to {new}");
+    Ok(())
+}
+
+/// Updates the workspace version and the `wanaku-*` dependency versions in Cargo.toml.
+fn bump_cargo_toml(cargo_toml: &str, old: &str, new: &str) -> anyhow::Result<()> {
+    let quoted = |v: &str| format!("version = \"{v}\"");
+    let updated: Vec<String> = cargo_toml
+        .lines()
+        .map(|line| {
+            let own = line.starts_with("version =") || line.starts_with("wanaku-");
+            if own {
+                line.replace(&quoted(old), &quoted(new))
+            } else {
+                line.to_owned()
+            }
+        })
+        .collect();
+    fs::write("Cargo.toml", updated.join("\n") + "\n")?;
+    Ok(())
+}
+
+/// Updates the admin UI package.json, the OpenAPI document and the generated client headers.
+fn bump_admin_ui(old: &str, new: &str) -> anyhow::Result<()> {
+    let json = |v: &str| format!("\"version\": \"{v}\"");
+    for file in ["ui/admin/package.json", "ui/admin/openapi.json"] {
+        let text = fs::read_to_string(file).with_context(|| format!("read {file}"))?;
+        if !text.contains(&json(old)) {
+            bail!("{file} does not contain {}", json(old));
+        }
+        fs::write(file, text.replacen(&json(old), &json(new), 1))?;
+    }
+
+    let header = |v: &str| format!(" * OpenAPI spec version: {v}\n");
+    for dir in GENERATED_CLIENT_DIRS {
+        replace_in_tree(Path::new(dir), &header(old), &header(new))?;
+    }
+    Ok(())
+}
+
+fn is_plain_version(version: &str) -> bool {
+    let parts: Vec<&str> = version.split('.').collect();
+    parts.len() == 3
+        && parts
+            .iter()
+            .all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()))
+}
+
+fn workspace_version(cargo_toml: &str) -> Option<String> {
+    cargo_toml
+        .lines()
+        .skip_while(|line| line.trim() != "[workspace.package]")
+        .skip(1)
+        .take_while(|line| !line.starts_with('['))
+        .find_map(|line| line.strip_prefix("version = \""))
+        .and_then(|rest| rest.strip_suffix('"'))
+        .map(str::to_owned)
+}
+
+fn replace_in_tree(dir: &Path, from: &str, to: &str) -> anyhow::Result<()> {
+    for entry in fs::read_dir(dir).with_context(|| format!("read {}", dir.display()))? {
+        let path = entry?.path();
+        if path.is_dir() {
+            replace_in_tree(&path, from, to)?;
+        } else if path.extension().is_some_and(|ext| ext == "ts") {
+            let text = fs::read_to_string(&path)?;
+            if text.contains(from) {
+                fs::write(&path, text.replacen(from, to, 1))?;
+            }
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod set_version_tests {
+    use super::{is_plain_version, workspace_version};
+
+    #[test]
+    fn accepts_only_plain_versions() {
+        assert!(is_plain_version("0.4.0"));
+        assert!(is_plain_version("10.20.30"));
+        assert!(!is_plain_version("0.4"));
+        assert!(!is_plain_version("0.4.0-SNAPSHOT"));
+        assert!(!is_plain_version("v0.4.0"));
+        assert!(!is_plain_version("0..0"));
+    }
+
+    #[test]
+    fn reads_the_workspace_package_version() {
+        let toml = "[workspace]\nmembers = []\n\n[workspace.package]\nversion = \"0.3.0\"\nedition = \"2024\"\n\n[workspace.dependencies]\nfoo = { version = \"1.0\" }\n";
+        assert_eq!(workspace_version(toml).as_deref(), Some("0.3.0"));
+        assert_eq!(workspace_version("[package]\nversion = \"1.0.0\"\n"), None);
+    }
 }

@@ -95,6 +95,18 @@ For admin UI changes, follow the [E2E Tests](admin-ui.md#e2e-tests) section in A
 
 Before you submit a pull request, review the diff for unrelated changes. Keep related corrections in the existing commit when the project maintainers ask for amended commits.
 
+## Change the Project Version
+
+The project version is in several files: `Cargo.toml`, `Cargo.lock`, `ui/admin/package.json`, `ui/admin/openapi.json`, and the headers of the generated admin UI client in `ui/admin/src/api/` and `ui/admin/src/models/`. Do not edit these files by hand. Run this command from the repository root:
+
+```bash
+cargo set-version 0.4.0
+```
+
+The command reads the current version from the `[workspace.package]` section of `Cargo.toml`. It replaces that version in each file, then runs `cargo update --workspace` to update `Cargo.lock`. The version must have the form `MAJOR.MINOR.PATCH`.
+
+The `release` workflow fails when its version input is not the same as the `wanaku-server` version. After you create a release branch, use this command on `main` to set the next development version.
+
 ## Code of Conduct
 
 We are committed to providing a welcoming and inclusive environment. Please be respectful and professional in all interactions.

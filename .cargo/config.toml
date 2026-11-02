@@ -10,3 +10,7 @@ build-image-headless = ["run", "--quiet", "-p", "xtask", "--", "build-image", "-
 # Assemble a multi-arch manifest list from existing arch-specific images.
 # Usage: cargo build-image-manifest [--target docker|openshift] [--tag <image:tag>]
 build-image-manifest = ["run", "--quiet", "-p", "xtask", "--", "build-image-manifest"]
+
+# Set the project version in Cargo.toml, Cargo.lock, the admin UI package.json and the OpenAPI client.
+# Usage: cargo set-version <version>
+set-version = ["run", "--quiet", "-p", "xtask", "--", "set-version"]
