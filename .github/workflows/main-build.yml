@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - '[0-9]+.[0-9]+.x'
       - ci-*
     paths-ignore:
       - '**.md'
@@ -20,6 +21,7 @@ env:
   CARGO_TERM_COLOR: always
   CONTAINER_REGISTRY: ${{ vars.CONTAINER_REGISTRY || 'quay.io' }}
   CONTAINER_GROUP: ${{ vars.CONTAINER_GROUP || 'wanaku' }}
+  # main pushes latest; any other branch (a release branch such as 0.3.x, or ci-*) pushes its own name.
   IMAGE_TAG: ${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
 
 jobs:
