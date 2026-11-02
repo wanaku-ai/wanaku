@@ -315,6 +315,7 @@ mod tests {
         WanakuEnv {
             a2a_listen: "0.0.0.0:8084".to_owned(),
             a2a_public_url: "http://127.0.0.1:8084/".to_owned(),
+            mcp_public_url: None,
             mgmt_listen: "0.0.0.0:8080".to_owned(),
             inference_upstream: upstream.to_owned(),
             inference_path_prefix: path_prefix.to_owned(),

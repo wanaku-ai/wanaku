@@ -42,7 +42,7 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `GET` | `/health` | Get the server health. |
 | `GET` | `/healthz` | Get the server health. |
 | `GET` | `/openapi.json` | Get the OpenAPI document. |
-| `GET` | `/api/v1/management/info` | Get the server name and version. |
+| `GET` | `/api/v1/management/info` | Get the server name, the version, and the public MCP URL (`mcpPublicUrl`, `null` when `WANAKU_MCP_PUBLIC_URL` is not set). |
 | `GET` | `/api/v1/management/statistics` | Get registry counts. |
 | `GET` | `/api/v1/tools` | List tools. |
 | `GET` | `/api/v1/tools/{name}` | Get a tool. Use the optional `namespace` query parameter. |

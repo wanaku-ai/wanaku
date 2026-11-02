@@ -17,11 +17,14 @@ import {
 } from '@carbon/react';
 import React from 'react';
 import { NamespaceEntry } from '../../models';
+import { mcpAddress } from './namespaces';
 
 const PROTECTED_PATHS = ['default', 'public', 'wanaku-internal'];
 
 interface NamespaceTableProps {
   namespaces: NamespaceEntry[];
+  /** Public MCP base URL from the server. Unset uses the admin UI host and port 8081. */
+  mcpPublicUrl?: string | null;
   onAdd: () => void;
   onEdit: (namespace: NamespaceEntry) => void;
   onDelete: (namespace: NamespaceEntry) => void;
@@ -47,6 +50,7 @@ function formatLabel(key: string, value: string): string {
 
 export const NamespaceTable: React.FC<NamespaceTableProps> = ({
   namespaces,
+  mcpPublicUrl,
   onAdd,
   onEdit,
   onDelete,
@@ -58,18 +62,13 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
     { key: 'actions', header: 'Actions' },
   ];
 
-  function mcpAddress(name?: string): string {
-    const host = window.location.hostname;
-    const protocol = window.location.protocol;
-    const base = `${protocol}//${host}:8081`;
-    return `${base}/${name || 'default'}/mcp`;
-  }
+  const addressOf = (name?: string) => mcpAddress(name, mcpPublicUrl, window.location);
 
   const rows = namespaces.map((namespace, index) => ({
     id: namespace.name || `namespace-${index}`,
     name: namespace.name || 'N/A',
     status: namespace.name ? 'Allocated' : 'Available',
-    address: mcpAddress(namespace.name),
+    address: addressOf(namespace.name),
     actions: '',
   }));
 
@@ -114,7 +113,7 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
                   <React.Fragment>
                     <TableCell>{namespace.name || 'N/A'}</TableCell>
                     <TableCell>{namespace.name ? 'Allocated' : 'Available'}</TableCell>
-                    <TableCell>{mcpAddress(namespace.name)}</TableCell>
+                    <TableCell>{addressOf(namespace.name)}</TableCell>
                     <TableCell>
                       <Button
                         kind="ghost"

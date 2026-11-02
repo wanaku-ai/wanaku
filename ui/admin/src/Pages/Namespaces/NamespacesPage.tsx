@@ -7,12 +7,15 @@ import { useNamespaces } from '../../hooks/api/use-namespaces';
 import { sortedNamespaces } from './namespaces';
 import { useErrorNotification } from '../../hooks/error-notifications';
 import { ErrorNotification } from '../../components/ErrorNotification';
+import { getInfo } from '../../api/wanaku-router-api';
 
 export const NamespacesPage: React.FC = () => {
   const [namespaces, setNamespaces] = useState<NamespaceEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [openedNamespace, setOpenedNamespace] = useState<NamespaceEntry>();
+  // `undefined` until the server info arrives, so the table never shows a wrong address first.
+  const [mcpPublicUrl, setMcpPublicUrl] = useState<string | null>();
   const { errorMessage, setErrorMessage } = useErrorNotification();
   const { listNamespaces, createNamespace, updateNamespace, removeNamespace } = useNamespaces();
 
@@ -32,7 +35,14 @@ export const NamespacesPage: React.FC = () => {
     refreshNamespaces();
   }, [refreshNamespaces]);
 
-  if (isLoading) return <PageSkeleton title="Namespaces" />;
+  useEffect(() => {
+    // Without the server info, the table keeps the local default address.
+    getInfo()
+      .then((result) => setMcpPublicUrl(result.data.mcpPublicUrl ?? null))
+      .catch(() => setMcpPublicUrl(null));
+  }, []);
+
+  if (isLoading || mcpPublicUrl === undefined) return <PageSkeleton title="Namespaces" />;
 
   function handleModalClose(): void {
     setOpenedNamespace(undefined);
@@ -95,6 +105,7 @@ export const NamespacesPage: React.FC = () => {
       <div id="page-content">
         <NamespaceTable
           namespaces={namespaces}
+          mcpPublicUrl={mcpPublicUrl}
           onAdd={() => setIsModalOpen(true)}
           onEdit={(namespace: NamespaceEntry) => {
             setOpenedNamespace(namespace);

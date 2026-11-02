@@ -31,6 +31,7 @@ import type {
   GetEvaluatorRevision200,
   GetEvaluatorStatus200,
   GetEvaluatorStatusParams,
+  GetInfo200,
   GetPolicyReplay200,
   GetPromptParams,
   GetResourceParams,
@@ -1553,7 +1554,7 @@ export const refreshForward = async (
 };
 
 export type getInfoResponse200 = {
-  data: unknown;
+  data: GetInfo200;
   status: 200;
 };
 
