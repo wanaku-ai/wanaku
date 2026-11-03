@@ -39,8 +39,8 @@ export interface CliDownload {
 export const CLI_REPO = 'wanaku-ai/wanaku-barn';
 
 /**
- * The version of the CLI packages. Keep this in sync with the Wanaku project
- * version (see the workspace `Cargo.toml` and `ui/admin/package.json`).
+ * The version of the CLI packages published by Wanaku Barn. Update this
+ * independently of the server package version.
  */
 export const CLI_VERSION = '0.3.0';
 
@@ -55,7 +55,9 @@ export const CLI_VERSION = '0.3.0';
  *   artifacts use the plain version (for example `wanaku-cli-0.3.0.zip`).
  */
 export type ReleaseChannel = 'early-access' | 'stable';
-export const CLI_RELEASE_CHANNEL: ReleaseChannel = 'early-access';
+export const CLI_RELEASE_CHANNEL: ReleaseChannel = WANAKU_VERSION.split('+')[0].includes('-')
+  ? 'early-access'
+  : 'stable';
 
 const isEarlyAccess = CLI_RELEASE_CHANNEL === 'early-access';
 
@@ -73,6 +75,8 @@ export const CLI_RELEASE_PAGE = `https://github.com/${CLI_REPO}/releases/tag/${C
 
 const downloadUrl = (fileName: string): string =>
   `https://github.com/${CLI_REPO}/releases/download/${CLI_RELEASE_TAG}/${fileName}`;
+
+export const CLI_CHECKSUM_URL = downloadUrl('checksums_sha256.txt');
 
 /**
  * The list of CLI packages available for download.
