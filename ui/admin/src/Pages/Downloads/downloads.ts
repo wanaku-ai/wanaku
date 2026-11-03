@@ -55,9 +55,12 @@ export const CLI_VERSION = '0.3.0';
  *   artifacts use the plain version (for example `wanaku-cli-0.3.0.zip`).
  */
 export type ReleaseChannel = 'early-access' | 'stable';
-export const CLI_RELEASE_CHANNEL: ReleaseChannel = 'early-access';
+export const CLI_RELEASE_CHANNEL: ReleaseChannel = 'stable';
 
-const isEarlyAccess = CLI_RELEASE_CHANNEL === 'early-access';
+const isEarlyAccess = {
+  'early-access': true,
+  stable: false,
+}[CLI_RELEASE_CHANNEL];
 
 /**
  * Release tag the downloads point at. Derived from the selected channel so the
