@@ -22,7 +22,7 @@ exclude = [
 ]
 
 [workspace.package]
-version = "0.3.0"
+version = "0.4.0-dev"
 edition = "2024"
 rust-version = "1.96"
 license = "Apache-2.0"
@@ -54,17 +54,17 @@ praxis-tls = { version = "0.7.3", package = "praxis-proxy-tls" }
 praxis-ai-apis = { version = "0.5.1", git = "https://github.com/praxis-proxy/ai", rev = "f1cf680d35e8ffea1aa3bfe966641404a97ff1b5", default-features = false }
 praxis-ai-filters = { version = "0.5.1", git = "https://github.com/praxis-proxy/ai", rev = "f1cf680d35e8ffea1aa3bfe966641404a97ff1b5", default-features = false }
 
-wanaku-infra = { version = "0.3.0", path = "infra" }
-wanaku-types = { version = "0.3.0", path = "types" }
-wanaku-filters = { version = "0.3.0", path = "filters" }
-wanaku-feature-evaluator = { version = "0.3.0", path = "features/evaluator" }
-wanaku-feature-action-policy = { version = "0.3.0", path = "features/action-policy" }
-wanaku-feature-audit = { version = "0.3.0", path = "features/audit" }
-wanaku-feature-intercept = { version = "0.3.0", path = "features/intercept" }
-wanaku-feature-mcp-metadata = { version = "0.3.0", path = "features/mcp-metadata" }
-wanaku-feature-metrics = { version = "0.3.0", path = "features/metrics" }
-wanaku-feature-plugins = { version = "0.3.0", path = "features/plugins" }
-wanaku-feature-simulation = { version = "0.3.0", path = "features/simulation" }
+wanaku-infra = { version = "0.4.0-dev", path = "infra" }
+wanaku-types = { version = "0.4.0-dev", path = "types" }
+wanaku-filters = { version = "0.4.0-dev", path = "filters" }
+wanaku-feature-evaluator = { version = "0.4.0-dev", path = "features/evaluator" }
+wanaku-feature-action-policy = { version = "0.4.0-dev", path = "features/action-policy" }
+wanaku-feature-audit = { version = "0.4.0-dev", path = "features/audit" }
+wanaku-feature-intercept = { version = "0.4.0-dev", path = "features/intercept" }
+wanaku-feature-mcp-metadata = { version = "0.4.0-dev", path = "features/mcp-metadata" }
+wanaku-feature-metrics = { version = "0.4.0-dev", path = "features/metrics" }
+wanaku-feature-plugins = { version = "0.4.0-dev", path = "features/plugins" }
+wanaku-feature-simulation = { version = "0.4.0-dev", path = "features/simulation" }
 
 [workspace.lints.rust]
 unsafe_code = "deny"
