@@ -83,7 +83,7 @@ spec:
         fsGroup: 0  # Plain Kubernetes only. Remove on OpenShift, which assigns its own fsGroup.
       containers:
       - name: wanaku
-        image: quay.io/wanaku/wanaku-server:early-access
+        image: quay.io/wanaku/wanaku-server:0.3.0
         ports:
         - name: management
           containerPort: 8080

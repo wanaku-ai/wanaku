@@ -257,14 +257,14 @@ Registry reference : default-route-openshift-image-registry.apps.example.com/myp
 To push a specific version tag:
 
 ```bash
-cargo build-image --target openshift --push --tag quay.io/wanaku/wanaku-server:v0.3.0
-# pushes as: <registry>/<namespace>/wanaku-server:v0.3.0-<arch>
+cargo build-image --target openshift --push --tag quay.io/wanaku/wanaku-server:0.3.0
+# pushes as: <registry>/<namespace>/wanaku-server:0.3.0-<arch>
 ```
 
 To assemble a multi-arch manifest after both arch images are pushed:
 
 ```bash
-cargo build-image-manifest --target openshift --tag quay.io/wanaku/wanaku-server:v0.3.0
+cargo build-image-manifest --target openshift --tag quay.io/wanaku/wanaku-server:0.3.0
 ```
 
 ## Make targets

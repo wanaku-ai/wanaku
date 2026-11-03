@@ -105,7 +105,7 @@ wanaku-server
 Or with containers:
 
 ```bash
-docker run -p 8080:8080 -p 8081:8081 quay.io/wanaku/wanaku-server:early-access
+docker run -p 8080:8080 -p 8081:8081 quay.io/wanaku/wanaku-server:0.3.0
 ```
 
 **Key difference:** You run `wanaku-server` directly and register MCP servers as forwards. Wanaku does not start or manage downstream processes.
