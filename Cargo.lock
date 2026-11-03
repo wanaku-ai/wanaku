@@ -6032,7 +6032,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-action-policy"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "bytes",
@@ -6053,7 +6053,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-audit"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "form_urlencoded",
@@ -6070,7 +6070,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-evaluator"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "bytes",
@@ -6099,7 +6099,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-intercept"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "bytes",
@@ -6114,7 +6114,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-mcp-metadata"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "bytes",
@@ -6132,7 +6132,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-metrics"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "http",
@@ -6145,7 +6145,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-plugins"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "http",
@@ -6166,7 +6166,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-feature-simulation"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "bytes",
@@ -6186,7 +6186,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-filters"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "bytes",
@@ -6204,7 +6204,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-infra"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "dashmap",
@@ -6226,7 +6226,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-server"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "bytes",
@@ -6266,7 +6266,7 @@ dependencies = [
 
 [[package]]
 name = "wanaku-types"
-version = "0.4.0-dev"
+version = "0.3.1-dev"
 dependencies = [
  "async-trait",
  "futures",
