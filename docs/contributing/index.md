@@ -102,9 +102,12 @@ Use numbered suffixes for published test releases, such as `0.4.0-alpha.1`, `0.4
 Remove the suffix for a stable release, such as `0.4.0`.
 After the stable release is published, set the next development version, such as `0.5.0-dev`.
 
+Internal workspace dependencies use local paths without version requirements.
+Wanaku crates inherit their package version from `workspace.package.version`.
+
 Update these files together when you change the version:
 
-- The workspace package version and internal dependency requirements in `Cargo.toml`.
+- The workspace package version in `Cargo.toml`.
 - The workspace package versions in `Cargo.lock`.
 - The admin UI package version in `ui/admin/package.json`.
 
