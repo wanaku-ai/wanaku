@@ -389,7 +389,15 @@ pub(super) async fn handle_forward_create(
     }
 
     let prepared = prepare_forward_update(registry, broker, audit_sink, &forward).await;
-    let (forward, counts) = publish_forward_create(registry, prepared, replacing);
+    // A replacement is all or nothing: when discovery fails, the previous
+    // forward, its labels, and its entries stay unchanged.
+    if replacing && prepared.capabilities.is_none() {
+        let status = prepared.forward.status_message.unwrap_or_default();
+        warn!(forward = %forward.name, status = %status, "forward replacement discovery failed; kept the previous forward");
+        return json_err(StatusCode::BAD_GATEWAY, &status);
+    }
+    let (forward, counts) = apply_forward_update(registry, prepared);
+    info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
 
     json_ok(&serde_json::json!({
         "forward": &forward,
@@ -397,29 +405,6 @@ pub(super) async fn handle_forward_create(
         "resources_discovered": counts.resources,
         "prompts_discovered": counts.prompts,
     }))
-}
-
-/// Publish the result of a forward create.
-///
-/// A replacement takes over the forward only after discovery succeeds.
-/// Otherwise the previous registration, its labels, and its entries stay, and
-/// the returned forward shows the failed replacement.
-fn publish_forward_create(
-    registry: &InMemoryRegistry,
-    prepared: PreparedForwardUpdate,
-    replacing: bool,
-) -> (ForwardEntry, PublishedCounts) {
-    if replacing && prepared.capabilities.is_none() {
-        warn!(
-            forward = %prepared.forward.name,
-            status = prepared.forward.status_message.as_deref().unwrap_or_default(),
-            "forward replacement discovery failed; kept the previous registration"
-        );
-        return (prepared.forward, PublishedCounts::default());
-    }
-    let (forward, counts) = apply_forward_update(registry, prepared);
-    info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
-    (forward, counts)
 }
 
 /// Whether a forward create asks to replace an existing forward
@@ -2087,7 +2072,7 @@ mod tests {
             .expect("runtime");
         let resp = runtime.block_on(handle_forward_create(&registry, &broker, None, body, true));
 
-        assert_eq!(resp.status(), 200);
+        assert_eq!(resp.status(), 502);
         assert!(broker.cache().is_empty());
     }
 
@@ -2099,9 +2084,7 @@ mod tests {
 
         let resp = handle_forward_create(&registry, &test_broker(), None, body, true).await;
 
-        assert_eq!(resp.status(), 200);
-        assert_eq!(data_field(&resp)["forward"]["available"], false);
-        assert_eq!(data_field(&resp)["tools_discovered"], 0);
+        assert_eq!(resp.status(), 502);
         let kept = registry.get_forward("owned-fwd").expect("forward kept");
         assert_eq!(kept.address, cached_forward("owned-fwd").address);
         assert_eq!(

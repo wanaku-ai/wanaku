@@ -224,7 +224,7 @@ curl -sS -X POST http://localhost:8080/api/v1/forwards \
   | jq -e '.data.forward.available' >/dev/null || echo "discovery failed"
 ```
 
-A replacement (`replace=true`) takes effect only when discovery succeeds. When the discovery of a replacement fails, Wanaku keeps the previous forward with its address, labels, availability, and entries. The response is `200` and shows the failed replacement: `forward.available` is `false`, `forward.statusMessage` contains the error, and the counts are zero. Thus, a runtime that cannot complete its replacement does not remove the forward of the instance that it replaces. A conditional delete with the labels of the failed replacement returns `409`.
+A replacement (`replace=true`) is all or nothing. When the discovery of a replacement fails, Wanaku does not change the registry. The previous forward keeps its address, labels, availability, and entries. The response is `502` with the error in `error`. A conditional delete with the labels of the failed replacement returns `409`. Thus, a runtime that cannot complete its replacement does not remove the forward of the instance that it replaces.
 
 `POST /api/v1/forwards/{name}/refreshes` returns a different shape: `refreshed` (the forward name) and the three counts. It does not return the forward. After a refresh, use `GET /api/v1/forwards/{name}` to check `available` and `statusMessage`.
 
