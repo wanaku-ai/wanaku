@@ -1351,6 +1351,16 @@
                 }
               }
             }
+          },
+          "502": {
+            "description": "Discovery of a replacement (`replace=true`) failed. The previous forward is kept",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
           }
         }
       }

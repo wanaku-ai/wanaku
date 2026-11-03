@@ -215,7 +215,7 @@ A successful request returns `200` with the forward and the discovered entry cou
 }
 ```
 
-The `forward` object also contains other forward fields. Wanaku stores the forward even if discovery fails. In that case, the response is also `200`. The counts are zero, `forward.available` is `false`, and `forward.statusMessage` contains the error. Thus, `curl --fail` does not detect a discovery failure. Check `forward.available`:
+The `forward` object also contains other forward fields. Wanaku stores a new forward even if discovery fails. In that case, the response is also `200`. The counts are zero, `forward.available` is `false`, and `forward.statusMessage` contains the error. Thus, `curl --fail` does not detect a discovery failure. Check `forward.available`:
 
 ```bash
 curl -sS -X POST http://localhost:8080/api/v1/forwards \
@@ -223,6 +223,8 @@ curl -sS -X POST http://localhost:8080/api/v1/forwards \
   -d '{"name":"upstream-mcp","address":"http://upstream-server:8080/mcp","namespace":"finance"}' \
   | jq -e '.data.forward.available' >/dev/null || echo "discovery failed"
 ```
+
+A replacement (`replace=true`) is all or nothing. When the discovery of a replacement fails, Wanaku does not change the registry. The previous forward keeps its address, labels, availability, and entries. The response is `502` with the error in `error`. A conditional delete with the labels of the failed replacement returns `409`. Thus, a runtime that cannot complete its replacement does not remove the forward of the instance that it replaces.
 
 `POST /api/v1/forwards/{name}/refreshes` returns a different shape: `refreshed` (the forward name) and the three counts. It does not return the forward. After a refresh, use `GET /api/v1/forwards/{name}` to check `available` and `statusMessage`.
 

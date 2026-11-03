@@ -1370,12 +1370,18 @@ export type createForwardResponse409 = {
   status: 409;
 };
 
+export type createForwardResponse502 = {
+  data: ManagementErrorResponse;
+  status: 502;
+};
+
 export type createForwardResponseSuccess = createForwardResponse200 & {
   headers: Headers;
 };
 export type createForwardResponseError = (
   | createForwardResponse400
   | createForwardResponse409
+  | createForwardResponse502
 ) & {
   headers: Headers;
 };

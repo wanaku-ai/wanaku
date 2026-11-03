@@ -344,6 +344,7 @@ const fn get_forward() {}
         (status = 200, description = "Forward created and tools discovered", body = serde_json::Value),
         (status = 400, description = "Invalid forward JSON, namespace name or address", body = ManagementErrorResponse),
         (status = 409, description = "Forward already exists and `replace=true` is not set", body = ManagementErrorResponse),
+        (status = 502, description = "Discovery of a replacement (`replace=true`) failed. The previous forward is kept", body = ManagementErrorResponse),
     )
 )]
 const fn create_forward() {}
