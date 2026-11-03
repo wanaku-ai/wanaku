@@ -1,9 +1,17 @@
 import { Accordion, AccordionItem, InlineNotification, Tag, Tile } from '@carbon/react';
 import { useCallback, useEffect, useState } from 'react';
 import { PageSkeleton } from '../../components/PageSkeleton';
-import { useActionPolicies, type ActionPolicyRevision } from '../../hooks/api/use-action-policies';
+import {
+  useActionPolicies,
+  type ActionPolicyRevision,
+  ActionPolicy,
+  RevisionMetadata
+} from "../../hooks/api/use-action-policies"
 import { PolicyDetails } from './PolicyDetails';
 import './ActionPoliciesPage.scss';
+import {ActionPolicyTile} from "./ActionPolicyTile"
+import {AddRuleModal} from "./AddRuleModal"
+import {Rule} from "../../models"
 
 type PageState =
   | { status: 'loading' }
@@ -25,10 +33,16 @@ const statusTagType = (
   return 'gray';
 };
 
-export const ActionPoliciesPage = () => {
-  const { getActivePolicy, listRevisions, getRevision } = useActionPolicies();
-  const [state, setState] = useState<PageState>({ status: 'loading' });
 
+export const ActionPoliciesPage = () => {
+  
+  const { getActivePolicy, listRevisions, getRevision } = useActionPolicies();
+  const [state, setState] = useState<PageState>({ status: "loading" });
+  const [isModalOpen, setModalOpen] = useState(false)
+  const [activePolicy, setActivePolicy] = useState<ActionPolicyRevision>()
+  const [actionPolicyRules, setActionPolicyRules] = useState<Rule[]>([])
+  
+  
   const load = useCallback(async () => {
     setState({ status: 'loading' });
     try {
@@ -39,15 +53,49 @@ export const ActionPoliciesPage = () => {
       const revisions = await Promise.all(revisionsResponse.data.map(({ id }) => getRevision(id)));
       const active = activePolicy.state === 'active' ? activePolicy.revision : undefined;
       setState({ status: 'success', active, revisions });
+      setActivePolicy(active)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load action policies';
       setState({ status: 'error', message });
     }
   }, [getActivePolicy, getRevision, listRevisions]);
-
+  
   useEffect(() => {
     void load();
   }, [load]);
+
+  
+  function addActionPolicyRule(rule: Rule) {
+    setActionPolicyRules([ ...actionPolicyRules, rule ])
+    const revision = activePolicy?.revision || newRevision()
+    const rules = activePolicy?.policy?.rules || []
+    setActivePolicy({ policy: { ...activePolicy?.policy, rules: [ ...rules, rule ] }, revision })
+  }
+  
+  function newRevision(): RevisionMetadata {
+    return {
+      id: 0,
+      origin: "api",
+      status: "active",
+      created_at: "Not yet saved",
+      checksum: "abcdefgh"
+    }
+  }
+  
+  /*function createdAtString(): string {
+    const now = new Date();
+    return now.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true
+    })
+  }*/
+  
+  function confirmPolicySave(policy: ActionPolicy) {
+    // TODO: display confirmation modal
+    console.log(policy)
+  }
 
   if (state.status === 'loading') return <PageSkeleton title="Action Policies" />;
 
@@ -72,36 +120,11 @@ export const ActionPoliciesPage = () => {
         <div id="page-content" className="action-policies">
           <section aria-labelledby="active-policy-heading">
             <h2 id="active-policy-heading">Active policy</h2>
-            {state.active ? (
-              <>
-                <div className="action-policies__summary">
-                  <Tile>
-                    <span>Revision</span>
-                    <strong>{state.active.revision.id}</strong>
-                  </Tile>
-                  <Tile>
-                    <span>Status</span>
-                    <Tag type={statusTagType(state.active.revision.status)}>
-                      {state.active.revision.status}
-                    </Tag>
-                  </Tile>
-                  <Tile>
-                    <span>Rules</span>
-                    <strong>{state.active.policy.rules?.length ?? 0}</strong>
-                  </Tile>
-                  <Tile>
-                    <span>Activated</span>
-                    <strong>{formatDate(state.active.revision.activated_at)}</strong>
-                  </Tile>
-                </div>
-                <PolicyDetails policy={state.active.policy} />
-              </>
-            ) : (
-              <Tile>
-                <h3>No active policy</h3>
-                <p>No policy revision is currently active.</p>
-              </Tile>
-            )}
+            <ActionPolicyTile
+              policy={state.active}
+              onAdd={() => setModalOpen(true)}
+              onSave={(policy: ActionPolicy) => confirmPolicySave(policy)}
+            />
           </section>
 
           <section aria-labelledby="revision-history-heading" className="action-policies__history">
@@ -157,6 +180,16 @@ export const ActionPoliciesPage = () => {
             )}
           </section>
         </div>
+      )}
+      
+      {isModalOpen && (
+        <AddRuleModal
+          onSubmit={(rule: Rule) => {
+            addActionPolicyRule(rule)
+            setModalOpen(false)}
+          }
+          onClose={() => {setModalOpen(false)}}
+        />
       )}
     </div>
   );

@@ -73,7 +73,6 @@ export const NamespaceSelect: React.FC<NamespaceSelectProps> = ({
       }}
       required={required}
     >
-      <SelectItem disabled hidden text="Choose a namespace" value="" />
       {namespaces.map((namespace: NamespaceEntry) => (
         <SelectItem
           key={namespace.name}
