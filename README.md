@@ -33,7 +33,7 @@ The project name comes from the origin of [guanaco](https://en.wikipedia.org/wik
 
 ### Install
 
-On Linux or macOS, use this command to install the latest early-access build. Early-access builds are development builds of the unreleased Wanaku 0.3.0.
+On Linux or macOS, use this command to install the latest stable release.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh | bash
@@ -41,7 +41,7 @@ curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh
 
 The installer puts `wanaku-server` in `$HOME/bin`.
 
-This README describes the Rust-based Wanaku server. The releases up to v0.2.0, including the release in the badge above, contain the Java-based Wanaku, which is deprecated. To move from it, read [Migrate from Classic Wanaku](docs/get-started/migration-from-classic.md).
+This README describes the Rust-based Wanaku server. The releases up to v0.2.0 contain the Java-based Wanaku, which is deprecated. To move from it, read [Migrate from Classic Wanaku](docs/get-started/migration-from-classic.md).
 
 Other install methods are available. You can download the archive manually, use a container image, run Wanaku as a systemd service, or deploy it on Kubernetes or OpenShift. Read the [Quickstart](docs/get-started/quickstart.md) for the details of each method.
 

@@ -12,7 +12,7 @@
       "services": [{"id": "wanaku-barn-api", "version": "1.0"}]
     },
     "metadata": {"homepage": "https://github.com/wanaku-ai/wanaku-barn"},
-    "url": "https://github.com/wanaku-ai/wanaku-barn/releases/download/early-access/wanaku-barn-plugin-0.3.0-SNAPSHOT.zip"
+    "url": "https://github.com/wanaku-ai/wanaku-barn/releases/download/v0.3.0/wanaku-barn-plugin-0.3.0.zip"
   },
   {
     "id": "wanaku-debugger",
@@ -27,6 +27,6 @@
       "services": []
     },
     "metadata": {"homepage": "https://github.com/wanaku-ai/wanaku-barn"},
-    "url": "https://github.com/wanaku-ai/wanaku-barn/releases/download/early-access/wanaku-debugger-plugin-0.3.0-SNAPSHOT.zip"
+    "url": "https://github.com/wanaku-ai/wanaku-barn/releases/download/v0.3.0/wanaku-debugger-plugin-0.3.0.zip"
   }
 ]

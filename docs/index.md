@@ -69,7 +69,7 @@ Read [Architecture](get-started/architecture.md#whats-not-here-yet) for the othe
 
 ## Which version am I reading?
 
-These pages describe the Rust-based Wanaku server. Its early-access builds are development builds of the unreleased Wanaku 0.3.0. Releases up to v0.2.0 contain the Java-based Wanaku, which is deprecated. If you use the Java-based Wanaku, read [Migrate from Classic Wanaku](get-started/migration-from-classic.md).
+These pages describe the Rust-based Wanaku server. Wanaku 0.3.0 is the first stable release of this server. Releases up to v0.2.0 contain the Java-based Wanaku, which is deprecated. If you use the Java-based Wanaku, read [Migrate from Classic Wanaku](get-started/migration-from-classic.md).
 
 ## Get help
 

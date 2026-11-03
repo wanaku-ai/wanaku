@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="wanaku-ai/wanaku"
-RELEASE_TAG="${WANAKU_RELEASE:-early-access}"
+RELEASE_TAG="${WANAKU_RELEASE:-latest}"
 INSTALL_DIR="${WANAKU_INSTALL_DIR:-$HOME/bin}"
 
 info()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
@@ -29,8 +29,13 @@ detect_platform() {
 
 resolve_release() {
     info "Resolving Wanaku ${RELEASE_TAG} for ${PLATFORM}..."
-    local response urls
-    response="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/tags/${RELEASE_TAG}")" \
+    local response urls api_url
+    if [ "$RELEASE_TAG" = "latest" ]; then
+        api_url="https://api.github.com/repos/${REPO}/releases/latest"
+    else
+        api_url="https://api.github.com/repos/${REPO}/releases/tags/${RELEASE_TAG}"
+    fi
+    response="$(curl -fsSL "$api_url")" \
         || error "Could not fetch release ${RELEASE_TAG}"
 
     urls="$(printf '%s\n' "$response" \

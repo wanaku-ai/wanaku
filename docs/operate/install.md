@@ -19,7 +19,7 @@ Wanaku has two variants:
 Both variants provide the same MCP endpoint, management API, and filter pipeline. Only the full variant includes the admin UI.
 
 > [!IMPORTANT]
-> The `early-access` builds are development builds of the unreleased Wanaku 0.3.0. They change often. Wanaku 0.3.0 will be the first stable release of this server. If you need a slower cadence of changes, watch the [releases page](https://github.com/wanaku-ai/wanaku/releases) for it. Earlier releases contain the Java-based Wanaku, which is deprecated.
+> Wanaku 0.3.0 is the first stable release of this server. Earlier releases contain the Java-based Wanaku, which is deprecated. The `early-access` builds are development builds of the next release. They change often.
 
 ## Install the server
 
@@ -27,7 +27,7 @@ Select a variant for your use case. You can install it in one of three ways.
 
 ### Use the server installer (Linux and macOS)
 
-The installer downloads the early-access archive for your platform, verifies the checksum, and installs `wanaku-server` in `$HOME/bin`:
+The installer downloads the archive of the latest stable release for your platform, verifies the checksum, and installs `wanaku-server` in `$HOME/bin`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh | bash
@@ -39,12 +39,18 @@ Set `WANAKU_INSTALL_DIR` to install in a different directory. To run Wanaku as a
 curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh | sudo WANAKU_INSTALL_DIR=/usr/local/bin bash
 ```
 
+To install a different release, set `WANAKU_RELEASE` to its tag. For example, set `WANAKU_RELEASE=early-access` to install the latest development build:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh | WANAKU_RELEASE=early-access bash
+```
+
 > [!NOTE]
 > The wanaku-barn repository has a different `get-wanaku.sh` script. That script installs the Wanaku CLI, not the server.
 
 ### Download the archive manually
 
-Download it from the [early access release page](https://github.com/wanaku-ai/wanaku/releases/tag/early-access). The archive contains a top-level directory with the same name as the archive. Extract the archive and move the binary to a directory in your `PATH`. Replace `<archive>` with the name of the archive that you downloaded, without the `.tar.gz` extension:
+Download it from the [latest release page](https://github.com/wanaku-ai/wanaku/releases/latest). The archive contains a top-level directory with the same name as the archive. Extract the archive and move the binary to a directory in your `PATH`. Replace `<archive>` with the name of the archive that you downloaded, without the `.tar.gz` extension:
 
 ```bash
 tar -xzf <archive>.tar.gz
@@ -57,10 +63,10 @@ Pull the image for the selected variant:
 
 ```bash
 # Full (with admin UI)
-podman pull quay.io/wanaku/wanaku-server:early-access
+podman pull quay.io/wanaku/wanaku-server:0.3.0
 
 # Headless (no admin UI)
-podman pull quay.io/wanaku/wanaku-server-headless:early-access
+podman pull quay.io/wanaku/wanaku-server-headless:0.3.0
 ```
 
 You can use `docker` instead of `podman` in all commands. Read [Run Wanaku in a container](container.md) to start the image.
