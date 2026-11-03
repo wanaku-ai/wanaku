@@ -371,7 +371,9 @@ pub(super) async fn handle_forward_create(
         return json_err(StatusCode::BAD_REQUEST, &e.to_string());
     }
     // Re-registering replaces the forward's state, so callers must ask for it.
-    if let Some(existing) = registry.get_forward(&forward.name) {
+    let existing = registry.get_forward(&forward.name);
+    let replacing = existing.is_some();
+    if let Some(existing) = existing {
         if !replace {
             return json_err(
                 StatusCode::CONFLICT,
@@ -387,6 +389,13 @@ pub(super) async fn handle_forward_create(
     }
 
     let prepared = prepare_forward_update(registry, broker, audit_sink, &forward).await;
+    // A replacement is all or nothing: when discovery fails, the previous
+    // forward, its labels, and its entries stay unchanged.
+    if replacing && prepared.capabilities.is_none() {
+        let status = prepared.forward.status_message.unwrap_or_default();
+        warn!(forward = %forward.name, status = %status, "forward replacement discovery failed; kept the previous forward");
+        return json_err(StatusCode::BAD_GATEWAY, &status);
+    }
     let (forward, counts) = apply_forward_update(registry, prepared);
     info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
 
@@ -2063,10 +2072,30 @@ mod tests {
             .expect("runtime");
         let resp = runtime.block_on(handle_forward_create(&registry, &broker, None, body, true));
 
-        assert_eq!(resp.status(), 200);
+        assert_eq!(resp.status(), 502);
         assert!(broker.cache().is_empty());
-        let address = registry.get_forward("cred-fwd").map(|f| f.address);
-        assert_eq!(address.as_deref(), Some("http://127.0.0.1:1/mcp"));
+    }
+
+    #[tokio::test]
+    async fn forward_replace_with_failed_discovery_keeps_previous_registration() {
+        let registry = InMemoryRegistry::new();
+        register_owned_forward(&registry, "pod-a");
+        let body = r#"{"name":"owned-fwd","address":"http://127.0.0.1:1/mcp","labels":{"cic.instance":"pod-b"}}"#;
+
+        let resp = handle_forward_create(&registry, &test_broker(), None, body, true).await;
+
+        assert_eq!(resp.status(), 502);
+        let kept = registry.get_forward("owned-fwd").expect("forward kept");
+        assert_eq!(kept.address, cached_forward("owned-fwd").address);
+        assert_eq!(
+            kept.labels.get("cic.instance").map(String::as_str),
+            Some("pod-a")
+        );
+        assert!(registry.get_tool("default", "owned-tool").is_some());
+        // The replacing instance gives up and deletes its own registration.
+        let delete = conditional_delete(&registry, "label.cic.instance=pod-b");
+        assert_eq!(delete.status(), 409);
+        assert!(registry.get_forward("owned-fwd").is_some());
     }
 
     #[test]
