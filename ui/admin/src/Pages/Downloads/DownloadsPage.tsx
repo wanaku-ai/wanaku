@@ -1,7 +1,7 @@
 import { Button, Column, Grid, Link } from '@carbon/react';
 import { Launch } from '@carbon/icons-react';
 import React from 'react';
-import { CLI_DOWNLOADS, CLI_RELEASE_PAGE, CLI_RELEASE_TAG } from './downloads';
+import { CLI_CHECKSUM_URL, CLI_DOWNLOADS, CLI_RELEASE_PAGE, CLI_RELEASE_TAG } from './downloads';
 import { DownloadsTable } from './DownloadsTable';
 
 export const DownloadsPage: React.FC = () => {
@@ -40,11 +40,7 @@ export const DownloadsPage: React.FC = () => {
               style={{ color: 'var(--cds-text-secondary)', marginTop: '1rem', fontSize: '0.75rem' }}
             >
               After downloading, verify the file against the{' '}
-              <Link
-                href={`${CLI_RELEASE_PAGE.replace('/tag/', '/download/')}/checksums_sha256.txt`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <Link href={CLI_CHECKSUM_URL} target="_blank" rel="noopener noreferrer">
                 published checksums
               </Link>
               .

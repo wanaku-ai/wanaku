@@ -114,6 +114,23 @@ Update these files together when you change the version:
 Use the complete development version as the `currentDevelopmentVersion` input of the `early-access` workflow.
 The workflow publishes the rolling `early-access` release with that version.
 
+### CLI download channel
+
+The workspace package version in `Cargo.toml` selects the CLI download channel.
+A prerelease version, such as `0.4.0-dev` or `0.4.0-rc.1`, selects `early-access`.
+A stable version, such as `0.4.0`, selects `stable`.
+Build metadata, such as `+build.1`, does not change the channel.
+The Cargo build profile does not select the channel.
+
+Keep `CLI_VERSION` in `ui/admin/src/Pages/Downloads/downloads.ts` set to the required Barn CLI version.
+The Barn CLI version is independent of the server version.
+
+Before you package a server binary, run `make build` from the repository root.
+This command rebuilds the admin UI before it compiles the server.
+If you build with Cargo directly, first run `yarn --cwd ui/admin build`.
+Cargo can reuse an existing `ui/admin/dist` directory.
+The release and early-access workflows rebuild the UI before they compile the server.
+
 ## Code of Conduct
 
 We are committed to providing a welcoming and inclusive environment. Please be respectful and professional in all interactions.
