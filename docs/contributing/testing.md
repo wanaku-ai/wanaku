@@ -99,6 +99,12 @@ The suite starts the three built applications and a local HTTP provider fixture.
 
 Run Barn's browser tests separately. Use the documented model evaluation procedure in WSR for representative model inputs. CI checks integration behavior with deterministic fixtures. CI does not require paid inference or backend side effects.
 
+## Integration tests and test plans
+
+The [wanaku-tests](https://github.com/wanaku-ai/wanaku-tests) repository has the integration tests and the end-to-end test plans for Wanaku. The integration tests start the Wanaku Server, the capabilities, and the fixtures as real processes. The test plans run with Midnight Saci in real environments, for example OpenShift.
+
+To run the integration tests on your pull request, add a comment with `/wanaku-integration-tests` to the pull request. The results come back as a comment on the pull request. Read the [wanaku-tests documentation](https://github.com/wanaku-ai/wanaku-tests/blob/main/docs/index.md) to run the tests locally or to write new tests.
+
 ## Admin UI tests
 
 The Admin UI has unit tests in `ui/admin/src/` and Playwright end-to-end tests in `tests/e2e/ui/`. Read [Unit Tests](admin-ui.md#unit-tests) and [E2E Tests](admin-ui.md#e2e-tests) in the Admin UI development guide.
@@ -106,4 +112,5 @@ The Admin UI has unit tests in `ui/admin/src/` and Playwright end-to-end tests i
 ## Next steps
 
 - [Contributing to Wanaku](index.md): the development workflow and the checks to run.
+- [wanaku-tests documentation](https://github.com/wanaku-ai/wanaku-tests/blob/main/docs/index.md): run and write the integration tests and the test plans.
 - [Write evaluator actions in Rust](../extend/evaluator-actions-rust.md): build the actions that the example-action suite tests.
