@@ -181,7 +181,7 @@ mod tests {
         assert_eq!(barn.requires.host_api, ">=1.0 <2.0");
         assert_eq!(barn.requires.services[0].id, "wanaku-barn-api");
         assert!(barn.description.len() < 200);
-        assert!(barn.url.ends_with("wanaku-barn-plugin-0.3.0-SNAPSHOT.zip"));
+        assert!(barn.url.ends_with("wanaku-barn-plugin-0.3.0.zip"));
     }
 
     #[tokio::test]
@@ -203,7 +203,7 @@ mod tests {
         assert!(debugger.description.len() < 200);
         assert_eq!(
             debugger.url,
-            "https://github.com/wanaku-ai/wanaku-barn/releases/download/early-access/wanaku-debugger-plugin-0.3.0-SNAPSHOT.zip"
+            "https://github.com/wanaku-ai/wanaku-barn/releases/download/v0.3.0/wanaku-debugger-plugin-0.3.0.zip"
         );
     }
 

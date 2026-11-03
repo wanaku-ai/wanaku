@@ -66,7 +66,7 @@ If the startup `wanaku.yaml` evaluator configuration is identical to the persist
 
 ## Update an earlier pre-release configuration
 
-Wanaku 0.3.0 is unreleased. Evaluator configuration can change between pre-release builds. This change removes `on_error` without an automatic migration. The field is rejected in YAML, API requests, and all persisted evaluator revisions, including inactive revisions.
+This section applies to the 0.3.0 pre-release builds. Evaluator configuration changed between these builds. The 0.3.0 release removes `on_error` without an automatic migration. The field is rejected in YAML, API requests, and all persisted evaluator revisions, including inactive revisions.
 
 Before you start the updated build:
 

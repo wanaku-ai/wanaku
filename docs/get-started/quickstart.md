@@ -24,13 +24,13 @@ You need the following items:
 
 ### 1. Install the Server
 
-The installer downloads the early-access archive for your platform, verifies the checksum, and installs `wanaku-server` in `$HOME/bin`. It works on Linux and macOS:
+The installer downloads the archive of the latest stable release for your platform, verifies the checksum, and installs `wanaku-server` in `$HOME/bin`. It works on Linux and macOS:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/wanaku-ai/wanaku/main/get-wanaku.sh | bash
 ```
 
-The `early-access` builds are development builds of the unreleased Wanaku 0.3.0. To use the headless variant, an archive, or a container image, read [Install the Wanaku server and CLI](../operate/install.md).
+To use the headless variant, an archive, or a container image, read [Install the Wanaku server and CLI](../operate/install.md).
 
 ### 2. Create a GitHub Token
 

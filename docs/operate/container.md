@@ -39,7 +39,7 @@ podman run -d --name wanaku \
   -p 8080:8080 -p 8081:8081 -p 8083:8083 -p 8084:8084 \
   -v wanaku-data:/data/registry \
   -v ./wanaku/wanaku.yaml:/etc/wanaku/wanaku.yaml:ro,Z \
-  quay.io/wanaku/wanaku-server:early-access
+  quay.io/wanaku/wanaku-server:0.3.0
 ```
 
 Make sure that the server is healthy:
@@ -51,10 +51,10 @@ curl -s http://localhost:8080/healthz
 
 ## Update the image
 
-The `early-access` tag changes when the project publishes a new build. To update the server, pull the new image, then remove the old container and start a new one with the same `podman run` command. The `wanaku-data` volume keeps the registry data:
+Each release has an image tag with the release version. To update the server, pull the image of the new release, then remove the old container and start a new one with the same `podman run` command. The `wanaku-data` volume keeps the registry data:
 
 ```bash
-podman pull quay.io/wanaku/wanaku-server:early-access
+podman pull quay.io/wanaku/wanaku-server:<version>
 podman stop wanaku
 podman rm wanaku
 ```
