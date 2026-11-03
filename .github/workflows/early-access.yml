@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       currentDevelopmentVersion:
-        description: Current development version (for example, 0.3.0)
+        description: Current development version (for example, 0.4.0-dev)
         required: true
         type: string
 
@@ -216,8 +216,8 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       JRELEASER_PROJECT_VERSION: ${{ inputs.currentDevelopmentVersion }}
-      # Development versions do not include the -SNAPSHOT suffix. Treat this
-      # workflow's version as a snapshot so JReleaser maintains early-access.
+      # Treat Rust prerelease versions as snapshots so JReleaser maintains
+      # the rolling early-access release.
       JRELEASER_PROJECT_SNAPSHOT_PATTERN: '.*'
       JRELEASER_PROJECT_SNAPSHOT_LABEL: early-access
       JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
