@@ -86,6 +86,7 @@
       "items": [
         { "text": "Admin UI development", "link": "contributing/admin-ui" },
         { "text": "Build container images", "link": "contributing/container-build" },
+        { "text": "Release Wanaku", "link": "contributing/release" },
         { "text": "Testing", "link": "contributing/testing" },
         { "text": "Write documentation", "link": "contributing/documentation" }
       ]

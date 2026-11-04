@@ -21,6 +21,7 @@ For implementation work, read the guide that matches the area you plan to change
 - [Configuration Reference](../reference/configuration.md): environment variables, pipeline configuration, and Wanaku bootstrap configuration.
 - [Admin UI Development](admin-ui.md): React development, generated API clients, tests, and UI conventions.
 - [Container Image Build](container-build.md): build the Wanaku container image locally with the Cargo toolchain.
+- [Release Wanaku](release.md): the release branch, the version bumps, and the release tag.
 - [Build an Admin UI plugin](../extend/plugin-development-guide.md): the local plugin test workflow.
 - [Admin UI plugin reference](../extend/plugin-reference.md): the implemented Web UI plugin contract.
 - [Evaluators](../govern/evaluators.md): evaluator configuration, runtime management, and internals.
