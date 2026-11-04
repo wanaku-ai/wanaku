@@ -103,7 +103,12 @@ Run Barn's browser tests separately. Use the documented model evaluation procedu
 
 The [wanaku-tests](https://github.com/wanaku-ai/wanaku-tests) repository has the integration tests and the end-to-end test plans for Wanaku. The integration tests start the Wanaku Server, the capabilities, and the fixtures as real processes. The test plans run with Midnight Saci in real environments, for example OpenShift.
 
-To run the integration tests on your pull request, add a comment with `/wanaku-integration-tests` to the pull request. The results come back as a comment on the pull request. Read the [wanaku-tests documentation](https://github.com/wanaku-ai/wanaku-tests/blob/main/docs/index.md) to run the tests locally or to write new tests.
+The integration tests run in GitHub CI. How you start a run depends on your access to wanaku-ai/wanaku:
+
+- Committers: when a pull request opens, a committer must approve the `integration-tests` environment before the tests run. A committer can also start a run with a `/wanaku-integration-tests` comment on the pull request. Only users with write access can use this command. The results come back as a comment on the pull request.
+- External contributors: fork wanaku-tests and run the `full-integration-test` workflow on your fork, with your Wanaku fork and branch as inputs. The results are on the workflow run page. Read [Run from your own branches](https://github.com/wanaku-ai/wanaku-tests/blob/main/docs/integration-tests/run-in-github-ci.md#run-from-your-own-branches).
+
+Read the [wanaku-tests documentation](https://github.com/wanaku-ai/wanaku-tests/blob/main/docs/index.md) to run the tests on your fork or locally, and to write new tests.
 
 ## Admin UI tests
 
