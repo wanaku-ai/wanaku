@@ -360,7 +360,7 @@ The function creates the features, loads the bootstrap configuration, validates 
 
 **Composition tests:** `server/tests/app_assembly.rs` builds an `App` from the embedded pipeline configuration with in-memory persistence. The tests send management requests through `app.management.dispatch` and run MCP requests through the `mcp` listener pipeline in process. To run a request, the tests pin the pipeline on a `PingoraRequestCtx`, build the filter context, and call `execute_http_request_body` with the complete body. This is the same sequence that the protocol layer uses for a `StreamBuffer` request. The tests open no ports, change no environment variables, and contact no external services. Each `App` has its own state, so the tests can run at the same time. Run them with `cargo test -p wanaku-server --test app_assembly`.
 
-These tests do not replace the Playwright suite or the external `wanaku-tests` suite.
+These tests do not replace the Playwright suite or the external [`wanaku-tests`](../contributing/testing.md#integration-tests-and-test-plans) suite.
 
 ### A2A proxy
 
