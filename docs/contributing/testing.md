@@ -99,6 +99,17 @@ The suite starts the three built applications and a local HTTP provider fixture.
 
 Run Barn's browser tests separately. Use the documented model evaluation procedure in WSR for representative model inputs. CI checks integration behavior with deterministic fixtures. CI does not require paid inference or backend side effects.
 
+## Integration tests and test plans
+
+The [wanaku-tests](https://github.com/wanaku-ai/wanaku-tests) repository has the integration tests and the end-to-end test plans for Wanaku. The integration tests start the Wanaku Server, the capabilities, and the fixtures as real processes. The test plans run with Midnight Saci in real environments, for example OpenShift.
+
+The integration tests run in GitHub CI. How you start a run depends on your access to wanaku-ai/wanaku:
+
+- Committers: when a pull request opens, a committer must approve the `integration-tests` environment before the tests run. A committer can also start a run with a `/wanaku-integration-tests` comment on the pull request. Only users with write access can use this command. The results come back as a comment on the pull request.
+- External contributors: fork wanaku-tests and run the `full-integration-test` workflow on your fork, with your Wanaku fork and branch as inputs. The results are on the workflow run page. Read [Run from your own branches](https://github.com/wanaku-ai/wanaku-tests/blob/main/docs/integration-tests/run-in-github-ci.md#run-from-your-own-branches).
+
+Read the [wanaku-tests documentation](https://github.com/wanaku-ai/wanaku-tests/blob/main/docs/index.md) to run the tests on your fork or locally, and to write new tests.
+
 ## Admin UI tests
 
 The Admin UI has unit tests in `ui/admin/src/` and Playwright end-to-end tests in `tests/e2e/ui/`. Read [Unit Tests](admin-ui.md#unit-tests) and [E2E Tests](admin-ui.md#e2e-tests) in the Admin UI development guide.
@@ -106,4 +117,5 @@ The Admin UI has unit tests in `ui/admin/src/` and Playwright end-to-end tests i
 ## Next steps
 
 - [Contributing to Wanaku](index.md): the development workflow and the checks to run.
+- [wanaku-tests documentation](https://github.com/wanaku-ai/wanaku-tests/blob/main/docs/index.md): run and write the integration tests and the test plans.
 - [Write evaluator actions in Rust](../extend/evaluator-actions-rust.md): build the actions that the example-action suite tests.
