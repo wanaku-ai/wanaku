@@ -167,7 +167,7 @@ impl SemanticAuditEnvelope {
     }
     pub fn into_event(self) -> Result<AuditEvent, serde_json::Error> {
         let canonical = serde_json::to_value(&self)?;
-        let fingerprint = format!("{:x}", Sha256::digest(serde_json::to_vec(&canonical)?));
+        let fingerprint = hex::encode(Sha256::digest(serde_json::to_vec(&canonical)?));
         let record_value = serde_json::to_value(&self.record)?;
         let mut event = AuditEvent::new(
             AuditCategory::Semantic,
