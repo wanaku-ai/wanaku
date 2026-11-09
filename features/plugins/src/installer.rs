@@ -68,7 +68,10 @@ pub fn extract_plugin_archive(
         let file = zip
             .by_index(i)
             .map_err(|e| InstallError::InvalidArchive(e.to_string()))?;
-        let file_name = file.name().to_owned();
+        let file_name = file
+            .name()
+            .map_err(|e| InstallError::InvalidArchive(e.to_string()))?
+            .into_owned();
         let Some(enclosed_path) = file.enclosed_name() else {
             return Err(InstallError::InsecurePath(file_name));
         };
@@ -101,7 +104,10 @@ pub fn extract_plugin_archive(
             .by_index(i)
             .map_err(|e| InstallError::InvalidArchive(e.to_string()))?;
 
-        let file_name = file.name().to_owned();
+        let file_name = file
+            .name()
+            .map_err(|e| InstallError::InvalidArchive(e.to_string()))?
+            .into_owned();
         let Some(enclosed_path) = file.enclosed_name() else {
             return Err(InstallError::InsecurePath(file_name));
         };
