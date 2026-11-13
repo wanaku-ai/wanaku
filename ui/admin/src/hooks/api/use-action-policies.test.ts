@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { json, respondWith } from '../../test/browser-stub.ts';
 import { ApiError } from '../../custom-fetch.ts';
-import { actionPolicyErrorKind, getActivePolicy, getRevision } from './use-action-policies.ts';
+import {
+  actionPolicyErrorKind,
+  getActivePolicy,
+  getRevision,
+  updatePolicy,
+} from './use-action-policies.ts';
 
 const revision = {
   revision: {
@@ -64,6 +69,39 @@ describe('getRevision', () => {
     assert.equal(error.status, 404);
     assert.equal(error.message, 'revision 9 not found');
     assert.equal(actionPolicyErrorKind(error), 'not_found');
+  });
+});
+
+describe('updatePolicy', () => {
+  const policy = { rules: [{ id: 'r1', effect: 'deny' as const, selectors: { operation: 'x' } }] };
+
+  it('sends the policy with the expected revision', async () => {
+    respondWith(async (request) => {
+      assert.equal(request.method, 'PUT');
+      assert.match(request.url, /\/api\/v1\/action-policies$/);
+      assert.deepEqual(await request.json(), { policy, expected_revision: 3 });
+      return json(200, { data: { ...revision, policy } });
+    });
+    assert.deepEqual(await updatePolicy(policy, 3), { ...revision, policy });
+  });
+
+  it('sends a null expected revision when no policy is active', async () => {
+    respondWith(async (request) => {
+      assert.deepEqual(await request.json(), { policy, expected_revision: null });
+      return json(200, { data: { ...revision, policy } });
+    });
+    await updatePolicy(policy);
+  });
+
+  it('rejects a stale revision as a conflict and a rejected policy as a validation error', async () => {
+    respondWith(() => json(409, { error: 'expected active revision 3, but current is 4' }));
+    const conflict = await rejection(updatePolicy(policy, 3));
+    assert.equal(actionPolicyErrorKind(conflict), 'conflict');
+    assert.ok(conflict instanceof Error);
+    assert.equal(conflict.message, 'expected active revision 3, but current is 4');
+
+    respondWith(() => json(422, { error: 'configuration rejected: rule has no selector' }));
+    assert.equal(actionPolicyErrorKind(await rejection(updatePolicy(policy, 3))), 'validation');
   });
 });
 

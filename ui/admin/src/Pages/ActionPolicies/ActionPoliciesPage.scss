@@ -1,14 +1,20 @@
-@use "@carbon/react/scss/spacing" as *;
-@use "@carbon/react/scss/theme" as *;
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/theme' as *;
 
 .action-policies {
   padding: $spacing-07;
 
-  h2 { margin-bottom: $spacing-05; }
-  h4 { margin: $spacing-05 0 $spacing-03; }
+  h2 {
+    margin-bottom: $spacing-05;
+  }
+  h4 {
+    margin: $spacing-05 0 $spacing-03;
+  }
 }
 
-.action-policies__notification { padding: 0 $spacing-07; }
+.action-policies__notification {
+  padding: 0 $spacing-07;
+}
 
 .action-policies__summary {
   display: grid;
@@ -16,16 +22,40 @@
   gap: $spacing-03;
   margin-bottom: $spacing-06;
 
-  .cds--tile { display: flex; flex-direction: column; gap: $spacing-03; }
-  span { color: $text-secondary; }
-  strong { overflow-wrap: anywhere; }
+  .cds--tile {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-03;
+  }
+  span {
+    color: $text-secondary;
+  }
+  strong {
+    overflow-wrap: anywhere;
+  }
 }
 
-.action-policies__history { margin-top: $spacing-08; }
-.policy-rule { padding-bottom: $spacing-05; }
-.policy-rule__tags { display: flex; flex-wrap: wrap; gap: $spacing-03; margin-bottom: $spacing-04; }
-.policy-empty { padding: $spacing-05; color: $text-secondary; }
-.policy-json { padding: $spacing-05; overflow-x: auto; background: $layer-02; }
+.action-policies__history {
+  margin-top: $spacing-08;
+}
+.policy-rule {
+  padding-bottom: $spacing-05;
+}
+.policy-rule__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-03;
+  margin-bottom: $spacing-04;
+}
+.policy-empty {
+  padding: $spacing-05;
+  color: $text-secondary;
+}
+.policy-json {
+  padding: $spacing-05;
+  overflow-x: auto;
+  background: $layer-02;
+}
 
 .revision-details {
   display: grid;
@@ -33,7 +63,53 @@
   gap: $spacing-05;
   margin-bottom: $spacing-06;
 
-  div { display: flex; flex-direction: column; align-items: flex-start; gap: $spacing-03; min-width: 0; }
-  span { color: $text-secondary; }
-  code { overflow-wrap: anywhere; }
+  div {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-03;
+    min-width: 0;
+  }
+  span {
+    color: $text-secondary;
+  }
+  code {
+    overflow-wrap: anywhere;
+  }
+}
+
+.action-policies__edit {
+  margin-top: $spacing-05;
+}
+
+.policy-editor {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-05;
+}
+
+.policy-editor__issues {
+  margin: $spacing-03 0;
+  padding-left: $spacing-05;
+  list-style: disc;
+}
+.policy-editor__actions {
+  display: flex;
+  gap: $spacing-03;
+}
+.policy-editor__remove {
+  margin-top: $spacing-05;
+}
+
+.policy-editor__predicate,
+.policy-editor__match {
+  display: grid;
+  gap: $spacing-04;
+  align-items: start;
+}
+.policy-editor__predicate {
+  grid-template-columns: 10rem 1fr 1fr auto;
+}
+.policy-editor__match {
+  grid-template-columns: 10rem 1fr;
 }

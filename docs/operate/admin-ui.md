@@ -33,7 +33,7 @@ The side navigation shows these pages. The last column links to the page that ex
 | CLI Downloads | Download the Wanaku CLI for your platform. | [Quickstart](../get-started/quickstart.md) |
 | Credential Bindings | Inspect credential bindings. Operators create bindings outside the UI. | [Credential Brokerage](../govern/credential-brokerage.md) |
 | Audit | Read governance audit events. | [Governance audit trail](../govern/audit-trail.md) |
-| Action Policies | Read the active policy and its revision history. The page is read-only. | [Action Policies](../govern/action-policies.md) |
+| Action Policies | Read the active policy and its revision history. Edit the policy and activate a new revision. | [Action Policies](../govern/action-policies.md) |
 | Policy Simulation | Validate a candidate configuration, simulate one action, or replay a batch. | [Policy Simulation](../govern/policy-simulation.md) |
 | Installed Plugins | See the loaded Admin UI plugins and configure their backend services. | [Build an Admin UI plugin](../extend/plugin-development-guide.md) |
 | Plugin Catalog | Install plugins from a catalog. | [Plugin Catalog](../extend/plugin-catalog.md) |
