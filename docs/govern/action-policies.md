@@ -203,6 +203,22 @@ curl -X PUT http://localhost:8080/api/v1/action-policies \
 
 `expected_revision` is optional. If it does not equal the active revision, Wanaku returns HTTP `409 Conflict`. A validation failure returns HTTP `422 Unprocessable Entity`. Wanaku records the invalid revision as rejected. It does not replace the active revision.
 
+### Edit a policy in the Admin UI
+
+You can edit the active policy in the Admin UI without a change to `wanaku.yaml`.
+
+1. Open **Admin** > **Action Policies**.
+2. Select **Edit policy**. If no policy is active, select **Create policy**.
+3. Change the rules in the **Structured editor**. Each rule has an effect, selectors, matchers, predicates, a reason code, a message for the caller, and metadata.
+4. To import or paste a policy, use the **JSON editor** tab. Select the **Structured editor** tab to apply the JSON to the draft.
+5. Select **Activate policy**. Confirm the activation in the dialog.
+
+The editor starts from the active revision. It sends this revision as `expected_revision` in the `PUT` request.
+
+Before the editor sends the policy, it checks the required fields, the identifiers, the matchers, and the JSON Pointer syntax. The server stays the authority and validates the policy again.
+
+If another revision became active, the server returns HTTP `409`. The editor keeps the draft and shows a **Reload active revision** action. The action discards the draft. If the server rejects the policy with HTTP `422`, the editor shows the reason and keeps the draft.
+
 Rollback creates a new revision. It does not change historical data:
 
 ```bash
