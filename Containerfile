@@ -11,6 +11,8 @@ WORKDIR /ui
 COPY ui/admin/package.json ui/admin/yarn.lock ./
 RUN yarn install --frozen-lockfile
 COPY ui/admin/ .
+# vite.config.ts reads the workspace version from ../../Cargo.toml
+COPY Cargo.toml /Cargo.toml
 RUN yarn build
 
 FROM busybox AS ui-builder-headless
