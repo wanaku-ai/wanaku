@@ -16,8 +16,9 @@ const WANAKU_MGMT_LISTEN: &str = "WANAKU_MGMT_LISTEN";
 /// Inference backend address (default `127.0.0.1:11434`).
 const WANAKU_INFERENCE_UPSTREAM: &str = "WANAKU_INFERENCE_UPSTREAM";
 
-/// Persistence backend selector. Defaults to `"file"` (file-based persistence).
-/// Set to `"none"` to disable persistence entirely.
+/// Persistence backend selector. Defaults to `"file"` (JSON file persistence).
+/// Set to `"redb"` to keep the registry in an embedded redb database, or to
+/// `"none"` to disable persistence entirely.
 const WANAKU_PERSIST_BACKEND: &str = "WANAKU_PERSIST_BACKEND";
 
 /// Directory where `registry.json` is stored (default `$HOME/.wanaku/server`).
@@ -56,11 +57,23 @@ const WANAKU_MCP_PUBLIC_URL: &str = "WANAKU_MCP_PUBLIC_URL";
 /// Default interval (seconds) between background forward reconnect probes.
 const DEFAULT_FORWARD_HEALTHCHECK_INTERVAL_SECS: u64 = 30;
 
-/// File-persistence settings, present only when enabled.
+/// Durable storage engine selected by [`WANAKU_PERSIST_BACKEND`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PersistBackend {
+    /// JSON files, one per state kind.
+    #[default]
+    File,
+    /// Embedded redb database file (`wanaku.redb`) for the registry.
+    Redb,
+}
+
+/// Persistence settings, present only when enabled.
 #[derive(Debug, Clone)]
 pub struct PersistEnv {
-    /// Directory containing `registry.json`.
+    /// Directory containing the persistence files.
     pub dir: PathBuf,
+    /// Storage engine for the registry.
+    pub backend: PersistBackend,
 }
 
 /// Typed snapshot of all `WANAKU_*` environment variables.
@@ -103,12 +116,24 @@ impl WanakuEnv {
     fn from_env() -> Self {
         let backend = std::env::var(WANAKU_PERSIST_BACKEND).unwrap_or_else(|_| "file".to_owned());
         let persist = (backend != "none").then(|| {
+            let backend = match backend.as_str() {
+                "redb" => PersistBackend::Redb,
+                "file" => PersistBackend::File,
+                other => {
+                    tracing::warn!(
+                        value = other,
+                        "unknown WANAKU_PERSIST_BACKEND value; using file persistence"
+                    );
+                    PersistBackend::File
+                }
+            };
             let dir = std::env::var(WANAKU_PERSIST_PATH).unwrap_or_else(|_| {
                 let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_owned());
                 format!("{home}/.wanaku/server")
             });
             PersistEnv {
                 dir: PathBuf::from(dir),
+                backend,
             }
         });
 

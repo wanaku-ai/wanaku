@@ -38,6 +38,46 @@ To disable persistence:
 export WANAKU_PERSIST_BACKEND=none
 ```
 
+With `none`, the registry stays in memory. Wanaku loses all registry changes at restart.
+
+## Embedded redb Registry Persistence
+
+Wanaku can keep the registry in an embedded [redb](https://www.redb.org) database instead of `registry.json`. redb runs inside the Wanaku process. It needs no external database or storage service.
+
+```bash
+export WANAKU_PERSIST_BACKEND=redb
+export WANAKU_PERSIST_PATH=/data/registry
+```
+
+On startup, Wanaku opens `wanaku.redb` in `WANAKU_PERSIST_PATH`. If the file does not exist, Wanaku creates it. The default backend stays `file`.
+
+The redb backend applies to the registry only: agents, tools, resources, prompts, forwards, namespaces, and credential bindings. Audit events, evaluator revisions, action-policy revisions, WASM tool handlers, and plugin configuration stay in their JSON files in the same directory.
+
+### Storage layout
+
+Each registry record kind has its own table. Each row holds one record. The row key is the record name, scoped by namespace where the registry scopes it. The row value is the JSON form of the record. The database also stores a schema version.
+
+### Writes and durability
+
+- Each registry change sends a snapshot to the same background writer as the `file` backend. The writer keeps only the newest pending snapshot.
+- The writer runs on a dedicated thread, not on an async runtime worker.
+- The writer applies each snapshot in one redb write transaction. The transaction writes only the rows that changed and removes the rows that are gone. It does not replace the whole registry.
+- The transaction commits with immediate durability. A commit returns after the data is on disk.
+- If a commit fails, the database keeps the previous committed state. The registry persistence status reports the error.
+- A management API call returns before the background writer commits its change. A process stop before the commit loses that change.
+
+### Recovery and failures
+
+- After an unclean shutdown, redb repairs the database when Wanaku opens it. The database contains the last committed transaction.
+- If Wanaku cannot open `wanaku.redb`, startup stops. Causes include a corrupt file, a file with a newer schema version, and a file that another process holds open.
+- If a stored record is not valid, the registry starts without the stored records. Wanaku then refuses to write to the database, so that the stored records stay unchanged. Stop the server and fix or move the database file.
+
+### Limits
+
+- redb locks the database file. Only one Wanaku process can use a database file at a time.
+- redb does not replicate data to other hosts. Do not put the file on a shared file system for multiple replicas.
+- Wanaku does not import `registry.json` into `wanaku.redb`. When you change the backend, the registry starts empty, and Wanaku keeps `registry.json` unchanged.
+
 ## WASM tool handler persistence
 
 When file persistence is enabled, the server reads and writes `tool-handlers.json` in `WANAKU_PERSIST_PATH`. This file contains handler definitions, component paths, capability grants, and execution limits. It does not contain compiled native code or component bytes.

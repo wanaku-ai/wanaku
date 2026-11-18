@@ -186,7 +186,7 @@ impl App {
 fn build_registry(backend: Option<Arc<dyn PersistenceBackend>>) -> InMemoryRegistry {
     match backend {
         Some(backend) => {
-            info!("file-based persistence enabled");
+            info!("registry persistence enabled");
             let registry = InMemoryRegistry::with_persistence(backend);
             registry.load_persisted();
             registry

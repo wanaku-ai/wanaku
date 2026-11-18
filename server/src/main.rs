@@ -16,10 +16,12 @@ use tracing::info;
 
 use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
 use wanaku_infra::persistence::FilePersistence;
+use wanaku_infra::redb_persistence::{RedbRegistryPersistence, RedbStore};
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_server::app::{App, AppPersistence, AppResources, AppSettings};
 use wanaku_types::credentials::{EnvResolver, ResolverRegistry};
 use wanaku_types::governance::GovernanceConfig;
+use wanaku_types::persistence::PersistenceBackend;
 
 #[expect(clippy::too_many_lines, reason = "server bootstrap")]
 fn main() {
@@ -48,7 +50,7 @@ fn main() {
     let resources = AppResources {
         persistence: AppPersistence {
             tool_handlers: wanaku_types::config::ENV.persist.as_ref().map(|persist| persist.dir.join("tool-handlers.json")),
-            registry: FilePersistence::from_config(),
+            registry: registry_persistence().unwrap_or_else(|e| fatal(&e)),
             audit: wanaku_feature_audit::persistence::FileAuditPersistence::from_config(),
             action_policy:
                 wanaku_feature_action_policy::revision_persistence::FileRevisionPersistence::from_config(),
@@ -130,6 +132,19 @@ fn setup_management_service(
         server,
     );
     register_registry_persistence_service(app.registry, server);
+}
+
+/// Select the registry backend from `WANAKU_PERSIST_BACKEND`. A redb file
+/// that cannot be opened stops startup, so the server never runs on an empty
+/// registry while durable records exist.
+fn registry_persistence() -> Result<Option<Arc<dyn PersistenceBackend>>, String> {
+    if let Some(store) = RedbStore::from_config()
+        .map_err(|error| format!("failed to open the redb persistence database: {error}"))?
+    {
+        info!(path = %store.path().display(), "redb registry persistence enabled");
+        return Ok(Some(Arc::new(RedbRegistryPersistence::new(store))));
+    }
+    Ok(FilePersistence::from_config())
 }
 
 fn register_registry_persistence_service(
@@ -246,13 +261,14 @@ fn fatal(err: &dyn std::fmt::Display) -> ! {
 mod tests {
     use super::{load_governance_config, load_wanaku_yaml, resolve_plugins_path};
     use std::path::PathBuf;
-    use wanaku_types::config::PersistEnv;
+    use wanaku_types::config::{PersistBackend, PersistEnv};
     use wanaku_types::governance::{AuditLevel, EnforcementMode, FailureBehavior, NoMatchBehavior};
 
     #[test]
     fn plugins_path_prefers_explicit_value() {
         let persist = PersistEnv {
             dir: PathBuf::from("/data/wanaku"),
+            backend: PersistBackend::File,
         };
         assert_eq!(
             resolve_plugins_path(Some("/custom/plugins"), Some(&persist)),
@@ -264,6 +280,7 @@ mod tests {
     fn plugins_path_defaults_to_persist_dir() {
         let persist = PersistEnv {
             dir: PathBuf::from("/data/wanaku"),
+            backend: PersistBackend::File,
         };
         assert_eq!(
             resolve_plugins_path(None, Some(&persist)),
