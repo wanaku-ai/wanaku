@@ -56,6 +56,16 @@ curl -s http://your-upstream-mcp:8080/mcp \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
+## Forward registration fails with `Session expired (HTTP 404)`
+
+The server reads the capabilities of a forward in one MCP session. A session-based MCP server keeps the session in one process. If the forward address is a load-balanced address with two or more instances, a request can go to an instance that does not know the session. That instance returns HTTP 404. The server then reports an incomplete listing, for example `tools/list failed: ... Session expired (HTTP 404)`. A replacement of an existing forward (`replace=true`) returns HTTP 502 and keeps the previous forward.
+
+This occurs on Kubernetes during a rolling update, when a Service has the old pod and the new pod.
+
+Register an address that reaches one instance only. On Kubernetes, use the pod IP and not the Service address. Read the pod IP from the Downward API (`status.podIP`). Each new instance must register its own address again with `replace=true`. Without `replace=true`, the server returns HTTP 409 and keeps the previous address.
+
+If the forward uses HTTPS, the certificate of the MCP server must be valid for the address that you register. A certificate that is valid only for the Service name is not valid for the pod IP.
+
 ## LLM-based features (evaluators, inference proxy) do not work
 
 Verify:
