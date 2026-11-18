@@ -84,6 +84,17 @@ impl ActionContext {
     }
 
     #[must_use]
+    pub fn with_namespace(mut self, namespace: impl Into<String>) -> Self {
+        self.namespace = namespace.into();
+        self
+    }
+
+    #[must_use]
+    pub fn target_name(&self) -> Option<&str> {
+        self.target_name.as_deref()
+    }
+
+    #[must_use]
     pub fn with_target_name(mut self, target_name: impl Into<String>) -> Self {
         self.target_name = Some(target_name.into());
         self

@@ -1575,7 +1575,7 @@
             }
           },
           "400": {
-            "description": "Invalid namespace name"
+            "description": "Invalid namespace name or virtual membership"
           },
           "409": {
             "description": "Namespace already exists. Use PUT to update it",
@@ -1662,7 +1662,7 @@
             }
           },
           "400": {
-            "description": "Invalid namespace name, malformed JSON, or missing body",
+            "description": "Invalid namespace name or virtual membership, malformed JSON, or missing body",
             "content": {
               "application/json": {
                 "schema": {
@@ -1695,6 +1695,16 @@
           },
           "404": {
             "description": "Namespace not found"
+          },
+          "409": {
+            "description": "Namespace is referenced by a virtual namespace or contains A2A agents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4374,6 +4384,16 @@
               "type": "string"
             }
           },
+          "members": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Concrete namespaces exposed by this virtual namespace.\nA present, empty list defines an empty virtual namespace."
+          },
           "name": {
             "type": "string"
           }
@@ -6466,6 +6486,16 @@
                 "propertyNames": {
                   "type": "string"
                 }
+              },
+              "members": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "description": "Concrete namespaces exposed by this virtual namespace.\nA present, empty list defines an empty virtual namespace."
               },
               "name": {
                 "type": "string"

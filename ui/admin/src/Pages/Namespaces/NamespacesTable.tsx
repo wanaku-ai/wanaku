@@ -14,10 +14,11 @@ import {
   TableRow,
   TableToolbar,
   TableToolbarContent,
+  Tag,
 } from '@carbon/react';
 import React from 'react';
 import { NamespaceEntry } from '../../models';
-import { mcpAddress } from './namespaces';
+import { isVirtualNamespace, mcpAddress } from './namespaces';
 
 const PROTECTED_PATHS = ['default', 'public', 'wanaku-internal'];
 
@@ -58,17 +59,22 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
   const headers = [
     { key: 'name', header: 'Name' },
     { key: 'status', header: 'Status' },
+    { key: 'type', header: 'Type' },
+    { key: 'members', header: 'Members' },
     { key: 'address', header: 'Address' },
     { key: 'actions', header: 'Actions' },
   ];
 
-  const addressOf = (name?: string) => mcpAddress(name, mcpPublicUrl, window.location);
+  const addressOf = (namespace: NamespaceEntry) =>
+    mcpAddress(namespace.name, mcpPublicUrl, window.location, isVirtualNamespace(namespace));
 
   const rows = namespaces.map((namespace, index) => ({
     id: namespace.name || `namespace-${index}`,
     name: namespace.name || 'N/A',
     status: namespace.name ? 'Allocated' : 'Available',
-    address: addressOf(namespace.name),
+    type: isVirtualNamespace(namespace) ? 'Virtual' : 'Concrete',
+    members: namespace.members?.join(', ') ?? '',
+    address: addressOf(namespace),
     actions: '',
   }));
 
@@ -113,7 +119,17 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
                   <React.Fragment>
                     <TableCell>{namespace.name || 'N/A'}</TableCell>
                     <TableCell>{namespace.name ? 'Allocated' : 'Available'}</TableCell>
-                    <TableCell>{addressOf(namespace.name)}</TableCell>
+                    <TableCell>
+                      <Tag type={isVirtualNamespace(namespace) ? 'purple' : 'gray'}>
+                        {isVirtualNamespace(namespace) ? 'Virtual' : 'Concrete'}
+                      </Tag>
+                    </TableCell>
+                    <TableCell>
+                      {isVirtualNamespace(namespace)
+                        ? namespace.members?.join(', ') || 'No members'
+                        : '—'}
+                    </TableCell>
+                    <TableCell>{addressOf(namespace)}</TableCell>
                     <TableCell>
                       <Button
                         kind="ghost"
@@ -143,7 +159,7 @@ export const NamespaceTable: React.FC<NamespaceTableProps> = ({
                       </TableExpandRow>
                       {row.isExpanded && (
                         <TableExpandedRow
-                          colSpan={headers.length + 3}
+                          colSpan={headers.length + 1}
                           {...getExpandedRowProps({ row })}
                         >
                           <div>

@@ -20,6 +20,18 @@ export class NamespacesPage extends BasePage {
     await this.page.locator(Carbon.textInput('namespace-name')).fill(name);
   }
 
+  async enableVirtualNamespace() {
+    await this.modal().locator(Carbon.toggleAppearance).click();
+    await expect(this.modal().getByRole('switch', { name: 'Virtual namespace' })).toBeChecked();
+  }
+
+  async toggleMember(name: string) {
+    const picker = this.modal().locator('#namespace-members .cds--list-box__field');
+    await picker.click();
+    await this.page.getByRole('option', { name, exact: true }).click();
+    await picker.click();
+  }
+
   async isSubmitDisabled(): Promise<boolean> {
     const btn = this.modal().locator(Carbon.modalFooterPrimary);
     return btn.isDisabled();

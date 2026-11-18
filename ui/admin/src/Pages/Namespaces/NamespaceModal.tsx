@@ -1,6 +1,7 @@
-import { Modal, Stack, TextInput } from '@carbon/react';
+import { Modal, MultiSelect, Stack, TextInput, Toggle } from '@carbon/react';
 import React, { useState } from 'react';
-import { NamespaceEntry } from '../../models';
+import type { NamespaceEntry } from '../../models';
+import { concreteNamespaces, isVirtualNamespace } from './namespaces';
 
 interface NamespaceModalProps {
   openedNamespace?: NamespaceEntry;
@@ -15,32 +16,35 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
   onSubmit,
   onRequestClose,
 }) => {
-  const [name, setName] = useState(openedNamespace?.name);
-  const [invalidName, setInvalidName] = useState(false);
-
-  function otherNamespaces(): NamespaceEntry[] {
-    return namespaces.filter((namespace) => namespace.name !== openedNamespace?.name);
-  }
-
-  function isDuplicate(name: string): boolean {
-    return otherNamespaces().some((namespace) => namespace.name === name);
-  }
-
-  function isDnsLabelValid(name: string): boolean {
-    return /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(name);
-  }
+  const [name, setName] = useState(openedNamespace?.name ?? '');
+  const [virtual, setVirtual] = useState(
+    openedNamespace ? isVirtualNamespace(openedNamespace) : false,
+  );
+  const [members, setMembers] = useState<string[]>(openedNamespace?.members ?? []);
+  const [nameTouched, setNameTouched] = useState(false);
+  const validName = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(name);
+  const duplicateName = namespaces.some(
+    (namespace) => namespace.name === name && namespace.name !== openedNamespace?.name,
+  );
+  const memberOptions = concreteNamespaces(namespaces)
+    .filter((namespace) => namespace.name !== openedNamespace?.name)
+    .map((namespace) => namespace.name);
 
   const handleSubmit = () => {
-    // The name is immutable in the edit flow. Keep the other stored metadata.
-    onSubmit(openedNamespace ? { ...openedNamespace } : { name: name ?? '' });
+    if (!validName || duplicateName) return;
+    onSubmit({
+      ...openedNamespace,
+      name,
+      members: virtual ? members : undefined,
+    });
   };
 
   return (
     <Modal
-      open={true}
+      open
       modalHeading={openedNamespace ? 'Edit Namespace' : 'Create Namespace'}
       primaryButtonText={openedNamespace ? 'Save' : 'Create'}
-      primaryButtonDisabled={invalidName}
+      primaryButtonDisabled={!validName || duplicateName}
       secondaryButtonText="Cancel"
       onRequestSubmit={handleSubmit}
       onRequestClose={onRequestClose}
@@ -50,21 +54,40 @@ export const NamespaceModal: React.FC<NamespaceModalProps> = ({
           id="namespace-name"
           labelText="Name"
           placeholder="e.g. finance, my-namespace"
-          helperText="Lowercase letters, numbers, and hyphens only. Must start and end with a letter or number (1-63 characters). The name is also the URL path segment."
+          helperText="Use 1–63 lowercase letters, numbers, or hyphens. Start and end with a letter or number."
           value={name}
-          invalid={invalidName}
+          invalid={nameTouched && (!validName || duplicateName)}
           invalidText={
-            name && !isDnsLabelValid(name)
-              ? 'Must contain only lowercase letters, numbers, and hyphens, and must start and end with a letter or number'
-              : `Namespace "${name}" already exists.`
+            !validName ? 'Enter a valid namespace name.' : `Namespace "${name}" already exists.`
           }
-          onChange={(e) => {
-            const val = e.target.value;
-            setName(val);
-            setInvalidName(!isDnsLabelValid(val) || isDuplicate(val));
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setName(event.target.value);
+            setNameTouched(true);
           }}
-          disabled={!!openedNamespace}
+          disabled={Boolean(openedNamespace)}
+          required
         />
+        <Toggle
+          id="namespace-virtual"
+          labelText="Virtual namespace"
+          labelA="Off"
+          labelB="On"
+          toggled={virtual}
+          onToggle={setVirtual}
+          disabled={Boolean(openedNamespace)}
+        />
+        {virtual && (
+          <MultiSelect<string>
+            id="namespace-members"
+            titleText="Member namespaces"
+            label="Choose concrete namespaces"
+            helperText="Tools, resources, prompts, and A2A agents are exposed from these concrete namespaces. An empty selection creates an empty virtual namespace."
+            items={memberOptions}
+            initialSelectedItems={members}
+            itemToString={(item) => item ?? ''}
+            onChange={({ selectedItems }) => setMembers(selectedItems ?? [])}
+          />
+        )}
       </Stack>
     </Modal>
   );

@@ -1833,10 +1833,18 @@ export type deleteNamespaceResponse404 = {
   status: 404;
 };
 
+export type deleteNamespaceResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
 export type deleteNamespaceResponseSuccess = deleteNamespaceResponse200 & {
   headers: Headers;
 };
-export type deleteNamespaceResponseError = deleteNamespaceResponse404 & {
+export type deleteNamespaceResponseError = (
+  | deleteNamespaceResponse404
+  | deleteNamespaceResponse409
+) & {
   headers: Headers;
 };
 

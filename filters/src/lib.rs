@@ -11,6 +11,9 @@ pub use wanaku_types::metadata::{
 #[macro_export]
 macro_rules! body_filter_boilerplate {
     ($struct_name:ident, $filter_name:literal) => {
+        $crate::body_filter_boilerplate!($struct_name, $filter_name, ReadOnly);
+    };
+    ($struct_name:ident, $filter_name:literal, $body_access:ident) => {
         pub struct $struct_name {
             max_body_bytes: usize,
         }
@@ -36,7 +39,7 @@ macro_rules! body_filter_boilerplate {
             }
 
             fn request_body_access(&self) -> praxis_filter::BodyAccess {
-                praxis_filter::BodyAccess::ReadOnly
+                praxis_filter::BodyAccess::$body_access
             }
 
             fn request_body_mode(&self) -> praxis_filter::BodyMode {

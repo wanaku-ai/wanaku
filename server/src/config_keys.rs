@@ -18,7 +18,7 @@ use wanaku_feature_plugins::PluginConfig;
 use wanaku_feature_simulation::SimulationLimits;
 use wanaku_types::credentials::CredentialBinding;
 use wanaku_types::governance::GovernanceConfig;
-use wanaku_types::registry::ForwardEntry;
+use wanaku_types::registry::{ForwardEntry, NamespaceEntry};
 
 /// Reject unknown keys at any level of the Wanaku configuration.
 ///
@@ -65,6 +65,7 @@ pub fn reject_unknown_keys(root: &Value) -> Result<(), String> {
 fn section_unknown_keys(key: &str, value: &Value) -> Option<Vec<String>> {
     let paths = match key {
         "forwards" => unknown_keys::<Vec<ForwardEntry>>(value),
+        "namespaces" => unknown_keys::<Vec<NamespaceEntry>>(value),
         "bindings" => unknown_keys::<Vec<CredentialBinding>>(value),
         "llm_connections" => unknown_keys::<Vec<LlmConnection>>(value),
         "typesafe_system_one_connections" => unknown_keys::<Vec<SystemOneConnection>>(value),

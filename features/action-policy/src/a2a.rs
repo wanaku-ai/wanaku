@@ -5,9 +5,11 @@ use praxis_filter::{
 };
 use serde::Deserialize;
 use serde_json::Value;
+use wanaku_types::metadata::VIRTUAL_NAMESPACE_METADATA_KEY;
 
 mod discovery;
 mod request;
+mod virtual_namespace;
 use discovery::rewrite_card;
 
 #[derive(Deserialize)]
@@ -61,6 +63,11 @@ impl A2aFilter {
         ctx.extra_request_headers
             .push(("Accept-Encoding".into(), "identity".to_owned()));
         if self.config.managed
+            && let Some(action) = virtual_namespace::catalog(ctx, &self.config.public_url)
+        {
+            return action;
+        }
+        if self.config.managed
             && let Err(action) = self.select_agent(ctx)
         {
             return action;
@@ -86,8 +93,22 @@ impl A2aFilter {
     }
 
     fn select_agent(&self, ctx: &mut HttpFilterContext<'_>) -> Result<(), FilterAction> {
-        let Some((namespace, name, card)) = managed_route(ctx.request.uri.path()) else {
-            return Err(route_error(404, "A2A agent route not found"));
+        let path = ctx.request.uri.path().to_owned();
+        let (namespace, name, card, virtual_name) = match virtual_namespace::route(&path) {
+            Some((group, namespace, name, card)) => {
+                let allowed = ctx
+                    .extensions
+                    .get::<wanaku_infra::registry::InMemoryRegistry>()
+                    .is_some_and(|registry| registry.resolve_virtual_member(group, namespace));
+                if !allowed {
+                    return Err(route_error(404, "A2A agent not found in virtual namespace"));
+                }
+                (namespace, name, card, Some(group))
+            }
+            None => match managed_route(&path) {
+                Some((namespace, name, card)) => (namespace, name, card, None),
+                None => return Err(route_error(404, "A2A agent route not found")),
+            },
         };
         if (card && ctx.request.method != http::Method::GET)
             || (!card && ctx.request.method != http::Method::POST)
@@ -101,10 +122,14 @@ impl A2aFilter {
         else {
             return Err(route_error(404, "A2A agent not found"));
         };
-        let public_url = format!(
-            "{}/{namespace}/a2a/{name}",
-            self.config.public_url.trim_end_matches('/')
-        );
+        let public_origin = self.config.public_url.trim_end_matches('/');
+        let public_url = match virtual_name {
+            Some(group) => {
+                ctx.set_metadata(VIRTUAL_NAMESPACE_METADATA_KEY, group);
+                format!("{public_origin}/virtual-ns/{group}/a2a/{namespace}/{name}")
+            }
+            None => format!("{public_origin}/{namespace}/a2a/{name}"),
+        };
         ctx.set_metadata(wanaku_types::NAMESPACE_METADATA_KEY, namespace);
         ctx.set_metadata("wanaku.a2a.agent", name);
         ctx.set_metadata("wanaku.a2a.public_url", public_url);
@@ -377,6 +402,17 @@ impl HttpFilter for A2aFilter {
                 .unwrap_or(&self.config.public_url),
             ctx.get_metadata("wanaku.a2a.upstream_url"),
         )?;
+        if let (Some(_), Some(namespace), Some(agent), Some(object)) = (
+            ctx.get_metadata(VIRTUAL_NAMESPACE_METADATA_KEY),
+            ctx.get_metadata(wanaku_types::NAMESPACE_METADATA_KEY),
+            ctx.get_metadata("wanaku.a2a.agent"),
+            card.as_object_mut(),
+        ) {
+            object.insert(
+                "name".to_owned(),
+                Value::String(format!("{namespace}/{agent}")),
+            );
+        }
         *body = Some(Bytes::from(card.to_string()));
         Ok(FilterAction::Continue)
     }
@@ -542,6 +578,103 @@ disallowed_origin_mode: reject"#,
         );
         let mut ctx = protocol.build_filter_context(&pipeline, &request, Some(&mut response));
         assert!(test_filter(false).on_response(&mut ctx).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn virtual_agents_are_qualified_and_dispatch_only_to_members() -> Result<(), FilterError>
+    {
+        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        for namespace in ["kafka", "flink", "outside"] {
+            let agent = serde_json::from_value(
+                serde_json::json!({"name":"worker", "namespace":namespace, "address":format!("http://{namespace}.example/rpc")}),
+            )?;
+            assert!(registry.save_agent(agent, false)?);
+        }
+        registry.try_register_namespace(serde_json::from_value(
+            serde_json::json!({"name":"integration", "members":["kafka", "flink"]}),
+        )?)?;
+        let filters = praxis_filter::FilterRegistry::with_builtins();
+        let pipeline = praxis_filter::FilterPipeline::build(&mut [], &filters)?;
+        let request = praxis_filter::Request {
+            method: http::Method::GET,
+            uri: http::Uri::from_static("/virtual-ns/integration/a2a"),
+            headers: http::HeaderMap::new(),
+        };
+        let mut protocol = praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+        let mut ctx = protocol.build_filter_context(&pipeline, &request, None);
+        ctx.extensions.insert(registry.clone());
+        let filter = test_filter(true);
+        let action = filter.handle_request(&mut ctx, None);
+        assert!(matches!(action, FilterAction::Reject(_)));
+        if let FilterAction::Reject(response) = action {
+            let data: Value = serde_json::from_slice(&response.body.unwrap_or_default())?;
+            assert_eq!(data["agents"].as_array().map(Vec::len), Some(2));
+            assert_eq!(data["agents"][0]["name"], "flink/worker");
+            assert_eq!(
+                data["agents"][1]["url"],
+                "https://proxy.example/virtual-ns/integration/a2a/kafka/worker"
+            );
+        }
+        for (path, allowed) in [
+            ("/virtual-ns/integration/a2a/kafka/worker", true),
+            ("/virtual-ns/integration/a2a/outside/worker", false),
+            ("/virtual-ns/missing/a2a/kafka/worker", false),
+        ] {
+            let request = praxis_filter::Request {
+                method: http::Method::POST,
+                uri: path.parse()?,
+                headers: http::HeaderMap::new(),
+            };
+            let mut protocol =
+                praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+            let mut ctx = protocol.build_filter_context(&pipeline, &request, None);
+            ctx.extensions.insert(registry.clone());
+            assert_eq!(filter.select_agent(&mut ctx).is_ok(), allowed);
+            if allowed {
+                assert_eq!(
+                    ctx.get_metadata(wanaku_types::NAMESPACE_METADATA_KEY),
+                    Some("kafka")
+                );
+                assert_eq!(
+                    ctx.get_metadata(VIRTUAL_NAMESPACE_METADATA_KEY),
+                    Some("integration")
+                );
+                assert_eq!(ctx.rewritten_path.as_deref(), Some("/rpc"));
+                assert_eq!(
+                    ctx.upstream.as_ref().map(|upstream| &*upstream.address),
+                    Some("kafka.example:80")
+                );
+            }
+        }
+        let request = praxis_filter::Request {
+            method: http::Method::GET,
+            uri: http::Uri::from_static(
+                "/virtual-ns/integration/a2a/kafka/worker/.well-known/agent-card.json",
+            ),
+            headers: http::HeaderMap::new(),
+        };
+        let mut protocol = praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+        let mut ctx = protocol.build_filter_context(&pipeline, &request, None);
+        ctx.extensions.insert(registry.clone());
+        assert!(filter.select_agent(&mut ctx).is_ok());
+        ctx.current_filter_id = Some(0);
+        ctx.insert_filter_state(DiscoveryBody(BytesMut::new()));
+        let mut body = Some(Bytes::from_static(
+            br#"{"name":"worker","protocolVersion":"0.3.0","url":"http://kafka.example/rpc"}"#,
+        ));
+        assert!(matches!(
+            filter.on_response_body(&mut ctx, &mut body, true)?,
+            FilterAction::Continue
+        ));
+        let card: Value = serde_json::from_slice(&body.unwrap_or_default())?;
+        assert_eq!(card["name"], "kafka/worker");
+        assert_eq!(
+            card["url"],
+            "https://proxy.example/virtual-ns/integration/a2a/kafka/worker"
+        );
+        assert!(registry.remove_agent("kafka", "worker"));
+        assert_eq!(registry.list_virtual_agents("integration").len(), 1);
+        Ok(())
     }
 
     #[tokio::test]

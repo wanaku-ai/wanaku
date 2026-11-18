@@ -22,7 +22,7 @@ use wanaku_types::credentials::{CredentialBinding, NormalizedOrigin};
 use wanaku_types::feature::Feature;
 use wanaku_types::governance::GovernanceConfig;
 use wanaku_types::persistence::PersistenceBackend;
-use wanaku_types::registry::{BindingRegistry, ForwardEntry, ForwardRegistry};
+use wanaku_types::registry::{BindingRegistry, ForwardEntry, NamespaceEntry};
 
 use crate::management::WanakuManagementService;
 use crate::pipelines::{PipelineDeps, resolve_pipelines};
@@ -132,7 +132,7 @@ impl App {
             &broker,
             Some(audit_sink.as_ref()),
             &features,
-        );
+        )?;
         for feature in &features {
             feature.validate_startup()?;
         }
@@ -297,15 +297,16 @@ fn load_config(
     broker: &Arc<CredentialBroker>,
     audit_sink: Option<&dyn CredentialAuditSink>,
     features: &[Box<dyn Feature>],
-) {
+) -> Result<(), String> {
     if let Some(yaml) = wanaku_config {
-        load_core_config(yaml, wanaku_registry, broker, audit_sink);
+        load_core_config(yaml, wanaku_registry, broker, audit_sink)?;
     }
     let empty = serde_yaml::Value::Mapping(serde_yaml::Mapping::new());
     for feature in features {
         feature.load_yaml_config(wanaku_config.unwrap_or(&empty));
         feature.load_env_config();
     }
+    Ok(())
 }
 
 #[expect(
@@ -317,22 +318,12 @@ fn load_core_config(
     registry: &InMemoryRegistry,
     broker: &Arc<CredentialBroker>,
     audit_sink: Option<&dyn CredentialAuditSink>,
-) {
-    let mut forwards = Vec::new();
-    if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
-        for fwd_value in fwd_list {
-            match serde_yaml::from_value::<ForwardEntry>(fwd_value.clone()) {
-                Ok(mut fwd) => {
-                    fwd.available = false;
-                    info!(forward = %fwd.name, address = %fwd.address, "registered forward from config");
-                    registry.register_forward(fwd.clone());
-                    forwards.push(fwd);
-                }
-                Err(e) => {
-                    tracing::warn!(error = %e, "failed to deserialize forward entry from config");
-                }
-            }
-        }
+) -> Result<(), String> {
+    let namespaces = load_namespace_definitions(config, registry)?;
+    let forwards = load_forward_definitions(config, registry, &namespaces)?;
+
+    for namespace in namespaces.into_iter().filter(NamespaceEntry::is_virtual) {
+        registry.try_register_namespace(namespace)?;
     }
 
     // Credential bindings are authored here, alongside the forwards that own
@@ -348,8 +339,9 @@ fn load_core_config(
         {
             Ok(rt) => rt,
             Err(e) => {
-                tracing::error!(error = %e, "failed to create runtime for forward discovery");
-                return;
+                return Err(format!(
+                    "failed to create runtime for forward discovery: {e}"
+                ));
             }
         };
 
@@ -361,6 +353,66 @@ fn load_core_config(
             }
         });
     }
+    Ok(())
+}
+
+fn load_namespace_definitions(
+    config: &serde_yaml::Value,
+    registry: &InMemoryRegistry,
+) -> Result<Vec<NamespaceEntry>, String> {
+    let namespaces = config
+        .get("namespaces")
+        .map(|value| serde_yaml::from_value::<Vec<NamespaceEntry>>(value.clone()))
+        .transpose()
+        .map_err(|error| format!("invalid namespaces configuration: {error}"))?
+        .unwrap_or_default();
+    let mut names = std::collections::HashSet::new();
+    for namespace in &namespaces {
+        if !names.insert(&namespace.name) {
+            return Err(format!(
+                "duplicate configured namespace: {}",
+                namespace.name
+            ));
+        }
+        if !namespace.is_virtual() {
+            registry.try_register_namespace(namespace.clone())?;
+        }
+    }
+    Ok(namespaces)
+}
+
+fn load_forward_definitions(
+    config: &serde_yaml::Value,
+    registry: &InMemoryRegistry,
+    namespaces: &[NamespaceEntry],
+) -> Result<Vec<ForwardEntry>, String> {
+    let mut forwards = Vec::new();
+    if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
+        for fwd_value in fwd_list {
+            match serde_yaml::from_value::<ForwardEntry>(fwd_value.clone()) {
+                Ok(mut fwd) => {
+                    fwd.available = false;
+                    info!(forward = %fwd.name, address = %fwd.address, "registered forward from config");
+                    let namespace = fwd
+                        .namespace
+                        .as_deref()
+                        .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
+                    if namespaces
+                        .iter()
+                        .any(|entry| entry.name == namespace && entry.is_virtual())
+                    {
+                        return Err(format!("virtual namespace {namespace} cannot own forwards"));
+                    }
+                    registry.try_register_forward(fwd.clone())?;
+                    forwards.push(fwd);
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "failed to deserialize forward entry from config");
+                }
+            }
+        }
+    }
+    Ok(forwards)
 }
 
 /// Register the credential bindings declared under the top-level `bindings`
@@ -420,6 +472,38 @@ mod tests {
     use super::load_bindings;
     use wanaku_infra::registry::InMemoryRegistry;
     use wanaku_types::registry::BindingRegistry;
+
+    #[test]
+    fn namespace_bootstrap_loads_concrete_before_virtual_and_rejects_invalid_graphs()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use std::sync::Arc;
+        use wanaku_infra::credentials::CredentialBroker;
+        use wanaku_types::credentials::ResolverRegistry;
+        use wanaku_types::registry::NamespaceRegistry;
+        let broker = Arc::new(CredentialBroker::new(ResolverRegistry::new()));
+        let registry = InMemoryRegistry::new();
+        let config = serde_yaml::from_str(
+            "namespaces:\n  - name: integration\n    targets: [kafka]\n  - name: kafka\n",
+        )?;
+        super::load_core_config(&config, &registry, &broker, None)?;
+        assert!(registry.resolve_virtual_member("integration", "kafka"));
+        assert!(
+            registry
+                .get_namespace("kafka")
+                .is_some_and(|entry| !entry.is_virtual())
+        );
+        for yaml in [
+            "namespaces: [{name: integration, members: [missing]}]",
+            "namespaces: [{name: integration, members: [nested]}, {name: nested, members: []}]",
+            "namespaces: [{name: integration, members: []}]\nforwards: [{name: f, address: 'http://backend/mcp', namespace: integration}]",
+            "namespaces: [{name: kafka}, {name: kafka}]",
+        ] {
+            let registry = InMemoryRegistry::new();
+            let config = serde_yaml::from_str(yaml)?;
+            assert!(super::load_core_config(&config, &registry, &broker, None).is_err());
+        }
+        Ok(())
+    }
 
     #[test]
     fn load_bindings_registers_valid_binding_and_normalizes_origin() {

@@ -11,19 +11,52 @@ use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHandle,
 use wanaku_types::governance::{AuditLevel, EnforcementMode, GovernanceConfig, GovernancePosture};
 use wanaku_types::interactions::{InMemoryInteractionStore, InteractionStore};
 use wanaku_types::mcp::McpContext;
+use wanaku_types::metadata::VIRTUAL_NAMESPACE_METADATA_KEY;
 use wanaku_types::registry::ToolRegistry;
 
 wanaku_filters::body_filter_boilerplate!(EvaluatorFilter, "wanaku_evaluator");
 
 impl EvaluatorFilter {
-    #[expect(
-        clippy::too_many_lines,
-        reason = "request evaluation pipeline resolves one immutable configuration snapshot"
-    )]
     async fn handle_body(
         &self,
         ctx: &mut HttpFilterContext<'_>,
         body: &mut Option<Bytes>,
+    ) -> Result<FilterAction, FilterError> {
+        let concrete = ctx
+            .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
+            .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE)
+            .to_owned();
+        let virtual_namespace = ctx
+            .get_metadata(VIRTUAL_NAMESPACE_METADATA_KEY)
+            .map(str::to_owned);
+        let scopes: Vec<_> = match virtual_namespace {
+            Some(virtual_namespace) if concrete.starts_with("virtual-ns/") => {
+                vec![virtual_namespace]
+            }
+            Some(virtual_namespace) => vec![concrete, virtual_namespace],
+            None => vec![concrete],
+        };
+        let mut outcome = FilterAction::Continue;
+        for namespace in scopes {
+            let action = self.evaluate_scope(ctx, body, &namespace).await?;
+            if matches!(outcome, FilterAction::Continue)
+                && !matches!(action, FilterAction::Continue)
+            {
+                outcome = action;
+            }
+        }
+        Ok(outcome)
+    }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "request evaluation pipeline resolves one immutable configuration snapshot"
+    )]
+    async fn evaluate_scope(
+        &self,
+        ctx: &mut HttpFilterContext<'_>,
+        body: &mut Option<Bytes>,
+        namespace: &str,
     ) -> Result<FilterAction, FilterError> {
         let Some(method) = ctx
             .get_metadata(wanaku_filters::MCP_METHOD_KEY)
@@ -34,10 +67,7 @@ impl EvaluatorFilter {
             }
             return Ok(FilterAction::Continue);
         };
-        let namespace = ctx
-            .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
-            .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE)
-            .to_owned();
+        let namespace = namespace.to_owned();
         let posture = ctx
             .extensions
             .get::<GovernanceConfig>()
@@ -358,6 +388,16 @@ fn outcome_event(
         "Evaluator governance decision.",
     );
     event.namespace = Some(audit.namespace.to_owned());
+    if let Some(virtual_namespace) = ctx.get_metadata(VIRTUAL_NAMESPACE_METADATA_KEY) {
+        event.attributes.insert(
+            "virtual_namespace".to_owned(),
+            serde_json::json!(virtual_namespace),
+        );
+        event.attributes.insert(
+            "concrete_namespace".to_owned(),
+            serde_json::json!(ctx.get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)),
+        );
+    }
     event.evaluator = audit.evaluator.map(str::to_owned);
     event.filter = Some("wanaku_evaluator".to_owned());
     event.policy_revision = audit.revision.map(|revision| revision.to_string());
@@ -494,11 +534,18 @@ fn dispatch_action(
                 .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
                 .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE)
                 .to_owned();
-            let registry = ctx.extensions.get::<InMemoryRegistry>();
+            let catalog: HashMap<_, _> = ctx
+                .extensions
+                .get::<InMemoryRegistry>()
+                .map(|registry| registry.list_tools_in_namespace(&namespace))
+                .unwrap_or_default()
+                .into_iter()
+                .map(|tool| (tool.name.clone(), tool))
+                .collect();
             let mcp_tools: Vec<serde_json::Value> = tool_names
                 .iter()
                 .filter_map(|name| {
-                    let tool = registry.and_then(|r| r.get_tool_in_namespace(&namespace, name));
+                    let tool = catalog.get(name);
                     tool.map(|t| {
                         serde_json::json!({
                             "name": t.name,
@@ -519,6 +566,13 @@ fn dispatch_action(
             ))
         }
         ActionResult::SetMetadata(key, value) => {
+            if protected_routing_metadata(&key) {
+                return Ok(wanaku_filters::response::json_rpc_error(
+                    &json_rpc_id,
+                    -32002,
+                    "evaluator cannot change routing metadata",
+                ));
+            }
             ctx.set_metadata(&key, &value);
             Ok(FilterAction::Continue)
         }
@@ -553,6 +607,17 @@ fn string_arguments(arguments: &serde_json::Value) -> HashMap<String, String> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+fn protected_routing_metadata(key: &str) -> bool {
+    matches!(
+        key,
+        wanaku_types::NAMESPACE_METADATA_KEY
+            | VIRTUAL_NAMESPACE_METADATA_KEY
+            | wanaku_filters::MCP_METHOD_KEY
+            | wanaku_filters::MCP_NAME_KEY
+    ) || key.starts_with("wanaku.a2a.")
+        || key.starts_with("a2a.")
 }
 
 #[cfg(test)]
@@ -1017,6 +1082,73 @@ mod tests {
             );
             server.verify().await;
         }
+    }
+
+    #[tokio::test]
+    async fn virtual_evaluator_enforces_each_scope_and_audits_both() -> Result<(), FilterError> {
+        for enforced in ["kafka", "integration"] {
+            let request = request();
+            let mut ctx = make_filter_context(&request);
+            ctx.set_metadata(wanaku_filters::MCP_METHOD_KEY, wanaku_types::TOOLS_CALL);
+            ctx.set_metadata(wanaku_types::NAMESPACE_METADATA_KEY, "kafka");
+            ctx.set_metadata(VIRTUAL_NAMESPACE_METADATA_KEY, "integration");
+            let mut governance = GovernanceConfig {
+                default: GovernancePosture {
+                    mode: EnforcementMode::Disabled,
+                    disabled_reason: Some("test".to_owned()),
+                    ..GovernancePosture::default()
+                },
+                ..GovernanceConfig::default()
+            };
+            governance.namespaces.insert(
+                enforced.to_owned(),
+                wanaku_types::governance::GovernancePostureOverride {
+                    mode: Some(EnforcementMode::Enforce),
+                    ..Default::default()
+                },
+            );
+            ctx.extensions.insert(governance);
+            let store = InMemoryAuditStore::new(10);
+            ctx.extensions
+                .insert(AuditHandle::new(std::sync::Arc::new(store.clone())));
+            let action = EvaluatorFilter {
+                max_body_bytes: 1024,
+            }
+            .handle_body(&mut ctx, &mut None)
+            .await?;
+            assert!(matches!(action, FilterAction::Reject(_)));
+            let events = store.query(&Default::default()).events;
+            assert_eq!(events.len(), 2);
+            for event in events {
+                assert_eq!(event.attributes["virtual_namespace"], "integration");
+                assert_eq!(event.attributes["concrete_namespace"], "kafka");
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn evaluator_cannot_override_virtual_or_concrete_routing() -> Result<(), FilterError> {
+        for key in [
+            wanaku_types::NAMESPACE_METADATA_KEY,
+            VIRTUAL_NAMESPACE_METADATA_KEY,
+            wanaku_filters::MCP_NAME_KEY,
+            "wanaku.a2a.agent",
+        ] {
+            let request = request();
+            let mut ctx = make_filter_context(&request);
+            ctx.set_metadata(key, "original");
+            let action = dispatch_action(
+                &mut ctx,
+                &mut None,
+                ActionResult::SetMetadata(key.to_owned(), "outside".to_owned()),
+                wanaku_types::TOOLS_CALL,
+                "test",
+            )?;
+            assert!(matches!(action, FilterAction::Reject(_)));
+            assert_eq!(ctx.get_metadata(key), Some("original"));
+        }
+        Ok(())
     }
 
     fn looping_evaluator() -> EvaluatorState {

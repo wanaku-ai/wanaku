@@ -1,4 +1,5 @@
 import type { AgentEntry } from '../../../../ui/admin/src/models/agentEntry';
+import type { NamespaceEntry } from '../../../../ui/admin/src/models/namespaceEntry';
 import { APIRequestContext, APIResponse, expect } from '@playwright/test';
 
 export class ApiHelper {
@@ -71,9 +72,9 @@ export class ApiHelper {
     return this.request.delete(`${this.baseUrl}/api/v1/forwards/${name}`);
   }
 
-  async addNamespace(namespace: { name: string }) {
+  async addNamespace(namespace: NamespaceEntry) {
     const resp = await this.request.post(`${this.baseUrl}/api/v1/namespaces`, {
-      data: { name: namespace.name },
+      data: namespace,
     });
     return this.assertOk(resp, `addNamespace(${namespace.name})`);
   }

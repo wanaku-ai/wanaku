@@ -15,6 +15,7 @@ crate::body_filter_boilerplate!(ToolCallFilter, "wanaku_tool_call");
 struct ParsedBody {
     id: serde_json::Value,
     arguments: HashMap<String, serde_json::Value>,
+    virtual_owner: Option<String>,
 }
 
 fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBody {
@@ -25,6 +26,7 @@ fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBod
     ParsedBody {
         id: json_rpc_id,
         arguments,
+        virtual_owner: None,
     }
 }
 
@@ -64,6 +66,10 @@ impl ToolCallFilter {
         let namespace = ctx
             .get_metadata(crate::namespace::NAMESPACE_METADATA_KEY)
             .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
+
+        parsed.virtual_owner = ctx
+            .get_metadata(wanaku_types::VIRTUAL_NAMESPACE_METADATA_KEY)
+            .map(|_| namespace.to_owned());
 
         let conversation_id = parsed
             .arguments
@@ -275,8 +281,15 @@ impl ToolCallFilter {
             .await
         {
             Ok(call_result) => {
-                let response =
+                let mut response =
                     build_success_response(&parsed.id, &call_result, &redactor, &forwarded_values);
+                if let Some(namespace) = &parsed.virtual_owner {
+                    crate::namespace::qualify_resource_result(
+                        &mut response["result"],
+                        namespace,
+                        crate::TOOLS_CALL,
+                    );
+                }
                 let response_body = Bytes::from(response.to_string());
                 Ok(FilterAction::Reject(crate::response::json_response(
                     response_body,

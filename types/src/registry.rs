@@ -227,6 +227,10 @@ impl ForwardEntry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct NamespaceEntry {
+    /// Concrete namespaces exposed by this virtual namespace.
+    /// A present, empty list defines an empty virtual namespace.
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "targets")]
+    pub members: Option<Vec<String>>,
     #[serde(alias = "path")]
     pub name: String,
     #[serde(default)]
@@ -240,6 +244,12 @@ pub struct NamespaceEntry {
     pub auth_required: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audience: Option<String>,
+}
+
+impl NamespaceEntry {
+    pub const fn is_virtual(&self) -> bool {
+        self.members.is_some()
+    }
 }
 
 /// Validates that a namespace name follows DNS-label conventions:

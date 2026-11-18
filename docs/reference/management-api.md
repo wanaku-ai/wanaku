@@ -81,6 +81,8 @@ Wanaku discovers tools, resources, and prompts when you create or refresh a forw
 
 ### Namespaces of Tools, Resources, and Prompts
 
+Virtual namespaces combine concrete inventories through `/virtual-ns/{name}/mcp` and `/virtual-ns/{name}/a2a`. Add `members` to a namespace create or update body to define a virtual namespace. `members: []` defines an empty virtual namespace. Members must be existing concrete namespaces. `targets` is an alias for `members`. Direct registrations still require a concrete namespace. Management entry routes keep concrete ownership and identifiers. See [Virtual namespaces](../connect/namespaces.md#virtual-namespaces).
+
 Wanaku identifies each tool, resource, and prompt by its namespace and its name. The same name can exist in more than one namespace. For example, two forwards in different namespaces can point to the same upstream. Each namespace then has its own copy of the entries.
 
 The routes that address one entry by name use the `namespace` query parameter. The default value is `default`. Thus, a request without the parameter addresses the `default` namespace, as in earlier versions:

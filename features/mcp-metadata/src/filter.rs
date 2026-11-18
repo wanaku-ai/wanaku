@@ -126,13 +126,15 @@ impl WellKnownFilter {
     }
 }
 
-/// Wanaku serves MCP only at `/{namespace}/mcp`, so the default namespace
-/// also gets an explicit `/default/mcp` resource.
+/// Preserve concrete and virtual MCP endpoint paths in resource metadata.
 fn resource_url(host: &str, suffix: &str) -> String {
     let namespace = suffix
         .strip_suffix("/mcp")
         .or_else(|| suffix.strip_suffix("/mcp/"))
-        .filter(|ns| !ns.is_empty() && !ns.contains('/'))
+        .filter(|ns| {
+            let name = ns.strip_prefix("virtual-ns/").unwrap_or(ns);
+            wanaku_types::registry::validate_namespace_name(name).is_ok()
+        })
         .unwrap_or("default");
     format!("http://{host}/{namespace}/mcp")
 }
@@ -225,6 +227,10 @@ mod tests {
         assert_eq!(resource_url("h:1", "default/mcp"), "http://h:1/default/mcp");
         assert_eq!(resource_url("h:1", "finance/mcp"), "http://h:1/finance/mcp");
         assert_eq!(resource_url("h:1", "a/b/mcp"), "http://h:1/default/mcp");
+        assert_eq!(
+            resource_url("h:1", "virtual-ns/integration/mcp"),
+            "http://h:1/virtual-ns/integration/mcp"
+        );
     }
 
     #[test]

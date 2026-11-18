@@ -35,6 +35,7 @@ plugins:
 Wanaku loads these top-level sections from `wanaku.yaml`:
 
 - `forwards` — core forward bootstrap configuration
+- `namespaces` — concrete namespace definitions and virtual namespace memberships
 - `bindings` — credential bindings that forwards reference for brokered authentication. See [Credential Brokerage](../govern/credential-brokerage.md#configuring-credentials-in-wanakuyaml)
 - `llm_connections` — named LLM connections (model/url/api_key) for evaluators; config-only, never exposed via the management API
 - `typesafe_system_one_connections` — named TypeSafe System One connections for evaluators; config-only, never exposed via the management API
@@ -47,7 +48,17 @@ Wanaku loads these top-level sections from `wanaku.yaml`:
 - `audit` — audit retention, payload capture, and redaction. See [Governance audit trail](../govern/audit-trail.md)
 - `plugins` — plugin service mappings owned by the plugins feature
 
-There is no top-level `namespaces` key. A forward sets its namespace with its own `namespace` field. Namespace governance overrides go under `governance.namespaces`.
+Define namespace memberships in the top-level `namespaces` section. A forward sets its concrete namespace with its own `namespace` field. Namespace governance overrides go under `governance.namespaces`.
+
+```yaml
+namespaces:
+  - name: kafka
+  - name: flink
+  - name: integration
+    members: [kafka, flink]
+```
+
+Members must resolve to concrete namespaces. Virtual namespaces cannot contain other virtual namespaces. Use `/virtual-ns/integration/mcp` for the virtual MCP endpoint. See [Virtual namespaces](../connect/namespaces.md#virtual-namespaces) for qualification, lifecycle rules, and A2A endpoints.
 
 The server rejects unknown keys at all levels of `wanaku.yaml`. An unknown key stops startup. This rule applies to the top-level keys and to the keys in every section. For example, a misspelled `evaluator:` top-level key or a misspelled `trigger.namepsace` key stops startup. The server prints one error that names each unknown key with its path:
 
