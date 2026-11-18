@@ -8,6 +8,7 @@ pub mod mcp_client;
 pub mod metrics;
 pub mod opa;
 pub mod persistence;
+pub mod redb_persistence;
 pub mod registry;
 pub mod typesafe;
 

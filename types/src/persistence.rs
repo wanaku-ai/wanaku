@@ -31,6 +31,9 @@ pub enum PersistenceError {
     #[error("serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
+    #[error("database error: {0}")]
+    Database(String),
+
     #[error("persistence coordination error: {0}")]
     Coordination(String),
 }

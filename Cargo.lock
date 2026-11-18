@@ -4211,6 +4211,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "redb"
+version = "4.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "096b1dd5ec053c9c2a5a26a93aafeadf73ebcb710ea54dc3151f17a8e20535ef"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "redis"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6238,10 +6247,12 @@ dependencies = [
  "http",
  "praxis-proxy-core",
  "praxis-proxy-tls",
+ "redb",
  "reqwest 0.12.28",
  "rmcp",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.21",
  "time",
  "tokio",
