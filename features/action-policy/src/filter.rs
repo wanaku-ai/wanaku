@@ -8,6 +8,7 @@ use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHandle,
 use wanaku_types::governance::{
     EnforcementMode, FailureBehavior, GovernanceConfig, GovernancePosture, NoMatchBehavior,
 };
+use wanaku_types::metadata::VIRTUAL_NAMESPACE_METADATA_KEY;
 use wanaku_types::registry::{DEFAULT_NAMESPACE, ToolRegistry};
 use wanaku_types::{PROMPTS_GET, RESOURCES_READ, TOOLS_CALL};
 
@@ -45,44 +46,40 @@ impl ActionPolicyFilter {
         let id = wanaku_filters::response::json_rpc_id_from_metadata(
             ctx.get_metadata(wanaku_filters::MCP_ID_KEY),
         );
-        let namespace = ctx
+        let concrete = ctx
             .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
             .unwrap_or(DEFAULT_NAMESPACE);
-        let posture = ctx
+        let virtual_namespace = ctx.get_metadata(VIRTUAL_NAMESPACE_METADATA_KEY);
+        let governance = ctx
             .extensions
             .get::<GovernanceConfig>()
             .cloned()
-            .unwrap_or_default()
-            .resolve(namespace);
-        if posture.mode == EnforcementMode::Disabled {
-            tracing::warn!(
-                namespace,
-                reason = posture.disabled_reason.as_deref().unwrap_or("unspecified"),
-                "governance is disabled for namespace"
-            );
-            return Ok(FilterAction::Continue);
-        }
-        let Some(state) = ctx.extensions.get::<ActionPolicyState>() else {
-            record_simple_decision(
-                DecisionAuditContext::from_http(ctx, None).as_ref(),
+            .unwrap_or_default();
+        let state = ctx.extensions.get::<ActionPolicyState>();
+        let snapshot = state.map_or(PolicySnapshot::Invalid, ActionPolicyState::snapshot);
+        let mut outcome = FilterAction::Continue;
+        for namespace in std::iter::once(concrete).chain(virtual_namespace) {
+            let posture = governance.resolve(namespace);
+            if posture.mode == EnforcementMode::Disabled {
+                tracing::warn!(namespace, "governance is disabled for namespace");
+                continue;
+            }
+            let action = evaluate_snapshot_in_scope(
+                ctx,
                 body.as_ref(),
-                AuditDecision::Error,
-                INVALID_POLICY_REASON_CODE,
-                INVALID_POLICY_MESSAGE,
+                snapshot.clone(),
+                (&posture, namespace),
+                &id,
             );
-            return Ok(apply_failure(&posture, &id));
-        };
-        let snapshot = state.snapshot();
-        Ok(evaluate_snapshot(
-            ctx,
-            body.as_ref(),
-            snapshot,
-            &posture,
-            &id,
-        ))
+            if !matches!(action, FilterAction::Continue) {
+                outcome = action;
+            }
+        }
+        Ok(outcome)
     }
 }
 
+#[cfg(test)]
 fn evaluate_snapshot(
     ctx: &HttpFilterContext<'_>,
     body: Option<&Bytes>,
@@ -90,7 +87,24 @@ fn evaluate_snapshot(
     posture: &GovernancePosture,
     id: &serde_json::Value,
 ) -> FilterAction {
-    let audit = DecisionAuditContext::from_http(ctx, snapshot.revision_id());
+    let namespace = ctx
+        .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
+        .unwrap_or(DEFAULT_NAMESPACE);
+    evaluate_snapshot_in_scope(ctx, body, snapshot, (posture, namespace), id)
+}
+
+fn evaluate_snapshot_in_scope(
+    ctx: &HttpFilterContext<'_>,
+    body: Option<&Bytes>,
+    snapshot: PolicySnapshot,
+    scope: (&GovernancePosture, &str),
+    id: &serde_json::Value,
+) -> FilterAction {
+    let (posture, namespace) = scope;
+    let mut audit = DecisionAuditContext::from_http(ctx, snapshot.revision_id());
+    if let Some(audit) = audit.as_mut() {
+        audit.namespace = Some(namespace);
+    }
     let active = match snapshot {
         PolicySnapshot::Valid(active) => active,
         PolicySnapshot::Unconfigured => {
@@ -131,9 +145,8 @@ fn evaluate_snapshot(
                 .get_metadata("a2a.method")
                 .or_else(|| ctx.get_metadata(wanaku_filters::MCP_METHOD_KEY))
                 .unwrap_or_default(),
-            namespace: ctx
-                .get_metadata(wanaku_types::NAMESPACE_METADATA_KEY)
-                .unwrap_or(DEFAULT_NAMESPACE),
+            namespace,
+            concrete_namespace: ctx.get_metadata(wanaku_types::NAMESPACE_METADATA_KEY),
             body,
             policy: active.policy(),
             posture,
@@ -164,6 +177,7 @@ struct RequestEvaluation<'a> {
     registry: &'a InMemoryRegistry,
     id: &'a serde_json::Value,
     agent: Option<&'a str>,
+    concrete_namespace: Option<&'a str>,
 }
 
 struct DecisionAuditContext<'a> {
@@ -174,6 +188,8 @@ struct DecisionAuditContext<'a> {
     target: Option<&'a str>,
     a2a_version: Option<&'a str>,
     policy_revision: Option<String>,
+    virtual_namespace: Option<&'a str>,
+    concrete_namespace: Option<&'a str>,
 }
 
 impl<'a> DecisionAuditContext<'a> {
@@ -193,6 +209,8 @@ impl<'a> DecisionAuditContext<'a> {
                 .get_metadata("wanaku.a2a.agent")
                 .or_else(|| ctx.get_metadata(wanaku_filters::MCP_NAME_KEY)),
             policy_revision: policy_revision.map(|revision| revision.to_string()),
+            virtual_namespace: ctx.get_metadata(VIRTUAL_NAMESPACE_METADATA_KEY),
+            concrete_namespace: ctx.get_metadata(wanaku_types::NAMESPACE_METADATA_KEY),
         })
     }
 }
@@ -212,21 +230,16 @@ fn evaluate_request_impl(
         body,
         policy,
         posture,
-        registry,
         id,
-        agent,
+        ..
     } = input;
     let Ok(view) = McpRequestView::parse(body) else {
         record_malformed_decision(audit_ctx, body, namespace, method);
         return policy_error(id, INVALID_ACTION_REASON_CODE, INVALID_ACTION_MESSAGE);
     };
-    let Ok(context) = action_context(method, namespace, &view, registry) else {
+    let Ok(context) = scoped_action_context(&input, &view) else {
         record_malformed_decision(audit_ctx, body, namespace, method);
         return policy_error(id, INVALID_ACTION_REASON_CODE, INVALID_ACTION_MESSAGE);
-    };
-    let context = match agent {
-        Some(agent) if crate::a2a::is_supported_method(method) => context.with_target_name(agent),
-        _ => context,
     };
     let decision = PolicyEngine::evaluate(PolicyState::Available(policy), &context);
     if let Some(audit) = audit_ctx {
@@ -256,6 +269,33 @@ fn evaluate_request_impl(
             apply_failure(posture, id)
         }
     }
+}
+
+fn scoped_action_context(
+    input: &RequestEvaluation<'_>,
+    view: &McpRequestView,
+) -> Result<ActionContext, RequestViewError> {
+    let concrete = input.concrete_namespace.unwrap_or(input.namespace);
+    let mut context = action_context(input.method, concrete, view, input.registry)?;
+    if let Some(agent) = input
+        .agent
+        .filter(|_| crate::a2a::is_supported_method(input.method))
+    {
+        context = context.with_target_name(agent);
+    }
+    if input.namespace != concrete {
+        if let Some(target) = context.target_name().map(str::to_owned) {
+            context = context.with_target_name(format!("{concrete}/{target}"));
+        }
+        if input.method == RESOURCES_READ {
+            context = context.with_uri(format!(
+                "wanaku://{concrete}/{}",
+                view.resource_read()?.uri()
+            ));
+        }
+        context = context.with_namespace(input.namespace);
+    }
+    Ok(context)
 }
 
 fn record_malformed_decision(
@@ -436,6 +476,16 @@ fn record_event(
     mut event: AuditEvent,
 ) {
     event.namespace = namespace.map(str::to_owned);
+    if let Some(virtual_namespace) = audit.virtual_namespace {
+        event.attributes.insert(
+            "virtual_namespace".to_owned(),
+            serde_json::json!(virtual_namespace),
+        );
+        event.attributes.insert(
+            "concrete_namespace".to_owned(),
+            serde_json::json!(audit.concrete_namespace),
+        );
+    }
     event.filter = Some("wanaku_action_policy".to_owned());
     event.target_type = target_type(&event.operation).map(str::to_owned);
     event.policy_revision.clone_from(&audit.policy_revision);
@@ -661,6 +711,100 @@ mod tests {
         }
     }
 
+    #[tokio::test]
+    async fn virtual_actions_evaluate_and_audit_both_scopes() -> Result<(), FilterError> {
+        for denied_scope in [Some("kafka"), Some("integration"), None] {
+            let state = ActionPolicyState::new();
+            let mut rules = vec![
+                serde_json::json!({"id":"allow", "effect":"allow", "selectors":{"operation":TOOLS_CALL}}),
+            ];
+            if let Some(namespace) = denied_scope {
+                rules.push(serde_json::json!({"id":"deny", "effect":"deny", "selectors":{"namespace":namespace,"operation":TOOLS_CALL}}));
+            }
+            let policy = serde_json::from_value(serde_json::json!({"rules":rules}))?;
+            state
+                .try_activate(
+                    policy,
+                    crate::state::ActivatePolicyParams {
+                        origin: crate::revision::RevisionOrigin::Api,
+                        actor: None,
+                        expected_revision: None,
+                    },
+                )
+                .map_err(|error| format!("{error:?}"))?;
+            let recorder = std::sync::Arc::new(RecordingAuditStore::default());
+            let filters = praxis_filter::FilterRegistry::with_builtins();
+            let pipeline = praxis_filter::FilterPipeline::build(&mut [], &filters)?;
+            let request = praxis_filter::Request {
+                method: http::Method::POST,
+                uri: http::Uri::from_static("/virtual-ns/integration/mcp"),
+                headers: http::HeaderMap::new(),
+            };
+            let mut protocol =
+                praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
+            let mut ctx = protocol.build_filter_context(&pipeline, &request, None);
+            ctx.extensions.insert(state);
+            ctx.extensions.insert(InMemoryRegistry::new());
+            ctx.extensions.insert(AuditHandle::new(recorder.clone()));
+            ctx.set_metadata(wanaku_types::NAMESPACE_METADATA_KEY, "kafka");
+            ctx.set_metadata(VIRTUAL_NAMESPACE_METADATA_KEY, "integration");
+            ctx.set_metadata(wanaku_filters::MCP_METHOD_KEY, TOOLS_CALL);
+            ctx.set_metadata(wanaku_filters::MCP_NAME_KEY, "health-check");
+            let mut body = Some(super::tests::request(
+                TOOLS_CALL,
+                &serde_json::json!({"name":"health-check"}),
+            ));
+            let filter = ActionPolicyFilter::from_config(&serde_yaml::Value::Null)?;
+            let action = filter.on_request_body(&mut ctx, &mut body, true).await?;
+            assert_eq!(
+                matches!(action, FilterAction::Reject(_)),
+                denied_scope.is_some()
+            );
+            let page = recorder.query(&AuditQuery::default());
+            assert_eq!(page.events.len(), 2);
+            for event in &page.events {
+                assert_eq!(event.attributes["virtual_namespace"], "integration");
+                assert_eq!(event.attributes["concrete_namespace"], "kafka");
+            }
+            assert!(
+                page.events
+                    .iter()
+                    .any(|event| event.namespace.as_deref() == Some("kafka"))
+            );
+            assert!(
+                page.events
+                    .iter()
+                    .any(|event| event.namespace.as_deref() == Some("integration"))
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn virtual_policy_targets_are_qualified() -> Result<(), FilterError> {
+        let registry = InMemoryRegistry::new();
+        let posture = GovernancePosture::default();
+        let policy = compile_policy(
+            &serde_json::json!({"id":"allow", "effect":"allow", "selectors":{
+                "namespace":"integration", "target_name":{"matcher":"exact", "value":"kafka/health-check"}
+            }}),
+        );
+        let body = request(TOOLS_CALL, &serde_json::json!({"name":"health-check"}));
+        let action = evaluate_request(RequestEvaluation {
+            method: TOOLS_CALL,
+            namespace: "integration",
+            concrete_namespace: Some("kafka"),
+            body: Some(&body),
+            policy: &policy,
+            posture: &posture,
+            registry: &registry,
+            id: &serde_json::json!(7),
+            agent: None,
+        });
+        assert!(matches!(action, FilterAction::Continue));
+        Ok(())
+    }
+
     #[test]
     #[expect(clippy::too_many_lines, reason = "three governed MCP method fixtures")]
     fn denies_tool_resource_and_prompt_actions() {
@@ -744,6 +888,7 @@ mod tests {
                 registry: &registry,
                 id: &id,
                 agent: None,
+                concrete_namespace: None,
             });
             assert_denied(action, reason);
         }
@@ -772,6 +917,7 @@ mod tests {
                 registry: &registry,
                 id: &id,
                 agent: None,
+                concrete_namespace: None,
             }),
             FilterAction::Continue
         ));
@@ -787,6 +933,7 @@ mod tests {
                 registry: &registry,
                 id: &id,
                 agent: None,
+                concrete_namespace: None,
             }),
             FilterAction::Continue
         ));
@@ -822,6 +969,8 @@ mod tests {
             request_id: Some("request-allow"),
             target: Some("safe"),
             policy_revision: Some("revision-1".to_owned()),
+            virtual_namespace: None,
+            concrete_namespace: None,
         };
         let allow_action = evaluate_request_impl(
             Some(&allow_audit),
@@ -834,6 +983,7 @@ mod tests {
                 registry: &registry,
                 id: &id,
                 agent: None,
+                concrete_namespace: None,
             },
         );
         assert!(matches!(allow_action, FilterAction::Continue));
@@ -863,6 +1013,8 @@ mod tests {
             request_id: Some("request-deny"),
             target: Some("unsafe"),
             policy_revision: Some("revision-1".to_owned()),
+            virtual_namespace: None,
+            concrete_namespace: None,
         };
         let deny_action = evaluate_request_impl(
             Some(&deny_audit),
@@ -875,6 +1027,7 @@ mod tests {
                 registry: &registry,
                 id: &id,
                 agent: None,
+                concrete_namespace: None,
             },
         );
         assert_denied(deny_action, DEFAULT_DENY_REASON_CODE);
@@ -970,6 +1123,7 @@ mod tests {
                 registry: &registry,
                 id: &id,
                 agent: None,
+                concrete_namespace: None,
             }),
             DEFAULT_DENY_REASON_CODE,
         );
@@ -995,6 +1149,7 @@ mod tests {
                 registry: &registry,
                 id: &id,
                 agent: None,
+                concrete_namespace: None,
             }),
             FilterAction::Continue
         ));
@@ -1018,6 +1173,7 @@ mod tests {
             registry: &registry,
             id: &id,
             agent: None,
+            concrete_namespace: None,
         });
         assert_denied(action, INVALID_ACTION_REASON_CODE);
     }
@@ -1087,6 +1243,8 @@ mod tests {
             request_id: Some("audit-mode-request"),
             target: Some("unsafe"),
             policy_revision: None,
+            virtual_namespace: None,
+            concrete_namespace: None,
         };
 
         assert!(matches!(
@@ -1101,6 +1259,7 @@ mod tests {
                     registry: &registry,
                     id: &id,
                     agent: None,
+                    concrete_namespace: None,
                 }
             ),
             FilterAction::Continue
@@ -1147,6 +1306,7 @@ mod tests {
                 registry: &registry,
                 id: &id,
                 agent: Some("worker"),
+                concrete_namespace: None,
             }),
             "agent_denied",
         );
@@ -1173,6 +1333,8 @@ mod tests {
             request_id: Some("http-request"),
             target: Some("worker"),
             policy_revision: None,
+            virtual_namespace: None,
+            concrete_namespace: None,
         };
         let audit_posture = GovernancePosture {
             mode: EnforcementMode::Audit,
@@ -1187,6 +1349,7 @@ mod tests {
             registry: &registry,
             id: &id,
             agent: Some("worker"),
+            concrete_namespace: None,
         };
         assert!(matches!(
             evaluate_request_impl(Some(&audit), input),
@@ -1311,6 +1474,7 @@ mod tests {
             registry: &registry,
             id: &id,
             agent: None,
+            concrete_namespace: None,
         };
         let audit = DecisionAuditContext::from_http(&ctx, Some(1));
         assert_denied(

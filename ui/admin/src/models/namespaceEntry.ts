@@ -13,5 +13,11 @@ export interface NamespaceEntry {
   /** @nullable */
   authRequired?: boolean | null;
   labels?: NamespaceEntryLabels;
+  /**
+   * Concrete namespaces exposed by this virtual namespace.
+   * A present, empty list defines an empty virtual namespace.
+   * @nullable
+   */
+  members?: string[] | null;
   name: string;
 }

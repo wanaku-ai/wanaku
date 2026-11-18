@@ -26,7 +26,7 @@ pub(crate) fn capture(
     if entries.len() > limits.max_registry_entries {
         return Err("registry_snapshot_limit");
     }
-    let registry = copy_registry(entries);
+    let registry = copy_registry(entries)?;
     Ok(SimulationDeps {
         registry,
         ..deps.clone()
@@ -55,21 +55,34 @@ impl RegistryEntries {
         .fold(0_usize, usize::saturating_add)
     }
 }
-fn copy_registry(e: RegistryEntries) -> InMemoryRegistry {
+fn copy_registry(e: RegistryEntries) -> Result<InMemoryRegistry, &'static str> {
     let registry = InMemoryRegistry::new();
+    for ns in e.namespaces.iter().filter(|entry| !entry.is_virtual()) {
+        registry
+            .try_register_namespace(ns.clone())
+            .map_err(|_| "registry_snapshot_invalid")?;
+    }
     registry.register_tools_batch(e.tools);
     registry.register_resources_batch(e.resources);
     registry.register_prompts_batch(e.prompts);
-    for ns in e.namespaces {
-        registry.register_namespace(ns);
-    }
     for f in e.forwards {
-        registry.register_forward(f);
+        registry
+            .try_register_forward(f)
+            .map_err(|_| "registry_snapshot_invalid")?;
+    }
+    for ns in e
+        .namespaces
+        .into_iter()
+        .filter(wanaku_types::registry::NamespaceEntry::is_virtual)
+    {
+        registry
+            .try_register_namespace(ns)
+            .map_err(|_| "registry_snapshot_invalid")?;
     }
     for b in e.bindings {
         registry.register_binding(b);
     }
-    registry
+    Ok(registry)
 }
 
 fn check_counts(deps: &SimulationDeps, limits: &SimulationLimits) -> Result<(), &'static str> {
@@ -83,4 +96,33 @@ fn check_counts(deps: &SimulationDeps, limits: &SimulationLimits) -> Result<(), 
         return Err("registry_snapshot_limit");
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn virtual_members_survive_copy_regardless_of_namespace_order() {
+        let namespaces = serde_json::from_value(serde_json::json!([
+            {"name":"integration","members":["kafka"]}, {"name":"kafka"}
+        ]))
+        .unwrap();
+        let tools = serde_json::from_value(serde_json::json!([
+            {"name":"health-check","description":"health","uri":"health-check","type":"mcp-forward","inputSchema":{},"namespace":"kafka"}
+        ])).unwrap();
+        let registry = copy_registry(RegistryEntries {
+            namespaces,
+            tools,
+            resources: vec![],
+            prompts: vec![],
+            forwards: vec![],
+            bindings: vec![],
+        })
+        .unwrap();
+        let tools = registry.list_tools_in_namespace("virtual-ns/integration");
+        assert_eq!(tools.len(), 1);
+        assert_eq!(tools[0].name, "kafka/health-check");
+        assert_eq!(tools[0].namespace.as_deref(), Some("kafka"));
+    }
 }

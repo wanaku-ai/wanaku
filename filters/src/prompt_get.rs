@@ -15,6 +15,7 @@ struct ParsedBody {
     id: serde_json::Value,
     name: Option<String>,
     arguments: serde_json::Map<String, serde_json::Value>,
+    virtual_owner: Option<String>,
 }
 
 fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBody {
@@ -23,6 +24,7 @@ fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBod
         id: json_rpc_id,
         name: params.name,
         arguments: params.arguments,
+        virtual_owner: None,
     }
 }
 
@@ -50,7 +52,10 @@ impl PromptGetFilter {
 
         let json_rpc_id =
             crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
-        let parsed = parse_body(body, json_rpc_id);
+        let mut parsed = parse_body(body, json_rpc_id);
+        parsed.virtual_owner = ctx
+            .get_metadata(wanaku_types::VIRTUAL_NAMESPACE_METADATA_KEY)
+            .map(|_| namespace.to_owned());
 
         let Some(prompt_name) = parsed.name.as_deref() else {
             return Ok(crate::response::json_rpc_error(
@@ -215,7 +220,14 @@ impl PromptGetFilter {
             .await
         {
             Ok(result) => {
-                let response = build_get_response(&parsed.id, &result, &redactor);
+                let mut response = build_get_response(&parsed.id, &result, &redactor);
+                if let Some(namespace) = &parsed.virtual_owner {
+                    crate::namespace::qualify_resource_result(
+                        &mut response["result"],
+                        namespace,
+                        crate::PROMPTS_GET,
+                    );
+                }
                 let response_body = Bytes::from(response.to_string());
                 Ok(FilterAction::Reject(crate::response::json_response(
                     response_body,

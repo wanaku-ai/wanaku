@@ -75,9 +75,10 @@ export function forwardData(overrides?: Partial<{ name: string; address: string 
   };
 }
 
-export function namespaceData(overrides?: Partial<{ name: string }>) {
+export function namespaceData(overrides?: Partial<{ name: string; members: string[] }>) {
   return {
     name: overrides?.name ?? `e2e-ns-${suffix()}`,
+    ...(overrides?.members !== undefined ? { members: overrides.members } : {}),
   };
 }
 

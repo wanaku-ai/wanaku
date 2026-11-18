@@ -29,7 +29,7 @@ export const NamespacesPage: React.FC = () => {
       }
       setIsLoading(false);
     });
-  }, [listNamespaces]);
+  }, [listNamespaces, setErrorMessage]);
 
   useEffect(() => {
     refreshNamespaces();
@@ -49,38 +49,20 @@ export const NamespacesPage: React.FC = () => {
     setIsModalOpen(false);
   }
 
-  function handleModalSubmit(namespace: NamespaceEntry): void {
-    if (openedNamespace) {
-      handleUpdate(namespace);
-    } else {
-      handleCreate(namespace);
-    }
-  }
-
-  const handleCreate = async (namespace: NamespaceEntry) => {
+  async function handleModalSubmit(namespace: NamespaceEntry): Promise<void> {
+    const save = openedNamespace ? updateNamespace : createNamespace;
     try {
-      await createNamespace(namespace);
-      setIsModalOpen(false);
-      setErrorMessage(null);
-      await refreshNamespaces();
-    } catch {
-      setIsModalOpen(false);
-      setErrorMessage('Error creating namespace. The path may already be in use or is invalid.');
-    }
-  };
-
-  const handleUpdate = async (namespace: NamespaceEntry) => {
-    try {
-      await updateNamespace(namespace);
+      await save(namespace);
       setErrorMessage(null);
       await refreshNamespaces();
     } catch (error) {
+      const action = openedNamespace ? 'updating' : 'creating';
       const reason = error instanceof Error ? `: ${error.message}` : '.';
-      setErrorMessage(`Error updating namespace ${namespace.name}${reason}`);
+      setErrorMessage(`Error ${action} namespace ${namespace.name}${reason}`);
     } finally {
       handleModalClose();
     }
-  };
+  }
 
   const handleDelete = async (namespace: NamespaceEntry) => {
     try {
@@ -99,8 +81,8 @@ export const NamespacesPage: React.FC = () => {
       )}
       <h1 className="title">Namespaces</h1>
       <p className="description">
-        Namespaces help organize and isolate tools and resources, preventing LLM context bloat. Each
-        namespace acts as a separate container accessible via its own MCP endpoint path.
+        Concrete namespaces organize tools, resources, prompts, and A2A agents. Virtual namespaces
+        expose entries from multiple concrete namespaces through one endpoint.
       </p>
       <div id="page-content">
         <NamespaceTable

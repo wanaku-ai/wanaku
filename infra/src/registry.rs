@@ -1,3 +1,5 @@
+mod virtual_namespaces;
+
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
@@ -72,6 +74,7 @@ pub struct InMemoryRegistry {
     bindings: Arc<DashMap<String, CredentialBinding>>,
     persistence: Option<PersistenceCoordinator>,
     persistence_lock: Arc<Mutex<()>>,
+    namespace_lock: Arc<Mutex<()>>,
     inject_request_id: Arc<AtomicBool>,
 }
 
@@ -81,6 +84,7 @@ impl InMemoryRegistry {
         namespaces.insert(
             DEFAULT_NAMESPACE.to_owned(),
             NamespaceEntry {
+                members: None,
                 name: DEFAULT_NAMESPACE.to_owned(),
                 labels: HashMap::new(),
                 auth_required: None,
@@ -98,6 +102,7 @@ impl InMemoryRegistry {
             bindings: Arc::new(DashMap::new()),
             persistence: None,
             persistence_lock: Arc::new(Mutex::new(())),
+            namespace_lock: Arc::new(Mutex::new(())),
             inject_request_id: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -141,6 +146,8 @@ impl InMemoryRegistry {
         entry: wanaku_types::agents::AgentEntry,
         update: bool,
     ) -> Result<bool, String> {
+        let _guard = self.lock_namespaces();
+        self.validate_concrete_namespace(&entry.namespace)?;
         let agent = crate::agents::RegisteredAgent::new(entry)?;
         let namespace = agent.entry.namespace.clone();
         let key = format!("{namespace}/{}", agent.entry.name);
@@ -156,6 +163,7 @@ impl InMemoryRegistry {
         self.namespaces
             .entry(namespace.clone())
             .or_insert_with(|| NamespaceEntry {
+                members: None,
                 name: namespace,
                 labels: HashMap::new(),
                 auth_required: None,
@@ -276,6 +284,11 @@ impl InMemoryRegistry {
             }
         };
 
+        if let Err(error) = self.validate_snapshot_namespaces(&snapshot) {
+            tracing::error!(%error, "invalid persisted namespace graph; snapshot was not loaded");
+            return;
+        }
+
         for agent in snapshot.agents {
             match crate::agents::RegisteredAgent::new(agent) {
                 Ok(agent) => {
@@ -283,6 +296,7 @@ impl InMemoryRegistry {
                     self.namespaces
                         .entry(namespace.clone())
                         .or_insert_with(|| NamespaceEntry {
+                            members: None,
                             name: namespace,
                             labels: HashMap::new(),
                             auth_required: None,
@@ -392,6 +406,7 @@ impl InMemoryRegistry {
             self.namespaces
                 .entry(namespace.clone())
                 .or_insert_with(|| NamespaceEntry {
+                    members: None,
                     name: namespace,
                     labels: HashMap::new(),
                     auth_required: None,
@@ -632,11 +647,15 @@ impl ToolRegistry for InMemoryRegistry {
     }
 
     fn list_tools_in_namespace(&self, namespace: &str) -> Vec<ToolEntry> {
-        self.tools
-            .iter()
-            .filter(|entry| entry.value().enabled && entry.key().0 == namespace)
-            .map(|entry| entry.value().clone())
-            .collect()
+        match namespace.strip_prefix("virtual-ns/") {
+            Some(name) => self.virtual_tools(name),
+            None => self
+                .tools
+                .iter()
+                .filter(|entry| entry.value().enabled && entry.key().0 == namespace)
+                .map(|entry| entry.value().clone())
+                .collect(),
+        }
     }
 
     fn get_tool(&self, namespace: &str, name: &str) -> Option<ToolEntry> {
@@ -658,7 +677,11 @@ impl ToolRegistry for InMemoryRegistry {
             return;
         }
         let inject = self.inject_request_id.load(Ordering::Relaxed);
+        let _guard = self.lock_namespaces();
         for mut tool in tools {
+            if !self.accept_entry_namespace(tool.namespace.as_deref()) {
+                continue;
+            }
             let key = normalize_key(&mut tool.namespace, &tool.name);
             if inject {
                 inject_request_id_arg(&mut tool.input_schema);
@@ -674,7 +697,12 @@ impl ToolRegistry for InMemoryRegistry {
         }
         let inject = self.inject_request_id.load(Ordering::Relaxed);
         let mut skipped = Vec::new();
+        let _guard = self.lock_namespaces();
         for mut tool in tools {
+            if !self.accept_entry_namespace(tool.namespace.as_deref()) {
+                skipped.push(tool);
+                continue;
+            }
             let key = normalize_key(&mut tool.namespace, &tool.name);
             if inject {
                 inject_request_id_arg(&mut tool.input_schema);
@@ -733,11 +761,15 @@ impl ResourceRegistry for InMemoryRegistry {
     }
 
     fn list_resources_in_namespace(&self, namespace: &str) -> Vec<ResourceEntry> {
-        self.resources
-            .iter()
-            .filter(|entry| entry.value().enabled && entry.key().0 == namespace)
-            .map(|entry| entry.value().clone())
-            .collect()
+        match namespace.strip_prefix("virtual-ns/") {
+            Some(name) => self.virtual_resources(name),
+            None => self
+                .resources
+                .iter()
+                .filter(|entry| entry.value().enabled && entry.key().0 == namespace)
+                .map(|entry| entry.value().clone())
+                .collect(),
+        }
     }
 
     fn get_resource(&self, namespace: &str, name: &str) -> Option<ResourceEntry> {
@@ -759,7 +791,11 @@ impl ResourceRegistry for InMemoryRegistry {
         if resources.is_empty() {
             return;
         }
+        let _guard = self.lock_namespaces();
         for mut resource in resources {
+            if !self.accept_entry_namespace(resource.namespace.as_deref()) {
+                continue;
+            }
             let key = normalize_key(&mut resource.namespace, &resource.name);
             self.resources.insert(key, resource);
         }
@@ -771,7 +807,12 @@ impl ResourceRegistry for InMemoryRegistry {
             return Vec::new();
         }
         let mut skipped = Vec::new();
+        let _guard = self.lock_namespaces();
         for mut resource in resources {
+            if !self.accept_entry_namespace(resource.namespace.as_deref()) {
+                skipped.push(resource);
+                continue;
+            }
             let key = normalize_key(&mut resource.namespace, &resource.name);
             skipped.extend(insert_unless_taken(&self.resources, key, resource, |e| {
                 e.forward_id.as_deref()
@@ -827,11 +868,15 @@ impl PromptRegistry for InMemoryRegistry {
     }
 
     fn list_prompts_in_namespace(&self, namespace: &str) -> Vec<PromptEntry> {
-        self.prompts
-            .iter()
-            .filter(|entry| entry.value().enabled && entry.key().0 == namespace)
-            .map(|entry| entry.value().clone())
-            .collect()
+        match namespace.strip_prefix("virtual-ns/") {
+            Some(name) => self.virtual_prompts(name),
+            None => self
+                .prompts
+                .iter()
+                .filter(|entry| entry.value().enabled && entry.key().0 == namespace)
+                .map(|entry| entry.value().clone())
+                .collect(),
+        }
     }
 
     fn get_prompt(&self, namespace: &str, name: &str) -> Option<PromptEntry> {
@@ -853,7 +898,11 @@ impl PromptRegistry for InMemoryRegistry {
         if prompts.is_empty() {
             return;
         }
+        let _guard = self.lock_namespaces();
         for mut prompt in prompts {
+            if !self.accept_entry_namespace(prompt.namespace.as_deref()) {
+                continue;
+            }
             let key = normalize_key(&mut prompt.namespace, &prompt.name);
             self.prompts.insert(key, prompt);
         }
@@ -865,7 +914,12 @@ impl PromptRegistry for InMemoryRegistry {
             return Vec::new();
         }
         let mut skipped = Vec::new();
+        let _guard = self.lock_namespaces();
         for mut prompt in prompts {
+            if !self.accept_entry_namespace(prompt.namespace.as_deref()) {
+                skipped.push(prompt);
+                continue;
+            }
             let key = normalize_key(&mut prompt.namespace, &prompt.name);
             skipped.extend(insert_unless_taken(&self.prompts, key, prompt, |e| {
                 e.forward_id.as_deref()
@@ -925,23 +979,19 @@ impl NamespaceRegistry for InMemoryRegistry {
     }
 
     fn register_namespace(&self, namespace: NamespaceEntry) {
-        self.namespaces.insert(namespace.name.clone(), namespace);
-        self.persist();
+        if let Err(error) = self.try_register_namespace(namespace) {
+            tracing::warn!(%error, "namespace registration rejected");
+        }
     }
 
     fn remove_namespace(&self, name: &str) -> bool {
-        if self
-            .agents
-            .iter()
-            .any(|agent| agent.entry.namespace == name)
-        {
-            return false;
+        match self.try_remove_namespace(name) {
+            Ok(removed) => removed,
+            Err(error) => {
+                tracing::warn!(%error, "namespace removal rejected");
+                false
+            }
         }
-        let removed = self.namespaces.remove(name).is_some();
-        if removed {
-            self.persist();
-        }
-        removed
     }
 }
 
@@ -958,8 +1008,9 @@ impl ForwardRegistry for InMemoryRegistry {
     }
 
     fn register_forward(&self, forward: ForwardEntry) {
-        self.insert_forward(forward);
-        self.persist();
+        if let Err(error) = self.try_register_forward(forward) {
+            tracing::warn!(%error, "forward registration rejected");
+        }
     }
 
     fn remove_forward(&self, name: &str) -> bool {
@@ -1614,6 +1665,7 @@ mod tests {
         let mut labels = HashMap::new();
         labels.insert("team".to_owned(), "finance".to_owned());
         registry.register_namespace(NamespaceEntry {
+            members: None,
             name: "test-ns".to_owned(),
             labels: labels.clone(),
             auth_required: Some(true),
@@ -1634,7 +1686,7 @@ mod tests {
     }
 
     #[test]
-    fn register_forward_with_invalid_namespace_skips_auto_registration() {
+    fn register_forward_with_invalid_namespace_is_rejected() {
         let registry = InMemoryRegistry::new();
         registry.register_forward(sample_forward("example-mcp", Some("Invalid NS")));
 
@@ -1642,8 +1694,7 @@ mod tests {
             registry.get_namespace("Invalid NS").is_none(),
             "invalid namespace names should not be auto-registered"
         );
-        // The forward itself is still registered.
-        assert!(registry.get_forward("example-mcp").is_some());
+        assert!(registry.get_forward("example-mcp").is_none());
     }
 
     #[test]

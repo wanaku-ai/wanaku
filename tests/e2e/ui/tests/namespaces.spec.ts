@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import { NamespacesPage } from '../pages/namespaces.page';
 import { ApiHelper } from '../helpers/api-helpers';
 import { agentData, namespaceData } from '../helpers/test-data';
+import { ForwardsPage } from '../pages/forwards.page';
+import { A2aAgentsPage } from '../pages/a2a-agents.page';
 
 const routerUrl = process.env.WANAKU_ROUTER_URL ?? 'http://localhost:8080';
 
@@ -21,7 +23,7 @@ test.describe('Namespaces', () => {
       await api.deleteAgent(agent.namespace, agent.name).catch(() => {});
     }
     createdAgents.length = 0;
-    for (const name of createdNamespaces) {
+    for (const name of [...createdNamespaces].reverse()) {
       await api.deleteNamespace(name).catch(() => {});
     }
     createdNamespaces.length = 0;
@@ -74,6 +76,68 @@ test.describe('Namespaces', () => {
     expect(await namespaces.isSubmitDisabled()).toBeTruthy();
 
     await namespaces.cancelModal();
+  });
+
+  test('creates, edits, and deletes a virtual namespace with a qualified endpoint', async () => {
+    const member = namespaceData();
+    const virtual = namespaceData();
+    createdNamespaces.push(member.name, virtual.name);
+    await api.addNamespace(member);
+
+    await namespaces.goto();
+    await namespaces.clickAddNamespace();
+    await namespaces.fillNamespaceForm(virtual.name);
+    await namespaces.enableVirtualNamespace();
+    await namespaces.toggleMember(member.name);
+    await namespaces.submitModal();
+
+    const row = namespaces.rowWithText(virtual.name);
+    await expect(row).toContainText('Virtual');
+    await expect(row).toContainText(member.name);
+    await expect(row).toContainText(`/virtual-ns/${virtual.name}/mcp`);
+    expect((await (await api.getNamespace(virtual.name)).json()).data.members).toEqual([member.name]);
+
+    await namespaces.clickEditNamespace(virtual.name);
+    await namespaces.toggleMember(member.name);
+    await namespaces.submitModal();
+    await expect(row).toContainText('No members');
+    expect((await (await api.getNamespace(virtual.name)).json()).data.members).toEqual([]);
+
+    await namespaces.clickDeleteNamespace(virtual.name);
+    await namespaces.waitForNamespaceRemoved(virtual.name);
+  });
+
+  test('virtual namespaces are absent from member and direct registration choices', async ({ page }) => {
+    const member = namespaceData();
+    const virtual = namespaceData({ members: [member.name] });
+    createdNamespaces.push(member.name, virtual.name);
+    await api.addNamespace(member);
+    await api.addNamespace(virtual);
+
+    await namespaces.goto();
+    await namespaces.clickAddNamespace();
+    await namespaces.enableVirtualNamespace();
+    await page.locator('#namespace-members .cds--list-box__field').click();
+    await expect(page.getByRole('option', { name: member.name, exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: virtual.name, exact: true })).toHaveCount(0);
+    await page.locator('#namespace-members .cds--list-box__field').click();
+    await namespaces.cancelModal();
+
+    const forwards = new ForwardsPage(page, `${routerUrl}/admin/`);
+    await forwards.goto();
+    await forwards.clickAddForward();
+    const select = page.locator('#namespace');
+    await expect(select.locator(`option[value="${member.name}"]`)).toHaveCount(1);
+    await expect(select.locator(`option[value="${virtual.name}"]`)).toHaveCount(0);
+    await forwards.cancelModal();
+
+    const agents = new A2aAgentsPage(page, `${routerUrl}/admin/`);
+    await agents.goto();
+    await agents.clickAddAgent();
+    const agentNamespace = page.locator('#agent-namespace');
+    await expect(agentNamespace.locator(`option[value="${member.name}"]`)).toHaveCount(1);
+    await expect(agentNamespace.locator(`option[value="${virtual.name}"]`)).toHaveCount(0);
+    await agents.cancelModal();
   });
 
   test('delete a namespace', async () => {

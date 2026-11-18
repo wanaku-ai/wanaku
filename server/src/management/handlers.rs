@@ -256,7 +256,9 @@ pub(super) fn handle_namespace_create(
     }
 
     let name = namespace.name.clone();
-    registry.register_namespace(namespace);
+    if let Err(error) = registry.try_register_namespace(namespace) {
+        return json_err(StatusCode::BAD_REQUEST, &error);
+    }
     info!(namespace = %name, "registered namespace via management API");
     match registry.get_namespace(&name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
@@ -289,7 +291,9 @@ pub(super) fn handle_namespace_update(
     }
 
     namespace.name = path_name.to_owned();
-    registry.register_namespace(namespace);
+    if let Err(error) = registry.try_register_namespace(namespace) {
+        return json_err(StatusCode::BAD_REQUEST, &error);
+    }
     info!(namespace = %path_name, "updated namespace via management API");
     match registry.get_namespace(path_name) {
         Some(entry) => json_ok(&serde_json::json!(entry)),
@@ -304,24 +308,16 @@ pub(super) fn handle_namespace_delete(
     registry: &InMemoryRegistry,
     name: &str,
 ) -> Response<Vec<u8>> {
-    if registry
-        .list_agents()
-        .iter()
-        .any(|agent| agent.namespace == name)
-    {
-        return json_err(
-            StatusCode::CONFLICT,
-            "namespace contains A2A agents; remove the agents first",
-        );
-    }
-    if registry.remove_namespace(name) {
-        info!(namespace = %name, "removed namespace via management API");
-        json_ok(&serde_json::json!({"removed": name}))
-    } else {
-        json_err(
+    match registry.try_remove_namespace(name) {
+        Ok(true) => {
+            info!(namespace = %name, "removed namespace via management API");
+            json_ok(&serde_json::json!({"removed": name}))
+        }
+        Ok(false) => json_err(
             StatusCode::NOT_FOUND,
             &format!("namespace not found: {name}"),
-        )
+        ),
+        Err(error) => json_err(StatusCode::CONFLICT, &error),
     }
 }
 
@@ -366,6 +362,14 @@ pub(super) async fn handle_forward_create(
         warn!(forward = %forward.name, namespace = %namespace, reason = %reason, "forward namespace validation failed");
         return json_err(StatusCode::BAD_REQUEST, &reason);
     }
+    if let Err(error) = registry.validate_concrete_namespace(
+        forward
+            .namespace
+            .as_deref()
+            .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE),
+    ) {
+        return json_err(StatusCode::BAD_REQUEST, &error);
+    }
     if let Err(e) = NormalizedOrigin::from_address(&forward.address) {
         warn!(forward = %forward.name, error = %e, "forward address validation failed");
         return json_err(StatusCode::BAD_REQUEST, &e.to_string());
@@ -397,6 +401,15 @@ pub(super) async fn handle_forward_create(
         return json_err(StatusCode::BAD_GATEWAY, &status);
     }
     let (forward, counts) = apply_forward_update(registry, prepared);
+    if !registry
+        .get_forward(&forward.name)
+        .is_some_and(|stored| same_registration(&stored, &forward))
+    {
+        return json_err(
+            StatusCode::CONFLICT,
+            "namespace changed during forward registration",
+        );
+    }
     info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
 
     json_ok(&serde_json::json!({
@@ -845,6 +858,10 @@ fn apply_forward_update(
         only_if_unchanged,
     } = update;
     let forward_id = forward.forward_id().to_owned();
+    if let Err(error) = registry.validate_concrete_namespace(&forward_namespace(&forward)) {
+        warn!(%error, "forward publication rejected");
+        return (forward, PublishedCounts::default());
+    }
     if only_if_unchanged
         && !registry
             .get_forward(&forward.name)
@@ -862,6 +879,12 @@ fn apply_forward_update(
         store_forward(registry, &forward, only_if_unchanged);
         return (forward, PublishedCounts::default());
     };
+
+    // Pin the concrete namespace with its owner before replacing the inventory.
+    // Namespace conversion checks the stored forward under the same registry lock.
+    if !store_forward(registry, &forward, only_if_unchanged) {
+        return (forward, PublishedCounts::default());
+    }
 
     let disabled = DisabledEntries::capture(registry, &forward_id);
     registry.remove_tools_owned_by(&forward_id);
@@ -926,8 +949,7 @@ fn store_forward(
     only_if_unchanged: bool,
 ) -> bool {
     if !only_if_unchanged {
-        registry.register_forward(forward.clone());
-        return true;
+        return registry.try_register_forward(forward.clone()).is_ok();
     }
     registry.update_forward_if(
         &forward.name,
@@ -1433,6 +1455,40 @@ mod forward_helpers_tests {
         registry
             .get_tool(namespace, name)
             .and_then(|tool| tool.forward_id)
+    }
+
+    #[test]
+    fn virtual_target_rejection_keeps_previous_forward_and_inventory()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let registry = InMemoryRegistry::new();
+        let original = forward_in("backend", "kafka");
+        publish(
+            &registry,
+            &original,
+            &[serde_json::json!({"name":"original"})],
+            &[],
+        );
+        registry.try_register_namespace(serde_json::from_value(serde_json::json!({
+            "name":"integration", "members":["kafka"]
+        }))?)?;
+        let replacement = forward_in("backend", "integration");
+        let counts = publish(
+            &registry,
+            &replacement,
+            &[serde_json::json!({"name":"replacement"})],
+            &[],
+        );
+        assert_eq!(counts.tools, 0);
+        assert_eq!(
+            registry
+                .get_forward("backend")
+                .and_then(|entry| entry.namespace)
+                .as_deref(),
+            Some("kafka")
+        );
+        assert!(registry.get_tool("kafka", "original").is_some());
+        assert!(registry.get_tool("integration", "replacement").is_none());
+        Ok(())
     }
 
     #[test]

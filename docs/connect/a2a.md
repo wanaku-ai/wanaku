@@ -56,6 +56,8 @@ If the response is `409`, a newer instance owns the agent. Do not retry the dele
 
 ## Supported operations
 
+Virtual namespaces also aggregate A2A agents. Use `GET /virtual-ns/{group}/a2a` on the A2A listener to list member agents. Each agent has a qualified name such as `kafka/worker`. Send protocol requests to `/virtual-ns/{group}/a2a/kafka/worker`. Add `/.well-known/agent-card.json` to that path for its Agent Card. The member must be a concrete namespace in the group. Both virtual and concrete namespace policies apply before dispatch. See [Virtual namespaces](namespaces.md#virtual-namespaces).
+
 Wanaku supports A2A 0.3 and 1.0 JSON-RPC over HTTP. For a registered agent, use `POST /{namespace}/a2a/{name}` for protocol requests. Use `GET /{namespace}/a2a/{name}/.well-known/agent-card.json` for discovery. The namespace is the first path segment, as it is for `/{namespace}/mcp`. The agent name selects one registered agent in that namespace.
 
 | A2A 0.3 method | A2A 1.0 method and policy operation | Behavior |

@@ -1,5 +1,13 @@
 import type { NamespaceEntry } from '../../models';
 
+export function isVirtualNamespace(namespace: NamespaceEntry): boolean {
+  return namespace.members != null;
+}
+
+export function concreteNamespaces(namespaces: readonly NamespaceEntry[]): NamespaceEntry[] {
+  return sortedNamespaces(namespaces.filter((namespace) => !isVirtualNamespace(namespace)));
+}
+
 export function sortedNamespaces(namespaces: readonly NamespaceEntry[]): NamespaceEntry[] {
   const result = [...namespaces];
   result.sort((a, b) => {
@@ -22,9 +30,10 @@ export function mcpAddress(
   name: string | undefined,
   mcpPublicUrl: string | null | undefined,
   location: Pick<Location, 'protocol' | 'hostname'>,
+  virtual = false,
 ): string {
   const base = mcpPublicUrl
     ? mcpPublicUrl.replace(/\/+$/, '')
     : `${location.protocol}//${location.hostname}:8081`;
-  return `${base}/${name || 'default'}/mcp`;
+  return `${base}/${virtual ? 'virtual-ns/' : ''}${name || 'default'}/mcp`;
 }

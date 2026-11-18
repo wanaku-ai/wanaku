@@ -282,7 +282,7 @@ const fn get_namespace() {}
     request_body = NamespaceEntry,
     responses(
         (status = 200, description = "Namespace registered", body = NamespaceEntry),
-        (status = 400, description = "Invalid namespace name"),
+        (status = 400, description = "Invalid namespace name or virtual membership"),
         (status = 409, description = "Namespace already exists. Use PUT to update it", body = ManagementErrorResponse),
     )
 )]
@@ -294,7 +294,7 @@ const fn create_namespace() {}
     request_body = NamespaceEntry,
     responses(
         (status = 200, description = "Namespace updated", body = WanakuResponse<NamespaceEntry>),
-        (status = 400, description = "Invalid namespace name, malformed JSON, or missing body", body = ManagementErrorResponse),
+        (status = 400, description = "Invalid namespace name or virtual membership, malformed JSON, or missing body", body = ManagementErrorResponse),
     )
 )]
 const fn update_namespace() {}
@@ -304,6 +304,7 @@ const fn update_namespace() {}
     responses(
         (status = 200, description = "Namespace removed"),
         (status = 404, description = "Namespace not found"),
+        (status = 409, description = "Namespace is referenced by a virtual namespace or contains A2A agents", body = ManagementErrorResponse),
     )
 )]
 const fn delete_namespace() {}
@@ -1104,6 +1105,33 @@ mod tests {
             body_keys(&response["data"]),
             schema_properties(&value, "ManagementInfo")
         );
+    }
+
+    #[tokio::test]
+    async fn virtual_namespace_members_match_schema_and_runtime_validation() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        assert!(schema_properties(&value, "NamespaceEntry").contains(&"members".to_owned()));
+        assert!(value["paths"][NAMESPACE]["delete"]["responses"]["409"].is_object());
+        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let (status, _) = dispatch_namespace(&registry, "POST", NAMESPACES, Some(TEAM)).await;
+        assert_eq!(status, 200);
+        let body = r#"{"name":"integration","targets":["team"]}"#;
+        let (status, response) =
+            dispatch_namespace(&registry, "POST", NAMESPACES, Some(body)).await;
+        assert_eq!(status, 200);
+        assert_eq!(response["data"]["members"], serde_json::json!(["team"]));
+        let path = "/api/v1/namespaces/integration";
+        let invalid = r#"{"name":"integration","members":["missing"]}"#;
+        let (status, _) = dispatch_namespace(&registry, "PUT", path, Some(invalid)).await;
+        assert_eq!(status, 400);
+        let (_, stored) = dispatch_namespace(&registry, "GET", path, None).await;
+        assert_eq!(stored["data"]["members"], serde_json::json!(["team"]));
+        let (status, _) = dispatch_namespace(&registry, "DELETE", TEAM_PATH, None).await;
+        assert_eq!(status, 409);
+        let (status, _) = dispatch_namespace(&registry, "DELETE", path, None).await;
+        assert_eq!(status, 200);
+        let (status, _) = dispatch_namespace(&registry, "DELETE", TEAM_PATH, None).await;
+        assert_eq!(status, 200);
     }
 
     #[tokio::test]
