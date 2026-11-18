@@ -224,6 +224,23 @@ A rejected update does not change the active evaluators. The server records the 
 
 **Legacy payloads:** a request with a top-level `llm` key, or with `model`/`url`/`api_key` inline in the engine, is rejected with `400` rather than silently dropping those fields.
 
+### Manage evaluators in the Admin UI
+
+You can add, edit, and delete evaluators in the Admin UI. You can also review the revision history and activate an earlier revision.
+
+1. Open **Admin** > **Evaluators**.
+2. Use **Add Evaluator**, the edit action, or the delete action to change the active evaluators.
+3. Read the **Active revision** section to see the revision identifier, status, origin, dates, checksum, and actor.
+4. Open an entry in the **Revision history** section to see the same details for an earlier revision. A rejected revision also shows its failure reason.
+5. To compare an earlier revision with the active revision, open the earlier revision. The comparison lists the evaluators that are only in one revision. It also lists each changed field with its value in both revisions.
+6. To roll back, open a superseded revision and select **Activate as new revision**. Confirm the activation in the dialog.
+
+Each change sends the active revision as `expected_revision`. The same applies to the delete action and to rollback.
+
+If another revision became active, the server returns HTTP `409`. The edit dialog stays open and keeps your edits. Select **Load latest revision**, and then save again. The UI applies your edits to the latest evaluators. If the server rejects the configuration with HTTP `422`, the dialog shows the reason and keeps your edits. The rejected configuration appears in the revision history.
+
+Rollback creates a new revision. It does not change historical data. Only a superseded revision has the **Activate as new revision** action.
+
 ### List LLM Connections
 
 ```bash

@@ -1,15 +1,25 @@
 import { InlineNotification } from '@carbon/react';
 import { PageSkeleton } from '../../components/PageSkeleton';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { EvaluatorDef, useEvaluators } from '../../hooks/api/use-evaluators';
+import {
+  evaluatorErrorKind,
+  useEvaluators,
+  type EvaluatorDef,
+  type EvaluatorRevision,
+} from '../../hooks/api/use-evaluators';
 import { EvaluatorsTable } from './EvaluatorsTable';
-import { EvaluatorModal } from './EvaluatorModal';
+import { EvaluatorModal, type SaveFailure } from './EvaluatorModal';
+import { EvaluatorRevisions } from './EvaluatorRevisions';
 import { useErrorNotification } from '../../hooks/error-notifications';
 import { ErrorNotification } from '../../components/ErrorNotification';
 import { DeleteConfirmationModal } from '../../components/DeleteConfirmationModal';
 
+const messageOf = (error: unknown, fallback: string): string =>
+  error instanceof Error ? error.message : fallback;
+
 const EvaluatorsPage: React.FC = () => {
-  const [evaluators, setEvaluators] = useState<EvaluatorDef[]>([]);
+  const [active, setActive] = useState<EvaluatorRevision>();
+  const [revisions, setRevisions] = useState<EvaluatorRevision[]>([]);
   const [connections, setConnections] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
@@ -18,44 +28,48 @@ const EvaluatorsPage: React.FC = () => {
 
   const [isEvaluatorModalOpen, setIsEvaluatorModalOpen] = useState(false);
   const [openedEvaluator, setOpenedEvaluator] = useState<EvaluatorDef>();
+  const [saveFailure, setSaveFailure] = useState<SaveFailure>();
 
   const [evaluatorDeletion, setEvaluatorDeletion] = useState<EvaluatorDef>();
 
-  const evaluatorsRef = useRef(evaluators);
-  evaluatorsRef.current = evaluators;
+  const evaluators = active?.evaluators ?? [];
+  const activeRef = useRef(active);
+  activeRef.current = active;
 
-  const { listEvaluators, updateEvaluators, listLlmConnections } = useEvaluators();
+  const {
+    getActiveRevision,
+    listRevisions,
+    getRevision,
+    saveEvaluators,
+    activateRevision,
+    listLlmConnections,
+  } = useEvaluators();
 
-  const fetchEvaluators = useCallback(async () => {
+  const fetchRevisions = useCallback(async () => {
     try {
-      const result = await listEvaluators();
-      if (result.status === 200 && result.data) {
-        setEvaluators(result.data);
-      } else {
-        setEvaluators([]);
-      }
-    } catch {
-      setErrorMessage('Failed to load evaluators');
-      setEvaluators([]);
+      const [activeState, metadata] = await Promise.all([getActiveRevision(), listRevisions()]);
+      const details = await Promise.all(metadata.map(({ id }) => getRevision(id)));
+      setActive(activeState.state === 'active' ? activeState.revision : undefined);
+      setRevisions(details);
+    } catch (error) {
+      setErrorMessage(messageOf(error, 'Failed to load evaluators'));
+      setActive(undefined);
+      setRevisions([]);
     }
-  }, [listEvaluators]);
+  }, [getActiveRevision, listRevisions, getRevision, setErrorMessage]);
 
   const fetchConnections = useCallback(async () => {
     try {
       const result = await listLlmConnections();
-      if (result.status === 200 && result.data) {
-        setConnections(result.data);
-      } else {
-        setConnections([]);
-      }
+      setConnections(result.status === 200 && result.data ? result.data : []);
     } catch {
       setConnections([]);
     }
   }, [listLlmConnections]);
 
   useEffect(() => {
-    Promise.all([fetchEvaluators(), fetchConnections()]).finally(() => setIsLoading(false));
-  }, [fetchEvaluators, fetchConnections]);
+    Promise.all([fetchRevisions(), fetchConnections()]).finally(() => setIsLoading(false));
+  }, [fetchRevisions, fetchConnections]);
 
   useEffect(() => {
     if (successMessage) {
@@ -64,29 +78,38 @@ const EvaluatorsPage: React.FC = () => {
     }
   }, [successMessage]);
 
+  const closeEvaluatorModal = () => {
+    setOpenedEvaluator(undefined);
+    setSaveFailure(undefined);
+    setIsEvaluatorModalOpen(false);
+  };
+
   const handleEvaluatorSubmit = async (evaluator: EvaluatorDef) => {
     if (isMutating) return;
     setIsMutating(true);
+    setSaveFailure(undefined);
 
-    const current = evaluatorsRef.current;
-    let updated: EvaluatorDef[];
-    if (openedEvaluator) {
-      updated = current.map((ev) => (ev.name === openedEvaluator.name ? evaluator : ev));
-    } else {
-      updated = [...current, evaluator];
-    }
+    // Apply the edit to the latest evaluators, so that a reload after a conflict keeps the edit.
+    const current = activeRef.current?.evaluators ?? [];
+    const updated = current.some((ev) => ev.name === evaluator.name)
+      ? current.map((ev) => (ev.name === evaluator.name ? evaluator : ev))
+      : [...current, evaluator];
 
     try {
-      const result = await updateEvaluators(updated);
-      if (result.status === 200) {
-        setSuccessMessage(openedEvaluator ? 'Evaluator updated' : 'Evaluator added');
-        await fetchEvaluators();
-      }
+      await saveEvaluators(updated, activeRef.current?.revision.id);
+      setSuccessMessage(openedEvaluator ? 'Evaluator updated' : 'Evaluator added');
+      closeEvaluatorModal();
+      await fetchRevisions();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to save evaluators');
+      const kind = evaluatorErrorKind(error);
+      // The modal stays open so that the edits are not lost.
+      setSaveFailure({
+        kind: kind === 'conflict' || kind === 'validation' ? kind : 'other',
+        message: messageOf(error, 'Failed to save evaluators'),
+      });
+      // A rejected configuration is recorded as a rejected revision.
+      if (kind === 'validation') await fetchRevisions();
     } finally {
-      setOpenedEvaluator(undefined);
-      setIsEvaluatorModalOpen(false);
       setIsMutating(false);
     }
   };
@@ -95,25 +118,40 @@ const EvaluatorsPage: React.FC = () => {
     if (isMutating) return;
     setIsMutating(true);
 
-    const current = evaluatorsRef.current;
+    const current = activeRef.current?.evaluators ?? [];
     const updated = current.filter((ev) => ev.name !== evaluator.name);
     try {
-      const result = await updateEvaluators(updated);
-      if (result.status === 200) {
-        setSuccessMessage('Evaluator deleted');
-        await fetchEvaluators();
-      }
+      await saveEvaluators(updated, activeRef.current?.revision.id);
+      setSuccessMessage('Evaluator deleted');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to delete evaluator');
+      setErrorMessage(messageOf(error, 'Failed to delete evaluator'));
     } finally {
+      await fetchRevisions();
       setIsMutating(false);
       setEvaluatorDeletion(undefined);
     }
   };
 
-  function requestEvaluatorDeleteConfirmation(evaluator: EvaluatorDef) {
-    setEvaluatorDeletion(evaluator);
-  }
+  const handleRevisionActivate = async (revision: EvaluatorRevision) => {
+    if (isMutating) return;
+    setIsMutating(true);
+    try {
+      const saved = await activateRevision(revision.revision.id, activeRef.current?.revision.id);
+      setSuccessMessage(
+        `Revision ${revision.revision.id} is active again as revision ${saved.revision.id}`,
+      );
+    } catch (error) {
+      setErrorMessage(messageOf(error, 'Failed to activate revision'));
+    } finally {
+      await fetchRevisions();
+      setIsMutating(false);
+    }
+  };
+
+  const reloadLatest = async () => {
+    setSaveFailure(undefined);
+    await fetchRevisions();
+  };
 
   if (isLoading) return <PageSkeleton title="Evaluators" />;
 
@@ -146,20 +184,26 @@ const EvaluatorsPage: React.FC = () => {
             setOpenedEvaluator(evaluator);
             setIsEvaluatorModalOpen(true);
           }}
-          onDelete={requestEvaluatorDeleteConfirmation}
+          onDelete={setEvaluatorDeletion}
           disabled={isMutating}
         />
       </div>
+
+      <EvaluatorRevisions
+        active={active}
+        revisions={revisions}
+        disabled={isMutating}
+        onActivate={handleRevisionActivate}
+      />
 
       {isEvaluatorModalOpen && (
         <EvaluatorModal
           evaluator={openedEvaluator}
           existingNames={evaluators.map((ev) => ev.name)}
           connections={connections}
-          onRequestClose={() => {
-            setOpenedEvaluator(undefined);
-            setIsEvaluatorModalOpen(false);
-          }}
+          failure={saveFailure}
+          onReloadLatest={reloadLatest}
+          onRequestClose={closeEvaluatorModal}
           onSubmit={handleEvaluatorSubmit}
         />
       )}
