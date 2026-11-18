@@ -399,12 +399,13 @@ mod tests {
         use std::time::Duration;
         use wanaku_types::registry::ToolRegistry;
 
+        // The registry persistence worker is detached and may still hold its
+        // database handle after the registry is dropped, so the second
+        // registry shares the store instead of reopening the locked file.
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join(DATABASE_FILE);
+        let store = RedbStore::open(dir.path().join(DATABASE_FILE)).unwrap();
         {
-            let backend = Arc::new(RedbRegistryPersistence::new(
-                RedbStore::open(&path).unwrap(),
-            ));
+            let backend = Arc::new(RedbRegistryPersistence::new(store.clone()));
             let registry = InMemoryRegistry::with_persistence(backend);
             registry.load_persisted();
             registry.register_tool(tool(None, "a", "v1"));
@@ -413,9 +414,7 @@ mod tests {
             registry.flush_persistence(Duration::from_secs(5)).unwrap();
             assert!(registry.persistence_status().last_error.is_none());
         }
-        let backend = Arc::new(RedbRegistryPersistence::new(
-            RedbStore::open(&path).unwrap(),
-        ));
+        let backend = Arc::new(RedbRegistryPersistence::new(store));
         let registry = InMemoryRegistry::with_persistence(backend);
         registry.load_persisted();
         assert!(registry.get_tool(DEFAULT_NAMESPACE, "a").is_some());
