@@ -2,6 +2,8 @@ import { Accordion, AccordionItem, Button, InlineNotification, Tag, Tile } from 
 import { Edit } from '@carbon/icons-react';
 import { useCallback, useEffect, useState } from 'react';
 import { PageSkeleton } from '../../components/PageSkeleton';
+import { RevisionDetails } from '../../components/RevisionDetails';
+import { formatDate, statusTagType } from '../../utils/revision-format';
 import {
   useActionPolicies,
   type ActionPolicy,
@@ -15,21 +17,6 @@ type PageState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'success'; active?: ActionPolicyRevision; revisions: ActionPolicyRevision[] };
-
-const formatDate = (value?: string | null): string =>
-  value
-    ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
-        new Date(value),
-      )
-    : 'Not activated';
-
-const statusTagType = (
-  status: ActionPolicyRevision['revision']['status'],
-): 'green' | 'gray' | 'red' => {
-  if (status === 'active') return 'green';
-  if (status === 'rejected') return 'red';
-  return 'gray';
-};
 
 export const ActionPoliciesPage = () => {
   const { getActivePolicy, listRevisions, getRevision, updatePolicy } = useActionPolicies();
@@ -166,40 +153,7 @@ export const ActionPoliciesPage = () => {
                     key={revision.id}
                     title={`Revision ${revision.id} — ${revision.status}`}
                   >
-                    <div className="revision-details">
-                      <div>
-                        <span>Status</span>
-                        <Tag type={statusTagType(revision.status)}>{revision.status}</Tag>
-                      </div>
-                      <div>
-                        <span>Origin</span>
-                        <strong>{revision.origin}</strong>
-                      </div>
-                      <div>
-                        <span>Created</span>
-                        <strong>{formatDate(revision.created_at)}</strong>
-                      </div>
-                      <div>
-                        <span>Activated</span>
-                        <strong>{formatDate(revision.activated_at)}</strong>
-                      </div>
-                      <div>
-                        <span>Checksum</span>
-                        <code>{revision.checksum}</code>
-                      </div>
-                      {revision.actor && (
-                        <div>
-                          <span>Actor</span>
-                          <strong>{revision.actor}</strong>
-                        </div>
-                      )}
-                      {revision.failure_reason && (
-                        <div>
-                          <span>Failure reason</span>
-                          <strong>{revision.failure_reason}</strong>
-                        </div>
-                      )}
-                    </div>
+                    <RevisionDetails revision={revision} />
                     <h4>Policy rules</h4>
                     <PolicyDetails policy={policy} />
                   </AccordionItem>

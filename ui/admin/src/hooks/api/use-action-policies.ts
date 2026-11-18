@@ -6,6 +6,7 @@ import {
 } from '../../api/wanaku-router-api';
 import { ApiError } from '../../custom-fetch';
 import type { ActionPolicy, ActionPolicyRevisionResponse } from '../../models';
+import { revisionErrorKind, type RevisionErrorKind } from '../../utils/revision-error';
 
 export type {
   ActionPolicy,
@@ -20,33 +21,9 @@ export type ActivePolicy =
   | { state: 'active'; revision: ActionPolicyRevisionResponse }
   | { state: 'absent' };
 
-/**
- * The action-policy meaning of a failed request. `not_found` is a missing revision,
- * `conflict` is a stale expected revision, `validation` is a rejected policy,
- * `invalid_request` is a malformed request, and `unexpected` is any other failure.
- */
-export type ActionPolicyErrorKind =
-  | 'not_found'
-  | 'conflict'
-  | 'validation'
-  | 'invalid_request'
-  | 'unexpected';
+export type ActionPolicyErrorKind = RevisionErrorKind;
 
-export const actionPolicyErrorKind = (error: unknown): ActionPolicyErrorKind => {
-  if (!(error instanceof ApiError)) return 'unexpected';
-  switch (error.status) {
-    case 400:
-      return 'invalid_request';
-    case 404:
-      return 'not_found';
-    case 409:
-      return 'conflict';
-    case 422:
-      return 'validation';
-    default:
-      return 'unexpected';
-  }
-};
+export const actionPolicyErrorKind = revisionErrorKind;
 
 /** Loads the active policy. Only a 404 from the active-policy endpoint means `absent`. */
 export const getActivePolicy = async (): Promise<ActivePolicy> => {

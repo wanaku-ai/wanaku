@@ -1,4 +1,4 @@
-import { type Page } from '@playwright/test';
+import { type Locator, type Page } from '@playwright/test';
 import { BasePage } from './base.page';
 import { Carbon } from '../helpers/carbon';
 
@@ -61,5 +61,37 @@ export class EvaluatorsPage extends BasePage {
   async modalHasText(text: string): Promise<boolean> {
     const content = await this.modal().innerText();
     return content.includes(text);
+  }
+
+  async editEvaluator(name: string) {
+    await this.evaluatorRow(name).getByRole('button', { name: 'Edit', exact: true }).click();
+    await this.modal().waitFor({ state: 'visible' });
+  }
+
+  async clickModalPrimary() {
+    await this.modal().locator(Carbon.modalFooterPrimary).click();
+  }
+
+  errorNotification(): Locator {
+    return this.page.locator(Carbon.inlineError);
+  }
+
+  activeRevision(): Locator {
+    return this.page.getByRole('region', { name: 'Active revision' });
+  }
+
+  revisionHistory(): Locator {
+    return this.page.getByRole('region', { name: 'Revision history' });
+  }
+
+  async openRevision(id: number) {
+    await this.revisionHistory().getByRole('button', { name: new RegExp(`^Revision ${id} `) }).click();
+  }
+
+  async activateRevision(id: number) {
+    await this.openRevision(id);
+    await this.revisionHistory().getByRole('button', { name: 'Activate as new revision' }).click();
+    await this.modal().waitFor({ state: 'visible' });
+    await this.modal().getByRole('button', { name: 'Activate', exact: true }).click();
   }
 }

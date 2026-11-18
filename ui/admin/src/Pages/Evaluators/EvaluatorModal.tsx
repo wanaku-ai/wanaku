@@ -1,4 +1,13 @@
-import { Modal, Select, SelectItem, Stack, TextArea, TextInput } from '@carbon/react';
+import {
+  ActionableNotification,
+  InlineNotification,
+  Modal,
+  Select,
+  SelectItem,
+  Stack,
+  TextArea,
+  TextInput,
+} from '@carbon/react';
 import React, { useState } from 'react';
 import { EvaluatorDef } from '../../hooks/api/use-evaluators';
 import type {
@@ -23,10 +32,20 @@ const getOpaConfiguration = (evaluator?: EvaluatorDef): OpaDef | undefined =>
 
 const DECISION_PATH_PATTERN = /^[A-Za-z0-9_]+(\/[A-Za-z0-9_]+)*$/;
 
+/** Why the last save failed. `conflict` is a stale revision and `validation` is a rejection. */
+export interface SaveFailure {
+  kind: 'conflict' | 'validation' | 'other';
+  message: string;
+}
+
 interface EvaluatorModalProps {
   evaluator?: EvaluatorDef;
   existingNames: string[];
   connections: string[];
+  /** The failure of the last save. The modal keeps the edits when a save fails. */
+  failure?: SaveFailure;
+  /** Loads the latest active revision. The edits in this modal stay in place. */
+  onReloadLatest: () => void;
   onRequestClose: () => void;
   onSubmit: (evaluator: EvaluatorDef) => void;
 }
@@ -120,6 +139,8 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
   evaluator,
   existingNames,
   connections,
+  failure,
+  onReloadLatest,
   onRequestClose,
   onSubmit,
 }) => {
@@ -249,6 +270,36 @@ export const EvaluatorModal: React.FC<EvaluatorModalProps> = ({
       size="lg"
     >
       <Stack gap={5}>
+        {failure?.kind === 'conflict' && (
+          <ActionableNotification
+            kind="error"
+            title="Another change was activated first"
+            subtitle={`${failure.message}. Your edits are kept. Load the latest revision, then save again to apply your edits on top of it.`}
+            lowContrast
+            hideCloseButton
+            inline
+            actionButtonLabel="Load latest revision"
+            onActionButtonClick={onReloadLatest}
+          />
+        )}
+        {failure?.kind === 'validation' && (
+          <InlineNotification
+            kind="error"
+            title="The server rejected the configuration"
+            subtitle={`${failure.message}. Your edits are kept. Fix the problem and save again.`}
+            lowContrast
+            hideCloseButton
+          />
+        )}
+        {failure?.kind === 'other' && (
+          <InlineNotification
+            kind="error"
+            title="The evaluator was not saved"
+            subtitle={failure.message}
+            lowContrast
+            hideCloseButton
+          />
+        )}
         <TextInput
           id="evaluator-name"
           labelText="Name"

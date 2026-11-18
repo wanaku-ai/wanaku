@@ -103,6 +103,28 @@ export function opaEvaluatorData() {
   };
 }
 
+export const evaluatorRevision = (
+  overrides?: Partial<{
+    id: number;
+    activated_at: string | null;
+    status: string;
+    origin: string;
+    actor: string | null;
+    checksum: string;
+    failure_reason: string | null;
+  }>,
+) => ({
+  id: 1,
+  created_at: '2026-08-27T10:00:00Z',
+  activated_at: '2026-08-27T10:00:00Z',
+  status: 'active',
+  checksum: 'evaluator-checksum-1',
+  origin: 'startup',
+  actor: null,
+  failure_reason: null,
+  ...overrides,
+});
+
 export function bindingData(overrides?: Partial<{
   id: string;
   forwardId: string;

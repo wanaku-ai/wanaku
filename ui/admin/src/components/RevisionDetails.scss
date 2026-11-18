@@ -1,0 +1,23 @@
+@use '@carbon/react/scss/spacing' as *;
+@use '@carbon/react/scss/theme' as *;
+
+.revision-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: $spacing-05;
+  margin-bottom: $spacing-06;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-03;
+    min-width: 0;
+  }
+  span {
+    color: $text-secondary;
+  }
+  code {
+    overflow-wrap: anywhere;
+  }
+}
