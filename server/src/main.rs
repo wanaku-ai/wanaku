@@ -135,14 +135,20 @@ fn setup_management_service(
 }
 
 /// Select the registry backend from `WANAKU_PERSIST_BACKEND`. A redb file
-/// that cannot be opened stops startup, so the server never runs on an empty
+/// that cannot be opened or loaded stops startup, so the server never runs on an empty
 /// registry while durable records exist.
 fn registry_persistence() -> Result<Option<Arc<dyn PersistenceBackend>>, String> {
     if let Some(store) = RedbStore::from_config()
         .map_err(|error| format!("failed to open the redb persistence database: {error}"))?
     {
         info!(path = %store.path().display(), "redb registry persistence enabled");
-        return Ok(Some(Arc::new(RedbRegistryPersistence::new(store))));
+        let backend = RedbRegistryPersistence::new(store);
+        // Check the stored registry before startup, so an invalid record stops
+        // the server instead of starting it with a registry that cannot save.
+        backend
+            .load()
+            .map_err(|error| format!("failed to load the redb registry: {error}"))?;
+        return Ok(Some(Arc::new(backend)));
     }
     Ok(FilePersistence::from_config())
 }

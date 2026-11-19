@@ -73,7 +73,8 @@ impl RedbStore {
     /// another process holds open returns an error.
     pub fn open(path: impl Into<PathBuf>) -> Result<Self, PersistenceError> {
         let path = path.into();
-        if let Some(parent) = path.parent() {
+        // A bare file name has an empty parent: use the current directory.
+        if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
             std::fs::create_dir_all(parent)?;
         }
         let db = Database::create(&path).map_err(db_error)?;
@@ -155,7 +156,28 @@ impl RedbRegistryPersistence {
         }
     }
 
+    /// Read every table and check the records the registry would otherwise
+    /// skip at load time. A record that the registry skips would be deleted
+    /// by the next save, so such a record fails the whole load.
     fn load_tables(&self) -> Result<RegistrySnapshot, PersistenceError> {
+        let snapshot = self.read_tables()?;
+        for agent in &snapshot.agents {
+            crate::agents::RegisteredAgent::new(agent.clone()).map_err(|error| {
+                PersistenceError::Database(format!(
+                    "invalid agent {}/{}: {error}",
+                    agent.namespace, agent.name
+                ))
+            })?;
+        }
+        crate::registry::InMemoryRegistry::new()
+            .validate_snapshot_namespaces(&snapshot)
+            .map_err(|error| {
+                PersistenceError::Database(format!("invalid namespace graph: {error}"))
+            })?;
+        Ok(snapshot)
+    }
+
+    fn read_tables(&self) -> Result<RegistrySnapshot, PersistenceError> {
         let txn = self.store.begin_read()?;
         Ok(RegistrySnapshot {
             agents: read_records(&txn, AGENTS)?,
@@ -321,12 +343,20 @@ mod tests {
         }
         let backend = RedbRegistryPersistence::new(RedbStore::open(&path).unwrap());
         let loaded = backend.load().unwrap();
-        assert_eq!(
-            loaded.tools.len(),
-            2,
-            "same name in two namespaces is two rows"
+        let mut tools: Vec<_> = loaded
+            .tools
+            .iter()
+            .map(|t| (&t.namespace, &t.description))
+            .collect();
+        tools.sort();
+        let (finance, first, second) = (
+            Some("finance".to_owned()),
+            "first".to_owned(),
+            "second".to_owned(),
         );
-        assert_eq!(loaded.namespaces.len(), 1);
+        assert_eq!(tools, vec![(&None, &first), (&finance, &second)]);
+        let namespaces: Vec<_> = loaded.namespaces.iter().map(|n| n.name.as_str()).collect();
+        assert_eq!(namespaces, vec!["finance"]);
     }
 
     #[test]
@@ -417,8 +447,62 @@ mod tests {
         let backend = Arc::new(RedbRegistryPersistence::new(store));
         let registry = InMemoryRegistry::with_persistence(backend);
         registry.load_persisted();
-        assert!(registry.get_tool(DEFAULT_NAMESPACE, "a").is_some());
+        let reloaded = registry.get_tool(DEFAULT_NAMESPACE, "a").unwrap();
+        assert_eq!(reloaded.description, "v1");
+        assert_eq!(reloaded.uri, "test://uri");
         assert!(registry.get_tool(DEFAULT_NAMESPACE, "b").is_none());
+    }
+
+    /// An in-memory storage backend whose writes fail once `fail` is set.
+    #[derive(Debug)]
+    struct FailingBackend {
+        inner: redb::backends::InMemoryBackend,
+        fail: Arc<AtomicBool>,
+    }
+
+    impl FailingBackend {
+        fn check(&self) -> Result<(), std::io::Error> {
+            if self.fail.load(Ordering::Acquire) {
+                return Err(std::io::Error::other("injected write failure"));
+            }
+            Ok(())
+        }
+    }
+
+    impl redb::StorageBackend for FailingBackend {
+        fn len(&self) -> Result<u64, std::io::Error> {
+            self.inner.len()
+        }
+        fn read(&self, offset: u64, out: &mut [u8]) -> Result<(), std::io::Error> {
+            self.inner.read(offset, out)
+        }
+        fn set_len(&self, len: u64) -> Result<(), std::io::Error> {
+            self.check()?;
+            self.inner.set_len(len)
+        }
+        fn sync_data(&self) -> Result<(), std::io::Error> {
+            self.check()?;
+            self.inner.sync_data()
+        }
+        fn write(&self, offset: u64, data: &[u8]) -> Result<(), std::io::Error> {
+            self.check()?;
+            self.inner.write(offset, data)
+        }
+    }
+
+    fn failing_store(fail: &Arc<AtomicBool>) -> RedbStore {
+        let db = Database::builder()
+            .create_with_backend(FailingBackend {
+                inner: redb::backends::InMemoryBackend::new(),
+                fail: Arc::clone(fail),
+            })
+            .unwrap();
+        let store = RedbStore {
+            db: Arc::new(db),
+            path: PathBuf::from("in-memory"),
+        };
+        store.initialize().unwrap();
+        store
     }
 
     #[test]
@@ -427,22 +511,47 @@ mod tests {
         use std::time::Duration;
         use wanaku_types::registry::ToolRegistry;
 
+        let fail = Arc::new(AtomicBool::new(false));
+        let store = failing_store(&fail);
+        let registry = InMemoryRegistry::with_persistence(Arc::new(RedbRegistryPersistence::new(
+            store.clone(),
+        )));
+        registry.load_persisted();
+        registry.register_tool(tool(None, "a", "v1"));
+        registry.flush_persistence(Duration::from_secs(5)).unwrap();
+
+        fail.store(true, Ordering::Release);
+        registry.register_tool(tool(None, "b", "v1"));
+        assert!(registry.flush_persistence(Duration::from_secs(5)).is_err());
+        assert!(registry.persistence_status().last_error.is_some());
+
+        fail.store(false, Ordering::Release);
+        let stored = RedbRegistryPersistence::new(store).load().unwrap();
+        let names: Vec<_> = stored.tools.iter().map(|t| t.name.as_str()).collect();
+        assert_eq!(
+            names,
+            vec!["a"],
+            "the failed commit left the previous state"
+        );
+    }
+
+    #[test]
+    fn invalid_agent_fails_load_and_blocks_saves() {
         let dir = tempfile::tempdir().unwrap();
         let store = RedbStore::open(dir.path().join(DATABASE_FILE)).unwrap();
         {
             let txn = store.begin_write().unwrap();
             {
-                let mut table = txn.open_table(TOOLS).unwrap();
-                table.insert("default/broken", b"{".as_slice()).unwrap();
+                let mut table = txn.open_table(AGENTS).unwrap();
+                let agent = br#"{"name":"agent","namespace":"default","address":"not a url"}"#;
+                table.insert("default/agent", agent.as_slice()).unwrap();
             }
             txn.commit().unwrap();
         }
-        let registry =
-            InMemoryRegistry::with_persistence(Arc::new(RedbRegistryPersistence::new(store)));
-        registry.load_persisted();
-        registry.register_tool(tool(None, "a", "v1"));
-        assert!(registry.flush_persistence(Duration::from_secs(5)).is_err());
-        assert!(registry.persistence_status().last_error.is_some());
+        let backend = RedbRegistryPersistence::new(store.clone());
+        assert!(backend.load().is_err());
+        assert!(backend.save(&RegistrySnapshot::default()).is_err());
+        assert_eq!(row_count(&store, AGENTS), 1);
     }
 
     #[test]
