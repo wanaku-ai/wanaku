@@ -22,9 +22,9 @@
     "js-yaml": "4.3.2"
   },
   "dependencies": {
-    "@carbon/icons-react": "^11.76.0",
-    "@carbon/layout": "^11.49.0",
-    "@carbon/react": "^1.103.0",
+    "@carbon/icons-react": "^11.92.0",
+    "@carbon/layout": "^11.63.0",
+    "@carbon/react": "^1.121.0",
     "@fontsource-variable/inter": "^5",
     "highlight.js": "^11.12.0",
     "react": "^19.2.4",
