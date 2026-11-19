@@ -228,7 +228,7 @@ impl InMemoryRegistry {
         prompts
     }
 
-    pub(super) fn validate_snapshot_namespaces(
+    pub(crate) fn validate_snapshot_namespaces(
         &self,
         snapshot: &RegistrySnapshot,
     ) -> Result<(), String> {

@@ -70,7 +70,7 @@ Each registry record kind has its own table. Each row holds one record. The row 
 
 - After an unclean shutdown, redb repairs the database when Wanaku opens it. The database contains the last committed transaction.
 - If Wanaku cannot open `wanaku.redb`, startup stops. Causes include a corrupt file, a file with a newer schema version, and a file that another process holds open.
-- If a stored record is not valid, the registry starts without the stored records. Wanaku then refuses to write to the database, so that the stored records stay unchanged. Stop the server and fix or move the database file.
+- If a stored record is not valid, startup stops. A record is not valid when it is not valid JSON, when an agent fails validation, or when the namespace graph is not valid. Wanaku does not write to the database in this case, so the stored records stay unchanged. Fix or move the database file, then start the server again.
 
 ### Limits
 
