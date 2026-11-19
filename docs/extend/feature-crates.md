@@ -13,7 +13,7 @@ To write your own feature crate, follow [Build a feature crate](build-a-feature.
 
 ## Built-in feature crates
 
-`build_features` in `server/src/app.rs` registers eight feature crates. Each crate lives in `features/<name>/`.
+`build_features` in `server/src/app.rs` registers nine feature crates. Each crate lives in `features/<name>/`.
 
 | Crate | Purpose | Filters | Management API | Read more |
 |---|---|---|---|---|
@@ -24,6 +24,7 @@ To write your own feature crate, follow [Build a feature crate](build-a-feature.
 | `mcp-metadata` | Serves RFC 9728 OAuth protected resource metadata and the issuer discovery routes. | None | None (MCP port routes) | [Authentication](../operate/authentication.md) |
 | `evaluator` | Runs trigger, evaluate, and act pipelines with LLM, TypeSafe, or OPA engines and WASM actions. | `wanaku_evaluator` | `/api/v1/evaluators` | [Evaluators](../govern/evaluators.md) |
 | `simulation` | Tests policy candidates against synthetic and replayed actions. | None | `/api/v1/policy-simulations` | [Policy Simulation](../govern/policy-simulation.md) |
+| `tool-handler` | Exposes versioned WASM host capabilities and runs custom MCP tools. | Uses the core tool-call filter | `/api/v1/tool-handlers` | [WASM tool handlers](wasm-tool-handlers.md) |
 | `plugins` | Loads Admin UI plugins from the plugins path and installs plugins from the catalog. | None | `/api/v1/plugins` | [Build an Admin UI plugin](plugin-development-guide.md) |
 
 ### Intercept

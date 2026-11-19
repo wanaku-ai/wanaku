@@ -255,7 +255,7 @@ Audit code has two owners: a contract in `wanaku-types` and a runtime in `wanaku
 
 ## Tool Routing
 
-All tool execution in Wanaku happens via MCP forwarding. When a tool call arrives (`tools/call`), the tool_call filter:
+Wanaku executes registered tools through MCP forwarding or a WASM tool handler. Namespace resolution selects the concrete tool definition before policy evaluation. The tool-call filter retains this selection. For an MCP-forwarded tool, the filter:
 
 1. Looks up the tool in the registry by the request namespace and the tool name
 2. Resolves the upstream address from the tool `forwardId` provenance
@@ -264,7 +264,9 @@ All tool execution in Wanaku happens via MCP forwarding. When a tool call arrive
 5. Upstream returns MCP `CallToolResult`
 6. Filter wraps it in JSON-RPC and returns
 
-Tools have `type: "mcp-forward"` and a `forwardId` that identifies the owning forward. This is the only execution model — there is no built-in gRPC or local tool execution.
+Forwarded tools have `type: "mcp-forward"` and a `forwardId` that identifies the owning forward. WASM tools have `type: "wasm"` and a runtime binding managed by the tool-handler feature. The runtime compiles portable components before activation and creates a fresh instance for each call.
+
+WASM host imports use a request-scoped MCP client. Nested calls run through the configured listener pipeline with the caller's trusted identity, namespace scope, and shared invocation budget. They retain target policy evaluation, argument validation, host-side credential brokerage, redaction, and audit. The raw `McpInvoker` remains the terminal upstream transport adapter. See [WASM tool handlers](../extend/wasm-tool-handlers.md) for the versioned host contract and integration hooks.
 
 **Invocation adapter:**
 
@@ -342,6 +344,7 @@ pub trait Feature: Send + Sync {
 6. **Evaluator** (`features/evaluator/`) — WASM-based LLM evaluation engine for trigger→evaluate→act pipelines
 7. **Policy simulation** (`features/simulation/`) — validates candidates and compares decisions without activation
 8. **Plugins** (`features/plugins/`) — loads external UI plugins from a filesystem directory
+9. **WASM tool handlers** (`features/tool-handler/`) — versioned host capabilities, runtime tool bindings, and governed nested MCP calls
 
 See [Build a feature crate](../extend/build-a-feature.md) for how to create your own.
 

@@ -290,6 +290,7 @@ mod tests {
             description: description.to_owned(),
             uri: "uri".to_owned(),
             type_: "http".to_owned(),
+            mcp: Default::default(),
             input_schema: serde_json::Value::Null,
             labels: HashMap::new(),
             id: None,

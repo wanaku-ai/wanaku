@@ -412,3 +412,5 @@ mod tests {
         );
     }
 }
+
+mod wasm;

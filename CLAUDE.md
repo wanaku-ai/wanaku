@@ -68,7 +68,7 @@ See [docs/get-started/architecture.md](docs/get-started/architecture.md) for fil
 
 See [docs/get-started/architecture.md](docs/get-started/architecture.md) for tool routing and forward discovery flow.
 
-All tools execute via MCP forwarding through the `McpInvoker` request extension (production adapter `RmcpInvoker` wraps `mcp_client::call_tool`). Non-MCP-forward types error.
+Tools execute through MCP forwarding or a WASM handler. Forwarded calls use the `McpInvoker` request extension. WASM tools use `type: "wasm"` and the `ToolHandler` runtime extension. Namespace resolution pins the selected tool before governance. Nested WASM host calls use the configured listener pipeline through `McpHostClient`, so target policies, credentials, and audit remain active. See [docs/extend/wasm-tool-handlers.md](docs/extend/wasm-tool-handlers.md) for the host API and lifecycle.
 
 ### Management API (Port 8080)
 

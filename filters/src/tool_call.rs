@@ -9,6 +9,7 @@ use wanaku_types::config::ENV;
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::UseScope;
 use wanaku_types::registry::{ForwardRegistry, ToolEntry, ToolRegistry};
+use wanaku_types::wasm::HostErrorKind;
 
 crate::body_filter_boilerplate!(ToolCallFilter, "wanaku_tool_call");
 
@@ -28,6 +29,127 @@ fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBod
         arguments,
         virtual_owner: None,
     }
+}
+
+fn resolve_tool(
+    ctx: &HttpFilterContext<'_>,
+    registry: &InMemoryRegistry,
+    namespace: &str,
+    tool_name: &str,
+    id: &serde_json::Value,
+) -> Result<ToolEntry, FilterAction> {
+    let selected = ctx
+        .extensions
+        .get::<wanaku_types::wasm::ResolvedTool>()
+        .filter(|selected| {
+            selected.0.name == tool_name
+                && selected
+                    .0
+                    .namespace
+                    .as_deref()
+                    .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE)
+                    == namespace
+        })
+        .map(|selected| selected.0.clone())
+        .or_else(|| {
+            // Legacy standalone filter callers have no namespace-resolution stage.
+            // Once that stage ran, absence and identity must stay fixed.
+            if ctx
+                .extensions
+                .get::<wanaku_types::wasm::ToolResolutionComplete>()
+                .is_none()
+                && ctx
+                    .extensions
+                    .get::<wanaku_types::wasm::ResolvedTool>()
+                    .is_none()
+            {
+                registry.get_tool_in_namespace(namespace, tool_name)
+            } else {
+                None
+            }
+        });
+    match selected {
+        Some(t) => {
+            tracing::debug!(
+                tool = %t.name,
+                uri = %t.uri,
+                type_ = %t.type_,
+                "resolved tool from registry"
+            );
+            Ok(t)
+        }
+        None => {
+            warn!(tool = %tool_name, "tool not found in registry");
+            Err(crate::response::json_rpc_host_error(
+                id,
+                crate::response::JSONRPC_INVALID_PARAMS,
+                HostErrorKind::NotFound,
+                &format!("tool not found: {tool_name}"),
+            ))
+        }
+    }
+}
+
+fn arguments_are_object(body: &Option<Bytes>) -> bool {
+    !body
+        .as_ref()
+        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(bytes).ok())
+        .and_then(|request| {
+            request
+                .get("params")
+                .and_then(|params| params.get("arguments"))
+                .cloned()
+        })
+        .is_some_and(|arguments| !arguments.is_object())
+}
+
+fn resolve_forward(
+    ctx: &HttpFilterContext<'_>,
+    tool: &ToolEntry,
+    id: &serde_json::Value,
+) -> Result<wanaku_types::registry::ForwardEntry, FilterAction> {
+    let tool_name = tool.name.as_str();
+    let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+        return Err(crate::response::json_rpc_error(
+            id,
+            crate::response::JSONRPC_INTERNAL_ERROR,
+            "registry unavailable",
+        ));
+    };
+    // Resolve the current upstream address from the immutable forwardId
+    // provenance. Address is no longer identity: it can change while the
+    // forwardId stays stable. Fail closed when a forwarded tool has no
+    // provenance: without it the owning forward is unknown, so credential
+    // enforcement cannot run. This matches the resources and prompts paths.
+    let Some(forward_id) = tool.forward_id.as_deref() else {
+        warn!(tool = %tool_name, "forwarded tool missing forwardId provenance");
+        return Err(crate::response::json_rpc_error(
+            id,
+            crate::response::JSONRPC_INTERNAL_ERROR,
+            "forwarded tool has no forwardId provenance",
+        ));
+    };
+    let Some(forward) = registry.get_forward(forward_id) else {
+        warn!(tool = %tool_name, forward_id = %forward_id, "forward not found for tool provenance");
+        return Err(crate::response::json_rpc_host_error(
+            id,
+            crate::response::JSONRPC_INTERNAL_ERROR,
+            HostErrorKind::Unavailable,
+            &format!("forward not found for tool: {tool_name}"),
+        ));
+    };
+    // A forward whose last discovery failed keeps its previous entries,
+    // but it is unavailable: refuse the call until discovery succeeds.
+    if !forward.available {
+        warn!(tool = %tool_name, forward_id = %forward_id, "forward unavailable for tool provenance");
+        return Err(crate::response::json_rpc_host_error(
+            id,
+            crate::response::JSONRPC_INTERNAL_ERROR,
+            HostErrorKind::Unavailable,
+            &format!("forward unavailable for tool: {tool_name}"),
+        ));
+    }
+    Ok(forward)
 }
 
 impl ToolCallFilter {
@@ -50,6 +172,13 @@ impl ToolCallFilter {
 
         let json_rpc_id =
             crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
+        if !arguments_are_object(body) {
+            return Ok(crate::response::json_rpc_error(
+                &json_rpc_id,
+                crate::response::JSONRPC_INVALID_PARAMS,
+                "tool arguments must be an object",
+            ));
+        }
         let mut parsed = parse_body(body, json_rpc_id);
 
         let tool_name = match ctx.get_metadata(crate::MCP_NAME_KEY) {
@@ -122,106 +251,18 @@ impl ToolCallFilter {
             ));
         };
 
-        let tool = match registry.get_tool_in_namespace(namespace, &tool_name) {
-            Some(t) => {
-                tracing::debug!(
-                    tool = %t.name,
-                    uri = %t.uri,
-                    type_ = %t.type_,
-                    "resolved tool from registry"
-                );
-                t
-            }
-            None => {
-                warn!(tool = %tool_name, "tool not found in registry");
-                return Ok(crate::response::json_rpc_error(
-                    &parsed.id,
-                    crate::response::JSONRPC_INVALID_PARAMS,
-                    &format!("tool not found: {tool_name}"),
-                ));
-            }
+        let tool = match resolve_tool(ctx, registry, namespace, &tool_name, &parsed.id) {
+            Ok(tool) => tool,
+            Err(action) => return Ok(action),
         };
 
+        if tool.type_ == "wasm" {
+            return crate::wasm::call_handler(ctx, &parsed.id, &tool, &parsed.arguments).await;
+        }
+
         if tool.is_mcp_forward() {
-            // Resolve the current upstream address from the immutable forwardId
-            // provenance. Address is no longer identity: it can change while the
-            // forwardId stays stable. Fail closed when a forwarded tool has no
-            // provenance: without it the owning forward is unknown, so credential
-            // enforcement cannot run. This matches the resources and prompts paths.
-            let Some(forward_id) = tool.forward_id.as_deref() else {
-                warn!(tool = %tool_name, "forwarded tool missing forwardId provenance");
-                return Ok(crate::response::json_rpc_error(
-                    &parsed.id,
-                    crate::response::JSONRPC_INTERNAL_ERROR,
-                    "forwarded tool has no forwardId provenance",
-                ));
-            };
-            let Some(forward) = registry.get_forward(forward_id) else {
-                warn!(tool = %tool_name, forward_id = %forward_id, "forward not found for tool provenance");
-                return Ok(crate::response::json_rpc_error(
-                    &parsed.id,
-                    crate::response::JSONRPC_INTERNAL_ERROR,
-                    &format!("forward not found for tool: {tool_name}"),
-                ));
-            };
-            // A forward whose last discovery failed keeps its previous entries,
-            // but it is unavailable: refuse the call until discovery succeeds.
-            if !forward.available {
-                warn!(tool = %tool_name, forward_id = %forward_id, "forward unavailable for tool provenance");
-                return Ok(crate::response::json_rpc_error(
-                    &parsed.id,
-                    crate::response::JSONRPC_INTERNAL_ERROR,
-                    &format!("forward unavailable for tool: {tool_name}"),
-                ));
-            }
-            let address = forward.address.clone();
-            let invoker = match crate::invoker::invoker_from_extensions(ctx, &parsed.id) {
-                Ok(invoker) => invoker,
-                Err(action) => return Ok(action),
-            };
-
-            let mut forward_headers = collect_forward_headers(&ctx.request.headers, &tool);
-            if tool.inject_header_args() {
-                inject_header_arguments(
-                    &mut parsed.arguments,
-                    &tool.input_schema,
-                    &forward_headers,
-                );
-            }
-
-            // Inject brokered credentials only after governance has allowed the
-            // call and after client-header argument mapping, so managed
-            // credentials never leak into tool arguments.
-            let request = crate::credentials::ForwardCredentialRequest {
-                forward: &forward,
-                address: &address,
-                purpose: CredentialPurpose::Invocation,
-                scope: UseScope {
-                    namespace: Some(namespace),
-                    governed_item: Some(&tool_name),
-                    operation: Some(crate::TOOLS_CALL),
-                    identity: None,
-                },
-                json_rpc_id: &parsed.id,
-            };
-            let redactor = match crate::credentials::inject_forward_credentials(
-                ctx,
-                &request,
-                &mut forward_headers,
-            )
-            .await
-            {
-                Ok(redactor) => redactor,
-                Err(action) => return Ok(action),
-            };
-            let exchange = crate::credentials::ForwardExchange {
-                invoker,
-                headers: forward_headers,
-                redactor,
-            };
-
             return self
-                .handle_forwarded_call(&address, &tool_name, &parsed, exchange, &conversation_id)
+                .forward_tool(ctx, &mut parsed, &tool, &conversation_id)
                 .await;
         }
 
@@ -234,6 +275,76 @@ impl ToolCallFilter {
                 tool.type_
             ),
         ))
+    }
+
+    async fn forward_tool(
+        &self,
+        ctx: &mut HttpFilterContext<'_>,
+        parsed: &mut ParsedBody,
+        tool: &ToolEntry,
+        conversation_id: &str,
+    ) -> Result<FilterAction, FilterError> {
+        let tool_name = tool.name.as_str();
+        let namespace = tool
+            .namespace
+            .as_deref()
+            .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE);
+        let forward = match resolve_forward(ctx, tool, &parsed.id) {
+            Ok(forward) => forward,
+            Err(action) => return Ok(action),
+        };
+        let address = forward.address.clone();
+        let invoker = match crate::invoker::invoker_from_extensions(ctx, &parsed.id) {
+            Ok(invoker) => invoker,
+            Err(action) => return Ok(action),
+        };
+
+        let mut forward_headers = collect_forward_headers(&ctx.request.headers, tool);
+        if tool.inject_header_args() {
+            inject_header_arguments(&mut parsed.arguments, &tool.input_schema, &forward_headers);
+        }
+
+        if let Err(message) = crate::wasm::validate_arguments(tool, &parsed.arguments) {
+            return Ok(crate::response::json_rpc_error(
+                &parsed.id,
+                crate::response::JSONRPC_INVALID_PARAMS,
+                &message,
+            ));
+        }
+
+        // Inject brokered credentials only after governance has allowed the
+        // call and after client-header argument mapping, so managed
+        // credentials never leak into tool arguments.
+        let request = crate::credentials::ForwardCredentialRequest {
+            forward: &forward,
+            address: &address,
+            purpose: CredentialPurpose::Invocation,
+            scope: UseScope {
+                namespace: Some(namespace),
+                governed_item: Some(tool_name),
+                operation: Some(crate::TOOLS_CALL),
+                identity: None,
+            },
+            json_rpc_id: &parsed.id,
+        };
+        let redactor = match crate::credentials::inject_forward_credentials(
+            ctx,
+            &request,
+            &mut forward_headers,
+        )
+        .await
+        {
+            Ok(redactor) => redactor,
+            Err(action) => return Ok(action),
+        };
+        let exchange = crate::credentials::ForwardExchange {
+            invoker,
+            headers: forward_headers,
+            redactor,
+        };
+
+        self.handle_forwarded_call(&address, tool_name, parsed, exchange, conversation_id)
+            .await
     }
 
     #[expect(
@@ -303,9 +414,10 @@ impl ToolCallFilter {
                 // matched by the exact injected material as a backstop.
                 let detail = redactor.redact(&detail);
                 warn!(tool = %tool_name, error = %detail, "MCP forward call failed");
-                Ok(crate::response::json_rpc_error(
+                Ok(crate::response::json_rpc_host_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
+                    e.host_kind(),
                     &detail,
                 ))
             }
@@ -1082,6 +1194,44 @@ mod filter_tests {
         };
         let mut body = Some(bytes::Bytes::from_static(BODY.as_bytes()));
         filter.handle_body(&mut ctx, &mut body).await.unwrap()
+    }
+
+    #[tokio::test]
+    async fn missing_namespace_selection_cannot_be_replaced_after_policy_evaluation() {
+        let registry = registry(None, None);
+        let invoker = RecordingInvoker::succeeding(json!({"content":[]}));
+        let mut request = request(&[]);
+        request.uri = "/default/mcp".parse().unwrap();
+        let mut ctx = filter_context(&request, crate::TOOLS_CALL, &registry, &invoker);
+        ctx.set_metadata(crate::MCP_NAME_KEY, "echo");
+        let namespace = crate::NamespaceFilter::from_config(&serde_yaml::Value::Null).unwrap();
+        let mut body = Some(bytes::Bytes::from_static(BODY.as_bytes()));
+        assert!(matches!(
+            namespace
+                .on_request_body(&mut ctx, &mut body, true)
+                .await
+                .unwrap(),
+            FilterAction::Continue
+        ));
+        assert!(
+            ctx.extensions
+                .get::<wanaku_types::wasm::ToolResolutionComplete>()
+                .is_some()
+        );
+        assert!(
+            ctx.extensions
+                .get::<wanaku_types::wasm::ResolvedTool>()
+                .is_none()
+        );
+
+        // An asynchronous evaluator can yield while a management request adds it.
+        registry.register_tool(tool(Some(FORWARD_ID), true));
+        let filter = ToolCallFilter {
+            max_body_bytes: 1024,
+        };
+        let response = response_json(filter.handle_body(&mut ctx, &mut body).await.unwrap());
+        assert_eq!(response["error"]["data"]["kind"], "not_found");
+        assert!(invoker.calls().is_empty());
     }
 
     /// Assert one call with the resolved address, target, mapped arguments, and

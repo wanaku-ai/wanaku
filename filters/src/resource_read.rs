@@ -8,6 +8,7 @@ use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::UseScope;
 use wanaku_types::registry::{ForwardRegistry, ResourceRegistry};
+use wanaku_types::wasm::HostErrorKind;
 
 crate::body_filter_boilerplate!(ResourceReadFilter, "wanaku_resource_read");
 
@@ -138,9 +139,10 @@ impl ResourceReadFilter {
 
         let Some(resource) = find_resource_in_namespace(registry, namespace, resource_uri) else {
             warn!(uri = %resource_uri, namespace = %namespace, "resource not found in registry");
-            return Ok(crate::response::json_rpc_error(
+            return Ok(crate::response::json_rpc_host_error(
                 &parsed.id,
                 crate::response::JSONRPC_INVALID_PARAMS,
+                HostErrorKind::NotFound,
                 &format!("resource not found: {resource_uri}"),
             ));
         };
@@ -150,17 +152,19 @@ impl ResourceReadFilter {
             // provenance. The address can change while the forwardId stays stable.
             let Some(forward_id) = resource.forward_id.as_deref() else {
                 warn!(uri = %resource_uri, "forwarded resource missing forwardId provenance");
-                return Ok(crate::response::json_rpc_error(
+                return Ok(crate::response::json_rpc_host_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
+                    HostErrorKind::Unavailable,
                     "forwarded resource has no forwardId provenance",
                 ));
             };
             let Some(forward) = registry.get_forward(forward_id) else {
                 warn!(uri = %resource_uri, forward_id = %forward_id, "forward not found for resource provenance");
-                return Ok(crate::response::json_rpc_error(
+                return Ok(crate::response::json_rpc_host_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
+                    HostErrorKind::Unavailable,
                     &format!("forward not found for resource: {resource_uri}"),
                 ));
             };
@@ -168,9 +172,10 @@ impl ResourceReadFilter {
             // but it is unavailable: refuse the call until discovery succeeds.
             if !forward.available {
                 warn!(uri = %resource_uri, forward_id = %forward_id, "forward unavailable for resource provenance");
-                return Ok(crate::response::json_rpc_error(
+                return Ok(crate::response::json_rpc_host_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
+                    HostErrorKind::Unavailable,
                     &format!("forward unavailable for resource: {resource_uri}"),
                 ));
             }
@@ -243,8 +248,8 @@ impl ResourceReadFilter {
             .read_resource(forward_address, resource_uri, forward_headers)
             .await
         {
-            Ok(contents) => {
-                let mut response = build_read_response(&parsed.id, &contents, &redactor);
+            Ok(result) => {
+                let mut response = build_read_response(&parsed.id, &result, &redactor);
                 if let Some(namespace) = &parsed.virtual_owner {
                     crate::namespace::qualify_resource_result(
                         &mut response["result"],
@@ -262,9 +267,10 @@ impl ResourceReadFilter {
                 // error text before it reaches the logs or the agent.
                 let message = redactor.redact(&e.to_string());
                 warn!(uri = %resource_uri, error = %message, "MCP forward resource read failed");
-                Ok(crate::response::json_rpc_error(
+                Ok(crate::response::json_rpc_host_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
+                    e.host_kind(),
                     &format!("forwarded resource read failed: {message}"),
                 ))
             }
@@ -276,15 +282,14 @@ impl ResourceReadFilter {
 /// injected credential the upstream echoed back into the resource contents.
 fn build_read_response(
     id: &serde_json::Value,
-    contents: &[serde_json::Value],
+    result: &serde_json::Value,
     redactor: &crate::credentials::CredentialRedactor,
 ) -> serde_json::Value {
-    let redacted: Vec<serde_json::Value> =
-        contents.iter().map(|c| redactor.redact_json(c)).collect();
+    let redacted = redactor.redact_json(result);
     serde_json::json!({
         "jsonrpc": "2.0",
         "id": id,
-        "result": {"contents": redacted}
+        "result": redacted
     })
 }
 
@@ -321,11 +326,11 @@ mod tests {
     #[test]
     fn build_read_response_redacts_nested_credential() {
         // The upstream echoes the secret deep inside the resource contents.
-        let contents = vec![serde_json::json!({
+        let contents = serde_json::json!({"contents": [{
             "uri": "file:///x",
             "text": "token is s3cr3t",
             "meta": {"echoed": "Authorization: Bearer s3cr3t"}
-        })];
+        }], "_meta": {"trace": "preserved"}});
         let redactor = crate::credentials::CredentialRedactor::from_patterns(vec![
             "s3cr3t".to_owned(),
             "Bearer s3cr3t".to_owned(),
@@ -341,11 +346,12 @@ mod tests {
         );
         // Non-secret structure is preserved untouched.
         assert_eq!(entry.pointer("/uri").unwrap(), "file:///x");
+        assert_eq!(response["result"]["_meta"]["trace"], "preserved");
     }
 
     #[test]
     fn build_read_response_is_noop_without_binding() {
-        let contents = vec![serde_json::json!({"text": "plain s3cr3t"})];
+        let contents = serde_json::json!({"contents": [{"text": "plain s3cr3t"}]});
         let redactor = crate::credentials::CredentialRedactor::default();
 
         let response = build_read_response(&serde_json::json!(1), &contents, &redactor);

@@ -6189,12 +6189,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "wanaku-feature-tool-handler"
+version = "0.4.0-dev"
+dependencies = [
+ "async-trait",
+ "http",
+ "jsonschema",
+ "praxis-proxy-filter",
+ "rand 0.10.3",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "utoipa",
+ "wanaku-infra",
+ "wanaku-types",
+ "wasmtime",
+ "wasmtime-wasi",
+ "yaml_serde",
+]
+
+[[package]]
 name = "wanaku-filters"
 version = "0.4.0-dev"
 dependencies = [
  "async-trait",
  "bytes",
  "http",
+ "jsonschema",
  "praxis-proxy-core",
  "praxis-proxy-filter",
  "serde_json",
@@ -6262,6 +6285,7 @@ dependencies = [
  "wanaku-feature-metrics",
  "wanaku-feature-plugins",
  "wanaku-feature-simulation",
+ "wanaku-feature-tool-handler",
  "wanaku-filters",
  "wanaku-infra",
  "wanaku-types",

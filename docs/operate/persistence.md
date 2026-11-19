@@ -38,6 +38,14 @@ To disable persistence:
 export WANAKU_PERSIST_BACKEND=none
 ```
 
+## WASM tool handler persistence
+
+When file persistence is enabled, the server reads and writes `tool-handlers.json` in `WANAKU_PERSIST_PATH`. This file contains handler definitions, component paths, capability grants, and execution limits. It does not contain compiled native code or component bytes.
+
+Deploy each referenced component file before you restart the server. Startup recompiles and validates the components. An invalid or missing component stops startup. An explicit `tool_handlers` configuration replaces the restored handler configuration. An absent key retains the restored configuration. An empty list removes all handlers.
+
+Runtime activation validates and compiles the candidate before publication. A failed activation retains the active configuration. See [WASM tool handlers](../extend/wasm-tool-handlers.md) for the host API and lifecycle procedures.
+
 ## Evaluator Revision Persistence
 
 Evaluator revision history uses the same persistence configuration as the registry. When `WANAKU_PERSIST_BACKEND=file`, the server reads and writes `evaluator-revisions.json` in `WANAKU_PERSIST_PATH`. When persistence is disabled, revision history stays in memory and is lost on restart.

@@ -15,6 +15,8 @@ These pages are for developers who add features to Wanaku.
 
 ## Feature crates
 
+- [WASM tool handlers](wasm-tool-handlers.md): implement MCP tools with a versioned WASM host API and governed access to registered MCP targets.
+
 - [Feature crates](feature-crates.md): learn the `Feature` trait, the built-in crates, and the lifecycle.
 - [Build a feature crate](build-a-feature.md): create, wire, and test a custom feature crate.
 

@@ -27,6 +27,7 @@ workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
+bytes = { workspace = true }
 clap = { workspace = true }
 form_urlencoded = { workspace = true }
 http = { workspace = true }
@@ -54,6 +55,7 @@ wanaku-feature-mcp-metadata = { workspace = true }
 wanaku-feature-metrics = { workspace = true }
 wanaku-feature-plugins = { workspace = true, features = ["openapi"] }
 wanaku-feature-simulation = { workspace = true, features = ["openapi"] }
+wanaku-feature-tool-handler = { workspace = true, features = ["openapi"] }
 serde_ignored = "0.1.14"
 
 [target.'cfg(unix)'.dependencies]

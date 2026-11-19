@@ -77,6 +77,9 @@ fn section_unknown_keys(key: &str, value: &Value) -> Option<Vec<String>> {
         "audit" => unknown_keys::<AuditConfig>(value),
         "plugins" => unknown_keys::<Vec<PluginConfig>>(value),
         "evaluator_startup_failure" => Vec::new(),
+        "tool_handlers" => {
+            unknown_keys::<Vec<wanaku_feature_tool_handler::config::HandlerDefinition>>(value)
+        }
         _ => return None,
     };
     Some(paths)

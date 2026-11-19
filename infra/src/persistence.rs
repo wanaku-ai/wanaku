@@ -61,6 +61,13 @@ mod tests {
                 description: "desc".to_owned(),
                 uri: "test://uri".to_owned(),
                 type_: "test-type".to_owned(),
+                mcp: wanaku_types::registry::ToolDefinitionMetadata {
+                    output_schema: Some(serde_json::json!({"type": "object"})),
+                    annotations: Some(serde_json::json!({"readOnlyHint": true})),
+                    title: Some("Test title".to_owned()),
+                    meta: Some(serde_json::json!({"version": 1})),
+                    extra: HashMap::from([("icons".to_owned(), serde_json::json!([]))]),
+                },
                 input_schema: serde_json::json!({"type": "object"}),
                 labels: HashMap::new(),
                 id: None,
@@ -76,6 +83,10 @@ mod tests {
         assert!(loaded.is_ok(), "load should succeed");
         if let Ok(s) = loaded {
             assert_eq!(s.tools.len(), 1);
+            assert_eq!(
+                s.tools[0].mcp_definition(),
+                snapshot.tools[0].mcp_definition()
+            );
         }
 
         let _ = std::fs::remove_dir_all(&dir);

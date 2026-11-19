@@ -388,6 +388,16 @@ fn outcome_event(
         "Evaluator governance decision.",
     );
     event.namespace = Some(audit.namespace.to_owned());
+    if let Some(invocation) = ctx
+        .extensions
+        .get::<wanaku_types::wasm::InvocationContext>()
+        .filter(|context| !context.ancestry().is_empty())
+    {
+        event.attributes.insert(
+            "handler_ancestry".to_owned(),
+            serde_json::json!(invocation.ancestry()),
+        );
+    }
     if let Some(virtual_namespace) = ctx.get_metadata(VIRTUAL_NAMESPACE_METADATA_KEY) {
         event.attributes.insert(
             "virtual_namespace".to_owned(),
@@ -482,7 +492,6 @@ fn add_outcome_attributes(event: &mut AuditEvent, audit: &RequestAudit<'_>, outc
 
 #[expect(
     clippy::too_many_lines,
-    clippy::cognitive_complexity,
     reason = "action dispatch with multiple variants"
 )]
 fn dispatch_action(
@@ -546,13 +555,7 @@ fn dispatch_action(
                 .iter()
                 .filter_map(|name| {
                     let tool = catalog.get(name);
-                    tool.map(|t| {
-                        serde_json::json!({
-                            "name": t.name,
-                            "description": t.description,
-                            "inputSchema": t.input_schema,
-                        })
-                    })
+                    tool.map(wanaku_types::registry::ToolEntry::mcp_definition)
                 })
                 .collect();
 

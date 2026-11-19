@@ -78,10 +78,11 @@ COPY features/mcp-metadata/Cargo.toml features/mcp-metadata/Cargo.toml
 COPY features/metrics/Cargo.toml features/metrics/Cargo.toml
 COPY features/plugins/Cargo.toml features/plugins/Cargo.toml
 COPY features/simulation/Cargo.toml features/simulation/Cargo.toml
+COPY features/tool-handler/Cargo.toml features/tool-handler/Cargo.toml
 COPY xtask/Cargo.toml xtask/Cargo.toml
 
 RUN mkdir -p types/src infra/src filters/src server/src \
-    features/action-policy/src features/audit/src features/evaluator/src features/intercept/src features/mcp-metadata/src features/metrics/src features/plugins/src features/simulation/src \
+    features/action-policy/src features/audit/src features/evaluator/src features/intercept/src features/mcp-metadata/src features/metrics/src features/plugins/src features/simulation/src features/tool-handler/src \
     xtask/src \
     ui/admin/dist \
     && echo '//! stub' > types/src/lib.rs \
@@ -91,6 +92,7 @@ RUN mkdir -p types/src infra/src filters/src server/src \
     && echo '//! stub' > features/action-policy/src/lib.rs \
     && echo '//! stub' > features/audit/src/lib.rs \
     && echo '//! stub' > features/simulation/src/lib.rs \
+    && echo '//! stub' > features/tool-handler/src/lib.rs \
     && echo '//! stub' > features/evaluator/src/lib.rs \
     && echo '//! stub' > features/intercept/src/lib.rs \
     && echo '//! stub' > features/mcp-metadata/src/lib.rs \

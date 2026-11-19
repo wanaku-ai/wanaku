@@ -12,6 +12,60 @@ use serde::{Deserialize, Serialize};
 
 use crate::credentials::CredentialPurpose;
 
+/// MCP definition fields retained independently of Wanaku routing metadata.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub struct ToolDefinitionMetadata {
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "outputSchema",
+        alias = "output_schema"
+    )]
+    pub output_schema: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "_meta",
+        alias = "meta"
+    )]
+    pub meta: Option<serde_json::Value>,
+    #[serde(flatten)]
+    pub extra: HashMap<String, serde_json::Value>,
+}
+
+impl ToolDefinitionMetadata {
+    /// Retain MCP fields without accepting upstream routing or ownership fields.
+    pub fn from_mcp_definition(definition: &serde_json::Value) -> Result<Self, serde_json::Error> {
+        let mut fields: serde_json::Map<String, serde_json::Value> =
+            serde_json::from_value(definition.clone())?;
+        fields.retain(|key, _| !tool_internal_field(key));
+        serde_json::from_value(serde_json::Value::Object(fields))
+    }
+}
+
+fn tool_internal_field(key: &str) -> bool {
+    matches!(
+        key,
+        "name"
+            | "description"
+            | "inputSchema"
+            | "input_schema"
+            | "uri"
+            | "type"
+            | "labels"
+            | "id"
+            | "namespace"
+            | "forwardId"
+            | "forward_id"
+            | "enabled"
+    )
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 pub struct ToolEntry {
@@ -23,6 +77,8 @@ pub struct ToolEntry {
     pub type_: String,
     #[serde(rename = "inputSchema", alias = "input_schema")]
     pub input_schema: serde_json::Value,
+    #[serde(flatten)]
+    pub mcp: ToolDefinitionMetadata,
     #[serde(default)]
     pub labels: HashMap<String, String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -292,6 +348,38 @@ pub const FORWARD_HEADERS_LABEL: &str = "wanaku.forward_headers";
 pub const INJECT_HEADER_ARGS_LABEL: &str = "wanaku.inject_header_args";
 
 impl ToolEntry {
+    /// Return the complete MCP definition without internal routing fields.
+    #[must_use]
+    pub fn mcp_definition(&self) -> serde_json::Value {
+        let mut definition: serde_json::Map<String, serde_json::Value> = self
+            .mcp
+            .extra
+            .iter()
+            .filter(|(key, _)| !tool_internal_field(key))
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect();
+        for (key, value) in [
+            ("outputSchema", self.mcp.output_schema.clone()),
+            ("annotations", self.mcp.annotations.clone()),
+            (
+                "title",
+                self.mcp.title.clone().map(serde_json::Value::String),
+            ),
+            ("_meta", self.mcp.meta.clone()),
+        ] {
+            if let Some(value) = value {
+                definition.insert(key.to_owned(), value);
+            }
+        }
+        definition.insert("name".to_owned(), serde_json::json!(self.name));
+        definition.insert(
+            "description".to_owned(),
+            serde_json::json!(self.description),
+        );
+        definition.insert("inputSchema".to_owned(), self.input_schema.clone());
+        serde_json::Value::Object(definition)
+    }
+
     pub fn is_mcp_forward(&self) -> bool {
         self.type_ == MCP_FORWARD_TYPE
     }
@@ -474,12 +562,73 @@ pub trait BindingRegistry: Send + Sync {
 mod tests {
     use super::*;
 
+    #[test]
+    fn complete_tool_definition_round_trips_without_routing_fields() -> Result<(), serde_json::Error>
+    {
+        let definition = serde_json::json!({
+            "name": "test-tool", "description": "A test tool", "title": "Test",
+            "inputSchema": {"type": "object"},
+            "outputSchema": {"type": "object", "properties": {"answer": {"type": "integer"}}},
+            "annotations": {"readOnlyHint": true, "idempotentHint": true},
+            "_meta": {"example/version": 2},
+            "icons": [{"src": "https://example.test/icon.png", "mimeType": "image/png"}],
+            "x-extension": {"nested": [true, null, 42]}
+        });
+        let mut tool = sample_tool();
+        tool.mcp = ToolDefinitionMetadata::from_mcp_definition(&definition)?;
+        tool.namespace = Some("private".to_owned());
+        tool.forward_id = Some("owner".to_owned());
+        let restored: ToolEntry = serde_json::from_value(serde_json::to_value(&tool)?)?;
+        assert_eq!(restored.mcp_definition(), definition);
+        assert_eq!(restored.namespace.as_deref(), Some("private"));
+        assert_eq!(restored.forward_id.as_deref(), Some("owner"));
+        Ok(())
+    }
+
+    #[test]
+    fn definition_extensions_cannot_override_authoritative_identity() {
+        let mut tool = sample_tool();
+        for key in [
+            "name",
+            "inputSchema",
+            "namespace",
+            "forwardId",
+            "enabled",
+            "uri",
+        ] {
+            tool.mcp
+                .extra
+                .insert(key.to_owned(), serde_json::json!("spoofed"));
+        }
+        let definition = tool.mcp_definition();
+        assert_eq!(definition["name"], "test-tool");
+        assert_eq!(definition["inputSchema"], tool.input_schema);
+        for key in ["namespace", "forwardId", "enabled", "uri"] {
+            assert!(definition.get(key).is_none());
+        }
+    }
+
+    #[test]
+    fn output_schema_accepts_configuration_and_api_spellings() -> Result<(), serde_json::Error> {
+        let schema = serde_json::json!({"type": "object"});
+        let configuration: ToolDefinitionMetadata = serde_json::from_value(serde_json::json!({
+            "output_schema": schema, "meta": {"revision": 1}
+        }))?;
+        let api: ToolDefinitionMetadata = serde_json::from_value(serde_json::json!({
+            "outputSchema": schema, "_meta": {"revision": 1}
+        }))?;
+        assert_eq!(configuration.output_schema, api.output_schema);
+        assert_eq!(configuration.meta, api.meta);
+        Ok(())
+    }
+
     fn sample_tool() -> ToolEntry {
         ToolEntry {
             name: "test-tool".to_owned(),
             description: "A test tool".to_owned(),
             uri: "camel:http://example.com".to_owned(),
             type_: "http".to_owned(),
+            mcp: Default::default(),
             input_schema: serde_json::json!({"type": "object"}),
             labels: HashMap::new(),
             id: None,

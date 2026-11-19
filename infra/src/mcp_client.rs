@@ -74,6 +74,20 @@ pub enum McpClientError {
     },
 }
 
+impl McpClientError {
+    /// Classify transport failures without parsing their display messages.
+    #[must_use]
+    pub const fn host_kind(&self) -> wanaku_types::wasm::HostErrorKind {
+        use wanaku_types::wasm::HostErrorKind;
+        match self {
+            Self::Timeout { .. } => HostErrorKind::Timeout,
+            Self::Connection { .. } => HostErrorKind::Unavailable,
+            Self::AuthRequired { .. } | Self::InsufficientScope { .. } => HostErrorKind::Denied,
+            _ => HostErrorKind::Protocol,
+        }
+    }
+}
+
 /// rmcp's default protocol version (`2026-07-28`) drops the `initialize`
 /// handshake. Pin the newest version that keeps it, so upstream servers that
 /// only speak the session-based protocol still negotiate correctly.
@@ -208,7 +222,7 @@ pub trait McpInvoker: Send + Sync {
         address: &str,
         resource_uri: &str,
         headers: HashMap<HeaderName, HeaderValue>,
-    ) -> Result<Vec<Value>, McpClientError>;
+    ) -> Result<Value, McpClientError>;
 
     /// Get `prompt_name` from the MCP server at `address`.
     async fn get_prompt(
@@ -241,7 +255,7 @@ impl McpInvoker for RmcpInvoker {
         address: &str,
         resource_uri: &str,
         headers: HashMap<HeaderName, HeaderValue>,
-    ) -> Result<Vec<Value>, McpClientError> {
+    ) -> Result<Value, McpClientError> {
         Box::pin(read_resource(address, resource_uri, headers)).await
     }
 
@@ -257,7 +271,6 @@ impl McpInvoker for RmcpInvoker {
 }
 
 #[expect(
-    clippy::too_many_lines,
     clippy::large_stack_frames,
     reason = "MCP client call with argument mapping"
 )]
@@ -358,7 +371,7 @@ pub async fn read_resource(
     url: &str,
     resource_uri: &str,
     forward_headers: HashMap<HeaderName, HeaderValue>,
-) -> Result<Vec<Value>, McpClientError> {
+) -> Result<Value, McpClientError> {
     let url = url.to_owned();
     let transport = build_transport_with_headers(&url, forward_headers);
 
@@ -378,17 +391,11 @@ pub async fn read_resource(
             message: e.to_string(),
         })?;
 
-    result
-        .contents
-        .into_iter()
-        .map(|c| {
-            serde_json::to_value(c).map_err(|e| McpClientError::ReadResource {
-                url: url.clone(),
-                resource_uri: resource_uri.to_owned(),
-                message: e.to_string(),
-            })
-        })
-        .collect()
+    serde_json::to_value(result).map_err(|e| McpClientError::ReadResource {
+        url,
+        resource_uri: resource_uri.to_owned(),
+        message: e.to_string(),
+    })
 }
 
 #[expect(
@@ -741,7 +748,7 @@ mod tests {
     use wiremock::matchers::{body_partial_json, method};
     use wiremock::{Mock, MockServer, Request, ResponseTemplate};
 
-    use super::{McpInvoker as _, RmcpInvoker, list_tools};
+    use super::{McpClientError, McpInvoker as _, RmcpInvoker, list_tools};
 
     fn reply(result: Value) -> impl Fn(&Request) -> ResponseTemplate {
         move |request: &Request| {
@@ -793,6 +800,49 @@ mod tests {
 
         assert_eq!(tools.len(), 1);
         assert_eq!(tools[0]["name"], "echo");
+    }
+
+    #[tokio::test]
+    async fn tool_discovery_preserves_complete_definitions() -> Result<(), McpClientError> {
+        let server = initialized_server().await;
+        let definition = json!({
+            "name": "echo", "description": "Echo", "title": "Echo input",
+            "inputSchema": {"type": "object"},
+            "outputSchema": {"type": "object", "properties": {"answer": {"type": "string"}}},
+            "annotations": {"readOnlyHint": true, "idempotentHint": true},
+            "_meta": {"example/version": 1},
+            "icons": [{"src": "https://example.test/icon.png", "mimeType": "image/png"}]
+        });
+        mount(
+            &server,
+            json!({"method": "tools/list"}),
+            reply(json!({"tools": [definition]})),
+        )
+        .await;
+        let tools = list_tools(&server.uri()).await?;
+        assert_eq!(tools, vec![definition]);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn resource_reads_preserve_result_metadata_and_binary_content()
+    -> Result<(), McpClientError> {
+        let server = initialized_server().await;
+        let expected = json!({
+            "contents": [{"uri": "file:///image", "mimeType": "image/png", "blob": "aW1hZ2U="}],
+            "_meta": {"example/revision": 3}
+        });
+        mount(
+            &server,
+            json!({"method": "resources/read"}),
+            reply(expected.clone()),
+        )
+        .await;
+        let result = RmcpInvoker
+            .read_resource(&server.uri(), "file:///image", Default::default())
+            .await?;
+        assert_eq!(result, expected);
+        Ok(())
     }
 
     fn error_reply(code: i64) -> impl Fn(&Request) -> ResponseTemplate {

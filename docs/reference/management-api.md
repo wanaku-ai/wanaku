@@ -7,6 +7,8 @@ description: "Reference for the Wanaku management API on port 8080: tools, names
 
 The management API lets operators inspect and change Wanaku at runtime. It listens on port 8080 by default. Set `WANAKU_MGMT_LISTEN` to use a different address.
 
+WASM handler lifecycle routes are documented in [WASM tool handlers](../extend/wasm-tool-handlers.md#management-and-lifecycle). These routes compile and activate component bindings without a server rebuild.
+
 The server uses Pingora's `ServeHttp` trait. The A2A agent routes run first. The other core routes run next. Feature routes run after core routes. Core routes match complete path segments. For example, `/api/v1/tools-export` does not match the `/api/v1/tools` route, so a feature can own that path. If no route matches, the server returns `404`.
 
 ## Access and Response Format

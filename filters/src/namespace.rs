@@ -2,7 +2,7 @@ use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use serde_json::Value;
 use wanaku_infra::registry::InMemoryRegistry;
-use wanaku_types::registry::{NamespaceEntry, NamespaceRegistry};
+use wanaku_types::registry::{NamespaceEntry, NamespaceRegistry, ToolRegistry};
 
 pub use wanaku_types::metadata::NAMESPACE_METADATA_KEY;
 use wanaku_types::metadata::VIRTUAL_NAMESPACE_METADATA_KEY;
@@ -85,6 +85,7 @@ impl NamespaceFilter {
             ));
         }
         ctx.set_metadata(NAMESPACE_METADATA_KEY, namespace);
+        pin_tool(ctx);
         Ok(FilterAction::Continue)
     }
 }
@@ -132,7 +133,30 @@ fn resolve_virtual_context(
         }
         None => ctx.set_metadata(NAMESPACE_METADATA_KEY, format!("virtual-ns/{group}")),
     }
+    pin_tool(ctx);
     Ok(FilterAction::Continue)
+}
+
+fn pin_tool(ctx: &mut HttpFilterContext<'_>) {
+    if ctx.get_metadata(crate::MCP_METHOD_KEY) != Some(crate::TOOLS_CALL) {
+        return;
+    }
+    ctx.extensions
+        .insert(wanaku_types::wasm::ToolResolutionComplete);
+    ctx.extensions.remove::<wanaku_types::wasm::ResolvedTool>();
+    let tool = ctx
+        .extensions
+        .get::<InMemoryRegistry>()
+        .and_then(|registry| {
+            registry.get_tool_in_namespace(
+                ctx.get_metadata(NAMESPACE_METADATA_KEY)?,
+                ctx.get_metadata(crate::MCP_NAME_KEY)?,
+            )
+        });
+    if let Some(tool) = tool {
+        ctx.extensions
+            .insert(wanaku_types::wasm::ResolvedTool(tool));
+    }
 }
 
 /// Qualify only MCP resource references. User text and structured data stay intact.
@@ -168,6 +192,13 @@ pub(crate) fn qualify_resource_result(result: &mut Value, namespace: &str, metho
 fn qualify_resource_content(content: &mut Value, namespace: &str) {
     match content.get("type").and_then(Value::as_str) {
         Some("resource_link") => {
+            if content
+                .get("uri")
+                .and_then(Value::as_str)
+                .is_some_and(|uri| uri.starts_with("wanaku://"))
+            {
+                return;
+            }
             qualify_uri(content, namespace);
             if let Some(name) = content.get("name").and_then(Value::as_str) {
                 content["name"] = Value::String(format!("{namespace}/{name}"));
@@ -184,6 +215,9 @@ fn qualify_resource_content(content: &mut Value, namespace: &str) {
 
 fn qualify_uri(content: &mut Value, namespace: &str) {
     if let Some(uri) = content.get("uri").and_then(Value::as_str) {
+        if uri.starts_with("wanaku://") {
+            return;
+        }
         content["uri"] = Value::String(format!("wanaku://{namespace}/{uri}"));
     }
 }
