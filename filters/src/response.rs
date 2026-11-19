@@ -213,3 +213,19 @@ mod tests {
         assert!(r.body.is_none());
     }
 }
+
+/// Preserve a protocol code while exposing a stable host failure category.
+pub fn json_rpc_host_error(
+    id: &serde_json::Value,
+    code: i32,
+    kind: wanaku_types::wasm::HostErrorKind,
+    message: &str,
+) -> praxis_filter::FilterAction {
+    praxis_filter::FilterAction::Reject(json_response(Bytes::from(
+        serde_json::json!({
+            "jsonrpc": "2.0", "id": id,
+            "error": {"code": code, "message": message, "data": {"kind": kind}},
+        })
+        .to_string(),
+    )))
+}

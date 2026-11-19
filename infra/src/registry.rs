@@ -252,6 +252,139 @@ impl InMemoryRegistry {
         updated
     }
 
+    /// Change an unmanaged tool through the generic management API.
+    /// `None` removes the tool; `Some` sets its enabled state.
+    /// WASM bindings must be changed through the handler runtime.
+    pub fn mutate_unmanaged_tool(
+        &self,
+        namespace: &str,
+        name: &str,
+        enabled: Option<bool>,
+    ) -> Result<Option<ToolEntry>, String> {
+        let _guard = self.lock_namespaces();
+        let changed = match self.tools.entry(entry_key(namespace, name)) {
+            dashmap::mapref::entry::Entry::Occupied(mut entry) => {
+                if entry.get().type_ == "wasm" {
+                    return Err(
+                        "tool is managed by /api/v1/tool-handlers; use handler management"
+                            .to_owned(),
+                    );
+                }
+                Some(match enabled {
+                    Some(enabled) => {
+                        entry.get_mut().enabled = enabled;
+                        entry.get().clone()
+                    }
+                    None => entry.remove(),
+                })
+            }
+            dashmap::mapref::entry::Entry::Vacant(_) => None,
+        };
+        if changed.is_some() {
+            self.persist();
+        }
+        Ok(changed)
+    }
+
+    /// Replace handler-owned tools after checking the current binding identities.
+    /// All checks complete before this operation changes the registry.
+    pub fn swap_handler_tools(
+        &self,
+        expected: &[ToolEntry],
+        replacement: Vec<ToolEntry>,
+    ) -> Result<(), String> {
+        self.swap_handler_tools_with(expected, replacement, || Ok(()))
+    }
+
+    /// Run persistence after ownership validation and before registry mutation.
+    /// The callback must not call registry mutation methods.
+    pub fn swap_handler_tools_with(
+        &self,
+        expected: &[ToolEntry],
+        replacement: Vec<ToolEntry>,
+        before_commit: impl FnOnce() -> Result<(), String>,
+    ) -> Result<(), String> {
+        let _guard = self.lock_namespaces();
+        let expected: HashMap<_, _> = expected
+            .iter()
+            .cloned()
+            .map(|tool| self.normalize_handler_tool(tool))
+            .collect();
+        let next = self.prepare_handler_tools(replacement)?;
+        self.verify_handler_tools(&expected, &next)?;
+        before_commit()?;
+        for key in expected.keys() {
+            self.tools.remove(key);
+        }
+        for (key, tool) in next {
+            self.tools.insert(key, tool);
+        }
+        self.persist();
+        Ok(())
+    }
+
+    fn normalize_handler_tool(&self, mut tool: ToolEntry) -> (EntryKey, ToolEntry) {
+        let key = normalize_key(&mut tool.namespace, &tool.name);
+        if self.inject_request_id.load(Ordering::Relaxed) {
+            inject_request_id_arg(&mut tool.input_schema);
+        }
+        (key, tool)
+    }
+
+    fn prepare_handler_tools(
+        &self,
+        tools: Vec<ToolEntry>,
+    ) -> Result<HashMap<EntryKey, ToolEntry>, String> {
+        let mut next = HashMap::new();
+        for tool in tools {
+            let (key, tool) = self.normalize_handler_tool(tool);
+            self.validate_concrete_namespace(&key.0)?;
+            if tool.type_ != "wasm" || tool.forward_id.is_some() || tool.id.is_none() {
+                return Err(
+                    "handler tools require a binding id, type 'wasm', and no forwardId".to_owned(),
+                );
+            }
+            if next.insert(key, tool).is_some() {
+                return Err("duplicate handler identity".to_owned());
+            }
+        }
+        Ok(next)
+    }
+
+    fn verify_handler_tools(
+        &self,
+        expected: &HashMap<EntryKey, ToolEntry>,
+        next: &HashMap<EntryKey, ToolEntry>,
+    ) -> Result<(), String> {
+        for (key, prior) in expected {
+            match self.tools.get(key) {
+                Some(current)
+                    if prior.type_ != "wasm"
+                        || prior.id.is_none()
+                        || serde_json::to_value(current.value())
+                            .map_err(|error| error.to_string())?
+                            != serde_json::to_value(prior)
+                                .map_err(|error| error.to_string())? =>
+                {
+                    return Err(format!(
+                        "handler tool '{}/{}' changed outside its runtime",
+                        key.0, key.1
+                    ));
+                }
+                _ => {}
+            }
+        }
+        for key in next.keys() {
+            if self.tools.contains_key(key) && !expected.contains_key(key) {
+                return Err(format!(
+                    "tool '{}/{}' already belongs to another owner",
+                    key.0, key.1
+                ));
+            }
+        }
+        Ok(())
+    }
+
     pub fn enable_request_id_injection(&self) {
         self.inject_request_id.store(true, Ordering::Relaxed);
     }
@@ -716,6 +849,7 @@ impl ToolRegistry for InMemoryRegistry {
     }
 
     fn remove_tool(&self, namespace: &str, name: &str) -> bool {
+        let _guard = self.lock_namespaces();
         let removed = self.tools.remove(&entry_key(namespace, name)).is_some();
         if removed {
             self.persist();
@@ -724,6 +858,7 @@ impl ToolRegistry for InMemoryRegistry {
     }
 
     fn set_tool_enabled(&self, namespace: &str, name: &str, enabled: bool) -> bool {
+        let _guard = self.lock_namespaces();
         let Some(mut entry) = self.tools.get_mut(&entry_key(namespace, name)) else {
             return false;
         };
@@ -735,6 +870,7 @@ impl ToolRegistry for InMemoryRegistry {
     }
 
     fn remove_tools_owned_by(&self, forward_id: &str) -> usize {
+        let _guard = self.lock_namespaces();
         let mut count = 0;
         self.tools.retain(|_, entry| {
             let owned = entry.forward_id.as_deref() == Some(forward_id);
@@ -1083,6 +1219,7 @@ mod tests {
             description: "A test tool".to_owned(),
             uri: "camel:http://example.com".to_owned(),
             type_: "http".to_owned(),
+            mcp: Default::default(),
             input_schema: serde_json::json!({"type": "object"}),
             labels: HashMap::new(),
             id: None,
@@ -1181,6 +1318,125 @@ mod tests {
         assert!(!registry.set_tool_enabled(DEFAULT_NAMESPACE, "missing", false));
         assert!(!registry.set_resource_enabled(DEFAULT_NAMESPACE, "missing", false));
         assert!(!registry.set_prompt_enabled(DEFAULT_NAMESPACE, "missing", false));
+    }
+
+    fn handler_tool(binding: &str) -> ToolEntry {
+        ToolEntry {
+            type_: "wasm".to_owned(),
+            id: Some(binding.to_owned()),
+            ..sample_tool()
+        }
+    }
+
+    #[test]
+    fn generic_tool_mutation_preserves_handler_bindings() {
+        let registry = InMemoryRegistry::new();
+        let tool = handler_tool("managed-binding");
+        registry.register_tool(tool.clone());
+        for enabled in [Some(false), None] {
+            assert!(
+                registry
+                    .mutate_unmanaged_tool(DEFAULT_NAMESPACE, &tool.name, enabled)
+                    .is_err()
+            );
+        }
+        assert!(
+            registry
+                .get_tool(DEFAULT_NAMESPACE, &tool.name)
+                .is_some_and(|entry| entry.enabled && entry.id == tool.id)
+        );
+    }
+
+    #[test]
+    fn generic_tool_mutation_changes_unmanaged_entries() -> Result<(), String> {
+        let registry = InMemoryRegistry::new();
+        let tool = sample_tool();
+        registry.register_tool(tool.clone());
+        let disabled =
+            registry.mutate_unmanaged_tool(DEFAULT_NAMESPACE, &tool.name, Some(false))?;
+        assert!(disabled.is_some_and(|tool| !tool.enabled));
+        assert!(
+            registry
+                .mutate_unmanaged_tool(DEFAULT_NAMESPACE, &tool.name, None)?
+                .is_some()
+        );
+        assert!(registry.get_tool(DEFAULT_NAMESPACE, &tool.name).is_none());
+        assert!(
+            registry
+                .mutate_unmanaged_tool(DEFAULT_NAMESPACE, "absent", None)?
+                .is_none()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn handler_swap_keeps_current_binding_when_persistence_fails() -> Result<(), String> {
+        let registry = InMemoryRegistry::new();
+        registry.enable_request_id_injection();
+        let first = handler_tool("binding-1");
+        registry.swap_handler_tools(&[], vec![first.clone()])?;
+        let swap =
+            registry.swap_handler_tools_with(std::slice::from_ref(&first), Vec::new(), || {
+                Err("disk full".to_owned())
+            });
+        assert!(swap.is_err());
+        assert_eq!(
+            registry
+                .get_tool(DEFAULT_NAMESPACE, &first.name)
+                .and_then(|tool| tool.id),
+            first.id
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn handler_swap_rejects_stale_bindings_without_changes() -> Result<(), String> {
+        let registry = InMemoryRegistry::new();
+        registry.enable_request_id_injection();
+        let first = handler_tool("binding-1");
+        registry.swap_handler_tools(&[], vec![first.clone()])?;
+        let replacement = handler_tool("binding-2");
+        registry.swap_handler_tools(std::slice::from_ref(&first), vec![replacement.clone()])?;
+        assert!(
+            registry
+                .swap_handler_tools(std::slice::from_ref(&first), Vec::new())
+                .is_err()
+        );
+        assert_eq!(
+            registry
+                .get_tool(DEFAULT_NAMESPACE, &first.name)
+                .and_then(|tool| tool.id),
+            replacement.id
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn handler_swap_rejects_foreign_owners_without_changes() -> Result<(), String> {
+        let registry = InMemoryRegistry::new();
+        let replacement = handler_tool("binding-1");
+        registry.swap_handler_tools(&[], vec![replacement.clone()])?;
+        let mut foreign = owned_tool(&replacement.name, DEFAULT_NAMESPACE, "foreign");
+        foreign.type_ = "mcp-forward".to_owned();
+        registry.register_tool(foreign);
+        assert!(
+            registry
+                .swap_handler_tools(std::slice::from_ref(&replacement), Vec::new())
+                .is_err()
+        );
+        assert!(
+            registry
+                .swap_handler_tools(&[], vec![replacement.clone()])
+                .is_err()
+        );
+        assert_eq!(
+            registry
+                .get_tool(DEFAULT_NAMESPACE, &replacement.name)
+                .and_then(|tool| tool.forward_id)
+                .as_deref(),
+            Some("foreign")
+        );
+        Ok(())
     }
 
     fn owned_tool(name: &str, namespace: &str, forward_id: &str) -> ToolEntry {
@@ -1383,6 +1639,7 @@ mod tests {
             description: "test tool".to_owned(),
             uri: "test://uri".to_owned(),
             type_: "test".to_owned(),
+            mcp: Default::default(),
             input_schema: serde_json::json!({
                 "type": "object",
                 "properties": {
@@ -1418,6 +1675,7 @@ mod tests {
             description: "test tool".to_owned(),
             uri: "test://uri".to_owned(),
             type_: "test".to_owned(),
+            mcp: Default::default(),
             input_schema: serde_json::json!({
                 "type": "object",
                 "properties": {

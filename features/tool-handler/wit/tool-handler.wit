@@ -1,0 +1,62 @@
+/// Wanaku tool-handler contract. Breaking changes require a new major version.
+package wanaku:tool-handler@1.0.0;
+
+interface types {
+    /// A complete JSON document. The host validates JSON before dispatch.
+    type json = string;
+
+    /// Tool execution errors remain successful MCP results with isError=true.
+    /// This error represents a host, policy, transport, or protocol failure.
+    record host-error {
+        kind: string,
+        message: string,
+        code: option<s32>,
+    }
+
+    record request {
+        /// Concrete namespace that owns this handler.
+        namespace: string,
+        /// Original registered tool name.
+        name: string,
+        /// Complete arguments object. JSON types are preserved.
+        arguments: json,
+    }
+}
+
+/// Reads the authorized registry view. Definitions include original identities,
+/// schemas, annotations, and metadata. Namespace selection grants no authority.
+interface catalog {
+    use types.{json, host-error};
+    list-tools: func(namespace: string) -> result<json, host-error>;
+    get-tool: func(namespace: string, name: string) -> result<json, host-error>;
+    list-resources: func(namespace: string) -> result<json, host-error>;
+    list-resource-templates: func(namespace: string) -> result<json, host-error>;
+    list-prompts: func(namespace: string) -> result<json, host-error>;
+}
+
+/// Requests run through Wanaku governance. The host resolves endpoints and
+/// credentials. Guests cannot supply upstream URLs or authentication headers.
+interface mcp {
+    use types.{json, host-error};
+    call-tool: func(namespace: string, name: string, arguments: json)
+        -> result<json, host-error>;
+    read-resource: func(namespace: string, uri: string) -> result<json, host-error>;
+    get-prompt: func(namespace: string, name: string, arguments: json)
+        -> result<json, host-error>;
+}
+
+interface log {
+    info: func(message: string);
+    warn: func(message: string);
+    error: func(message: string);
+}
+
+world tool-handler {
+    import catalog;
+    import mcp;
+    import log;
+    use types.{request, json, host-error};
+    /// Return the full MCP CallToolResult, including all content blocks,
+    /// structuredContent, isError, and metadata. Do not return a JSON-RPC envelope.
+    export handle: func(request: request) -> result<json, host-error>;
+}

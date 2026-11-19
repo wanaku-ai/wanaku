@@ -53,10 +53,16 @@ export const useSimulationTargets = (namespace: string, method: string) => {
   const current = state.namespace === namespace && state.method === method;
   const targets = current
     ? (state.entries ?? [])
-        .map((entry) => ({
-          value: 'location' in entry ? entry.location : entry.name,
-          label: `${entry.name}${'location' in entry ? ` — ${entry.location}` : ''}${entry.enabled === false ? ' (disabled)' : ''}`,
-        }))
+        .map((entry) => {
+          const location =
+            method === 'resources/read' && 'location' in entry && typeof entry.location === 'string'
+              ? entry.location
+              : undefined;
+          return {
+            value: location ?? entry.name,
+            label: `${entry.name}${location !== undefined ? ` — ${location}` : ''}${entry.enabled === false ? ' (disabled)' : ''}`,
+          };
+        })
         .sort((a, b) => a.label.localeCompare(b.label))
     : [];
   return {

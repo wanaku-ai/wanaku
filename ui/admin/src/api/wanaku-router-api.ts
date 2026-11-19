@@ -35,7 +35,9 @@ import type {
   GetPolicyReplay200,
   GetPromptParams,
   GetResourceParams,
+  GetToolHandler200,
   GetToolParams,
+  HandlerDefinition,
   InstallPlugin200,
   InstallPluginRequest,
   ListActionPolicyRevisions200Item,
@@ -45,6 +47,7 @@ import type {
   ListEvaluators200Item,
   ListPluginCatalog200Item,
   ListPlugins200Item,
+  ListToolHandlers200Item,
   ManagementErrorResponse,
   MetricsSnapshot,
   NamespaceEntry,
@@ -2937,6 +2940,207 @@ export const enableResource = async (
   );
 };
 
+export type listToolHandlersResponse200 = {
+  data: ListToolHandlers200Item[];
+  status: 200;
+};
+
+export type listToolHandlersResponse503 = {
+  data: ManagementErrorResponse;
+  status: 503;
+};
+
+export type listToolHandlersResponseSuccess = listToolHandlersResponse200 & {
+  headers: Headers;
+};
+export type listToolHandlersResponseError = listToolHandlersResponse503 & {
+  headers: Headers;
+};
+
+export type listToolHandlersResponse =
+  | listToolHandlersResponseSuccess
+  | listToolHandlersResponseError;
+
+export const getListToolHandlersUrl = () => {
+  return `/api/v1/tool-handlers`;
+};
+
+export const listToolHandlers = async (
+  options?: Parameters<typeof customFetch>[1],
+): Promise<listToolHandlersResponse> => {
+  return customFetch<listToolHandlersResponse>(getListToolHandlersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export type replaceToolHandlersResponse200 = {
+  data: unknown;
+  status: 200;
+};
+
+export type replaceToolHandlersResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type replaceToolHandlersResponse500 = {
+  data: ManagementErrorResponse;
+  status: 500;
+};
+
+export type replaceToolHandlersResponseSuccess =
+  replaceToolHandlersResponse200 & {
+    headers: Headers;
+  };
+export type replaceToolHandlersResponseError = (
+  | replaceToolHandlersResponse400
+  | replaceToolHandlersResponse500
+) & {
+  headers: Headers;
+};
+
+export type replaceToolHandlersResponse =
+  | replaceToolHandlersResponseSuccess
+  | replaceToolHandlersResponseError;
+
+export const getReplaceToolHandlersUrl = () => {
+  return `/api/v1/tool-handlers`;
+};
+
+/**
+ * Validate and compile all components before atomically replacing the handler configuration. An empty array removes all handlers.
+ */
+export const replaceToolHandlers = async (
+  handlerDefinition: HandlerDefinition[],
+  options?: Parameters<typeof customFetch>[1],
+): Promise<replaceToolHandlersResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit["headers"]>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<
+      string | readonly string[] | undefined
+    >(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<replaceToolHandlersResponse>(getReplaceToolHandlersUrl(), {
+    ...options,
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getHeaders(options?.headers),
+    },
+    body: JSON.stringify(handlerDefinition),
+  });
+};
+
+export type getToolHandlerResponse200 = {
+  data: GetToolHandler200;
+  status: 200;
+};
+
+export type getToolHandlerResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type getToolHandlerResponse503 = {
+  data: ManagementErrorResponse;
+  status: 503;
+};
+
+export type getToolHandlerResponseSuccess = getToolHandlerResponse200 & {
+  headers: Headers;
+};
+export type getToolHandlerResponseError = (
+  | getToolHandlerResponse404
+  | getToolHandlerResponse503
+) & {
+  headers: Headers;
+};
+
+export type getToolHandlerResponse =
+  | getToolHandlerResponseSuccess
+  | getToolHandlerResponseError;
+
+export const getGetToolHandlerUrl = (namespace: string, name: string) => {
+  return `/api/v1/tool-handlers/${namespace}/${name}`;
+};
+
+export const getToolHandler = async (
+  namespace: string,
+  name: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<getToolHandlerResponse> => {
+  return customFetch<getToolHandlerResponse>(
+    getGetToolHandlerUrl(namespace, name),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export type deleteToolHandlerResponse200 = {
+  data: unknown;
+  status: 200;
+};
+
+export type deleteToolHandlerResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type deleteToolHandlerResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type deleteToolHandlerResponseSuccess = deleteToolHandlerResponse200 & {
+  headers: Headers;
+};
+export type deleteToolHandlerResponseError = (
+  | deleteToolHandlerResponse404
+  | deleteToolHandlerResponse409
+) & {
+  headers: Headers;
+};
+
+export type deleteToolHandlerResponse =
+  | deleteToolHandlerResponseSuccess
+  | deleteToolHandlerResponseError;
+
+export const getDeleteToolHandlerUrl = (namespace: string, name: string) => {
+  return `/api/v1/tool-handlers/${namespace}/${name}`;
+};
+
+export const deleteToolHandler = async (
+  namespace: string,
+  name: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<deleteToolHandlerResponse> => {
+  return customFetch<deleteToolHandlerResponse>(
+    getDeleteToolHandlerUrl(namespace, name),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
 export type listToolsResponse200 = {
   data: ToolEntry[];
   status: 200;
@@ -3016,10 +3220,18 @@ export type deleteToolResponse404 = {
   status: 404;
 };
 
+export type deleteToolResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
 export type deleteToolResponseSuccess = deleteToolResponse200 & {
   headers: Headers;
 };
-export type deleteToolResponseError = deleteToolResponse404 & {
+export type deleteToolResponseError = (
+  | deleteToolResponse404
+  | deleteToolResponse409
+) & {
   headers: Headers;
 };
 
@@ -3064,10 +3276,18 @@ export type disableToolResponse404 = {
   status: 404;
 };
 
+export type disableToolResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
 export type disableToolResponseSuccess = disableToolResponse200 & {
   headers: Headers;
 };
-export type disableToolResponseError = disableToolResponse404 & {
+export type disableToolResponseError = (
+  | disableToolResponse404
+  | disableToolResponse409
+) & {
   headers: Headers;
 };
 
@@ -3112,10 +3332,18 @@ export type enableToolResponse404 = {
   status: 404;
 };
 
+export type enableToolResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
 export type enableToolResponseSuccess = enableToolResponse200 & {
   headers: Headers;
 };
-export type enableToolResponseError = enableToolResponse404 & {
+export type enableToolResponseError = (
+  | enableToolResponse404
+  | enableToolResponse409
+) & {
   headers: Headers;
 };
 

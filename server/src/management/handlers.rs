@@ -45,19 +45,16 @@ pub(super) fn handle_tool_set_enabled(
     name: &str,
     enabled: bool,
 ) -> Response<Vec<u8>> {
-    match registry
-        .set_tool_enabled(namespace, name, enabled)
-        .then(|| registry.get_tool(namespace, name))
-        .flatten()
-    {
-        Some(entry) => {
+    match registry.mutate_unmanaged_tool(namespace, name, Some(enabled)) {
+        Ok(Some(entry)) => {
             info!(tool = %name, namespace = %namespace, enabled, "changed tool state via management API");
             json_ok(&serde_json::json!(entry))
         }
-        None => json_err(
+        Ok(None) => json_err(
             StatusCode::NOT_FOUND,
             &format!("tool not found: {name} in namespace {namespace}"),
         ),
+        Err(error) => json_err(StatusCode::CONFLICT, &error),
     }
 }
 
@@ -66,14 +63,16 @@ pub(super) fn handle_tool_delete(
     namespace: &str,
     name: &str,
 ) -> Response<Vec<u8>> {
-    if registry.remove_tool(namespace, name) {
-        info!(tool = %name, namespace = %namespace, "removed tool via management API");
-        json_ok(&serde_json::json!({"removed": name}))
-    } else {
-        json_err(
+    match registry.mutate_unmanaged_tool(namespace, name, None) {
+        Ok(Some(_)) => {
+            info!(tool = %name, namespace = %namespace, "removed tool via management API");
+            json_ok(&serde_json::json!({"removed": name}))
+        }
+        Ok(None) => json_err(
             StatusCode::NOT_FOUND,
             &format!("tool not found: {name} in namespace {namespace}"),
-        )
+        ),
+        Err(error) => json_err(StatusCode::CONFLICT, &error),
     }
 }
 
@@ -1033,12 +1032,20 @@ fn tool_entries(forward: &ForwardEntry, tools: &[serde_json::Value]) -> Vec<Tool
                 warn!(forward = %forward.name, "skipping forwarded tool with missing or empty name");
                 return None;
             };
+            let mcp = match wanaku_types::registry::ToolDefinitionMetadata::from_mcp_definition(tool_json) {
+                Ok(metadata) => metadata,
+                Err(error) => {
+                    warn!(tool = %name, forward = %forward.name, %error, "skipping forwarded tool with invalid definition metadata");
+                    return None;
+                }
+            };
             info!(tool = %name, forward = %forward.name, "discovered forwarded tool");
             Some(ToolEntry {
                 name: name.to_owned(),
                 description: optional_str(tool_json, "description").to_owned(),
                 uri: forward.address.clone(),
                 type_: MCP_FORWARD_TYPE.to_owned(),
+                mcp,
                 input_schema: tool_json
                     .get("inputSchema")
                     .cloned()
@@ -1264,6 +1271,49 @@ mod forward_helpers_tests {
         assert!(stored.available);
         assert_eq!(stored.labels.get("team").map(String::as_str), Some("a"));
         assert_eq!(tool_names(&registry), vec!["echo".to_owned()]);
+    }
+
+    #[test]
+    fn discovery_preserves_complete_tool_definition_without_trusting_ownership() {
+        let forward = forward_at("remote", "http://remote:8080/mcp");
+        let definition = serde_json::json!({
+            "name": "echo",
+            "description": "Echo a value",
+            "inputSchema": {"type": "object"},
+            "outputSchema": {"type": "object", "properties": {"value": {"type": "boolean"}}},
+            "annotations": {"readOnlyHint": true},
+            "title": "Echo",
+            "_meta": {"vendor": {"version": 2}},
+            "icons": [{"src": "https://example.test/icon.png"}],
+            "namespace": "foreign",
+            "forwardId": "foreign-forward"
+        });
+        let tools = tool_entries(
+            &forward,
+            &[
+                definition.clone(),
+                serde_json::json!({"name": "bad", "title": []}),
+            ],
+        );
+        assert_eq!(tools.len(), 1);
+        let tool = &tools[0];
+        assert_eq!(tool.namespace.as_deref(), Some("default"));
+        assert_eq!(tool.forward_id.as_deref(), Some("remote"));
+        let exposed = tool.mcp_definition();
+        for key in [
+            "name",
+            "description",
+            "inputSchema",
+            "outputSchema",
+            "annotations",
+            "title",
+            "_meta",
+            "icons",
+        ] {
+            assert_eq!(exposed[key], definition[key], "lost MCP field: {key}");
+        }
+        assert!(exposed.get("namespace").is_none());
+        assert!(exposed.get("forwardId").is_none());
     }
 
     #[test]
@@ -1809,6 +1859,26 @@ mod tests {
         CredentialBroker::new(wanaku_types::credentials::ResolverRegistry::new())
     }
 
+    #[test]
+    fn generic_tool_mutations_reject_runtime_owned_handlers() {
+        let registry = InMemoryRegistry::new();
+        let mut tool = test_tool("handler");
+        tool.type_ = "wasm".to_owned();
+        tool.id = Some("binding-version".to_owned());
+        registry.register_tool(tool.clone());
+        for response in [
+            super::handle_tool_set_enabled(&registry, "default", "handler", false),
+            super::handle_tool_set_enabled(&registry, "default", "handler", true),
+            handle_tool_delete(&registry, "default", "handler"),
+        ] {
+            assert_eq!(response.status(), http::StatusCode::CONFLICT);
+            assert!(String::from_utf8_lossy(response.body()).contains("tool-handlers"));
+        }
+        let stored = registry.get_tool("default", "handler").unwrap();
+        assert!(stored.enabled);
+        assert_eq!(stored.id, tool.id);
+    }
+
     fn parse_body(resp: &Response<Vec<u8>>) -> serde_json::Value {
         serde_json::from_slice(resp.body()).unwrap_or_default()
     }
@@ -1824,6 +1894,7 @@ mod tests {
             description: String::new(),
             uri: "u".to_owned(),
             type_: "x".to_owned(),
+            mcp: Default::default(),
             input_schema: serde_json::json!({"type": "object"}),
             labels: HashMap::new(),
             id: None,

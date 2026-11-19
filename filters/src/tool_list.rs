@@ -46,13 +46,7 @@ impl ToolListFilter {
         tracing::debug!(namespace = %namespace, tool_count = tools.len(), "tools found in namespace");
         let mcp_tools: Vec<serde_json::Value> = tools
             .iter()
-            .map(|t| {
-                serde_json::json!({
-                    "name": t.name,
-                    "description": t.description,
-                    "inputSchema": t.input_schema,
-                })
-            })
+            .map(wanaku_types::registry::ToolEntry::mcp_definition)
             .collect();
 
         let response = serde_json::json!({

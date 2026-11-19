@@ -1,0 +1,32 @@
+[package]
+name = "wanaku-feature-tool-handler"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+openapi = ["dep:utoipa", "wanaku-types/openapi"]
+
+[dependencies]
+async-trait.workspace = true
+http.workspace = true
+jsonschema = { version = "0.61", default-features = false }
+praxis-filter.workspace = true
+rand.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+tokio = { workspace = true, features = ["sync", "time"] }
+tracing.workspace = true
+utoipa = { version = "6.0", optional = true }
+wasmtime = { version = "49", features = ["component-model"] }
+wasmtime-wasi = "49"
+wanaku-infra.workspace = true
+wanaku-types.workspace = true
+
+[dev-dependencies]
+tempfile = "3"

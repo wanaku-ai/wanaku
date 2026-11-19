@@ -47,6 +47,7 @@ Wanaku loads these top-level sections from `wanaku.yaml`:
 - `governance` — global governance posture and namespace overrides
 - `audit` — audit retention, payload capture, and redaction. See [Governance audit trail](../govern/audit-trail.md)
 - `plugins` — plugin service mappings owned by the plugins feature
+- `tool_handlers` — WASM tool definitions, component paths, capability grants, and execution limits. See [WASM tool handlers](../extend/wasm-tool-handlers.md).
 
 Define namespace memberships in the top-level `namespaces` section. A forward sets its concrete namespace with its own `namespace` field. Namespace governance overrides go under `governance.namespaces`.
 
@@ -68,6 +69,8 @@ fatal: unknown keys in wanaku configuration: evaluator, forwards.0.credentials_b
 
 The server checks the keys before it loads the sections. The feature that owns a section validates the values in that section.
 
+WASM handler definitions retain additional MCP tool metadata fields inside `tool`. The handler configuration and its `limits` reject unknown fields. See [WASM tool handlers](../extend/wasm-tool-handlers.md) for the complete format.
+
 The [Governance Posture](../govern/governance-posture.md) model defines fail-safe defaults and namespace overrides. Wanaku validates the section during startup. Invalid governance configuration stops startup.
 
 Wanaku discovers tools, resources, and prompts from the configured forwards.
@@ -78,7 +81,7 @@ All keys in `wanaku.yaml` use `snake_case`, for example `llm_connections`, `api_
 
 The `forwards` and `bindings` entries also accept `camelCase` keys, for example `credentialBindings`, `forwardId`, `secretRefs`, `allowedPurposes`, `governedItems`, and `maxTtlSeconds`. These keys are aliases for compatibility with the management API, which uses `camelCase` field names in its JSON bodies. The two spellings have the same effect. Use one spelling in each entry.
 
-The other sections accept only `snake_case` keys. For example, the server does not read `apiKey` in an `llm_connections` entry.
+WASM handler configuration uses `snake_case`. Its nested tool definition also accepts the existing management API names `inputSchema` and `outputSchema`, with `input_schema` and `output_schema` aliases. The other sections accept only `snake_case` keys. For example, the server does not read `apiKey` in an `llm_connections` entry.
 
 The `evaluators` section and the connection sections (`llm_connections`, `typesafe_system_one_connections`, and `opa_connections`) have their own reference pages. See [Evaluators](../govern/evaluators.md) for the evaluator definitions. See [Evaluator engines](../govern/evaluator-engines.md) for the connection keys and the `env:` references.
 

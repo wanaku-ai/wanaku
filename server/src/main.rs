@@ -47,6 +47,7 @@ fn main() {
     // and the management and reconnect services.
     let resources = AppResources {
         persistence: AppPersistence {
+            tool_handlers: wanaku_types::config::ENV.persist.as_ref().map(|persist| persist.dir.join("tool-handlers.json")),
             registry: FilePersistence::from_config(),
             audit: wanaku_feature_audit::persistence::FileAuditPersistence::from_config(),
             action_policy:

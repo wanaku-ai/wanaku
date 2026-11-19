@@ -177,7 +177,15 @@ pub fn resolve_pipelines(
         pipeline.set_allow_private_upstreams(config.insecure_options.allow_private_upstreams);
 
         info!(listener = %listener.name, "built wanaku pipeline");
-        pipelines.insert(listener.name.clone(), Arc::new(pipeline));
+        let registry = deps.wanaku_registry.clone();
+        let pipeline = Arc::new_cyclic(move |weak| {
+            pipeline.add_pipeline_extension(Box::new(crate::wasm::HostExtension {
+                pipeline: weak.clone(),
+                registry,
+            }));
+            pipeline
+        });
+        pipelines.insert(listener.name.clone(), pipeline);
     }
 
     Ok(ListenerPipelines::new(pipelines))

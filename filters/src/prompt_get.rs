@@ -8,6 +8,7 @@ use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::UseScope;
 use wanaku_types::registry::{ForwardRegistry, PromptRegistry};
+use wanaku_types::wasm::HostErrorKind;
 
 crate::body_filter_boilerplate!(PromptGetFilter, "wanaku_prompt_get");
 
@@ -78,9 +79,10 @@ impl PromptGetFilter {
 
         let Some(prompt) = registry.get_prompt_in_namespace(namespace, prompt_name) else {
             warn!(prompt = %prompt_name, "prompt not found in registry");
-            return Ok(crate::response::json_rpc_error(
+            return Ok(crate::response::json_rpc_host_error(
                 &parsed.id,
                 crate::response::JSONRPC_INVALID_PARAMS,
+                HostErrorKind::NotFound,
                 &format!("prompt not found: {prompt_name}"),
             ));
         };
@@ -92,9 +94,10 @@ impl PromptGetFilter {
             // provenance. The address can change while the forwardId stays stable.
             let Some(forward) = registry.get_forward(forward_id) else {
                 warn!(prompt = %prompt_name, forward_id = %forward_id, "forward not found for prompt provenance");
-                return Ok(crate::response::json_rpc_error(
+                return Ok(crate::response::json_rpc_host_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
+                    HostErrorKind::Unavailable,
                     &format!("forward not found for prompt: {prompt_name}"),
                 ));
             };
@@ -102,9 +105,10 @@ impl PromptGetFilter {
             // but it is unavailable: refuse the call until discovery succeeds.
             if !forward.available {
                 warn!(prompt = %prompt_name, forward_id = %forward_id, "forward unavailable for prompt provenance");
-                return Ok(crate::response::json_rpc_error(
+                return Ok(crate::response::json_rpc_host_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
+                    HostErrorKind::Unavailable,
                     &format!("forward unavailable for prompt: {prompt_name}"),
                 ));
             }
@@ -238,9 +242,10 @@ impl PromptGetFilter {
                 // error text before it reaches the logs or the agent.
                 let message = redactor.redact(&e.to_string());
                 warn!(prompt = %prompt_name, error = %message, "MCP forward prompt get failed");
-                Ok(crate::response::json_rpc_error(
+                Ok(crate::response::json_rpc_host_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
+                    e.host_kind(),
                     &format!("forwarded prompt get failed: {message}"),
                 ))
             }

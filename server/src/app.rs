@@ -42,6 +42,8 @@ pub struct AppSettings<'a> {
 /// Optional persistence backends. `None` keeps the state in memory only.
 #[derive(Default)]
 pub struct AppPersistence {
+    /// Local WASM tool-handler binding snapshot.
+    pub tool_handlers: Option<PathBuf>,
     /// Registry persistence (tools, resources, prompts, namespaces, forwards).
     pub registry: Option<Arc<dyn PersistenceBackend>>,
     /// Audit event persistence.
@@ -123,8 +125,9 @@ impl App {
             FeaturePersistence {
                 action_policy: persistence.action_policy,
                 evaluator: persistence.evaluator,
+                tool_handlers: persistence.tool_handlers,
             },
-        );
+        )?;
 
         load_config(
             settings.wanaku_config,
@@ -193,6 +196,7 @@ fn build_registry(backend: Option<Arc<dyn PersistenceBackend>>) -> InMemoryRegis
 }
 
 struct FeaturePersistence {
+    tool_handlers: Option<PathBuf>,
     action_policy:
         Option<Arc<dyn wanaku_feature_action_policy::revision_persistence::RevisionPersistence>>,
     evaluator: Option<Arc<dyn wanaku_feature_evaluator::revision_persistence::RevisionPersistence>>,
@@ -208,7 +212,7 @@ fn build_features(
     settings: &AppSettings<'_>,
     registry: &InMemoryRegistry,
     persistence: FeaturePersistence,
-) -> Vec<Box<dyn Feature>> {
+) -> Result<Vec<Box<dyn Feature>>, String> {
     let action_policy = build_action_policy(persistence.action_policy);
     let evaluator = build_evaluator(
         metrics_store,
@@ -226,7 +230,13 @@ fn build_features(
         },
     );
 
-    vec![
+    let handlers = wanaku_feature_tool_handler::ToolHandlerFeature::new(registry.clone());
+    let handlers = match persistence.tool_handlers {
+        Some(path) => handlers.with_persistence(path)?,
+        None => handlers,
+    };
+
+    Ok(vec![
         Box::new(audit),
         Box::new(wanaku_feature_metrics::MetricsFeature::new(
             metrics_store.clone(),
@@ -236,10 +246,11 @@ fn build_features(
         Box::new(action_policy),
         Box::new(evaluator),
         Box::new(simulation),
+        Box::new(handlers),
         Box::new(wanaku_feature_plugins::PluginsFeature::new(
             settings.plugins_dir.clone(),
         )),
-    ]
+    ])
 }
 
 fn build_audit(

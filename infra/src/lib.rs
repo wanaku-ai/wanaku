@@ -10,3 +10,5 @@ pub mod opa;
 pub mod persistence;
 pub mod registry;
 pub mod typesafe;
+
+pub mod wasm;

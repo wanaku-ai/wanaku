@@ -9,6 +9,7 @@ members = [
     "features/metrics",
     "features/plugins",
     "features/simulation",
+    "features/tool-handler",
     "filters",
     "infra",
     "server",
@@ -19,6 +20,7 @@ exclude = [
     "actions/assembly-filter",
     "actions/opa-allow",
     "actions/safety-review",
+    "actions/tool-proxy",
 ]
 
 [workspace.package]
@@ -65,6 +67,7 @@ wanaku-feature-mcp-metadata = { path = "features/mcp-metadata" }
 wanaku-feature-metrics = { path = "features/metrics" }
 wanaku-feature-plugins = { path = "features/plugins" }
 wanaku-feature-simulation = { path = "features/simulation" }
+wanaku-feature-tool-handler = { path = "features/tool-handler" }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

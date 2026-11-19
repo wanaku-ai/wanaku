@@ -107,44 +107,7 @@ impl WasiView for HostState {
     }
 }
 
-/// Tick engine epochs only while a bounded invocation is active.
-/// This evaluator runs synchronously, including outside a Tokio runtime. A
-/// scoped, fallible OS worker must advance epochs while the caller executes
-/// guest code. An async timer on that caller's runtime could be blocked by it.
-struct EpochTicker {
-    stop: std::sync::mpsc::Sender<()>,
-    worker: Option<std::thread::JoinHandle<()>>,
-}
-
-impl EpochTicker {
-    fn start(engine: Engine) -> Result<Self, EvaluatorExecutionError> {
-        let (stop, receiver) = std::sync::mpsc::channel();
-        let worker = std::thread::Builder::new()
-            .name("wasm-processor-budget".to_owned())
-            .spawn(move || {
-                while matches!(
-                    receiver.recv_timeout(std::time::Duration::from_millis(10)),
-                    Err(std::sync::mpsc::RecvTimeoutError::Timeout)
-                ) {
-                    engine.increment_epoch();
-                }
-            })
-            .map_err(|_| EvaluatorExecutionError::Instantiation)?;
-        Ok(Self {
-            stop,
-            worker: Some(worker),
-        })
-    }
-}
-
-impl Drop for EpochTicker {
-    fn drop(&mut self) {
-        let _ = self.stop.send(());
-        if let Some(worker) = self.worker.take() {
-            let _ = worker.join();
-        }
-    }
-}
+use wanaku_infra::wasm::EpochTicker;
 
 /// A pre-compiled WASM evaluator module ready for instantiation.
 pub struct CompiledEvaluator {
@@ -213,7 +176,12 @@ impl CompiledEvaluator {
                     }
                 });
                 store.set_epoch_deadline(1);
-                EpochTicker::start(self.engine.clone()).map(Some)
+                {
+                    let engine = self.engine.clone();
+                    EpochTicker::start(move || engine.increment_epoch())
+                        .map(Some)
+                        .map_err(|_| EvaluatorExecutionError::Instantiation)
+                }
             }
             None => {
                 store.set_epoch_deadline(u64::MAX / 2);

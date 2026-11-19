@@ -2660,6 +2660,202 @@
         }
       }
     },
+    "/api/v1/tool-handlers": {
+      "get": {
+        "tags": [
+          "Tool handlers"
+        ],
+        "operationId": "list_tool_handlers",
+        "responses": {
+          "200": {
+            "description": "Registered WASM tool handlers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Vec_HandlerDefinition"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Handler runtime unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Tool handlers"
+        ],
+        "description": "Validate and compile all components before atomically replacing the handler configuration. An empty array removes all handlers.",
+        "operationId": "replace_tool_handlers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/HandlerDefinition"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Handler configuration activated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Value"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid configuration or component; active configuration retained",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Handler activation task failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tool-handlers/{namespace}/{name}": {
+      "get": {
+        "tags": [
+          "Tool handlers"
+        ],
+        "operationId": "get_tool_handler",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Handler definition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_HandlerDefinition"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Handler not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Handler runtime unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tool handlers"
+        ],
+        "operationId": "delete_tool_handler",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Handler removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Value"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Handler not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Handler removal failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tools": {
       "get": {
         "tags": [
@@ -2756,6 +2952,16 @@
           },
           "404": {
             "description": "Tool not found"
+          },
+          "409": {
+            "description": "WASM tools must use the tool-handler lifecycle API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2799,6 +3005,16 @@
           },
           "404": {
             "description": "Tool not found"
+          },
+          "409": {
+            "description": "WASM tools must use the tool-handler lifecycle API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2842,6 +3058,16 @@
           },
           "404": {
             "description": "Tool not found"
+          },
+          "409": {
+            "description": "WASM tools must use the tool-handler lifecycle API",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4055,6 +4281,62 @@
           "on_failure": {
             "$ref": "#/components/schemas/FailureBehavior",
             "default": "deny"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HandlerDefinition": {
+        "type": "object",
+        "description": "A concrete tool definition and the WASM component that implements it.",
+        "required": [
+          "tool",
+          "path"
+        ],
+        "properties": {
+          "allowed_namespaces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Explicit concrete namespace grants. Empty means no MCP host access."
+          },
+          "limits": {
+            "$ref": "#/components/schemas/HandlerLimits"
+          },
+          "path": {
+            "type": "string"
+          },
+          "tool": {
+            "$ref": "#/components/schemas/ToolEntry"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HandlerLimits": {
+        "type": "object",
+        "description": "Per-invocation limits. Host-call waiting shares the execution deadline.",
+        "properties": {
+          "fuel": {
+            "type": "integer",
+            "format": "int64",
+            "default": 10000000,
+            "minimum": 0
+          },
+          "max_concurrent": {
+            "type": "integer",
+            "default": 8,
+            "minimum": 0
+          },
+          "memory_bytes": {
+            "type": "integer",
+            "default": 67108864,
+            "minimum": 0
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "format": "int64",
+            "default": 1000,
+            "minimum": 0
           }
         },
         "additionalProperties": false
@@ -5819,62 +6101,85 @@
           "agent"
         ]
       },
-      "ToolEntry": {
+      "ToolDefinitionMetadata": {
         "type": "object",
-        "required": [
-          "name",
-          "description",
-          "uri",
-          "type",
-          "inputSchema"
-        ],
+        "description": "MCP definition fields retained independently of Wanaku routing metadata.",
         "properties": {
-          "description": {
-            "type": "string"
-          },
-          "enabled": {
-            "type": "boolean",
-            "description": "Whether MCP clients can list and invoke this entry. The management API\nlists disabled entries; MCP calls do not. Forward-sourced entries are\ndisabled instead of deleted, because the next discovery restores them."
-          },
-          "forwardId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Stable identity of the forward that owns this discovered tool.\n\nThe forward name is immutable and serves as the `forwardId`. Routing\nresolves the current upstream address from this identifier at invocation\ntime. The upstream address is never used as forward identity."
-          },
-          "id": {
+          "_meta": {},
+          "annotations": {},
+          "outputSchema": {},
+          "title": {
             "type": [
               "string",
               "null"
             ]
-          },
-          "inputSchema": {},
-          "labels": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "propertyNames": {
-              "type": "string"
-            }
-          },
-          "name": {
-            "type": "string"
-          },
-          "namespace": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "type": {
-            "type": "string"
-          },
-          "uri": {
-            "type": "string"
           }
-        }
+        },
+        "additionalProperties": {}
+      },
+      "ToolEntry": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ToolDefinitionMetadata"
+          },
+          {
+            "type": "object",
+            "required": [
+              "name",
+              "description",
+              "uri",
+              "type",
+              "inputSchema"
+            ],
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether MCP clients can list and invoke this entry. The management API\nlists disabled entries; MCP calls do not. Forward-sourced entries are\ndisabled instead of deleted, because the next discovery restores them."
+              },
+              "forwardId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Stable identity of the forward that owns this discovered tool.\n\nThe forward name is immutable and serves as the `forwardId`. Routing\nresolves the current upstream address from this identifier at invocation\ntime. The upstream address is never used as forward identity."
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "inputSchema": {},
+              "labels": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "propertyNames": {
+                  "type": "string"
+                }
+              },
+              "name": {
+                "type": "string"
+              },
+              "namespace": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "type": {
+                "type": "string"
+              },
+              "uri": {
+                "type": "string"
+              }
+            }
+          }
+        ]
       },
       "TriggerDef": {
         "type": "object",
@@ -6399,6 +6704,44 @@
           }
         }
       },
+      "WanakuResponse_HandlerDefinition": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "A concrete tool definition and the WASM component that implements it.",
+            "required": [
+              "tool",
+              "path"
+            ],
+            "properties": {
+              "allowed_namespaces": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Explicit concrete namespace grants. Empty means no MCP host access."
+              },
+              "limits": {
+                "$ref": "#/components/schemas/HandlerLimits"
+              },
+              "path": {
+                "type": "string"
+              },
+              "tool": {
+                "$ref": "#/components/schemas/ToolEntry"
+              }
+            },
+            "additionalProperties": false
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "WanakuResponse_InstallPluginResponse": {
         "type": "object",
         "properties": {
@@ -6864,6 +7207,47 @@
                 },
                 "trigger": {
                   "$ref": "#/components/schemas/TriggerDef"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_Vec_HandlerDefinition": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A concrete tool definition and the WASM component that implements it.",
+              "required": [
+                "tool",
+                "path"
+              ],
+              "properties": {
+                "allowed_namespaces": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Explicit concrete namespace grants. Empty means no MCP host access."
+                },
+                "limits": {
+                  "$ref": "#/components/schemas/HandlerLimits"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "tool": {
+                  "$ref": "#/components/schemas/ToolEntry"
                 }
               },
               "additionalProperties": false

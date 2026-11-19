@@ -136,7 +136,7 @@ pub mod testing {
             address: &str,
             resource_uri: &str,
             headers: HashMap<HeaderName, HeaderValue>,
-        ) -> Result<Vec<Value>, McpClientError> {
+        ) -> Result<Value, McpClientError> {
             let result = self.record(Invocation {
                 operation: crate::RESOURCES_READ,
                 address: address.to_owned(),
@@ -144,7 +144,7 @@ pub mod testing {
                 arguments: None,
                 headers,
             })?;
-            Ok(vec![result])
+            Ok(serde_json::json!({"contents": [result]}))
         }
 
         async fn get_prompt(

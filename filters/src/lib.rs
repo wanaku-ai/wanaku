@@ -94,6 +94,7 @@ pub mod resource_read;
 pub mod response;
 pub mod tool_call;
 pub mod tool_list;
+pub mod wasm;
 
 pub use mcp_id::McpIdFilter;
 pub use mcp_init::McpInitFilter;

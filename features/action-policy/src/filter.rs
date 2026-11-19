@@ -147,6 +147,10 @@ fn evaluate_snapshot_in_scope(
                 .unwrap_or_default(),
             namespace,
             concrete_namespace: ctx.get_metadata(wanaku_types::NAMESPACE_METADATA_KEY),
+            selected_tool: ctx
+                .extensions
+                .get::<wanaku_types::wasm::ResolvedTool>()
+                .map(|selected| &selected.0),
             body,
             policy: active.policy(),
             posture,
@@ -178,6 +182,7 @@ struct RequestEvaluation<'a> {
     id: &'a serde_json::Value,
     agent: Option<&'a str>,
     concrete_namespace: Option<&'a str>,
+    selected_tool: Option<&'a wanaku_types::registry::ToolEntry>,
 }
 
 struct DecisionAuditContext<'a> {
@@ -190,6 +195,7 @@ struct DecisionAuditContext<'a> {
     policy_revision: Option<String>,
     virtual_namespace: Option<&'a str>,
     concrete_namespace: Option<&'a str>,
+    invocation: Option<&'a wanaku_types::wasm::InvocationContext>,
 }
 
 impl<'a> DecisionAuditContext<'a> {
@@ -211,6 +217,9 @@ impl<'a> DecisionAuditContext<'a> {
             policy_revision: policy_revision.map(|revision| revision.to_string()),
             virtual_namespace: ctx.get_metadata(VIRTUAL_NAMESPACE_METADATA_KEY),
             concrete_namespace: ctx.get_metadata(wanaku_types::NAMESPACE_METADATA_KEY),
+            invocation: ctx
+                .extensions
+                .get::<wanaku_types::wasm::InvocationContext>(),
         })
     }
 }
@@ -277,6 +286,10 @@ fn scoped_action_context(
 ) -> Result<ActionContext, RequestViewError> {
     let concrete = input.concrete_namespace.unwrap_or(input.namespace);
     let mut context = action_context(input.method, concrete, view, input.registry)?;
+    match (input.method, input.selected_tool) {
+        (TOOLS_CALL, Some(tool)) => context = context.with_labels(to_labels(&tool.labels)),
+        _ => {}
+    }
     if let Some(agent) = input
         .agent
         .filter(|_| crate::a2a::is_supported_method(input.method))
@@ -476,6 +489,15 @@ fn record_event(
     mut event: AuditEvent,
 ) {
     event.namespace = namespace.map(str::to_owned);
+    if let Some(invocation) = audit
+        .invocation
+        .filter(|context| !context.ancestry().is_empty())
+    {
+        event.attributes.insert(
+            "handler_ancestry".to_owned(),
+            serde_json::json!(invocation.ancestry()),
+        );
+    }
     if let Some(virtual_namespace) = audit.virtual_namespace {
         event.attributes.insert(
             "virtual_namespace".to_owned(),
@@ -781,6 +803,38 @@ mod tests {
     }
 
     #[test]
+    fn policy_uses_the_tool_definition_selected_before_replacement() {
+        let registry = InMemoryRegistry::new();
+        let selected: ToolEntry = serde_json::from_value(serde_json::json!({
+            "name":"delete", "description":"", "uri":"", "type":"wasm",
+            "namespace":"default", "inputSchema":{}, "labels":{"risk":"high"}
+        }))
+        .unwrap();
+        let mut replacement = selected.clone();
+        replacement.labels.clear();
+        registry.register_tool(replacement);
+        let policy = compile_policy(&serde_json::json!({
+            "id":"deny-risk", "effect":"deny",
+            "selectors":{"operation":TOOLS_CALL,"labels":{"risk":"high"}}
+        }));
+        let posture = GovernancePosture::default();
+        let body = request(TOOLS_CALL, &serde_json::json!({"name":"delete"}));
+        let action = evaluate_request(RequestEvaluation {
+            method: TOOLS_CALL,
+            namespace: "default",
+            concrete_namespace: Some("default"),
+            body: Some(&body),
+            policy: &policy,
+            posture: &posture,
+            registry: &registry,
+            id: &serde_json::json!(7),
+            agent: None,
+            selected_tool: Some(&selected),
+        });
+        assert_denied(action, DEFAULT_DENY_REASON_CODE);
+    }
+
+    #[test]
     fn virtual_policy_targets_are_qualified() -> Result<(), FilterError> {
         let registry = InMemoryRegistry::new();
         let posture = GovernancePosture::default();
@@ -800,6 +854,7 @@ mod tests {
             registry: &registry,
             id: &serde_json::json!(7),
             agent: None,
+            selected_tool: None,
         });
         assert!(matches!(action, FilterAction::Continue));
         Ok(())
@@ -815,6 +870,7 @@ mod tests {
             description: String::new(),
             uri: "tool://delete".to_owned(),
             type_: "mcp-forward".to_owned(),
+            mcp: Default::default(),
             input_schema: serde_json::json!({}),
             labels: std::collections::HashMap::from([("risk".to_owned(), "high".to_owned())]),
             id: None,
@@ -889,6 +945,7 @@ mod tests {
                 id: &id,
                 agent: None,
                 concrete_namespace: None,
+                selected_tool: None,
             });
             assert_denied(action, reason);
         }
@@ -918,6 +975,7 @@ mod tests {
                 id: &id,
                 agent: None,
                 concrete_namespace: None,
+                selected_tool: None,
             }),
             FilterAction::Continue
         ));
@@ -934,6 +992,7 @@ mod tests {
                 id: &id,
                 agent: None,
                 concrete_namespace: None,
+                selected_tool: None,
             }),
             FilterAction::Continue
         ));
@@ -971,6 +1030,7 @@ mod tests {
             policy_revision: Some("revision-1".to_owned()),
             virtual_namespace: None,
             concrete_namespace: None,
+            invocation: None,
         };
         let allow_action = evaluate_request_impl(
             Some(&allow_audit),
@@ -984,6 +1044,7 @@ mod tests {
                 id: &id,
                 agent: None,
                 concrete_namespace: None,
+                selected_tool: None,
             },
         );
         assert!(matches!(allow_action, FilterAction::Continue));
@@ -1015,6 +1076,7 @@ mod tests {
             policy_revision: Some("revision-1".to_owned()),
             virtual_namespace: None,
             concrete_namespace: None,
+            invocation: None,
         };
         let deny_action = evaluate_request_impl(
             Some(&deny_audit),
@@ -1028,6 +1090,7 @@ mod tests {
                 id: &id,
                 agent: None,
                 concrete_namespace: None,
+                selected_tool: None,
             },
         );
         assert_denied(deny_action, DEFAULT_DENY_REASON_CODE);
@@ -1093,6 +1156,7 @@ mod tests {
             description: String::new(),
             uri: "file:///tool-location".to_owned(),
             type_: "mcp-forward".to_owned(),
+            mcp: Default::default(),
             input_schema: serde_json::json!({}),
             labels: std::collections::HashMap::new(),
             id: None,
@@ -1124,6 +1188,7 @@ mod tests {
                 id: &id,
                 agent: None,
                 concrete_namespace: None,
+                selected_tool: None,
             }),
             DEFAULT_DENY_REASON_CODE,
         );
@@ -1150,6 +1215,7 @@ mod tests {
                 id: &id,
                 agent: None,
                 concrete_namespace: None,
+                selected_tool: None,
             }),
             FilterAction::Continue
         ));
@@ -1174,6 +1240,7 @@ mod tests {
             id: &id,
             agent: None,
             concrete_namespace: None,
+            selected_tool: None,
         });
         assert_denied(action, INVALID_ACTION_REASON_CODE);
     }
@@ -1245,6 +1312,7 @@ mod tests {
             policy_revision: None,
             virtual_namespace: None,
             concrete_namespace: None,
+            invocation: None,
         };
 
         assert!(matches!(
@@ -1260,6 +1328,7 @@ mod tests {
                     id: &id,
                     agent: None,
                     concrete_namespace: None,
+                    selected_tool: None,
                 }
             ),
             FilterAction::Continue
@@ -1307,6 +1376,7 @@ mod tests {
                 id: &id,
                 agent: Some("worker"),
                 concrete_namespace: None,
+                selected_tool: None,
             }),
             "agent_denied",
         );
@@ -1335,6 +1405,7 @@ mod tests {
             policy_revision: None,
             virtual_namespace: None,
             concrete_namespace: None,
+            invocation: None,
         };
         let audit_posture = GovernancePosture {
             mode: EnforcementMode::Audit,
@@ -1350,6 +1421,7 @@ mod tests {
             id: &id,
             agent: Some("worker"),
             concrete_namespace: None,
+            selected_tool: None,
         };
         assert!(matches!(
             evaluate_request_impl(Some(&audit), input),
@@ -1475,6 +1547,7 @@ mod tests {
             id: &id,
             agent: None,
             concrete_namespace: None,
+            selected_tool: None,
         };
         let audit = DecisionAuditContext::from_http(&ctx, Some(1));
         assert_denied(

@@ -9,6 +9,7 @@ use wanaku_feature_simulation::api::{
     SimulationError, SimulationReport, SimulationRequest, StageDecision, SyntheticAction,
     ValidationReport, ValidationRequest,
 };
+use wanaku_feature_tool_handler::config::{HandlerDefinition, HandlerLimits};
 
 use wanaku_feature_action_policy::api::{
     ActionPolicyRevisionResponse, ActivateRevisionRequest as ActivatePolicyRevisionRequest,
@@ -69,6 +70,37 @@ struct ManagementErrorResponse {
     responses((status = 200, description = "Server is healthy", body = serde_json::Value))
 )]
 const fn healthz() {}
+
+#[utoipa::path(get, path = "/api/v1/tool-handlers", tag = "Tool handlers",
+    responses((status = 200, description = "Registered WASM tool handlers", body = WanakuResponse<Vec<HandlerDefinition>>),
+        (status = 503, description = "Handler runtime unavailable", body = ManagementErrorResponse))
+)]
+const fn list_tool_handlers() {}
+
+#[utoipa::path(put, path = "/api/v1/tool-handlers", tag = "Tool handlers",
+    request_body = Vec<HandlerDefinition>,
+    description = "Validate and compile all components before atomically replacing the handler configuration. An empty array removes all handlers.",
+    responses((status = 200, description = "Handler configuration activated", body = WanakuResponse<serde_json::Value>),
+        (status = 400, description = "Invalid configuration or component; active configuration retained", body = ManagementErrorResponse),
+        (status = 500, description = "Handler activation task failed", body = ManagementErrorResponse))
+)]
+const fn replace_tool_handlers() {}
+
+#[utoipa::path(get, path = "/api/v1/tool-handlers/{namespace}/{name}", tag = "Tool handlers",
+    params(("namespace" = String, Path), ("name" = String, Path)),
+    responses((status = 200, description = "Handler definition", body = WanakuResponse<HandlerDefinition>),
+        (status = 404, description = "Handler not found", body = ManagementErrorResponse),
+        (status = 503, description = "Handler runtime unavailable", body = ManagementErrorResponse))
+)]
+const fn get_tool_handler() {}
+
+#[utoipa::path(delete, path = "/api/v1/tool-handlers/{namespace}/{name}", tag = "Tool handlers",
+    params(("namespace" = String, Path), ("name" = String, Path)),
+    responses((status = 200, description = "Handler removed", body = WanakuResponse<serde_json::Value>),
+        (status = 409, description = "Handler removal failed", body = ManagementErrorResponse),
+        (status = 404, description = "Handler not found", body = ManagementErrorResponse))
+)]
+const fn delete_tool_handler() {}
 
 use wanaku_types::agents::{AgentEntry, AgentView};
 
@@ -144,6 +176,7 @@ const fn get_tool() {}
     responses(
         (status = 200, description = "Tool removed"),
         (status = 404, description = "Tool not found"),
+        (status = 409, description = "WASM tools must use the tool-handler lifecycle API", body = ManagementErrorResponse),
     )
 )]
 const fn delete_tool() {}
@@ -154,6 +187,7 @@ const fn delete_tool() {}
     responses(
         (status = 200, description = "Tool enabled. MCP clients can list and use it.", body = ToolEntry),
         (status = 404, description = "Tool not found"),
+        (status = 409, description = "WASM tools must use the tool-handler lifecycle API", body = ManagementErrorResponse),
     )
 )]
 const fn enable_tool() {}
@@ -164,6 +198,7 @@ const fn enable_tool() {}
     responses(
         (status = 200, description = "Tool disabled. MCP clients cannot list or use it.", body = ToolEntry),
         (status = 404, description = "Tool not found"),
+        (status = 409, description = "WASM tools must use the tool-handler lifecycle API", body = ManagementErrorResponse),
     )
 )]
 const fn disable_tool() {}
@@ -703,6 +738,7 @@ const fn delete_policy_replay() {}
     paths(
         list_agents, get_agent, create_agent, update_agent, delete_agent,
         healthz,
+        list_tool_handlers, replace_tool_handlers, get_tool_handler, delete_tool_handler,
         list_tools,
         get_tool,
         delete_tool,
@@ -767,6 +803,7 @@ const fn delete_policy_replay() {}
     components(schemas(
         AgentEntry, AgentView,
         ToolEntry,
+        HandlerDefinition, HandlerLimits,
         ResourceEntry,
         PromptEntry,
         PromptArgument,
@@ -1352,10 +1389,15 @@ mod tests {
             }
         }
         for schema in ["ToolEntry", "ResourceEntry", "PromptEntry"] {
+            let schema = &value["components"]["schemas"][schema];
+            let exposes_enabled =
+                |schema: &serde_json::Value| schema.pointer("/properties/enabled").is_some();
             assert!(
-                value
-                    .pointer(&format!("/components/schemas/{schema}/properties/enabled"))
-                    .is_some(),
+                exposes_enabled(schema)
+                    || schema
+                        .get("allOf")
+                        .and_then(serde_json::Value::as_array)
+                        .is_some_and(|parts| parts.iter().any(exposes_enabled)),
                 "{schema} must expose enabled"
             );
         }
@@ -1459,6 +1501,41 @@ mod tests {
             binding.is_some_and(|properties| properties.contains_key("secretRefs")),
             "binding must expose opaque secret references"
         );
+    }
+
+    #[test]
+    fn wasm_handler_contracts_cover_lifecycle_and_complete_tool_definitions() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        for (path, methods) in [
+            ("/api/v1/tool-handlers", &["get", "put"][..]),
+            (
+                "/api/v1/tool-handlers/{namespace}/{name}",
+                &["get", "delete"][..],
+            ),
+        ] {
+            let operations = &value["paths"][path];
+            for method in methods {
+                assert!(operations.get(*method).is_some(), "missing {method} {path}");
+                assert!(operations[*method]["responses"]["200"].is_object());
+            }
+        }
+        let definition = &value["components"]["schemas"]["HandlerDefinition"];
+        for field in ["tool", "path", "allowed_namespaces", "limits"] {
+            assert!(
+                definition["properties"].get(field).is_some(),
+                "missing handler field {field}"
+            );
+        }
+        // Tool metadata uses serde flatten; utoipa can represent it with allOf.
+        let tool = value["components"]["schemas"]["ToolEntry"].to_string();
+        assert!(tool.contains("inputSchema"));
+        let metadata = value["components"]["schemas"]["ToolDefinitionMetadata"].to_string();
+        for field in ["outputSchema", "annotations", "_meta", "title"] {
+            assert!(
+                tool.contains(field) || metadata.contains(field),
+                "missing MCP field {field}"
+            );
+        }
     }
 
     #[test]

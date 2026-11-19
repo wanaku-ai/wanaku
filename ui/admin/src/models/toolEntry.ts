@@ -5,9 +5,10 @@
  * Wanaku MCP proxy management API
  * OpenAPI spec version: 0.3.0
  */
+import type { ToolDefinitionMetadata } from "./toolDefinitionMetadata";
 import type { ToolEntryLabels } from "./toolEntryLabels";
 
-export interface ToolEntry {
+export type ToolEntry = ToolDefinitionMetadata & {
   description: string;
   /**
    * Whether MCP clients can list and invoke this entry. The management API
@@ -33,4 +34,4 @@ export interface ToolEntry {
   namespace?: string | null;
   type: string;
   uri: string;
-}
+};

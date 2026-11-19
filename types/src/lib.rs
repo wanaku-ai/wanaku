@@ -18,6 +18,7 @@ pub mod registry;
 pub mod revision;
 pub mod semantic_audit;
 pub mod time;
+pub mod wasm;
 
 pub use metadata::{
     MCP_ID_KEY, MCP_METHOD_KEY, MCP_NAME_KEY, NAMESPACE_METADATA_KEY,
