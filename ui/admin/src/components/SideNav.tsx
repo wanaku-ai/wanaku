@@ -25,12 +25,7 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }: SideNavCo
     >
       <SideNavItems>
         {ungroupedItems.map((item) => (
-          <SideNavMenuItem
-            key={item.id}
-            element={Link}
-            to={item.route}
-            onClick={onClickSideNavExpand}
-          >
+          <SideNavMenuItem key={item.id} as={Link} to={item.route} onClick={onClickSideNavExpand}>
             {item.label}
           </SideNavMenuItem>
         ))}
@@ -40,7 +35,7 @@ function SideNavComponent({ isSideNavExpanded, onClickSideNavExpand }: SideNavCo
               {sectionItems(items, section).map((item) => (
                 <SideNavMenuItem
                   key={item.id}
-                  element={Link}
+                  as={Link}
                   to={item.route}
                   onClick={onClickSideNavExpand}
                 >
