@@ -9,7 +9,7 @@ WASM tool handlers extend Wanaku with custom MCP tools. A handler can read autho
 
 ## Contract and compatibility
 
-The contract is [`features/tool-handler/wit/tool-handler.wit`](https://github.com/wanaku-ai/wanaku/blob/main/features/tool-handler/wit/tool-handler.wit). The package is `wanaku:tool-handler@1.0.0`. The world is `tool-handler`.
+The contract is [`features/tool-handler/wit/tool-handler.wit`](https://github.com/wanaku-ai/wanaku/blob/8d6fd30a0ab2211f1bd0360279794c8fcdee984a/features/tool-handler/wit/tool-handler.wit). The package is `wanaku:tool-handler@1.0.0`. The world is `tool-handler`.
 
 Build guest bindings from the WIT file that matches the server. A breaking signature or behavior change requires a new major package version. A compatible addition requires a minor version. The evaluator world remains separate. Existing evaluator components keep their existing interface.
 
@@ -87,7 +87,7 @@ A tool result with `isError: true` is a successful host API return that contains
 
 ## Build the example
 
-The [`actions/tool-proxy`](https://github.com/wanaku-ai/wanaku/tree/main/actions/tool-proxy) example inspects `backend/echo`, calls it with the original arguments, and returns the complete result.
+The [`actions/tool-proxy`](https://github.com/wanaku-ai/wanaku/blob/8d6fd30a0ab2211f1bd0360279794c8fcdee984a/actions/tool-proxy/src/lib.rs) example inspects `backend/echo`, calls it with the original arguments, and returns the complete result.
 
 Install `cargo-component`:
 
