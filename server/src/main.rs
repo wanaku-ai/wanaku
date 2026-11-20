@@ -16,9 +16,10 @@ use tracing::info;
 
 use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
 use wanaku_infra::persistence::FilePersistence;
-use wanaku_infra::redb_persistence::{RedbRegistryPersistence, RedbStore};
+use wanaku_infra::redb_persistence::{RedbAuditPersistence, RedbRegistryPersistence, RedbStore};
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_server::app::{App, AppPersistence, AppResources, AppSettings};
+use wanaku_types::audit::AuditPersistence;
 use wanaku_types::credentials::{EnvResolver, ResolverRegistry};
 use wanaku_types::governance::GovernanceConfig;
 use wanaku_types::persistence::PersistenceBackend;
@@ -47,11 +48,15 @@ fn main() {
     // The credential broker holds a shared, single-flight resolution cache. It
     // is built once and shared across startup discovery, every request pipeline,
     // and the management and reconnect services.
+    // The registry and the audit trail share one redb file and its lock.
+    let redb = RedbStore::from_config()
+        .map_err(|error| format!("failed to open the redb persistence database: {error}"))
+        .unwrap_or_else(|e| fatal(&e));
     let resources = AppResources {
         persistence: AppPersistence {
             tool_handlers: wanaku_types::config::ENV.persist.as_ref().map(|persist| persist.dir.join("tool-handlers.json")),
-            registry: registry_persistence().unwrap_or_else(|e| fatal(&e)),
-            audit: wanaku_feature_audit::persistence::FileAuditPersistence::from_config(),
+            registry: registry_persistence(redb.as_ref()).unwrap_or_else(|e| fatal(&e)),
+            audit: audit_persistence(redb.as_ref()).unwrap_or_else(|e| fatal(&e)),
             action_policy:
                 wanaku_feature_action_policy::revision_persistence::FileRevisionPersistence::from_config(),
             evaluator:
@@ -137,12 +142,12 @@ fn setup_management_service(
 /// Select the registry backend from `WANAKU_PERSIST_BACKEND`. A redb file
 /// that cannot be opened or loaded stops startup, so the server never runs on an empty
 /// registry while durable records exist.
-fn registry_persistence() -> Result<Option<Arc<dyn PersistenceBackend>>, String> {
-    if let Some(store) = RedbStore::from_config()
-        .map_err(|error| format!("failed to open the redb persistence database: {error}"))?
-    {
+fn registry_persistence(
+    redb: Option<&RedbStore>,
+) -> Result<Option<Arc<dyn PersistenceBackend>>, String> {
+    if let Some(store) = redb {
         info!(path = %store.path().display(), "redb registry persistence enabled");
-        let backend = RedbRegistryPersistence::new(store);
+        let backend = RedbRegistryPersistence::new(store.clone());
         // Check the stored registry before startup, so an invalid record stops
         // the server instead of starting it with a registry that cannot save.
         backend
@@ -151,6 +156,21 @@ fn registry_persistence() -> Result<Option<Arc<dyn PersistenceBackend>>, String>
         return Ok(Some(Arc::new(backend)));
     }
     Ok(FilePersistence::from_config())
+}
+
+/// Store audit events in the redb file when it is open, else in JSON. Stored
+/// events that cannot be loaded stop startup, as for the registry.
+fn audit_persistence(
+    redb: Option<&RedbStore>,
+) -> Result<Option<Arc<dyn AuditPersistence>>, String> {
+    let Some(store) = redb else {
+        return Ok(wanaku_feature_audit::persistence::FileAuditPersistence::from_config());
+    };
+    let backend = RedbAuditPersistence::new(store.clone());
+    backend
+        .load()
+        .map_err(|error| format!("failed to load the redb audit events: {error}"))?;
+    Ok(Some(Arc::new(backend)))
 }
 
 fn register_registry_persistence_service(

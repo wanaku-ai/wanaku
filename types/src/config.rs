@@ -63,7 +63,7 @@ pub enum PersistBackend {
     /// JSON files, one per state kind.
     #[default]
     File,
-    /// Embedded redb database file (`wanaku.redb`) for the registry.
+    /// Embedded redb database file (`wanaku.redb`) for the registry and the audit trail.
     Redb,
 }
 

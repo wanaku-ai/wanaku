@@ -67,6 +67,8 @@ Wanaku uses the same redaction engine for tool-call logs, retained interactions,
 
 Audit persistence uses the configured Wanaku file persistence directory. Wanaku writes `audit-events.json` in that directory. Wanaku loads the file at startup.
 
+With `WANAKU_PERSIST_BACKEND=redb`, Wanaku writes audit events to the embedded database `wanaku.redb` instead. Each commit adds only the new events and removes the events outside the retention. See [Embedded redb Persistence](../operate/persistence.md#embedded-redb-persistence).
+
 Wanaku sends bounded snapshots to one background persistence worker. The worker keeps only the newest pending snapshot when events arrive faster than storage can write them. The worker writes each selected snapshot atomically. Wanaku flushes the final pending snapshot when the last audit-store handle closes.
 
 When persistence is disabled, Wanaku keeps the bounded audit history in memory only.
