@@ -20,6 +20,9 @@ impl FileAuditPersistence {
 
     pub fn from_config() -> Option<Arc<dyn AuditPersistence>> {
         let persist = wanaku_types::config::ENV.persist.as_ref()?;
+        if persist.backend != wanaku_types::config::PersistBackend::File {
+            return None;
+        }
         Some(Arc::new(Self::new(persist.dir.join("audit-events.json"))))
     }
 }
