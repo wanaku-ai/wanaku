@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "orval --config ./orval.config.ts && vite",
     "build": "orval --config ./orval.config.ts && tsc -b && vite build",
-    "generate-api": "cargo run --example wanaku-openapi --manifest-path ../../server/Cargo.toml --no-default-features > openapi.json && orval --config ./orval.config.ts",
+    "generate-api": "cargo openapi openapi.json && orval --config ./orval.config.ts",
     "lint": "eslint .",
     "test": "node --disable-warning=ExperimentalWarning --import ./src/test/ts-resolve.mjs --test \"src/**/*.test.ts\"",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\"",

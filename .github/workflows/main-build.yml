@@ -59,6 +59,12 @@ jobs:
       - name: Test
         run: cargo test --verbose
 
+      - name: Test OpenAPI exporter
+        run: cargo test --locked -p wanaku-server --no-default-features --example wanaku-openapi
+
+      - name: Check OpenAPI snapshot
+        run: cargo openapi --check ui/admin/openapi.json
+
       - name: Test evaluator example actions
         run: cargo test --verbose -p wanaku-feature-evaluator --lib --test example_actions -- --ignored
 
