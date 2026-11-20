@@ -297,6 +297,7 @@ mod tests {
             description: description.to_owned(),
             uri: "test://uri".to_owned(),
             type_: "mcp".to_owned(),
+            mcp: Default::default(),
             input_schema: serde_json::json!({"type": "object"}),
             labels: HashMap::new(),
             id: None,
