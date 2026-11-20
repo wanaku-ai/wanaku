@@ -40,9 +40,9 @@ export WANAKU_PERSIST_BACKEND=none
 
 With `none`, the registry stays in memory. Wanaku loses all registry changes at restart.
 
-## Embedded redb Registry Persistence
+## Embedded redb Persistence
 
-Wanaku can keep the registry in an embedded [redb](https://www.redb.org) database instead of `registry.json`. redb runs inside the Wanaku process. It needs no external database or storage service.
+Wanaku can keep the registry and the audit trail in an embedded [redb](https://www.redb.org) database instead of `registry.json`. redb runs inside the Wanaku process. It needs no external database or storage service.
 
 ```bash
 export WANAKU_PERSIST_BACKEND=redb
@@ -51,11 +51,11 @@ export WANAKU_PERSIST_PATH=/data/registry
 
 On startup, Wanaku opens `wanaku.redb` in `WANAKU_PERSIST_PATH`. If the file does not exist, Wanaku creates it. The default backend stays `file`.
 
-The redb backend applies to the registry only: agents, tools, resources, prompts, forwards, namespaces, and credential bindings. Audit events, evaluator revisions, action-policy revisions, WASM tool handlers, and plugin configuration stay in their JSON files in the same directory.
+The redb backend stores the registry (agents, tools, resources, prompts, forwards, namespaces, and credential bindings) and the audit events. Evaluator revisions, action-policy revisions, WASM tool handlers, and plugin configuration stay in their JSON files in the same directory.
 
 ### Storage layout
 
-Each registry record kind has its own table. Each row holds one record. The row key is the record name, scoped by namespace where the registry scopes it. The row value is the JSON form of the record. The database also stores a schema version.
+Each registry record kind has its own table. Each row holds one record. The row key is the record name, scoped by namespace where the registry scopes it. The row value is the JSON form of the record. Audit events have their own table. The row key is the event sequence number. The database also stores a schema version.
 
 ### Writes and durability
 
@@ -63,20 +63,25 @@ Each registry record kind has its own table. Each row holds one record. The row 
 - The writer runs on a dedicated thread, not on an async runtime worker.
 - The writer applies each snapshot in one redb write transaction. The transaction writes only the rows that changed and removes the rows that are gone. It does not replace the whole registry.
 - The transaction commits with immediate durability. A commit returns after the data is on disk.
-- If a commit fails, the database keeps the previous committed state. The registry persistence status reports the error.
+- If a commit fails, the database keeps the previous committed state. The registry persistence status or the audit health reports the error.
 - A management API call returns before the background writer commits its change. A process stop before the commit loses that change.
+- Audit events use a separate background writer and separate transactions. The writer collects the events recorded since its last commit and writes them in one transaction.
+- An audit commit inserts only new events. It does not write stored events again. A retried commit writes each event to the same row, so a retry does not duplicate events.
+- `WANAKU_AUDIT_MAX_RECORDS` sets the audit retention. An audit commit removes the events that are no longer in the audit store.
+- Audit queries read the events in memory, not the database. The database holds the same events.
 
 ### Recovery and failures
 
 - After an unclean shutdown, redb repairs the database when Wanaku opens it. The database contains the last committed transaction.
 - If Wanaku cannot open `wanaku.redb`, startup stops. Causes include a corrupt file, a file with a newer schema version, and a file that another process holds open.
-- If a stored record is not valid, startup stops. A record is not valid when it is not valid JSON, when an agent fails validation, or when the namespace graph is not valid. Wanaku does not write to the database in this case, so the stored records stay unchanged. Fix or move the database file, then start the server again.
+- After a storage I/O error, redb refuses all later writes, for the registry and for audit events. Restart the server to write again.
+- If a stored record or audit event is not valid, startup stops. A record is not valid when it is not valid JSON, when an agent fails validation, or when the namespace graph is not valid. Wanaku does not write to the database in this case, so the stored records stay unchanged. Fix or move the database file, then start the server again.
 
 ### Limits
 
 - redb locks the database file. Only one Wanaku process can use a database file at a time.
 - redb does not replicate data to other hosts. Do not put the file on a shared file system for multiple replicas.
-- Wanaku does not import `registry.json` into `wanaku.redb`. When you change the backend, the registry starts empty, and Wanaku keeps `registry.json` unchanged.
+- Wanaku does not import `registry.json` or `audit-events.json` into `wanaku.redb`. When you change the backend, the registry and the audit trail start empty, and Wanaku keeps the JSON files unchanged.
 
 ## WASM tool handler persistence
 
