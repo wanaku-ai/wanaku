@@ -461,14 +461,42 @@ The UI uses Orval to generate a TypeScript client from the Rust server's OpenAPI
 
 ### OpenAPI Spec Generation
 
-The OpenAPI spec is generated from the Rust server's `utoipa` annotations and committed as `ui/admin/openapi.json`. When the Rust API changes (new endpoints, new fields on types), regenerate the spec and the TypeScript client:
+The OpenAPI exporter reads the Rust server's `utoipa` annotations. The repository stores the spec in `ui/admin/openapi.json`. `cargo build` does not generate the spec.
+
+Run these commands from the repository root.
+
+Write the JSON spec to standard output:
+
+```bash
+cargo openapi
+```
+
+Write the JSON spec to a file with a positional path:
+
+```bash
+cargo openapi ui/admin/openapi.json
+```
+
+Check the committed spec without writing to the file:
+
+```bash
+cargo openapi --check ui/admin/openapi.json
+```
+
+`--check PATH` compares the generated JSON with the file byte for byte. It returns a nonzero exit status if they differ.
+
+The main and pull request build workflows test the exporter and check the committed spec. A difference fails CI. After an API contract change, update the snapshot before you submit the change.
+
+The `cargo openapi` alias runs the `wanaku-openapi` example with `--quiet`, `--locked`, and `--no-default-features`. The exporter runs without the UI build. This prevents a circular dependency between the UI and the spec. The alias uses `-p wanaku-server` to select the package independently of the current directory. It also works from `ui/admin`.
+
+After a Rust API change, regenerate the spec and the TypeScript client:
 
 ```bash
 cd ui/admin
 yarn run generate-api
 ```
 
-This runs the `wanaku-openapi` example from `server/Cargo.toml` with `--no-default-features`. It writes `openapi.json` and then runs Orval. The `--no-default-features` flag skips the UI build step in `build.rs`. This prevents a circular dependency: the UI build needs the spec, and the spec needs the server. Commit `openapi.json` and the regenerated `src/api/` and `src/models/` files.
+`yarn run generate-api` runs `cargo openapi openapi.json`, then Orval. Commit `openapi.json` and the regenerated files in `src/api/` and `src/models/`.
 
 ### Build Scripts
 

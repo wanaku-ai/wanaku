@@ -92,6 +92,14 @@ The `.github/workflows/pr-build.yml` workflow runs the same checks for each pull
 
 Add meaningful tests for new behavior. Update the relevant documentation when you add or change a feature.
 
+After a management API contract change, refresh the specification:
+
+```bash
+cargo openapi ui/admin/openapi.json
+```
+
+See [OpenAPI Spec Generation](admin-ui.md#openapi-spec-generation) for details.
+
 For admin UI changes, follow the [E2E Tests](admin-ui.md#e2e-tests) section in Admin UI Development. At minimum, cover the page title, add flow, and delete flow when the page supports those actions.
 
 Before you submit a pull request, review the diff for unrelated changes. Keep related corrections in the existing commit when the project maintainers ask for amended commits.
