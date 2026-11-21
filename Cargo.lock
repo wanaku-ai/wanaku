@@ -2909,15 +2909,27 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "nix"
-version = "0.31.3"
+version = "0.31.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d"
+checksum = "2bc81ce8148d3b4f3274da811f11cdd824ae661ee4ef732cdb229825cf5be7f7"
 dependencies = [
  "bitflags 2.13.1",
  "cfg-if",
  "cfg_aliases",
  "libc",
  "memoffset",
+]
+
+[[package]]
+name = "nix"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77730ed34f01f4990cb2ea67fec715ecebc6fab9a6396cf83c5529b13f581bdc"
+dependencies = [
+ "bitflags 2.13.1",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
 ]
 
 [[package]]
@@ -3902,7 +3914,7 @@ dependencies = [
  "httpdate",
  "libc",
  "log",
- "nix",
+ "nix 0.31.4",
  "once_cell",
  "openssl-probe 0.1.6",
  "ouroboros",
@@ -6271,7 +6283,7 @@ dependencies = [
  "clap",
  "form_urlencoded",
  "http",
- "nix",
+ "nix 0.32.0",
  "openssl",
  "praxis-ai-filters",
  "praxis-proxy-core",
@@ -7438,7 +7450,7 @@ dependencies = [
  "indexmap 2.14.0",
  "libc",
  "memchr",
- "nix",
+ "nix 0.31.4",
  "typed-path",
  "windows-sys 0.61.2",
  "zeroize",
