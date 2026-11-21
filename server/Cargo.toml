@@ -59,7 +59,7 @@ wanaku-feature-tool-handler = { workspace = true, features = ["openapi"] }
 serde_ignored = "0.1.14"
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.31.3", default-features = false, features = ["process", "signal", "user"] }
+nix = { version = "0.32.0", default-features = false, features = ["process", "signal", "user"] }
 tikv-jemallocator = "0.7.0"
 
 # Praxis needs OpenSSL. Windows runners and hosts have no OpenSSL dev install, so build it from source.
