@@ -382,7 +382,7 @@ const fn get_forward() {}
     responses(
         (status = 200, description = "Forward created and tools discovered", body = serde_json::Value),
         (status = 400, description = "Invalid forward JSON, namespace name or address", body = ManagementErrorResponse),
-        (status = 409, description = "Forward already exists and `replace=true` is not set", body = ManagementErrorResponse),
+        (status = 409, description = "Forward already exists without replace=true, or the forward changed during discovery", body = ManagementErrorResponse),
         (status = 502, description = "Discovery of a replacement (`replace=true`) failed. The previous forward is kept", body = ManagementErrorResponse),
     )
 )]
@@ -406,6 +406,7 @@ const fn delete_forward() {}
     responses(
         (status = 200, description = "Forward refreshed", body = serde_json::Value),
         (status = 404, description = "Forward not found"),
+        (status = 409, description = "Forward changed during discovery", body = ManagementErrorResponse),
     )
 )]
 const fn refresh_forward() {}
@@ -1283,6 +1284,16 @@ mod tests {
         );
         assert_eq!(
             delete["responses"]["409"]["content"]["application/json"]["schema"]["$ref"],
+            "#/components/schemas/ManagementErrorResponse"
+        );
+    }
+
+    #[test]
+    fn forward_refresh_documents_discovery_conflict() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        let refresh = &value["paths"]["/api/v1/forwards/{name}/refreshes"]["post"];
+        assert_eq!(
+            refresh["responses"]["409"]["content"]["application/json"]["schema"]["$ref"],
             "#/components/schemas/ManagementErrorResponse"
         );
     }

@@ -8,7 +8,7 @@
 //!
 //! This [`BackgroundService`] runs on the Pingora runtime and, on a configurable
 //! interval, re-probes every forward that is currently `available == false` by
-//! reusing the same [`discover_and_update_forward`] logic the manual refresh
+//! reusing the same [`discover_and_publish`] logic the manual refresh
 //! endpoint uses. Because it iterates the live registry it naturally covers
 //! forwards declared in `wanaku.yaml`, registered via the management API, and
 //! restored from persistence alike.
@@ -25,7 +25,7 @@ use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
 use wanaku_infra::registry::InMemoryRegistry;
 use wanaku_types::registry::ForwardRegistry;
 
-use super::handlers::discover_and_update_forward;
+use super::handlers::discover_and_publish;
 
 /// Periodically re-probes unavailable forwards and restores them once reachable.
 pub struct ForwardReconnectService {
@@ -57,28 +57,25 @@ impl ForwardReconnectService {
     /// marked unavailable and let discovery flip it back to available if the
     /// upstream has recovered. Returns the number of forwards probed.
     async fn run_once(&self) -> usize {
-        let unavailable: Vec<_> = self
-            .registry
-            .list_forwards()
-            .into_iter()
-            .filter(|fwd| !fwd.available)
-            .collect();
-
-        if unavailable.is_empty() {
-            return 0;
-        }
-
-        let count = unavailable.len();
-        debug!(forwards = count, "re-checking unavailable forwards");
-        for fwd in &unavailable {
-            debug!(forward = %fwd.name, address = %fwd.address, "probing unavailable forward");
-            discover_and_update_forward(
+        let forwards = self.registry.list_forwards();
+        let mut count = 0;
+        for fwd in forwards.into_iter().filter(|fwd| !fwd.available) {
+            let Some(request) = self
+                .registry
+                .begin_forward_refresh(&fwd.name)
+                .filter(|request| !request.target().available)
+            else {
+                continue;
+            };
+            debug!(forward = %fwd.name, address = %request.target().address, "probing unavailable forward");
+            discover_and_publish(
                 &self.registry,
                 &self.broker,
                 self.audit_sink.as_deref(),
-                fwd,
+                request,
             )
             .await;
+            count += 1;
         }
         count
     }

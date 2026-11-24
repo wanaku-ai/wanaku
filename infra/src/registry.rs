@@ -1,4 +1,11 @@
+mod forward_publication;
 mod virtual_namespaces;
+
+use forward_publication::ForwardChanges;
+pub use forward_publication::{
+    DiscoveredForward, ForwardCapabilities, ForwardDiscoveryRequest, ForwardPublicationError,
+    PublishedCounts, PublishedForwardUpdate,
+};
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -44,7 +51,7 @@ fn insert_unless_taken<T>(
     map: &DashMap<EntryKey, T>,
     key: EntryKey,
     entry: T,
-    owner: fn(&T) -> Option<&str>,
+    owner: impl Fn(&T) -> Option<&str>,
 ) -> Option<T> {
     match map.entry(key) {
         dashmap::mapref::entry::Entry::Occupied(occupied)
@@ -74,7 +81,7 @@ pub struct InMemoryRegistry {
     bindings: Arc<DashMap<String, CredentialBinding>>,
     persistence: Option<PersistenceCoordinator>,
     persistence_lock: Arc<Mutex<()>>,
-    namespace_lock: Arc<Mutex<()>>,
+    namespace_lock: Arc<Mutex<ForwardChanges>>,
     inject_request_id: Arc<AtomicBool>,
 }
 
@@ -102,7 +109,7 @@ impl InMemoryRegistry {
             bindings: Arc::new(DashMap::new()),
             persistence: None,
             persistence_lock: Arc::new(Mutex::new(())),
-            namespace_lock: Arc::new(Mutex::new(())),
+            namespace_lock: Arc::new(Mutex::new(ForwardChanges::default())),
             inject_request_id: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -206,7 +213,8 @@ impl InMemoryRegistry {
         outcome
     }
 
-    /// Remove a forward only when `predicate` holds for the stored entry.
+    /// Remove a forward and its discovered capabilities when the predicate
+    /// holds for the stored entry.
     ///
     /// The check and the removal run under one map write lock, so a
     /// concurrent upsert of the same name cannot occur between them.
@@ -215,6 +223,8 @@ impl InMemoryRegistry {
         name: &str,
         predicate: impl FnOnce(&ForwardEntry) -> bool,
     ) -> ConditionalRemoval<ForwardEntry> {
+        let mut changes = self.lock_namespaces();
+        let _persistence_guard = self.lock_persistence();
         let outcome = match self.forwards.entry(name.to_owned()) {
             dashmap::mapref::entry::Entry::Occupied(occupied) if predicate(occupied.get()) => {
                 ConditionalRemoval::Removed(occupied.remove())
@@ -222,8 +232,10 @@ impl InMemoryRegistry {
             dashmap::mapref::entry::Entry::Occupied(_) => ConditionalRemoval::PreconditionFailed,
             dashmap::mapref::entry::Entry::Vacant(_) => ConditionalRemoval::NotFound,
         };
-        if matches!(outcome, ConditionalRemoval::Removed(_)) {
-            self.persist();
+        if let ConditionalRemoval::Removed(forward) = &outcome {
+            changes.forwards.remove(name);
+            self.remove_forward_capabilities(forward.forward_id());
+            self.persist_locked();
         }
         outcome
     }
@@ -239,6 +251,7 @@ impl InMemoryRegistry {
         predicate: impl FnOnce(&ForwardEntry) -> bool,
         update: impl FnOnce(&mut ForwardEntry),
     ) -> bool {
+        let mut changes = self.lock_namespaces();
         let updated = match self.forwards.get_mut(name) {
             Some(mut stored) if predicate(&stored) => {
                 update(&mut stored);
@@ -247,6 +260,7 @@ impl InMemoryRegistry {
             _ => false,
         };
         if updated {
+            changes.forwards.remove(name);
             self.persist();
         }
         updated
@@ -417,6 +431,7 @@ impl InMemoryRegistry {
             }
         };
 
+        let mut changes = self.lock_namespaces();
         if let Err(error) = self.validate_snapshot_namespaces(&snapshot) {
             tracing::error!(%error, "invalid persisted namespace graph; snapshot was not loaded");
             return;
@@ -463,9 +478,11 @@ impl InMemoryRegistry {
             self.namespaces.insert(namespace.name.clone(), namespace);
         }
         for forward in snapshot.forwards {
+            changes.forwards.remove(&forward.name);
             self.insert_forward(forward);
         }
         for binding in snapshot.bindings {
+            changes.bindings.remove(&binding.id);
             self.bindings.insert(binding.id.clone(), binding);
         }
 
@@ -485,11 +502,20 @@ impl InMemoryRegistry {
     }
 
     fn persist(&self) {
+        let _guard = self.lock_persistence();
+        self.persist_locked();
+    }
+
+    fn lock_persistence(&self) -> Option<std::sync::MutexGuard<'_, ()>> {
+        self.persistence.as_ref().map(|_| {
+            self.persistence_lock
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+        })
+    }
+
+    fn persist_locked(&self) {
         if let Some(persistence) = &self.persistence {
-            let _persistence_lock = match self.persistence_lock.lock() {
-                Ok(lock) => lock,
-                Err(error) => error.into_inner(),
-            };
             let snapshot = self.snapshot();
             if let Err(error) = persistence.enqueue(snapshot) {
                 tracing::warn!(error = %error, "failed to queue registry persistence");
@@ -959,6 +985,7 @@ impl ResourceRegistry for InMemoryRegistry {
     }
 
     fn remove_resource(&self, namespace: &str, name: &str) -> bool {
+        let _guard = self.lock_namespaces();
         let removed = self.resources.remove(&entry_key(namespace, name)).is_some();
         if removed {
             self.persist();
@@ -967,6 +994,7 @@ impl ResourceRegistry for InMemoryRegistry {
     }
 
     fn set_resource_enabled(&self, namespace: &str, name: &str, enabled: bool) -> bool {
+        let _guard = self.lock_namespaces();
         let Some(mut entry) = self.resources.get_mut(&entry_key(namespace, name)) else {
             return false;
         };
@@ -978,6 +1006,7 @@ impl ResourceRegistry for InMemoryRegistry {
     }
 
     fn remove_resources_owned_by(&self, forward_id: &str) -> usize {
+        let _guard = self.lock_namespaces();
         let mut count = 0;
         self.resources.retain(|_, entry| {
             let owned = entry.forward_id.as_deref() == Some(forward_id);
@@ -1066,6 +1095,7 @@ impl PromptRegistry for InMemoryRegistry {
     }
 
     fn remove_prompt(&self, namespace: &str, name: &str) -> bool {
+        let _guard = self.lock_namespaces();
         let removed = self.prompts.remove(&entry_key(namespace, name)).is_some();
         if removed {
             self.persist();
@@ -1074,6 +1104,7 @@ impl PromptRegistry for InMemoryRegistry {
     }
 
     fn set_prompt_enabled(&self, namespace: &str, name: &str, enabled: bool) -> bool {
+        let _guard = self.lock_namespaces();
         let Some(mut entry) = self.prompts.get_mut(&entry_key(namespace, name)) else {
             return false;
         };
@@ -1085,6 +1116,7 @@ impl PromptRegistry for InMemoryRegistry {
     }
 
     fn remove_prompts_owned_by(&self, forward_id: &str) -> usize {
+        let _guard = self.lock_namespaces();
         let mut count = 0;
         self.prompts.retain(|_, entry| {
             let owned = entry.forward_id.as_deref() == Some(forward_id);
@@ -1150,11 +1182,10 @@ impl ForwardRegistry for InMemoryRegistry {
     }
 
     fn remove_forward(&self, name: &str) -> bool {
-        let removed = self.forwards.remove(name).is_some();
-        if removed {
-            self.persist();
-        }
-        removed
+        matches!(
+            self.remove_forward_if(name, |_| true),
+            ConditionalRemoval::Removed(_)
+        )
     }
 }
 
@@ -1179,6 +1210,7 @@ impl BindingRegistry for InMemoryRegistry {
     }
 
     fn register_binding(&self, mut binding: CredentialBinding) {
+        let mut changes = self.lock_namespaces();
         // Keep the revision monotonic per binding id. Any change to the stored
         // content bumps the revision so cached credentials keyed by the old
         // revision are never reused. Identical re-registration keeps the
@@ -1192,13 +1224,16 @@ impl BindingRegistry for InMemoryRegistry {
                 existing.revision.saturating_add(1)
             };
         }
+        changes.bindings.remove(&binding.id);
         self.bindings.insert(binding.id.clone(), binding);
         self.persist();
     }
 
     fn remove_binding(&self, id: &str) -> bool {
+        let mut changes = self.lock_namespaces();
         let removed = self.bindings.remove(id).is_some();
         if removed {
+            changes.bindings.remove(id);
             self.persist();
         }
         removed

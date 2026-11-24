@@ -1540,10 +1540,18 @@ export type refreshForwardResponse404 = {
   status: 404;
 };
 
+export type refreshForwardResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
 export type refreshForwardResponseSuccess = refreshForwardResponse200 & {
   headers: Headers;
 };
-export type refreshForwardResponseError = refreshForwardResponse404 & {
+export type refreshForwardResponseError = (
+  | refreshForwardResponse404
+  | refreshForwardResponse409
+) & {
   headers: Headers;
 };
 

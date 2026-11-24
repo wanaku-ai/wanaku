@@ -1344,7 +1344,7 @@
             }
           },
           "409": {
-            "description": "Forward already exists and `replace=true` is not set",
+            "description": "Forward already exists without replace=true, or the forward changed during discovery",
             "content": {
               "application/json": {
                 "schema": {
@@ -1464,6 +1464,16 @@
           },
           "404": {
             "description": "Forward not found"
+          },
+          "409": {
+            "description": "Forward changed during discovery",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
           }
         }
       }

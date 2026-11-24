@@ -9,7 +9,10 @@ mod routes;
 #[cfg(feature = "ui")]
 mod ui;
 
-pub use handlers::discover_and_update_forward;
+pub use handlers::{
+    PreparedForwardUpdate, apply_forward_update, discover_and_update_forward,
+    prepare_forward_update,
+};
 pub use persistence::{RegistryPersistenceService, registry_persistence_service};
 pub use reconnect::{ForwardReconnectService, reconnect_service};
 
