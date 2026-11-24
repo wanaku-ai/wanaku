@@ -1,4 +1,5 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::future::Future;
 
 use http::{Response, StatusCode};
 use tracing::{info, warn};
@@ -9,7 +10,10 @@ use wanaku_infra::credentials::{
     resolve_discovery_headers,
 };
 use wanaku_infra::mcp_client::{ForwardDiscovery, Listing, McpClientError};
-use wanaku_infra::registry::{ConditionalRemoval, InMemoryRegistry};
+use wanaku_infra::registry::{
+    ConditionalRemoval, DiscoveredForward, ForwardCapabilities, ForwardDiscoveryRequest,
+    ForwardPublicationError, InMemoryRegistry, PublishedForwardUpdate,
+};
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::NormalizedOrigin;
 use wanaku_types::registry::{
@@ -332,10 +336,6 @@ pub(super) fn handle_forward_get(registry: &InMemoryRegistry, name: &str) -> Res
     }
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "sequential validation before discovery"
-)]
 pub(super) async fn handle_forward_create(
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
@@ -343,72 +343,20 @@ pub(super) async fn handle_forward_create(
     body: &str,
     replace: bool,
 ) -> Response<Vec<u8>> {
-    tracing::debug!(body = %body, "forward create request body");
-    let forward: ForwardEntry = match serde_json::from_str(body) {
-        Ok(f) => f,
-        Err(e) => {
-            warn!(error = %e, "invalid forward JSON");
-            return json_err(
-                StatusCode::BAD_REQUEST,
-                &format!("invalid forward JSON: {e}"),
-            );
-        }
+    let forward = match parse_forward_registration(body) {
+        Ok(forward) => forward,
+        Err(error) => return json_err(StatusCode::BAD_REQUEST, &error),
     };
-
-    if let Some(namespace) = &forward.namespace
-        && let Err(reason) = wanaku_types::registry::validate_namespace_name(namespace)
+    let request = match registry.begin_forward_registration(forward, replace) {
+        Ok(request) => request,
+        Err(error) => return forward_publication_error(&error),
+    };
+    let prepared = prepare_forward_update(broker, audit_sink, request).await;
+    let PublishedForwardUpdate { forward, counts } = match apply_forward_update(registry, prepared)
     {
-        warn!(forward = %forward.name, namespace = %namespace, reason = %reason, "forward namespace validation failed");
-        return json_err(StatusCode::BAD_REQUEST, &reason);
-    }
-    if let Err(error) = registry.validate_concrete_namespace(
-        forward
-            .namespace
-            .as_deref()
-            .unwrap_or(wanaku_types::registry::DEFAULT_NAMESPACE),
-    ) {
-        return json_err(StatusCode::BAD_REQUEST, &error);
-    }
-    if let Err(e) = NormalizedOrigin::from_address(&forward.address) {
-        warn!(forward = %forward.name, error = %e, "forward address validation failed");
-        return json_err(StatusCode::BAD_REQUEST, &e.to_string());
-    }
-    // Re-registering replaces the forward's state, so callers must ask for it.
-    let existing = registry.get_forward(&forward.name);
-    let replacing = existing.is_some();
-    if let Some(existing) = existing {
-        if !replace {
-            return json_err(
-                StatusCode::CONFLICT,
-                &format!("forward already exists: {}", forward.name),
-            );
-        }
-        // A replacement that changes the upstream address must drop credentials
-        // cached against the previous origin before anything is brokered anew.
-        if existing.address != forward.address {
-            info!(forward = %forward.name, "forward address changed; revalidating credentials");
-            revalidate_forward_credentials(registry, broker, &forward);
-        }
-    }
-
-    let prepared = prepare_forward_update(registry, broker, audit_sink, &forward).await;
-    // A replacement is all or nothing: when discovery fails, the previous
-    // forward, its labels, and its entries stay unchanged.
-    if replacing && prepared.capabilities.is_none() {
-        let status = prepared.forward.status_message.unwrap_or_default();
-        warn!(forward = %forward.name, status = %status, "forward replacement discovery failed; kept the previous forward");
-        return json_err(StatusCode::BAD_GATEWAY, &status);
-    }
-    let (forward, counts) = apply_forward_update(registry, prepared);
-    if !registry
-        .get_forward(&forward.name)
-        .is_some_and(|stored| same_registration(&stored, &forward))
-    {
-        return json_err(
-            StatusCode::CONFLICT,
-            "namespace changed during forward registration",
-        );
-    }
+        Ok(published) => published,
+        Err(error) => return forward_publication_error(&error),
+    };
     info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
 
     json_ok(&serde_json::json!({
@@ -417,6 +365,19 @@ pub(super) async fn handle_forward_create(
         "resources_discovered": counts.resources,
         "prompts_discovered": counts.prompts,
     }))
+}
+
+fn parse_forward_registration(body: &str) -> Result<ForwardEntry, String> {
+    tracing::debug!(body = %body, "forward create request body");
+    let forward: ForwardEntry = serde_json::from_str(body).map_err(|error| {
+        warn!(%error, "invalid forward JSON");
+        format!("invalid forward JSON: {error}")
+    })?;
+    if let Err(error) = NormalizedOrigin::from_address(&forward.address) {
+        warn!(forward = %forward.name, %error, "forward address validation failed");
+        return Err(error.to_string());
+    }
+    Ok(forward)
 }
 
 /// Whether a forward create asks to replace an existing forward
@@ -479,9 +440,6 @@ pub(super) fn handle_forward_delete(
 
     // Drop credentials cached for the forward so no secret outlives it.
     broker.cache().invalidate_forward(fwd.forward_id());
-    registry.remove_tools_owned_by(fwd.forward_id());
-    registry.remove_resources_owned_by(fwd.forward_id());
-    registry.remove_prompts_owned_by(fwd.forward_id());
 
     info!(forward = %name, "removed forward via management API");
     json_ok(&serde_json::json!({"removed": name}))
@@ -493,20 +451,34 @@ pub(super) async fn handle_forward_refresh(
     audit_sink: Option<&dyn CredentialAuditSink>,
     name: &str,
 ) -> Response<Vec<u8>> {
-    let Some(forward) = registry.get_forward(name) else {
+    let Some(request) = registry.begin_forward_refresh(name) else {
         return json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}"));
     };
 
     // Discovery runs before any registry change. A failed or incomplete
     // discovery keeps the previous capability set and marks the forward
     // unavailable.
-    let prepared = prepare_forward_update(registry, broker, audit_sink, &forward).await;
-    let (_, counts) = apply_forward_update(registry, prepared);
+    let prepared = prepare_forward_update(broker, audit_sink, request).await;
+    let counts = match apply_forward_update(registry, prepared) {
+        Ok(published) => published.counts,
+        Err(error) => return forward_publication_error(&error),
+    };
 
     info!(forward = %name, tools_discovered = counts.tools, resources_discovered = counts.resources, prompts_discovered = counts.prompts, "refreshed forward");
     json_ok(
         &serde_json::json!({"refreshed": name, "tools_discovered": counts.tools, "resources_discovered": counts.resources, "prompts_discovered": counts.prompts}),
     )
+}
+
+fn forward_publication_error(error: &ForwardPublicationError) -> Response<Vec<u8>> {
+    let status = match error {
+        ForwardPublicationError::AlreadyExists(_) | ForwardPublicationError::Stale(_) => {
+            StatusCode::CONFLICT
+        }
+        ForwardPublicationError::InvalidNamespace(_) => StatusCode::BAD_REQUEST,
+        ForwardPublicationError::ReplacementFailed(_) => StatusCode::BAD_GATEWAY,
+    };
+    json_err(status, &error.to_string())
 }
 
 /// React to a forward whose upstream address changed.
@@ -646,136 +618,110 @@ fn redact_server_info(redactor: &CredentialRedactor, info: McpServerInfo) -> Mcp
     }
 }
 
-/// Names of the forward-sourced entries that an operator disabled.
+/// Discover and publish the current registration of a forward.
 ///
-/// Discovery replaces the entries of a forward. Capture this set before
-/// discovery so that rediscovered entries stay disabled.
-#[derive(Default)]
-struct DisabledEntries {
-    tools: HashSet<String>,
-    resources: HashSet<String>,
-    prompts: HashSet<String>,
-}
-
-impl DisabledEntries {
-    fn capture(registry: &InMemoryRegistry, forward_id: &str) -> Self {
-        let owned = |id: Option<&str>| id == Some(forward_id);
-        Self {
-            tools: registry
-                .list_tools()
-                .into_iter()
-                .filter(|t| !t.enabled && owned(t.forward_id.as_deref()))
-                .map(|t| t.name)
-                .collect(),
-            resources: registry
-                .list_resources()
-                .into_iter()
-                .filter(|r| !r.enabled && owned(r.forward_id.as_deref()))
-                .map(|r| r.name)
-                .collect(),
-            prompts: registry
-                .list_prompts()
-                .into_iter()
-                .filter(|p| !p.enabled && owned(p.forward_id.as_deref()))
-                .map(|p| p.name)
-                .collect(),
-        }
-    }
-}
-
-/// Discover a forward and publish the result.
-///
-/// Startup and the background reconnect loop use this function. It shares
-/// [`prepare_forward_update`] and [`apply_forward_update`] with the forward
-/// create and refresh endpoints.
+/// Startup and periodic reconnect use the same guarded boundary as the
+/// management API. The supplied entry selects the forward by name. The
+/// registry supplies the configuration and identity for the new probe.
 pub async fn discover_and_update_forward(
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
     audit_sink: Option<&dyn CredentialAuditSink>,
     forward: &ForwardEntry,
 ) {
-    let mut prepared = prepare_forward_update(registry, broker, audit_sink, forward).await;
-    // The forward can be deleted or registered again while discovery runs.
-    prepared.only_if_unchanged = true;
-    let (_, counts) = apply_forward_update(registry, prepared);
-    info!(
-        forward = %forward.name,
-        tools_discovered = counts.tools,
-        resources_discovered = counts.resources,
-        prompts_discovered = counts.prompts,
-        "forward discovery finished"
-    );
+    let Some(request) = registry.begin_forward_refresh(&forward.name) else {
+        return;
+    };
+    discover_and_publish(registry, broker, audit_sink, request).await;
 }
 
-/// A forward status and capability set that is ready to publish.
-///
-/// Preparation reads the registry but does not change it. Only
-/// [`apply_forward_update`] publishes a prepared update.
-struct PreparedForwardUpdate {
-    /// The forward with its intended availability, status message, and server
-    /// identity.
-    forward: ForwardEntry,
-    /// The complete replacement capability set. `None` when discovery failed or
-    /// was incomplete: the previous capability set then stays in place.
-    capabilities: Option<ForwardCapabilities>,
-    /// Publish only when the stored forward still has the address and the
-    /// namespace that discovery probed. Otherwise discard the update.
-    only_if_unchanged: bool,
-}
-
-/// Validated registry entries for every capability of one forward.
-struct ForwardCapabilities {
-    tools: Vec<ToolEntry>,
-    resources: Vec<ResourceEntry>,
-    prompts: Vec<PromptEntry>,
-}
-
-/// Number of entries that a forward update published.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-struct PublishedCounts {
-    tools: usize,
-    resources: usize,
-    prompts: usize,
-}
-
-impl PreparedForwardUpdate {
-    /// An update that marks the forward unavailable and keeps its previous
-    /// capability set.
-    fn failed(forward: &ForwardEntry, message: String) -> Self {
-        let mut forward = forward.clone();
-        forward.available = false;
-        forward.status_message = Some(message);
-        Self {
-            forward,
-            capabilities: None,
-            only_if_unchanged: false,
-        }
+pub(super) async fn discover_and_publish(
+    registry: &InMemoryRegistry,
+    broker: &CredentialBroker,
+    audit_sink: Option<&dyn CredentialAuditSink>,
+    request: ForwardDiscoveryRequest,
+) {
+    let name = request.target().name.clone();
+    let prepared = prepare_forward_update(broker, audit_sink, request).await;
+    match apply_forward_update(registry, prepared) {
+        Ok(PublishedForwardUpdate { counts, .. }) => info!(
+            forward = %name,
+            tools_discovered = counts.tools,
+            resources_discovered = counts.resources,
+            prompts_discovered = counts.prompts,
+            "forward discovery finished"
+        ),
+        Err(error) => info!(forward = %name, %error, "forward discovery was not published"),
     }
 }
 
-/// Run discovery for a forward and prepare the update, without changing the
-/// registry.
-async fn prepare_forward_update(
+/// Forward status and capabilities ready for conditional publication.
+pub struct PreparedForwardUpdate {
+    request: ForwardDiscoveryRequest,
+    result: Result<DiscoveredForward, String>,
+}
+
+/// Run discovery without changing the registry or holding a registry lock.
+///
+/// Obtain the request with [InMemoryRegistry::begin_forward_refresh] or
+/// [InMemoryRegistry::begin_forward_registration]. Publish the result with
+/// [apply_forward_update].
+pub fn prepare_forward_update<'a>(
+    broker: &'a CredentialBroker,
+    audit_sink: Option<&'a dyn CredentialAuditSink>,
+    request: ForwardDiscoveryRequest,
+) -> impl Future<Output = PreparedForwardUpdate> + Send + 'a {
+    Box::pin(async move {
+        let registry = request.registry();
+        let forward = request.target();
+        if request
+            .previous()
+            .is_some_and(|previous| previous.address != forward.address)
+        {
+            info!(forward = %forward.name, "forward address changed; revalidating credentials");
+            revalidate_forward_credentials(registry, broker, forward);
+        }
+        let result = discover_forward_update(registry, broker, audit_sink, forward).await;
+        PreparedForwardUpdate { request, result }
+    })
+}
+
+async fn discover_forward_update(
     registry: &InMemoryRegistry,
     broker: &CredentialBroker,
     audit_sink: Option<&dyn CredentialAuditSink>,
     forward: &ForwardEntry,
-) -> PreparedForwardUpdate {
+) -> Result<DiscoveredForward, String> {
     let DiscoveryExchange { headers, redactor } =
         match discovery_headers_or_status(registry, broker, audit_sink, forward).await {
             Ok(exchange) => exchange,
-            Err(message) => return PreparedForwardUpdate::failed(forward, message),
+            Err(message) => return Err(message),
         };
 
     match wanaku_infra::mcp_client::discover_forward(&forward.address, headers).await {
         Ok(discovery) => prepare_from_discovery(forward, redact_discovery(&redactor, discovery)),
-        // Redact any injected discovery secret the upstream echoed into its
-        // error before it reaches the operator or the logs.
-        Err(e) => PreparedForwardUpdate::failed(
-            forward,
-            discovery_failure_message(forward, &redactor, &e),
-        ),
+        Err(e) => Err(discovery_failure_message(forward, &redactor, &e)),
     }
+}
+
+/// Apply a prepared update only if its forward and referenced bindings are
+/// unchanged. The registry checks the precondition and publishes capabilities
+/// and status in one write critical section.
+pub fn apply_forward_update(
+    registry: &InMemoryRegistry,
+    prepared: PreparedForwardUpdate,
+) -> Result<PublishedForwardUpdate, ForwardPublicationError> {
+    let published = registry.publish_forward_discovery(prepared.request, prepared.result);
+    match &published {
+        Ok(published) if let Some(message) = &published.forward.status_message => {
+            warn!(forward = %published.forward.name, %message, "published forward with status message");
+        }
+        Err(ForwardPublicationError::ReplacementFailed(message)) => {
+            warn!(%message, "forward replacement discovery failed");
+        }
+        _ => {}
+    }
+    published
 }
 
 /// Convert a discovery result into a prepared update.
@@ -785,7 +731,7 @@ async fn prepare_forward_update(
 fn prepare_from_discovery(
     forward: &ForwardEntry,
     discovery: ForwardDiscovery,
-) -> PreparedForwardUpdate {
+) -> Result<DiscoveredForward, String> {
     let (tools, resources, templates, prompts) = match (
         listing_items(discovery.tools),
         listing_items(discovery.resources),
@@ -796,27 +742,18 @@ fn prepare_from_discovery(
             (tools, resources, templates, prompts)
         }
         (Err(reason), ..) | (_, Err(reason), ..) | (_, _, Err(reason), _) | (.., Err(reason)) => {
-            return PreparedForwardUpdate::failed(
-                forward,
-                format!("forward discovery incomplete: {reason}"),
-            );
+            return Err(format!("forward discovery incomplete: {reason}"));
         }
     };
 
-    let mut forward = forward.clone();
-    forward.server_info = discovery.server_info;
-    forward.available = true;
-    forward.status_message = None;
-    let capabilities = ForwardCapabilities {
-        tools: tool_entries(&forward, &tools),
-        resources: resource_entries(&forward, &resources, &templates),
-        prompts: prompt_entries(&forward, &prompts),
-    };
-    PreparedForwardUpdate {
-        forward,
-        capabilities: Some(capabilities),
-        only_if_unchanged: false,
-    }
+    Ok(DiscoveredForward {
+        server_info: discovery.server_info,
+        capabilities: ForwardCapabilities {
+            tools: tool_entries(forward, &tools),
+            resources: resource_entries(forward, &resources, &templates),
+            prompts: prompt_entries(forward, &prompts),
+        },
+    })
 }
 
 fn listing_items(listing: Listing) -> Result<Vec<serde_json::Value>, String> {
@@ -825,179 +762,6 @@ fn listing_items(listing: Listing) -> Result<Vec<serde_json::Value>, String> {
         Listing::Unsupported => Ok(Vec::new()),
         Listing::Incomplete(reason) => Err(reason),
     }
-}
-
-/// Publish a prepared forward update.
-///
-/// This is the only function that changes the registry after discovery. It
-/// always stores the forward status. With a capability set, it replaces the
-/// entries that the forward owns (matched by `forwardId`, not by address) and
-/// keeps operator-disabled entries disabled. Without a capability set, it keeps
-/// the previous entries; the forward is then unavailable, and the invocation
-/// filters refuse calls to it.
-///
-/// Entries are keyed by namespace and name. When another owner already holds a
-/// name in the forward namespace, the entry is skipped, not replaced. The
-/// forward stays available and its status message names the skipped entries.
-///
-/// With `only_if_unchanged`, the update is discarded when the forward was
-/// deleted, or registered again with another address or namespace, while
-/// discovery ran. The update then changes only the status fields of the stored
-/// forward.
-///
-/// Returns the stored forward and the number of published entries.
-#[expect(clippy::too_many_lines, reason = "sequential registry publication")]
-fn apply_forward_update(
-    registry: &InMemoryRegistry,
-    update: PreparedForwardUpdate,
-) -> (ForwardEntry, PublishedCounts) {
-    let PreparedForwardUpdate {
-        mut forward,
-        capabilities,
-        only_if_unchanged,
-    } = update;
-    let forward_id = forward.forward_id().to_owned();
-    if let Err(error) = registry.validate_concrete_namespace(&forward_namespace(&forward)) {
-        warn!(%error, "forward publication rejected");
-        return (forward, PublishedCounts::default());
-    }
-    if only_if_unchanged
-        && !registry
-            .get_forward(&forward.name)
-            .is_some_and(|stored| same_registration(&stored, &forward))
-    {
-        info!(forward = %forward.name, "forward changed during discovery; discarded the discovery result");
-        return (forward, PublishedCounts::default());
-    }
-    let Some(mut capabilities) = capabilities else {
-        warn!(
-            forward = %forward.name,
-            status = forward.status_message.as_deref().unwrap_or_default(),
-            "forward discovery failed; kept the previous capability set and marked the forward unavailable"
-        );
-        store_forward(registry, &forward, only_if_unchanged);
-        return (forward, PublishedCounts::default());
-    };
-
-    // Pin the concrete namespace with its owner before replacing the inventory.
-    // Namespace conversion checks the stored forward under the same registry lock.
-    if !store_forward(registry, &forward, only_if_unchanged) {
-        return (forward, PublishedCounts::default());
-    }
-
-    let disabled = DisabledEntries::capture(registry, &forward_id);
-    registry.remove_tools_owned_by(&forward_id);
-    registry.remove_resources_owned_by(&forward_id);
-    registry.remove_prompts_owned_by(&forward_id);
-
-    for tool in &mut capabilities.tools {
-        tool.enabled = !disabled.tools.contains(&tool.name);
-    }
-    for resource in &mut capabilities.resources {
-        resource.enabled = !disabled.resources.contains(&resource.name);
-    }
-    for prompt in &mut capabilities.prompts {
-        prompt.enabled = !disabled.prompts.contains(&prompt.name);
-    }
-    let discovered = PublishedCounts {
-        tools: capabilities.tools.len(),
-        resources: capabilities.resources.len(),
-        prompts: capabilities.prompts.len(),
-    };
-    let skipped = SkippedEntries {
-        tools: entry_names(
-            registry.register_tools_unless_taken(capabilities.tools),
-            |t| t.name,
-        ),
-        resources: entry_names(
-            registry.register_resources_unless_taken(capabilities.resources),
-            |r| r.name,
-        ),
-        prompts: entry_names(
-            registry.register_prompts_unless_taken(capabilities.prompts),
-            |p| p.name,
-        ),
-    };
-    let counts = PublishedCounts {
-        tools: discovered.tools.saturating_sub(skipped.tools.len()),
-        resources: discovered.resources.saturating_sub(skipped.resources.len()),
-        prompts: discovered.prompts.saturating_sub(skipped.prompts.len()),
-    };
-    if let Some(message) = skipped.status_message(&forward_namespace(&forward)) {
-        warn!(forward = %forward.name, status = %message, "forward discovery skipped entries that other owners hold");
-        forward.status_message = Some(message);
-    }
-    if !store_forward(registry, &forward, only_if_unchanged) {
-        info!(forward = %forward.name, "forward changed during publication; discarded the discovery result");
-        if registry.get_forward(&forward.name).is_none() {
-            registry.remove_tools_owned_by(&forward_id);
-            registry.remove_resources_owned_by(&forward_id);
-            registry.remove_prompts_owned_by(&forward_id);
-        }
-        return (forward, PublishedCounts::default());
-    }
-    (forward, counts)
-}
-
-/// Store the forward status. With `only_if_unchanged`, change only the status
-/// fields of the stored forward, and only when it is the same registration.
-/// Returns `false` when the stored forward was not changed.
-fn store_forward(
-    registry: &InMemoryRegistry,
-    forward: &ForwardEntry,
-    only_if_unchanged: bool,
-) -> bool {
-    if !only_if_unchanged {
-        return registry.try_register_forward(forward.clone()).is_ok();
-    }
-    registry.update_forward_if(
-        &forward.name,
-        |stored| same_registration(stored, forward),
-        |stored| {
-            stored.available = forward.available;
-            stored.status_message.clone_from(&forward.status_message);
-            stored.server_info.clone_from(&forward.server_info);
-        },
-    )
-}
-
-/// Whether two forward entries describe the same upstream registration.
-fn same_registration(stored: &ForwardEntry, probed: &ForwardEntry) -> bool {
-    stored.address == probed.address && forward_namespace(stored) == forward_namespace(probed)
-}
-
-/// Names of the discovered entries that were not published because another
-/// owner already holds the name in the same namespace.
-struct SkippedEntries {
-    tools: Vec<String>,
-    resources: Vec<String>,
-    prompts: Vec<String>,
-}
-
-impl SkippedEntries {
-    /// The forward status message that names the skipped entries, or `None`
-    /// when no entry was skipped.
-    fn status_message(&self, namespace: &str) -> Option<String> {
-        let names: Vec<String> = [
-            ("tool", &self.tools),
-            ("resource", &self.resources),
-            ("prompt", &self.prompts),
-        ]
-        .into_iter()
-        .flat_map(|(kind, names)| names.iter().map(move |name| format!("{kind} {name}")))
-        .collect();
-        (!names.is_empty()).then(|| {
-            format!(
-                "skipped {} discovered entries because other owners already use the names in namespace {namespace}: {}",
-                names.len(),
-                names.join(", ")
-            )
-        })
-    }
-}
-
-fn entry_names<T>(entries: Vec<T>, name: fn(T) -> String) -> Vec<String> {
-    entries.into_iter().map(name).collect()
 }
 
 fn forward_namespace(forward: &ForwardEntry) -> String {
@@ -1161,7 +925,7 @@ fn prompt_entries(forward: &ForwardEntry, prompts: &[serde_json::Value]) -> Vec<
 #[cfg(test)]
 mod forward_helpers_tests {
     use super::*;
-    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_infra::registry::{InMemoryRegistry, PublishedCounts};
     use wanaku_types::registry::{PromptRegistry, ToolRegistry};
 
     fn forward_at(name: &str, address: &str) -> ForwardEntry {
@@ -1191,7 +955,13 @@ mod forward_helpers_tests {
         prompts: &[serde_json::Value],
     ) -> PublishedCounts {
         let found = discovery(complete(tools), Listing::Unsupported, complete(prompts));
-        apply_forward_update(registry, prepare_from_discovery(forward, found)).1
+        let request = registry
+            .begin_forward_registration(forward.clone(), true)
+            .expect("registration request");
+        let result = prepare_from_discovery(request.target(), found);
+        apply_forward_update(registry, PreparedForwardUpdate { request, result })
+            .expect("publish")
+            .counts
     }
 
     fn tool_names(registry: &InMemoryRegistry) -> Vec<String> {
@@ -1200,77 +970,128 @@ mod forward_helpers_tests {
         names
     }
 
-    /// Publish a probe result for `probed` as the startup and reconnect path
-    /// does, after the registry may have changed during discovery.
-    fn publish_probe(registry: &InMemoryRegistry, probed: &ForwardEntry, succeeded: bool) {
-        let mut prepared = if succeeded {
+    fn prepared_probe(registry: &InMemoryRegistry, succeeded: bool) -> PreparedForwardUpdate {
+        let request = registry
+            .begin_forward_refresh("remote")
+            .expect("probe request");
+        let result = if succeeded {
             let found = discovery(
-                complete(&[serde_json::json!({"name": "echo"})]),
-                Listing::Unsupported,
-                Listing::Unsupported,
+                complete(&[serde_json::json!({"name": "stale-tool"})]),
+                complete(&[serde_json::json!({"uri": "file:///stale", "name": "stale-resource"})]),
+                complete(&[serde_json::json!({"name": "stale-prompt"})]),
             );
-            prepare_from_discovery(probed, found)
+            prepare_from_discovery(request.target(), found)
         } else {
-            PreparedForwardUpdate::failed(probed, "connection refused".to_owned())
+            Err("connection refused".to_owned())
         };
-        prepared.only_if_unchanged = true;
-        apply_forward_update(registry, prepared);
+        PreparedForwardUpdate { request, result }
+    }
+
+    fn assert_stale(registry: &InMemoryRegistry, prepared: PreparedForwardUpdate) {
+        assert!(matches!(
+            apply_forward_update(registry, prepared),
+            Err(ForwardPublicationError::Stale(name)) if name == "remote"
+        ));
+        assert!(registry.get_tool("default", "stale-tool").is_none());
+        assert!(registry.list_resources().is_empty());
+        assert!(registry.get_prompt("default", "stale-prompt").is_none());
     }
 
     #[test]
     fn probe_result_does_not_restore_a_deleted_forward() {
         for succeeded in [true, false] {
             let registry = InMemoryRegistry::new();
-            let mut probed = forward_at("remote", "http://remote:8080/mcp");
-            probed.available = false;
-            registry.register_forward(probed.clone());
-            registry.remove_forward("remote");
+            registry.register_forward(forward_at("remote", "http://remote:8080/mcp"));
+            let prepared = prepared_probe(&registry, succeeded);
 
-            publish_probe(&registry, &probed, succeeded);
+            assert!(registry.remove_forward("remote"));
 
+            assert_stale(&registry, prepared);
             assert!(registry.get_forward("remote").is_none());
-            assert!(tool_names(&registry).is_empty());
         }
     }
 
     #[test]
-    fn probe_result_does_not_overwrite_a_new_registration() {
+    fn probe_result_cannot_overwrite_same_address_replacement_or_recreation() {
+        for succeeded in [true, false] {
+            for recreate in [true, false] {
+                let registry = InMemoryRegistry::new();
+                let current = forward_at("remote", "http://remote:8080/mcp");
+                registry.register_forward(current.clone());
+                let prepared = prepared_probe(&registry, succeeded);
+
+                if recreate {
+                    assert!(registry.remove_forward("remote"));
+                }
+                publish(
+                    &registry,
+                    &current,
+                    &[serde_json::json!({"name": "current"})],
+                    &[],
+                );
+
+                assert_stale(&registry, prepared);
+                assert_eq!(tool_names(&registry), ["current"]);
+                let stored = registry.get_forward("remote").expect("forward");
+                assert!(stored.available);
+                assert!(stored.status_message.is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn probe_result_rejects_a_referenced_binding_change() {
         for succeeded in [true, false] {
             let registry = InMemoryRegistry::new();
-            let mut probed = forward_at("remote", "http://old:8080/mcp");
-            probed.available = false;
-            registry.register_forward(probed.clone());
-            let mut current = forward_at("remote", "http://new:8080/mcp");
-            current.available = false;
-            current.status_message = Some("registered again".to_owned());
-            registry.register_forward(current);
+            let mut forward = forward_at("remote", "http://remote:8080/mcp");
+            forward
+                .credential_bindings
+                .insert(CredentialPurpose::Discovery, "credential".to_owned());
+            registry.register_forward(forward);
+            let binding: wanaku_types::credentials::CredentialBinding =
+                serde_json::from_value(serde_json::json!({
+                    "id": "credential",
+                    "forwardId": "remote",
+                    "origin": "http://remote:8080",
+                    "secretRefs": ["env:OLD_TOKEN"],
+                    "mechanism": {"type": "bearer"},
+                    "allowedPurposes": ["discovery"]
+                }))
+                .expect("binding");
+            registry.register_binding(binding.clone());
+            let prepared = prepared_probe(&registry, succeeded);
 
-            publish_probe(&registry, &probed, succeeded);
+            let mut changed = binding;
+            changed.secret_refs = vec![
+                wanaku_types::credentials::SecretRef::parse("env:NEW_TOKEN").expect("reference"),
+            ];
+            registry.register_binding(changed);
 
-            let stored = registry.get_forward("remote").expect("forward");
-            assert_eq!(stored.address, "http://new:8080/mcp");
-            assert_eq!(stored.status_message.as_deref(), Some("registered again"));
-            assert!(tool_names(&registry).is_empty());
+            assert_stale(&registry, prepared);
+            assert!(
+                registry
+                    .get_forward("remote")
+                    .is_some_and(|forward| forward.available)
+            );
         }
     }
 
     #[test]
     fn probe_result_updates_status_of_an_unchanged_forward() {
         let registry = InMemoryRegistry::new();
-        let mut probed = forward_at("remote", "http://remote:8080/mcp");
-        probed.available = false;
-        registry.register_forward(probed.clone());
-        // A label change during discovery is kept: only status fields change.
-        let mut relabeled = probed.clone();
-        relabeled.labels.insert("team".to_owned(), "a".to_owned());
-        registry.register_forward(relabeled);
+        let mut forward = forward_at("remote", "http://remote:8080/mcp");
+        forward.available = false;
+        registry.register_forward(forward);
+        let prepared = prepared_probe(&registry, true);
 
-        publish_probe(&registry, &probed, true);
+        apply_forward_update(&registry, prepared).expect("publish");
 
-        let stored = registry.get_forward("remote").expect("forward");
-        assert!(stored.available);
-        assert_eq!(stored.labels.get("team").map(String::as_str), Some("a"));
-        assert_eq!(tool_names(&registry), vec!["echo".to_owned()]);
+        assert!(
+            registry
+                .get_forward("remote")
+                .is_some_and(|forward| forward.available)
+        );
+        assert_eq!(tool_names(&registry), ["stale-tool"]);
     }
 
     #[test]
@@ -1377,7 +1198,7 @@ mod forward_helpers_tests {
             Listing::Unsupported,
         );
         let prepared = prepare_from_discovery(&forward, found);
-        assert!(prepared.forward.available);
+        assert!(prepared.is_ok());
         assert!(registry.list_forwards().is_empty());
         assert!(registry.list_tools().is_empty());
     }
@@ -1427,7 +1248,13 @@ mod forward_helpers_tests {
             Listing::Unsupported,
             Listing::Incomplete("prompts/list failed: page 2".to_owned()),
         );
-        let (_, counts) = apply_forward_update(&registry, prepare_from_discovery(&forward, found));
+        let request = registry
+            .begin_forward_refresh(&forward.name)
+            .expect("probe");
+        let result = prepare_from_discovery(request.target(), found);
+        let counts = apply_forward_update(&registry, PreparedForwardUpdate { request, result })
+            .expect("publish")
+            .counts;
 
         assert_eq!(counts, PublishedCounts::default());
         assert_eq!(tool_names(&registry), ["a", "b"]);
@@ -1518,17 +1345,22 @@ mod forward_helpers_tests {
             &[serde_json::json!({"name":"original"})],
             &[],
         );
+        let request =
+            registry.begin_forward_registration(forward_in("backend", "integration"), true)?;
+        let found = discovery(
+            complete(&[serde_json::json!({"name":"replacement"})]),
+            Listing::Unsupported,
+            Listing::Unsupported,
+        );
+        let result = prepare_from_discovery(request.target(), found);
         registry.try_register_namespace(serde_json::from_value(serde_json::json!({
             "name":"integration", "members":["kafka"]
         }))?)?;
-        let replacement = forward_in("backend", "integration");
-        let counts = publish(
-            &registry,
-            &replacement,
-            &[serde_json::json!({"name":"replacement"})],
-            &[],
-        );
-        assert_eq!(counts.tools, 0);
+
+        assert!(matches!(
+            apply_forward_update(&registry, PreparedForwardUpdate { request, result }),
+            Err(ForwardPublicationError::InvalidNamespace(_))
+        ));
         assert_eq!(
             registry
                 .get_forward("backend")
@@ -1712,6 +1544,50 @@ mod forward_helpers_tests {
         let stored = registry.get_forward("remote").expect("forward");
         assert!(!stored.available);
         assert!(stored.status_message.is_some());
+    }
+
+    #[tokio::test]
+    async fn manual_refresh_discards_a_failure_after_same_address_replacement() {
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .expect("bind fixture");
+        let address = listener.local_addr().expect("fixture address");
+        let mut forward = forward_at("remote", &format!("http://{address}/mcp"));
+        let registry = InMemoryRegistry::new();
+        registry.register_forward(forward.clone());
+
+        let broker = CredentialBroker::new(wanaku_types::credentials::ResolverRegistry::new());
+        let refresh = handle_forward_refresh(&registry, &broker, None, "remote");
+        let replace = async {
+            let (connection, _) = listener.accept().await.expect("accept probe");
+            forward
+                .labels
+                .insert("owner".to_owned(), "replacement".to_owned());
+            let registry = registry.clone();
+            tokio::task::spawn_blocking(move || {
+                publish(
+                    &registry,
+                    &forward,
+                    &[serde_json::json!({"name": "replacement"})],
+                    &[],
+                );
+            })
+            .await
+            .expect("replace while discovery is in progress");
+            drop(connection);
+            drop(listener);
+        };
+        let (response, ()) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            tokio::join!(refresh, replace)
+        })
+        .await
+        .expect("refresh and replacement complete");
+
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+        assert_eq!(tool_names(&registry), ["replacement"]);
+        let stored = registry.get_forward("remote").expect("replacement");
+        assert!(stored.available);
+        assert!(stored.status_message.is_none());
     }
 
     #[test]

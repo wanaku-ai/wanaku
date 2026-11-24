@@ -8,10 +8,10 @@ use wanaku_types::registry::{
     validate_namespace_name,
 };
 
-use super::InMemoryRegistry;
+use super::{ForwardChanges, InMemoryRegistry};
 
 impl InMemoryRegistry {
-    pub(super) fn lock_namespaces(&self) -> MutexGuard<'_, ()> {
+    pub(super) fn lock_namespaces(&self) -> MutexGuard<'_, ForwardChanges> {
         self.namespace_lock
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -152,10 +152,11 @@ impl InMemoryRegistry {
     }
 
     pub fn try_register_forward(&self, forward: ForwardEntry) -> Result<(), String> {
-        let _guard = self.lock_namespaces();
+        let mut changes = self.lock_namespaces();
         self.validate_concrete_namespace(
             forward.namespace.as_deref().unwrap_or(DEFAULT_NAMESPACE),
         )?;
+        changes.forwards.remove(&forward.name);
         self.insert_forward(forward);
         self.persist();
         Ok(())

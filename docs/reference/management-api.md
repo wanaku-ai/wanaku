@@ -259,7 +259,11 @@ A replacement (`replace=true`) is all or nothing. When the discovery of a replac
 
 #### Discovery Failure Behavior
 
-Forward create, forward refresh, startup, and the background reconnect loop use the same discovery path. Wanaku runs discovery first. Discovery does not change the registry. Wanaku then publishes the result in one step.
+Forward create, forward refresh, startup, and the background reconnect loop use the same discovery path. Wanaku captures the forward registration and the identity of each referenced credential binding before discovery. It releases the registry lock before it contacts the upstream. It then checks the captured state and publishes the status and capabilities under one write lock.
+
+If a writer changes, deletes, or recreates the forward before publication, Wanaku discards the discovery result. The same check applies to changes to a referenced credential binding. A manual create or refresh returns `409` when this check fails. Retry the operation to run discovery again.
+
+Embedders can call `InMemoryRegistry::begin_forward_registration` or `InMemoryRegistry::begin_forward_refresh` to capture an update request. Pass the request to `wanaku_server::management::prepare_forward_update` to run discovery. Pass its result to `wanaku_server::management::apply_forward_update` to publish it conditionally.
 
 Discovery lists tools, resources, resource templates, and prompts. Each listing has one of these results:
 
