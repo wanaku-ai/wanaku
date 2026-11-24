@@ -138,6 +138,7 @@ pub fn resolve_pipelines(
             deps.filter_registry,
             &chains,
             &config.insecure_options,
+            &config.clusters,
         )?;
 
         pipeline.apply_body_limits(
