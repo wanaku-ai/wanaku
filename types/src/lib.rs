@@ -4,6 +4,7 @@ pub mod agents;
 pub mod audit;
 pub mod audit_redaction;
 pub mod config;
+pub mod connectors;
 pub mod correlation;
 pub mod credentials;
 pub mod feature;
