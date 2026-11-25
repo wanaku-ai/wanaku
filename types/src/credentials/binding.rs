@@ -15,7 +15,7 @@ use super::resolver::SecretRef;
 
 /// The purpose a credential is used for. Discovery and invocation are kept
 /// distinct in policy checks, resolution context, audit events, and cache keys.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum CredentialPurpose {
