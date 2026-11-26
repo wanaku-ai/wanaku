@@ -172,8 +172,9 @@ The `kind` values are `tool_arguments`, `tool_result`, `resource_contents`,
 `prompt_contents`, and `upstream_error`. A rule inspects the argument object,
 the JSON-RPC result, or the JSON-RPC error object. An MCP result with
 `isError: true` uses the local rules for both `tool_result` and `upstream_error`.
-For external scanning, it has kind `upstream_error`. Error rules inspect the
-response after credential redaction.
+The external scanner receives it as `upstream_error` if configured for that
+kind. Otherwise, it receives it as `tool_result` if configured for that kind.
+Error rules inspect the response after credential redaction.
 
 Set `pointer` to a JSON Pointer to select a field or an array element.
 Omit `pointer` to select the full value. A rule with a pointer that does not exist
@@ -194,8 +195,12 @@ rule matches, the filter uses the first applicable action in this order.
    `-32004`. The filter does not queue, resume, or replay the action.
 3. `redact` applies all matching redaction rules. A field check replaces the
    selected value with `[REDACTED]`. A secret-pattern check replaces each
-   matching string with `[REDACTED]`. Use redaction on values that can accept a
-   replacement string. The normal tool argument schema still applies.
+   matching string with `[REDACTED]`. The normal tool argument schema still
+   applies. On responses, redaction can change text payloads, prompt
+   descriptions, fields inside structured tool output, and JSON-RPC error
+   messages and data. A redaction that changes the response structure or a
+   protocol field, such as a content type, prompt role, resource URI, or error
+   code, blocks the response in enforce mode.
 4. `tag` passes the content and records the matching rule as an audit tag.
 5. `allow` passes the content and records any findings. This is also the action
    when no rule matches.
