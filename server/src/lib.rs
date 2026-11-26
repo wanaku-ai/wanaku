@@ -271,6 +271,10 @@ fn register_wanaku_filters(registry: &mut praxis_filter::FilterRegistry) {
     );
     praxis_filter::register_filters!(
         @register registry,
+        http "wanaku_mcp_integrity" => wanaku_filters::integrity::IntegrityFilter::from_config
+    );
+    praxis_filter::register_filters!(
+        @register registry,
         http "wanaku_mcp_init" => wanaku_filters::McpInitFilter::from_config
     );
     praxis_filter::register_filters!(
@@ -348,7 +352,7 @@ mod tests {
     }
 
     #[test]
-    fn action_policy_runs_before_evaluator() {
+    fn mcp_integrity_and_action_policy_run_before_evaluator() {
         let yaml: Value =
             serde_yaml::from_str(super::DEFAULT_CONFIG).expect("default.yaml must parse");
         let chains = yaml["filter_chains"].as_sequence().expect("filter chains");
@@ -374,7 +378,11 @@ mod tests {
             .iter()
             .position(|name| *name == "wanaku_evaluator")
             .expect("evaluator filter");
-        assert!(init < policy && policy < evaluator);
+        let integrity = filters
+            .iter()
+            .position(|name| *name == "wanaku_mcp_integrity")
+            .expect("integrity filter");
+        assert!(init < integrity && integrity < policy && policy < evaluator);
     }
 
     /// Guards against the `headers`/`request_set`/`Host` lookup silently

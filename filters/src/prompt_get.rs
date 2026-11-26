@@ -147,9 +147,15 @@ impl PromptGetFilter {
                 redactor,
             };
 
-            return self
+            let response = self
                 .handle_forwarded_get(&address, prompt_name, &parsed, exchange)
-                .await;
+                .await?;
+            return Ok(crate::integrity::inspect_response(
+                ctx,
+                wanaku_types::integrity::ContentKind::PromptContents,
+                response,
+            )
+            .await);
         }
 
         let messages: Vec<serde_json::Value> = prompt
@@ -190,9 +196,13 @@ impl PromptGetFilter {
         });
 
         let response_body = Bytes::from(response.to_string());
-        Ok(FilterAction::Reject(crate::response::json_response(
-            response_body,
-        )))
+        let action = FilterAction::Reject(crate::response::json_response(response_body));
+        Ok(crate::integrity::inspect_response(
+            ctx,
+            wanaku_types::integrity::ContentKind::PromptContents,
+            action,
+        )
+        .await)
     }
 
     #[expect(
@@ -241,7 +251,7 @@ impl PromptGetFilter {
                 // Redact any injected secret the upstream may have echoed into its
                 // error text before it reaches the logs or the agent.
                 let message = redactor.redact(&e.to_string());
-                warn!(prompt = %prompt_name, error = %message, "MCP forward prompt get failed");
+                warn!(prompt = %prompt_name, "MCP forward prompt get failed");
                 Ok(crate::response::json_rpc_host_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
@@ -457,6 +467,48 @@ mod filter_tests {
         assert!(invoker.calls().is_empty());
         assert_eq!(response["id"], 7);
         assert_eq!(response["result"]["messages"], json!([]));
+    }
+
+    #[tokio::test]
+    async fn integrity_redacts_rendered_local_prompt() {
+        let registry = registry(None, None);
+        registry.register_prompt(
+            serde_json::from_value(json!({
+                "name": "greet",
+                "messages": [{"role": "user", "content": "hello {who}"}]
+            }))
+            .unwrap(),
+        );
+        let invoker = RecordingInvoker::succeeding(Value::Null);
+        let req = request(&[]);
+        let mut ctx = filter_context(&req, crate::PROMPTS_GET, &registry, &invoker);
+        let config = serde_yaml::from_str(
+            r"
+rules:
+  - id: rendered_greeting
+    kind: prompt_contents
+    check: {type: secret_pattern, pattern: 'hello ada'}
+    action: redact
+",
+        )
+        .unwrap();
+        let integrity = crate::integrity::IntegrityFilter::from_config(&config).unwrap();
+        let mut body = Some(bytes::Bytes::from_static(BODY.as_bytes()));
+        assert!(matches!(
+            integrity
+                .on_request_body(&mut ctx, &mut body, true)
+                .await
+                .unwrap(),
+            FilterAction::Continue
+        ));
+        let terminal = PromptGetFilter {
+            max_body_bytes: 1024,
+        };
+        let response = response_json(terminal.handle_body(&mut ctx, &mut body).await.unwrap());
+        assert_eq!(
+            response["result"]["messages"][0]["content"]["text"],
+            "[REDACTED]"
+        );
     }
 
     #[tokio::test]

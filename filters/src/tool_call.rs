@@ -257,7 +257,14 @@ impl ToolCallFilter {
         };
 
         if tool.type_ == "wasm" {
-            return crate::wasm::call_handler(ctx, &parsed.id, &tool, &parsed.arguments).await;
+            let response =
+                crate::wasm::call_handler(ctx, &parsed.id, &tool, &parsed.arguments).await?;
+            return Ok(crate::integrity::inspect_response(
+                ctx,
+                wanaku_types::integrity::ContentKind::ToolResult,
+                response,
+            )
+            .await);
         }
 
         if tool.is_mcp_forward() {
@@ -301,7 +308,18 @@ impl ToolCallFilter {
 
         let mut forward_headers = collect_forward_headers(&ctx.request.headers, tool);
         if tool.inject_header_args() {
+            let previous_len = parsed.arguments.len();
             inject_header_arguments(&mut parsed.arguments, &tool.input_schema, &forward_headers);
+            if parsed.arguments.len() > previous_len
+                && let Err(action) = crate::integrity::inspect_mapped_arguments(
+                    ctx,
+                    &mut parsed.arguments,
+                    &parsed.id,
+                )
+                .await
+            {
+                return Ok(action);
+            }
         }
 
         if let Err(message) = crate::wasm::validate_arguments(tool, &parsed.arguments) {
@@ -343,8 +361,15 @@ impl ToolCallFilter {
             redactor,
         };
 
-        self.handle_forwarded_call(&address, tool_name, parsed, exchange, conversation_id)
-            .await
+        let response = self
+            .handle_forwarded_call(&address, tool_name, parsed, exchange, conversation_id)
+            .await?;
+        Ok(crate::integrity::inspect_response(
+            ctx,
+            wanaku_types::integrity::ContentKind::ToolResult,
+            response,
+        )
+        .await)
     }
 
     #[expect(
@@ -413,7 +438,7 @@ impl ToolCallFilter {
                 // #1874: also strip any brokered secret the upstream echoed back,
                 // matched by the exact injected material as a backstop.
                 let detail = redactor.redact(&detail);
-                warn!(tool = %tool_name, error = %detail, "MCP forward call failed");
+                warn!(tool = %tool_name, "MCP forward call failed");
                 Ok(crate::response::json_rpc_host_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,
@@ -1278,6 +1303,61 @@ mod filter_tests {
         assert_eq!(response["id"], 7);
         assert_eq!(response["result"]["content"][0]["text"], "echo <redacted>");
         assert_eq!(response["result"]["isError"], false);
+    }
+
+    #[tokio::test]
+    async fn integrity_rewrites_arguments_and_withholds_forwarded_result() {
+        let registry = registry(None, None);
+        registry.register_tool(tool(Some(FORWARD_ID), true));
+        let invoker = RecordingInvoker::succeeding(json!({
+            "content": [{"type": "text", "text": "private result"}]
+        }));
+        let req = request(&[("x-client-token", "client-value")]);
+        let mut ctx = filter_context(&req, crate::TOOLS_CALL, &registry, &invoker);
+        ctx.set_metadata(crate::MCP_NAME_KEY, "echo");
+        let config = serde_yaml::from_str(
+            r"
+rules:
+  - id: sanitize_message
+    kind: tool_arguments
+    pointer: /message
+    check: {type: field}
+    action: redact
+  - id: sanitize_mapped_header
+    kind: tool_arguments
+    pointer: /client
+    check: {type: field}
+    action: redact
+  - id: private_result
+    kind: tool_result
+    check: {type: secret_pattern, pattern: 'private result'}
+    action: block
+",
+        )
+        .unwrap();
+        let integrity = crate::integrity::IntegrityFilter::from_config(&config).unwrap();
+        let mut body = Some(bytes::Bytes::from_static(BODY.as_bytes()));
+        assert!(matches!(
+            integrity
+                .on_request_body(&mut ctx, &mut body, true)
+                .await
+                .unwrap(),
+            FilterAction::Continue
+        ));
+        let terminal = ToolCallFilter {
+            max_body_bytes: 1024,
+        };
+        let response = response_json(terminal.handle_body(&mut ctx, &mut body).await.unwrap());
+        assert_eq!(response["id"], 7);
+        assert_eq!(response["error"]["code"], -32003);
+        assert!(response.get("result").is_none());
+        let calls = invoker.calls();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(
+            calls[0].arguments.as_ref().unwrap()["message"],
+            "[REDACTED]"
+        );
+        assert_eq!(calls[0].arguments.as_ref().unwrap()["client"], "[REDACTED]");
     }
 
     #[tokio::test]

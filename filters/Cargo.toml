@@ -16,6 +16,9 @@ async-trait = { workspace = true }
 bytes = { workspace = true }
 http = { workspace = true }
 jsonschema = { version = "0.61", default-features = false }
+serde = { workspace = true }
+regex = "1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
