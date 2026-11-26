@@ -289,11 +289,8 @@ fn response_structure(kind: ContentKind, tool_error: bool, content: &Value) -> V
             for item in array_items(&mut structure, "content") {
                 mask_content_text(item);
             }
-            if let Some(value) = structure
-                .get_mut("structuredContent")
-                .filter(|value| value.is_object())
-            {
-                *value = json!({});
+            if let Some(value) = structure.get_mut("structuredContent") {
+                mask_payload_strings(value);
             }
         }
         ContentKind::ResourceContents => {
@@ -312,7 +309,7 @@ fn response_structure(kind: ContentKind, tool_error: bool, content: &Value) -> V
         ContentKind::UpstreamError => {
             mask_text(&mut structure, "/message");
             if let Some(data) = structure.get_mut("data") {
-                *data = Value::Null;
+                mask_payload_strings(data);
             }
         }
         ContentKind::ToolArguments => {}
@@ -342,6 +339,15 @@ fn mask_text(content: &mut Value, pointer: &str) {
         .filter(|value| value.is_string())
     {
         *value = json!("");
+    }
+}
+
+fn mask_payload_strings(value: &mut Value) {
+    match value {
+        Value::String(text) => text.clear(),
+        Value::Array(items) => items.iter_mut().for_each(mask_payload_strings),
+        Value::Object(fields) => fields.values_mut().for_each(mask_payload_strings),
+        _ => {}
     }
 }
 
@@ -430,6 +436,11 @@ impl IntegrityFilter {
         let config: Config = praxis_filter::parse_filter_config(FILTER, config)?;
         for rule in &config.rules {
             if (!rule.pointer.is_empty() && !rule.pointer.starts_with('/'))
+                || rule
+                    .pointer
+                    .split('~')
+                    .skip(1)
+                    .any(|part| !part.starts_with(['0', '1']))
                 || (matches!(rule.check, Check::Field) && rule.pointer.is_empty())
                 || (rule.action == IntegrityAction::Redact
                     && matches!(rule.check, Check::Size { .. } | Check::Type { .. }))
@@ -459,9 +470,9 @@ impl HttpFilter for IntegrityFilter {
     }
 
     fn request_body_mode(&self) -> BodyMode {
-        BodyMode::StreamBuffer {
-            max_bytes: Some(MAX_SCAN_BYTES),
-        }
+        // The MCP chain already buffers for method detection and dispatch.
+        // Scanner limits apply to the serialized scanner payload.
+        BodyMode::Stream
     }
 
     async fn on_request(
@@ -736,6 +747,48 @@ mod tests {
 
     fn filter(config: &str) -> Box<dyn HttpFilter> {
         IntegrityFilter::from_config(&serde_yaml::from_str(config).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn validates_json_pointer_escapes() {
+        for (pointer, valid) in [("/a~0b/~1", true), ("/a~", false), ("/a~2b", false)] {
+            let yaml = format!(
+                "rules: [{{id: test, kind: tool_arguments, pointer: '{pointer}', check: {{type: field}}, action: block}}]"
+            );
+            assert_eq!(
+                IntegrityFilter::from_config(&serde_yaml::from_str(&yaml).unwrap()).is_ok(),
+                valid,
+                "{pointer}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn response_redaction_preserves_nested_payload_types() {
+        for (kind, field) in [
+            (ContentKind::ToolResult, "structuredContent"),
+            (ContentKind::UpstreamError, "data"),
+        ] {
+            let payload = json!({field: {"nested": [42, {"text": "secret"}]}});
+            for (suffix, action) in [
+                ("/nested", IntegrityAction::Block),
+                ("/nested/0", IntegrityAction::Block),
+                ("/nested/1/text", IntegrityAction::Redact),
+            ] {
+                let scanner = Scanner {
+                    rules: vec![Rule {
+                        id: "redact".into(),
+                        kind,
+                        action: IntegrityAction::Redact,
+                        pointer: format!("/{field}{suffix}"),
+                        check: Check::Field,
+                    }],
+                    external: None,
+                };
+                let inspection = scanner.inspect_outcome(kind, &payload).await;
+                assert_eq!(finding_action(&inspection), action, "{field}{suffix}");
+            }
+        }
     }
 
     // Exercise the production HTTP client against a loopback fixture. Only

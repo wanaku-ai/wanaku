@@ -382,7 +382,7 @@ mod tests {
             .iter()
             .position(|name| *name == "wanaku_mcp_integrity")
             .expect("integrity filter");
-        assert!(init < integrity && integrity < policy && policy < evaluator);
+        assert!(init < policy && policy < integrity && integrity < evaluator);
     }
 
     /// Guards against the `headers`/`request_set`/`Host` lookup silently

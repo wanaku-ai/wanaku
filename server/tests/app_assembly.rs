@@ -35,9 +35,16 @@ fn build_app() -> App {
 
 fn assemble_app(wanaku_config: Option<&serde_yaml::Value>) -> Result<App, String> {
     let pipeline = wanaku_server::load_config(None).expect("embedded pipeline configuration");
+    build_with_pipeline(&pipeline, wanaku_config)
+}
+
+fn build_with_pipeline(
+    pipeline: &praxis_core::config::Config,
+    wanaku_config: Option<&serde_yaml::Value>,
+) -> Result<App, String> {
     App::build(
         &AppSettings {
-            pipeline: &pipeline,
+            pipeline,
             wanaku_config,
             governance: GovernanceConfig::default(),
             plugins_dir: None,
@@ -119,6 +126,67 @@ fn startup_rejects_connector_profile_violations_before_discovery() {
         let error = assemble_app(Some(&config)).err().unwrap();
         assert!(error.contains(expected), "{error}");
     }
+}
+
+#[tokio::test]
+async fn action_policy_denial_precedes_external_integrity_inspection() {
+    let mut config = wanaku_server::load_config(None).expect("embedded pipeline configuration");
+    let router = config
+        .filter_chains
+        .iter_mut()
+        .find(|chain| chain.name == "mcp_router")
+        .unwrap();
+    for filter in &mut router.filters {
+        match filter.filter_type.as_str() {
+            "wanaku_mcp_id" => {
+                filter.config = serde_yaml::from_str("max_body_bytes: 2097152").unwrap();
+            }
+            "wanaku_mcp_integrity" => {
+                filter.config = serde_yaml::from_str(
+                    "external: {id: test, url: 'https://scanner.invalid', kinds: [tool_arguments], action: block}",
+                ).unwrap();
+            }
+            _ => {}
+        }
+    }
+    let app = build_with_pipeline(&config, None).expect("application assembles");
+    assert_eq!(
+        app.pipelines
+            .get("mcp")
+            .expect("MCP listener pipeline")
+            .load()
+            .body_capabilities()
+            .request_body_mode,
+        praxis_filter::BodyMode::StreamBuffer {
+            max_bytes: Some(2_097_152)
+        }
+    );
+    register_tool(&app, "weather");
+    let call = json!({
+        "jsonrpc":"2.0","id":7,"method":"tools/call",
+        "params":{"name":"weather","arguments":{"payload":"x".repeat(1_048_576)}}
+    });
+
+    put_policy(&app, "deny-weather", "deny").await;
+    assert_eq!(
+        mcp(&app, &call).await.unwrap()["error"]["code"],
+        POLICY_DENIED
+    );
+    assert!(
+        audit_events(&app)
+            .await
+            .iter()
+            .all(|event| event["reason_code"] != "mcp_content_integrity")
+    );
+
+    put_policy(&app, "allow-weather", "allow").await;
+    assert_eq!(
+        mcp(&app, &call).await.unwrap()["error"]["code"],
+        POLICY_DENIED
+    );
+    assert!(audit_events(&app).await.iter().any(|event| {
+        event["attributes"]["scanner_failure"]["reason"] == "scanner_request_size_limit"
+    }));
 }
 
 fn register_tool(app: &App, name: &str) {

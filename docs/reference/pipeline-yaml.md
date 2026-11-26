@@ -34,8 +34,8 @@ filter_chains:
       - filter: wanaku_namespace
       - filter: wanaku_well_known
       - filter: wanaku_mcp_init
-      - filter: wanaku_mcp_integrity
       - filter: wanaku_action_policy
+      - filter: wanaku_mcp_integrity
       - filter: wanaku_evaluator
       - filter: wanaku_tool_list
       - filter: wanaku_tool_call
@@ -147,7 +147,9 @@ validation, and credential controls enabled. A scan can miss harmful content, an
 a rule can match safe content.
 
 Set `rules` on the `wanaku_mcp_integrity` filter in the MCP chain. Put the filter
-after `wanaku_namespace` and before `wanaku_action_policy` and `wanaku_evaluator`.
+after `wanaku_action_policy` and before `wanaku_evaluator`. The MCP chain
+must buffer the request body. The scanner request limit applies to the
+serialized scanner payload. The pipeline sets the inbound body limit.
 The embedded configuration has no rules and sends no content to scanners.
 
 ```yaml
@@ -177,7 +179,9 @@ kind. Otherwise, it receives it as `tool_result` if configured for that kind.
 Error rules inspect the response after credential redaction.
 
 Set `pointer` to a JSON Pointer to select a field or an array element.
-Omit `pointer` to select the full value. A rule with a pointer that does not exist
+Encode a literal tilde as `~0` and a literal slash as `~1`. The filter rejects
+invalid escapes during configuration. Omit `pointer` to select the full value.
+A rule with a pointer that does not exist
 does not match.
 
 | Check type | Match condition |
@@ -197,7 +201,7 @@ rule matches, the filter uses the first applicable action in this order.
    selected value with `[REDACTED]`. A secret-pattern check replaces each
    matching string with `[REDACTED]`. The normal tool argument schema still
    applies. On responses, redaction can change text payloads, prompt
-   descriptions, fields inside structured tool output, and JSON-RPC error
+   descriptions, and string values in structured tool output and JSON-RPC error
    messages and data. A redaction that changes the response structure or a
    protocol field, such as a content type, prompt role, resource URI, or error
    code, blocks the response in enforce mode.
