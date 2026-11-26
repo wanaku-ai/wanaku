@@ -49,16 +49,9 @@ fn definitions<T: DeserializeOwned>(root: &Value, section: &str) -> Result<Vec<T
         .iter()
         .enumerate()
         .map(|(index, entry)| {
-            let mut ignored = false;
-            let result = serde_ignored::deserialize(entry.clone(), |_| ignored = true);
-            if let Ok(definition) = result
-                && !ignored
-            {
-                return Ok(definition);
-            }
-            Err(format!(
-                "{section}[{index}]: invalid definition; check field names and types"
-            ))
+            serde_yaml::from_value(entry.clone()).map_err(|_| {
+                format!("{section}[{index}]: invalid definition; check field names and types")
+            })
         })
         .collect()
 }
@@ -148,19 +141,29 @@ connector_profiles:
     #[test]
     fn malformed_connector_definitions_do_not_echo_submitted_values() {
         let registry = InMemoryRegistry::new();
-        let config = serde_yaml::from_str(
-            r#"
-connector_instances:
+        let instances = r#"
   - profile: {name: generic-mcp, version: 1}
     name: partner
     namespace: default
     address: https://example.com/mcp
     secret_value: submitted-secret
-"#,
-        )
-        .unwrap();
-        let error = validate(&config, &registry).unwrap_err();
-        assert!(error.contains("connector_instances[0]"), "{error}");
-        assert!(!error.contains("submitted-secret"), "{error}");
+"#;
+        let profiles = r#"
+  - identity: {name: partner, version: 1}
+    provider_key: partner
+    transport: mcp_streamable_http
+    credentials:
+      - purpose: discovery
+        allowed_mechanisms: [{type: bearer, secret_value: submitted-secret}]
+"#;
+        for (section, entries) in [
+            ("connector_instances", instances),
+            ("connector_profiles", profiles),
+        ] {
+            let config = serde_yaml::from_str(&format!("{section}:{entries}")).unwrap();
+            let error = validate(&config, &registry).unwrap_err();
+            assert!(error.starts_with(&format!("{section}[0]")), "{error}");
+            assert!(!error.contains("submitted-secret"), "{error}");
+        }
     }
 }
