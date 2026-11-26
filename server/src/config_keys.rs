@@ -67,6 +67,9 @@ fn section_unknown_keys(key: &str, value: &Value) -> Option<Vec<String>> {
         "forwards" => unknown_keys::<Vec<ForwardEntry>>(value),
         "namespaces" => unknown_keys::<Vec<NamespaceEntry>>(value),
         "bindings" => unknown_keys::<Vec<CredentialBinding>>(value),
+        // Connector definitions have closed schemas. Their loader reports
+        // malformed definitions without including submitted values.
+        "connector_profiles" | "connector_instances" => Vec::new(),
         "llm_connections" => unknown_keys::<Vec<LlmConnection>>(value),
         "typesafe_system_one_connections" => unknown_keys::<Vec<SystemOneConnection>>(value),
         "opa_connections" => unknown_keys::<Vec<OpaConnection>>(value),

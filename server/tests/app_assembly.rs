@@ -30,11 +30,15 @@ const EVALUATOR_DENIED: i64 = -32001;
 /// Build an application from the embedded pipeline configuration, with
 /// in-memory persistence and a broker that has no secret resolvers.
 fn build_app() -> App {
+    assemble_app(None).expect("application assembles")
+}
+
+fn assemble_app(wanaku_config: Option<&serde_yaml::Value>) -> Result<App, String> {
     let pipeline = wanaku_server::load_config(None).expect("embedded pipeline configuration");
     App::build(
         &AppSettings {
             pipeline: &pipeline,
-            wanaku_config: None,
+            wanaku_config,
             governance: GovernanceConfig::default(),
             plugins_dir: None,
         },
@@ -43,7 +47,78 @@ fn build_app() -> App {
             broker: Arc::new(CredentialBroker::new(ResolverRegistry::new())),
         },
     )
-    .expect("application assembles")
+}
+
+const CONNECTOR_CONFIG: &str = r#"
+connector_profiles:
+  - identity: {name: partner, version: 1}
+    provider_key: partner
+    transport: mcp_streamable_http
+    address: {require_tls: true}
+    credentials:
+      - purpose: discovery
+        allowed_mechanisms: [{type: bearer}]
+connector_instances:
+  - profile: {name: partner, version: 1}
+    name: connector-a
+    namespace: default
+    address: https://unused.example/mcp
+    credential_bindings: {discovery: binding-a}
+bindings:
+  - id: binding-a
+    forward_id: connector-a
+    origin: https://unused.example
+    mechanism: {type: bearer}
+    secret_refs: ["env:PARTNER_TOKEN"]
+    allowed_purposes: [discovery]
+"#;
+
+#[test]
+fn startup_validates_connectors_with_brokerage_metadata_without_publishing() {
+    let config = serde_yaml::from_str(CONNECTOR_CONFIG).unwrap();
+    let app = assemble_app(Some(&config)).unwrap();
+    let registry = &app.registry;
+    assert!(registry.list_forwards().is_empty());
+    assert_eq!(
+        (
+            registry.tool_count(),
+            registry.resource_count(),
+            registry.prompt_count()
+        ),
+        (0, 0, 0)
+    );
+}
+
+#[test]
+fn startup_rejects_connector_profile_violations_before_discovery() {
+    let collision = format!(
+        "{CONNECTOR_CONFIG}\nforwards: [{{name: connector-a, address: 'https://unused.example/mcp'}}]"
+    );
+    for (yaml, expected) in [
+        (
+            CONNECTOR_CONFIG.replace("https://unused.example/mcp", "http://unused.example/mcp"),
+            "field \"address\"",
+        ),
+        (
+            CONNECTOR_CONFIG.replace(
+                "origin: https://unused.example",
+                "origin: https://other.example",
+            ),
+            "binding is missing or incompatible",
+        ),
+        (
+            CONNECTOR_CONFIG.replace(
+                "profile: {name: partner, version: 1}",
+                "profile: {name: partner, version: 2}",
+            ),
+            "unknown profile version",
+        ),
+        (collision, "already in use by a forward"),
+    ] {
+        let config = serde_yaml::from_str(&yaml).unwrap();
+        let error = assemble_app(Some(&config)).err().unwrap();
+        assert!(error.contains(expected), "{error}");
+    }
 }
 
 fn register_tool(app: &App, name: &str) {

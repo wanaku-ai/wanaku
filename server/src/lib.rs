@@ -2,6 +2,7 @@
 
 pub mod app;
 pub mod config_keys;
+mod connector_config;
 pub mod http_response;
 pub mod management;
 pub mod openapi;
