@@ -76,7 +76,34 @@ pub struct ConfigurationField {
 #[serde(deny_unknown_fields)]
 pub struct CredentialRequirement {
     pub purpose: CredentialPurpose,
+    #[serde(deserialize_with = "deserialize_allowed_mechanisms")]
     pub allowed_mechanisms: Vec<InjectionMechanism>,
+}
+
+fn deserialize_allowed_mechanisms<'de, D>(
+    deserializer: D,
+) -> Result<Vec<InjectionMechanism>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    // Struct variants reject extra fields even for mechanisms with no settings.
+    #[derive(Deserialize)]
+    #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+    enum StrictMechanism {
+        Bearer {},
+        NamedHeader { header: String },
+        Basic {},
+    }
+
+    let mechanisms = Vec::<StrictMechanism>::deserialize(deserializer)?;
+    Ok(mechanisms
+        .into_iter()
+        .map(|mechanism| match mechanism {
+            StrictMechanism::Bearer {} => InjectionMechanism::Bearer,
+            StrictMechanism::NamedHeader { header } => InjectionMechanism::NamedHeader { header },
+            StrictMechanism::Basic {} => InjectionMechanism::Basic,
+        })
+        .collect())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
