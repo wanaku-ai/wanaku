@@ -20,6 +20,9 @@ pub struct ProfileVersion {
 #[serde(deny_unknown_fields)]
 pub struct ConnectorProfile {
     pub identity: ProfileVersion,
+    pub provider_key: String,
+    #[serde(default)]
+    pub drift_mode: DriftMode,
     pub transport: ConnectorTransport,
     #[serde(default)]
     pub address: AddressConstraints,
@@ -27,6 +30,15 @@ pub struct ConnectorProfile {
     pub configuration: BTreeMap<String, ConfigurationField>,
     #[serde(default)]
     pub credentials: Vec<CredentialRequirement>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[derive(Default)]
+pub enum DriftMode {
+    Allow,
+    #[default]
+    Deny,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -112,6 +124,8 @@ impl ConnectorProfile {
                 version: 1,
             },
             transport: ConnectorTransport::McpStreamableHttp,
+            provider_key: "generic-mcp".to_owned(),
+            drift_mode: DriftMode::Deny,
             address: AddressConstraints {
                 allow_query: true,
                 ..AddressConstraints::default()
@@ -124,6 +138,9 @@ impl ConnectorProfile {
     pub fn validate(&self) -> Result<(), ProfileError> {
         if !identifier(&self.identity.name) || self.identity.version == 0 {
             return Err(self.error("identity", "requires a valid name and positive version"));
+        }
+        if !identifier(&self.provider_key) {
+            return Err(self.error("provider_key", "requires a valid provider identifier"));
         }
         if self.configuration.len() > 32 || self.address.allowed_origins.len() > 32 {
             return Err(self.error("profile", "exceeds configuration or origin limit"));
