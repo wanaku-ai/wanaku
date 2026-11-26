@@ -228,6 +228,9 @@ impl ConnectorProfile {
         let mut effective = BTreeMap::new();
         for (name, field) in &self.configuration {
             let selected = match instance.configuration.get(name) {
+                Some(_) if field.default.is_some() => {
+                    return Err(self.error(name, "instance cannot override a profile default"));
+                }
                 Some(value) if field.choices.contains(value) => {
                     Some((value, ValueSource::Instance))
                 }
@@ -375,7 +378,7 @@ mod tests {
     }
 
     #[test]
-    fn compose_tracks_defaults_and_overrides_and_redacts_invalid_input() {
+    fn compose_tracks_sources_and_rejects_overrides_without_echoing_input() {
         let mut profile = ConnectorProfile::generic_mcp();
         profile.configuration.insert(
             "region".to_owned(),
@@ -396,6 +399,8 @@ mod tests {
         instance
             .configuration
             .insert("region".to_owned(), "west".to_owned());
+        assert!(profile.compose(&instance).is_err());
+        profile.configuration.get_mut("region").unwrap().default = None;
         assert_eq!(
             profile.compose(&instance).unwrap()["region"].source,
             ValueSource::Instance

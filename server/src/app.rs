@@ -342,6 +342,7 @@ fn load_core_config(
     // forward that references a discovery binding fails closed when the binding
     // is absent.
     load_bindings(config, registry);
+    crate::connector_config::validate(config, registry)?;
 
     if !forwards.is_empty() {
         let rt = match tokio::runtime::Builder::new_current_thread()

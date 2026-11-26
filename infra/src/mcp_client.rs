@@ -678,9 +678,8 @@ const MAX_PAGES: usize = 100;
 /// Read every page of one listing.
 ///
 /// A JSON-RPC method-not-found error on the first page means the server does
-/// not offer the capability. Any other error, a timeout, or a cursor that does
-/// not end within [`MAX_PAGES`] pages makes the listing incomplete, so the
-/// caller never takes a partial list as the full set.
+/// not offer the capability. Any other error, a timeout, or exceeding the page
+/// or item limit makes the listing incomplete.
 #[expect(
     clippy::too_many_lines,
     reason = "paginated listing with error classification"
@@ -715,19 +714,17 @@ where
             }
         };
 
-        items.extend(page);
-        if items.len() >= max_items {
-            tracing::warn!(url = %url, method, max_items, "listing capped at the maximum item count");
-            items.truncate(max_items);
-            return Listing::Complete(to_values(items));
+        cursor = next_cursor.filter(|next| !next.is_empty());
+        let remaining = max_items - items.len();
+        if page.len() > remaining || (page.len() == remaining && cursor.is_some()) {
+            tracing::warn!(url = %url, method, max_items, "listing exceeds the maximum item count");
+            return Listing::Incomplete(format!("{method} exceeds the {max_items} item limit"));
         }
 
-        match next_cursor {
-            Some(next) if !next.is_empty() => cursor = Some(next),
-            _ => {
-                tracing::debug!(url = %url, method, count = items.len(), "listing complete");
-                return Listing::Complete(to_values(items));
-            }
+        items.extend(page);
+        if cursor.is_none() {
+            tracing::debug!(url = %url, method, count = items.len(), "listing complete");
+            return Listing::Complete(to_values(items));
         }
     }
 
@@ -914,6 +911,42 @@ mod tests {
         );
         assert_eq!(discovery.resource_templates, super::Listing::Unsupported);
         assert_eq!(discovery.prompts, super::Listing::Unsupported);
+    }
+
+    #[tokio::test]
+    async fn discovery_accepts_terminal_page_at_item_limit() {
+        let listing = super::list_all_pages(
+            "tools/list",
+            "https://upstream.test",
+            2,
+            |params| async move {
+                Ok(if params.cursor.is_some() {
+                    (vec![2], Some(String::new()))
+                } else {
+                    (vec![1], Some("page-2".to_owned()))
+                })
+            },
+        )
+        .await;
+
+        assert_eq!(listing, super::Listing::Complete(vec![json!(1), json!(2)]));
+    }
+
+    #[tokio::test]
+    async fn discovery_rejects_listings_that_exceed_item_limit() {
+        for (page, cursor) in [(vec![1, 2, 3], None), (vec![1, 2], Some("page-2"))] {
+            let listing =
+                super::list_all_pages("tools/list", "https://upstream.test", 2, |params| {
+                    assert!(params.cursor.is_none());
+                    std::future::ready(Ok((page.clone(), cursor.map(str::to_owned))))
+                })
+                .await;
+
+            assert_eq!(
+                listing,
+                super::Listing::Incomplete("tools/list exceeds the 2 item limit".to_owned())
+            );
+        }
     }
 
     async fn tool_server(result: Value) -> MockServer {

@@ -39,15 +39,20 @@ A connector profile identifies a reusable MCP streamable HTTP configuration by
 name and positive version. Each connector instance identifies one profile
 version, one namespace, and one upstream address.
 
+The profile defines a `provider_key` to identify the source. The
+`drift_mode` field accepts `allow` or `deny` and defaults to `deny`.
+Startup validation checks this field. It does not make a drift decision.
+
 The shared connector types validate instance values as follows.
 
 1. Select the exact profile name and version.
 2. Check the address against the profile's TLS, query, and origin constraints.
-3. Select each declared configuration value from the instance or the profile default.
-4. Check that each selected value is in the field's enumeration.
+3. Use the profile default when the field has one.
+4. For fields without a default, check each instance value against the field's enumeration.
 5. Check that the instance supplies a binding reference for each required credential purpose.
 
-The composed configuration records the source of each value. The instance stores
+An instance cannot override a profile default. The composed configuration
+records the source of each value. The instance stores
 binding IDs separately from configuration values. Binding validation checks the
 owner, origin, namespace, purpose, and injection mechanism against brokerage
 metadata. The broker resolves credentials separately.
@@ -56,5 +61,29 @@ Migration validation requires a higher version of the same profile and preserves
 the instance name, namespace, address, and immutable configuration values. To
 return to an earlier definition, use that definition with a new version number.
 
-These types provide validation for connector integration. The management API and
-forward runtime still use the existing forward resource.
+Wanaku validates the `connector_profiles` and `connector_instances` sections in
+`wanaku.yaml` at startup. Use `generic-mcp` version `1` to select the built-in
+profile. The name `generic-mcp` is reserved.
+
+```yaml
+connector_profiles:
+  - identity:
+      name: example-mcp
+      version: 1
+    provider_key: example
+    transport: mcp_streamable_http
+    address:
+      require_tls: true
+      allowed_origins:
+        - https://example.org:443
+connector_instances:
+  - profile:
+      name: example-mcp
+      version: 1
+    name: example
+    namespace: default
+    address: https://example.org/mcp
+```
+
+Startup validation does not contact the instance or publish its capabilities.
+Use the existing `forwards` section to register an upstream for runtime use.
