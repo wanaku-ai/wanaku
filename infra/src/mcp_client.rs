@@ -150,7 +150,7 @@ pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| connect_error(&url, &e))?;
 
-    tracing::debug!(url = %url, "connected to MCP server for tools/list");
+    tracing::debug!("connected to MCP server for tools/list");
 
     let mut all_tools = Vec::new();
     let mut cursor = None;
@@ -178,7 +178,10 @@ pub async fn list_tools(url: &str) -> Result<Vec<Value>, McpClientError> {
         }
     }
 
-    tracing::debug!(url = %url, tool_count = all_tools.len(), "discovered tools from MCP server");
+    tracing::debug!(
+        tool_count = all_tools.len(),
+        "discovered tools from MCP server"
+    );
 
     all_tools
         .into_iter()
@@ -325,7 +328,7 @@ pub async fn list_resources(url: &str) -> Result<Vec<Value>, McpClientError> {
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| connect_error(&url, &e))?;
 
-    tracing::debug!(url = %url, "connected to MCP server for resources/list");
+    tracing::debug!("connected to MCP server for resources/list");
 
     let mut all_resources = Vec::new();
     let mut cursor = None;
@@ -353,7 +356,10 @@ pub async fn list_resources(url: &str) -> Result<Vec<Value>, McpClientError> {
         }
     }
 
-    tracing::debug!(url = %url, resource_count = all_resources.len(), "discovered resources from MCP server");
+    tracing::debug!(
+        resource_count = all_resources.len(),
+        "discovered resources from MCP server"
+    );
 
     all_resources
         .into_iter()
@@ -412,7 +418,7 @@ pub async fn list_resource_templates(url: &str) -> Result<Vec<Value>, McpClientE
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| connect_error(&url, &e))?;
 
-    tracing::debug!(url = %url, "connected to MCP server for resources/templates/list");
+    tracing::debug!("connected to MCP server for resources/templates/list");
 
     let mut all_templates = Vec::new();
     let mut cursor = None;
@@ -443,7 +449,10 @@ pub async fn list_resource_templates(url: &str) -> Result<Vec<Value>, McpClientE
         }
     }
 
-    tracing::debug!(url = %url, template_count = all_templates.len(), "discovered resource templates from MCP server");
+    tracing::debug!(
+        template_count = all_templates.len(),
+        "discovered resource templates from MCP server"
+    );
 
     all_templates
         .into_iter()
@@ -470,7 +479,7 @@ pub async fn list_prompts(url: &str) -> Result<Vec<Value>, McpClientError> {
         .map_err(|_| McpClientError::Timeout { url: url.clone() })?
         .map_err(|e| connect_error(&url, &e))?;
 
-    tracing::debug!(url = %url, "connected to MCP server for prompts/list");
+    tracing::debug!("connected to MCP server for prompts/list");
 
     let mut all_prompts = Vec::new();
     let mut cursor = None;
@@ -498,7 +507,10 @@ pub async fn list_prompts(url: &str) -> Result<Vec<Value>, McpClientError> {
         }
     }
 
-    tracing::debug!(url = %url, prompt_count = all_prompts.len(), "discovered prompts from MCP server");
+    tracing::debug!(
+        prompt_count = all_prompts.len(),
+        "discovered prompts from MCP server"
+    );
 
     all_prompts
         .into_iter()
@@ -578,15 +590,22 @@ pub async fn discover_forward(
     url: &str,
     forward_headers: HashMap<HeaderName, HeaderValue>,
 ) -> Result<ForwardDiscovery, McpClientError> {
-    let url = url.to_owned();
-    let transport = build_transport_with_headers(&url, forward_headers);
+    let transport = build_transport_with_headers(url, forward_headers);
 
     let client = tokio::time::timeout(TIMEOUT, Box::pin(client_config().serve(transport)))
         .await
-        .map_err(|_| McpClientError::Timeout { url: url.clone() })?
-        .map_err(|e| connect_error(&url, &e))?;
+        .map_err(|_| McpClientError::Timeout {
+            url: "[redacted]".to_owned(),
+        })?
+        .map_err(|e| {
+            let mut error = connect_error("[redacted]", &e);
+            if let McpClientError::Connection { message, .. } = &mut error {
+                *message = "MCP handshake failed".to_owned();
+            }
+            error
+        })?;
 
-    tracing::debug!(url = %url, "connected to MCP server for forward discovery");
+    tracing::debug!("connected to MCP server for forward discovery");
 
     let server_info = client.peer_info().and_then(|info| {
         let impl_info = info.server_info.as_ref()?;
@@ -628,7 +647,6 @@ pub async fn discover_forward(
 
     if let Some(ref si) = server_info {
         tracing::info!(
-            url = %url,
             server_name = %si.server_name,
             version = %si.version,
             "captured MCP server identity"
@@ -636,19 +654,18 @@ pub async fn discover_forward(
     }
 
     let client = &*client;
-    let tools = list_all_pages("tools/list", &url, MAX_TOOLS, |params| async move {
+    let tools = list_all_pages("tools/list", MAX_TOOLS, |params| async move {
         let page = Box::pin(client.list_tools(Some(params))).await?;
         Ok((page.tools, page.next_cursor))
     })
     .await;
-    let resources = list_all_pages("resources/list", &url, MAX_RESOURCES, |params| async move {
+    let resources = list_all_pages("resources/list", MAX_RESOURCES, |params| async move {
         let page = Box::pin(client.list_resources(Some(params))).await?;
         Ok((page.resources, page.next_cursor))
     })
     .await;
     let resource_templates = list_all_pages(
         "resources/templates/list",
-        &url,
         MAX_RESOURCE_TEMPLATES,
         |params| async move {
             let page = Box::pin(client.list_resource_templates(Some(params))).await?;
@@ -656,7 +673,7 @@ pub async fn discover_forward(
         },
     )
     .await;
-    let prompts = list_all_pages("prompts/list", &url, MAX_PROMPTS, |params| async move {
+    let prompts = list_all_pages("prompts/list", MAX_PROMPTS, |params| async move {
         let page = Box::pin(client.list_prompts(Some(params))).await?;
         Ok((page.prompts, page.next_cursor))
     })
@@ -684,7 +701,7 @@ const MAX_PAGES: usize = 100;
     clippy::too_many_lines,
     reason = "paginated listing with error classification"
 )]
-async fn list_all_pages<T, F, Fut>(method: &str, url: &str, max_items: usize, fetch: F) -> Listing
+async fn list_all_pages<T, F, Fut>(method: &str, max_items: usize, fetch: F) -> Listing
 where
     T: serde::Serialize,
     F: Fn(PaginatedRequestParams) -> Fut,
@@ -701,15 +718,15 @@ where
             Ok(Err(ServiceError::McpError(e)))
                 if page_index == 0 && e.code == ErrorCode::METHOD_NOT_FOUND =>
             {
-                tracing::debug!(url = %url, method, "listing not supported by the MCP server");
+                tracing::debug!(method, "listing not supported by the MCP server");
                 return Listing::Unsupported;
             }
-            Ok(Err(e)) => {
-                tracing::warn!(url = %url, method, error = %e, "listing failed during discovery");
-                return Listing::Incomplete(format!("{method} failed: {e}"));
+            Ok(Err(_)) => {
+                tracing::warn!(method, "listing failed during discovery");
+                return Listing::Incomplete(format!("{method} failed"));
             }
             Err(_) => {
-                tracing::warn!(url = %url, method, "listing timed out during discovery");
+                tracing::warn!(method, "listing timed out during discovery");
                 return Listing::Incomplete(format!("{method} timed out"));
             }
         };
@@ -717,18 +734,18 @@ where
         cursor = next_cursor.filter(|next| !next.is_empty());
         let remaining = max_items - items.len();
         if page.len() > remaining || (page.len() == remaining && cursor.is_some()) {
-            tracing::warn!(url = %url, method, max_items, "listing exceeds the maximum item count");
+            tracing::warn!(method, max_items, "listing exceeds the maximum item count");
             return Listing::Incomplete(format!("{method} exceeds the {max_items} item limit"));
         }
 
         items.extend(page);
         if cursor.is_none() {
-            tracing::debug!(url = %url, method, count = items.len(), "listing complete");
+            tracing::debug!(method, count = items.len(), "listing complete");
             return Listing::Complete(to_values(items));
         }
     }
 
-    tracing::warn!(url = %url, method, "listing did not end within the page limit");
+    tracing::warn!(method, "listing did not end within the page limit");
     Listing::Incomplete(format!("{method} did not end within {MAX_PAGES} pages"))
 }
 
@@ -915,18 +932,13 @@ mod tests {
 
     #[tokio::test]
     async fn discovery_accepts_terminal_page_at_item_limit() {
-        let listing = super::list_all_pages(
-            "tools/list",
-            "https://upstream.test",
-            2,
-            |params| async move {
-                Ok(if params.cursor.is_some() {
-                    (vec![2], Some(String::new()))
-                } else {
-                    (vec![1], Some("page-2".to_owned()))
-                })
-            },
-        )
+        let listing = super::list_all_pages("tools/list", 2, |params| async move {
+            Ok(if params.cursor.is_some() {
+                (vec![2], Some(String::new()))
+            } else {
+                (vec![1], Some("page-2".to_owned()))
+            })
+        })
         .await;
 
         assert_eq!(listing, super::Listing::Complete(vec![json!(1), json!(2)]));
@@ -935,12 +947,11 @@ mod tests {
     #[tokio::test]
     async fn discovery_rejects_listings_that_exceed_item_limit() {
         for (page, cursor) in [(vec![1, 2, 3], None), (vec![1, 2], Some("page-2"))] {
-            let listing =
-                super::list_all_pages("tools/list", "https://upstream.test", 2, |params| {
-                    assert!(params.cursor.is_none());
-                    std::future::ready(Ok((page.clone(), cursor.map(str::to_owned))))
-                })
-                .await;
+            let listing = super::list_all_pages("tools/list", 2, |params| {
+                assert!(params.cursor.is_none());
+                std::future::ready(Ok((page.clone(), cursor.map(str::to_owned))))
+            })
+            .await;
 
             assert_eq!(
                 listing,
@@ -1060,9 +1071,18 @@ mod tests {
     #[tokio::test]
     async fn reports_insufficient_scope_on_403_challenge() {
         let server = rejecting_server(403, Some("Bearer error=\"insufficient_scope\"")).await;
-        let error = super::discover_forward(&server.uri(), Default::default())
+        let url = format!("{}/mcp?token=fixture-secret", server.uri());
+        let error = super::discover_forward(&url, Default::default())
             .await
             .expect_err("403");
+        let requests = server.received_requests().await.expect("recorded requests");
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0].url.path(), "/mcp");
+        assert_eq!(requests[0].url.query(), Some("token=fixture-secret"));
+        assert_eq!(
+            error.to_string(),
+            "MCP server at [redacted] rejected the credential: insufficient scope (HTTP 403)"
+        );
         assert!(matches!(
             error,
             super::McpClientError::InsufficientScope { .. }

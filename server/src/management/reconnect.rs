@@ -67,7 +67,7 @@ impl ForwardReconnectService {
             else {
                 continue;
             };
-            debug!(forward = %fwd.name, address = %request.target().address, "probing unavailable forward");
+            debug!(forward = %fwd.name, "probing unavailable forward");
             discover_and_publish(
                 &self.registry,
                 &self.broker,

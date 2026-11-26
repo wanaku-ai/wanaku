@@ -359,7 +359,7 @@ fn load_core_config(
 
         rt.block_on(async {
             for fwd in &forwards {
-                info!(forward = %fwd.name, address = %fwd.address, "discovering from forward");
+                info!(forward = %fwd.name, "discovering from forward");
                 crate::management::discover_and_update_forward(registry, broker, audit_sink, fwd)
                     .await;
             }
@@ -404,7 +404,7 @@ fn load_forward_definitions(
             match serde_yaml::from_value::<ForwardEntry>(fwd_value.clone()) {
                 Ok(mut fwd) => {
                     fwd.available = false;
-                    info!(forward = %fwd.name, address = %fwd.address, "registered forward from config");
+                    info!(forward = %fwd.name, "registered forward from config");
                     let namespace = fwd
                         .namespace
                         .as_deref()

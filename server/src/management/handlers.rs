@@ -357,7 +357,7 @@ pub(super) async fn handle_forward_create(
         Ok(published) => published,
         Err(error) => return forward_publication_error(&error),
     };
-    info!(forward = %forward.name, address = %forward.address, "registered forward via management API");
+    info!(forward = %forward.name, "registered forward via management API");
 
     json_ok(&serde_json::json!({
         "forward": &forward,
