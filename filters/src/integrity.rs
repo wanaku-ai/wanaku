@@ -721,10 +721,10 @@ pub(crate) async fn inspect_response(
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        io::{BufRead, BufReader, Read},
+    use tokio::{
+        io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader},
         net::TcpListener,
-        thread::{self, JoinHandle},
+        task::JoinHandle,
     };
 
     use super::*;
@@ -740,12 +740,12 @@ mod tests {
 
     // Exercise the production HTTP client against a loopback fixture. Only
     // the fixture bypasses the HTTPS configuration check.
-    fn external_fixture(
+    async fn external_fixture(
         kind: ContentKind,
         reply: Vec<u8>,
         stall: bool,
     ) -> (ExternalScanner, JoinHandle<Value>) {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let mut scanner = ExternalScanner::new(ExternalConfig {
             id: "fixture".into(),
             url: "https://scanner.invalid".into(),
@@ -756,16 +756,13 @@ mod tests {
         scanner.url = format!("http://{}", listener.local_addr().unwrap())
             .parse()
             .unwrap();
-        let server = thread::spawn(move || {
-            let (mut stream, _) = listener.accept().unwrap();
-            stream
-                .set_read_timeout(Some(Duration::from_secs(2)))
-                .unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
             let mut reader = BufReader::new(&mut stream);
             let mut length = 0;
             loop {
                 let mut line = String::new();
-                assert_ne!(reader.read_line(&mut line).unwrap(), 0);
+                assert_ne!(reader.read_line(&mut line).await.unwrap(), 0);
                 if line == "\r\n" {
                     break;
                 }
@@ -774,17 +771,15 @@ mod tests {
                 }
             }
             let mut body = vec![0; length];
-            reader.read_exact(&mut body).unwrap();
+            reader.read_exact(&mut body).await.unwrap();
             let request = serde_json::from_slice(&body).unwrap();
             let length = reply.len() + usize::from(stall);
-            write!(
-                stream,
-                "HTTP/1.1 200 OK\r\nContent-Length: {length}\r\nConnection: close\r\n\r\n"
-            )
-            .unwrap();
-            stream.write_all(&reply).unwrap();
+            let headers =
+                format!("HTTP/1.1 200 OK\r\nContent-Length: {length}\r\nConnection: close\r\n\r\n");
+            stream.write_all(headers.as_bytes()).await.unwrap();
+            stream.write_all(&reply).await.unwrap();
             if stall {
-                thread::sleep(Duration::from_secs(1));
+                tokio::time::sleep(Duration::from_secs(1)).await;
             }
             request
         });
@@ -797,7 +792,8 @@ mod tests {
             ContentKind::ToolResult,
             br#"{"matched":true}"#.to_vec(),
             false,
-        );
+        )
+        .await;
         let req = request(&[]);
         let invoker = RecordingInvoker::succeeding(json!({}));
         let mut ctx = filter_context(&req, crate::TOOLS_CALL, &registry(None, None), &invoker);
@@ -812,7 +808,7 @@ mod tests {
         )));
         let response = response_json(inspect_response(&ctx, ContentKind::ToolResult, action).await);
         assert_eq!(response["error"]["code"], -32003);
-        let sent = server.join().unwrap();
+        let sent = server.await.unwrap();
         assert_eq!(sent["kind"], "tool_result");
         assert_eq!(sent["content"], body["result"]);
     }
@@ -902,7 +898,7 @@ mod tests {
                 (EnforcementMode::Audit, FailureBehavior::Deny, false),
             ] {
                 let (external, server) =
-                    external_fixture(ContentKind::ResourceContents, reply.clone(), stall);
+                    external_fixture(ContentKind::ResourceContents, reply.clone(), stall).await;
                 ctx.extensions.insert(Arc::new(Scanner {
                     rules: vec![],
                     external: Some(external),
@@ -922,7 +918,7 @@ mod tests {
                     Applied::Pass => !blocked,
                     _ => false,
                 });
-                server.join().unwrap();
+                server.await.unwrap();
                 let events = audit
                     .query(&AuditQuery {
                         limit: 1,
