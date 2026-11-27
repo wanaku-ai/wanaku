@@ -1,4 +1,5 @@
 import {
+  activateActionPolicyRevision,
   getActionPolicyRevision,
   getEffectiveActionPolicy,
   listActionPolicyRevisions,
@@ -60,6 +61,20 @@ export const updatePolicy = async (
   const response = await updateActionPolicy({
     policy,
     expected_revision: expectedRevision ?? null,
+  });
+  if (response.status !== 200) {
+    throw new ApiError(response.data.error, response.status, response.data.data);
+  }
+  return response.data;
+};
+
+/** Activates a historical policy. The server uses revision 0 when no policy is active. */
+export const activateRevision = async (
+  id: number,
+  expectedRevision = 0,
+): Promise<ActionPolicyRevisionResponse> => {
+  const response = await activateActionPolicyRevision(id, {
+    expected_revision: expectedRevision,
   });
   if (response.status !== 200) {
     throw new ApiError(response.data.error, response.status, response.data.data);

@@ -49,6 +49,7 @@ test.describe("Action Policies", () => {
     await policies.revisionHistory().getByRole("button", { name: /Revision 2/ }).click();
     await expect(policies.revisionHistory()).toContainText("rule selectors must not be empty");
     await expect(policies.revisionHistory()).toContainText("protect-production");
+    await expect(policies.revisionHistory().getByRole("button", { name: /Roll back/ })).toHaveCount(0);
   });
 
   test("uses the 404 status, not the message, for the empty state", async ({ page }) => {
@@ -279,5 +280,119 @@ test.describe("Action Policies", () => {
       await expect(policies.editor()).toContainText("The text is not valid JSON");
       await expect(policies.confirmation()).toHaveCount(0);
     });
+  });
+});
+
+test.describe("Action policy revision rollback", () => {
+  const prior = { ...actionPolicyRevision({ id: 2, status: "superseded" }), actor: "operator" };
+  const current = actionPolicyRevision({ id: 3 });
+  const newer = actionPolicyRevision({ id: 4 });
+  const added = { id: "prior-only", effect: "allow", selectors: { operation: "tools/list" } };
+  const removed = { ...added, id: "active-only" };
+  const currentPolicy = { rules: [...policy.rules, removed] };
+  const priorPolicy = { rules: [{ ...policy.rules[0], effect: "allow" }, added] };
+  const reply = (revision: typeof current, candidate: typeof currentPolicy) => ({
+    json: { data: { revision, policy: candidate } },
+  });
+  const history = {
+    active: reply(current, currentPolicy),
+    revisions: [current, prior],
+    policy: currentPolicy,
+    details: { 2: { json: { data: { revision: prior, policy: priorPolicy } } } },
+  };
+
+  let policies: ActionPoliciesPage;
+
+  test.beforeEach(async ({ page }) => {
+    policies = new ActionPoliciesPage(page, `${routerUrl}/admin/`);
+  });
+
+  test("compares a selected revision with the active policy by rule ID", async ({ page }) => {
+    await mockActionPolicies(page, history);
+    await policies.goto();
+    await policies.openRevision(2, "superseded");
+
+    const comparison = policies.revisionHistory().getByRole("region", { name: "Rule comparison" });
+    await expect(comparison.getByRole("heading")).toHaveText("Comparison with active revision 3");
+    await expect(comparison.getByText("Added — prior-only")).toBeVisible();
+    await expect(comparison.getByText("Removed — active-only")).toBeVisible();
+    const modified = comparison.locator("details").filter({ hasText: "Modified — protect-production" });
+    await modified.getByText("Modified — protect-production").click();
+    await expect(modified.getByText('"effect": "deny"', { exact: false })).toBeVisible();
+    await expect(modified.getByText('"effect": "allow"', { exact: false })).toBeVisible();
+    await expect(policies.revisionHistory().getByText("operator", { exact: true })).toBeVisible();
+    await expect(policies.revisionHistory().getByText("test-checksum", { exact: true }).last()).toBeVisible();
+  });
+
+  test("compares rejected rules with duplicate IDs and hides rollback", async ({ page }) => {
+    const rejected = { ...rejectedRevision, failure_reason: "duplicate rule ID" };
+    await mockActionPolicies(page, {
+      ...history,
+      revisions: [current, rejected],
+      details: { 2: reply(rejected, { rules: [priorPolicy.rules[0], policy.rules[0], removed] }) },
+    });
+    await policies.goto();
+    await policies.openRevision(2, "rejected");
+
+    const comparison = policies.revisionHistory().getByRole("region", { name: "Rule comparison" });
+    const modified = comparison.locator("details").filter({ hasText: "Modified — protect-production" });
+    await modified.getByText("Modified — protect-production").click();
+    await expect(modified.getByText('"effect": "allow"', { exact: false })).toBeVisible();
+    await expect(policies.revisionHistory()).toContainText("duplicate rule ID");
+    await expect(policies.rollbackButton(2)).toHaveCount(0);
+  });
+
+  test("confirms rollback before activating the prior policy as a new revision", async ({ page }) => {
+    const { activationRequests } = await mockActionPolicies(page, {
+      ...history,
+      activations: [{ ...reply(newer, priorPolicy), thenActive: reply(newer, priorPolicy) }],
+    });
+    await policies.goto();
+    await policies.openRevision(2, "superseded");
+    await policies.rollbackButton(2).click();
+    await expect(policies.confirmation()).toContainText("Rollback creates a new revision from revision 2");
+    await expect(policies.confirmation()).toContainText("It replaces active revision 3");
+    await policies.cancelModal();
+    expect(activationRequests).toEqual([]);
+
+    await policies.rollbackButton(2).click();
+    await policies.confirmation().getByRole("button", { name: "Roll back", exact: true }).click();
+    await expect(policies.activePolicy()).toContainText("Revision 4 is now active");
+    await expect(policies.activePolicy()).toContainText("prior-only");
+    expect(activationRequests).toEqual([{ id: 2, body: { expected_revision: 3 } }]);
+  });
+
+  test("keeps the comparison on conflict and requires confirmation against the new active revision", async ({ page }) => {
+    const restored = actionPolicyRevision({ id: 5 });
+    const { activationRequests } = await mockActionPolicies(page, {
+      ...history,
+      activations: [
+        {
+          status: 409,
+          json: { error: "expected active revision 3, but current is 4" },
+          thenActive: reply(newer, policy),
+        },
+        { ...reply(restored, priorPolicy), thenActive: reply(restored, priorPolicy) },
+      ],
+    });
+    await policies.goto();
+    await policies.openRevision(2, "superseded");
+    await policies.rollbackButton(2).click();
+    await policies.confirmation().getByRole("button", { name: "Roll back", exact: true }).click();
+
+    await expect(policies.confirmation()).toContainText("The active revision changed");
+    await expect(policies.confirmation()).toContainText("expected active revision 3, but current is 4");
+    await policies.confirmation().getByRole("button", { name: "Reload active revision" }).click();
+    const comparison = policies.revisionHistory().getByRole("region", { name: "Rule comparison" }).filter({
+      hasText: "Added — prior-only",
+    });
+    await expect(comparison.getByRole("heading")).toHaveText("Comparison with active revision 4");
+    expect(activationRequests).toHaveLength(1);
+
+    await policies.rollbackButton(2).click();
+    await expect(policies.confirmation()).toContainText("It replaces active revision 4");
+    await policies.confirmation().getByRole("button", { name: "Roll back", exact: true }).click();
+    await expect(policies.activePolicy()).toContainText("Revision 5 is now active");
+    expect(activationRequests[1]).toEqual({ id: 2, body: { expected_revision: 4 } });
   });
 });

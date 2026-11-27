@@ -4,6 +4,7 @@ import { json, respondWith } from '../../test/browser-stub.ts';
 import { ApiError } from '../../custom-fetch.ts';
 import {
   actionPolicyErrorKind,
+  activateRevision,
   getActivePolicy,
   getRevision,
   updatePolicy,
@@ -125,5 +126,17 @@ describe('actionPolicyErrorKind', () => {
     assert.equal(actionPolicyErrorKind(await rejection(getRevision(1))), 'conflict');
     respondWith(() => json(422, { error: 'configuration rejected: empty selectors' }));
     assert.equal(actionPolicyErrorKind(await rejection(getRevision(1))), 'validation');
+  });
+});
+
+describe('activateRevision', () => {
+  it('checks for an absent active policy when rolling back without an active revision', async () => {
+    respondWith(async (request) => {
+      assert.equal(request.method, 'POST');
+      assert.match(request.url, /\/api\/v1\/action-policies\/revisions\/1\/activate$/);
+      assert.deepEqual(await request.json(), { expected_revision: 0 });
+      return json(200, { data: revision });
+    });
+    assert.deepEqual(await activateRevision(1), revision);
   });
 });

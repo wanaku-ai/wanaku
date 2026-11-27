@@ -219,7 +219,16 @@ Before the editor sends the policy, it checks the required fields, the identifie
 
 If another revision became active, the server returns HTTP `409`. The editor keeps the draft and shows a **Reload active revision** action. The action discards the draft. If the server rejects the policy with HTTP `422`, the editor shows the reason and keeps the draft.
 
-Rollback creates a new revision. It does not change historical data:
+### Compare and roll back revisions in the Admin UI
+
+1. Open **Admin** > **Action Policies**.
+2. Open a revision in **Revision history** to see its status and metadata.
+3. Review the added, removed, and modified rules in the comparison with the active revision. Open a rule change to see its values.
+4. To restore a superseded revision, select **Roll back to revision** for that revision. Confirm the rollback in the dialog.
+
+Rollback creates a new active revision. The request includes the ID of the active revision shown in the confirmation. If the active revision changes before the request, select **Reload active revision** in the conflict dialog. Review the updated comparison before you confirm a new rollback.
+
+You can also roll back with the management API.
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/action-policies/revisions/2/activate \

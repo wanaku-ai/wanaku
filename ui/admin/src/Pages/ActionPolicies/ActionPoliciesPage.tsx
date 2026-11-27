@@ -1,14 +1,14 @@
-import { Accordion, AccordionItem, Button, InlineNotification, Tag, Tile } from '@carbon/react';
+import { Button, InlineNotification, Tag, Tile } from '@carbon/react';
 import { Edit } from '@carbon/icons-react';
 import { useCallback, useEffect, useState } from 'react';
 import { PageSkeleton } from '../../components/PageSkeleton';
-import { RevisionDetails } from '../../components/RevisionDetails';
 import { formatDate, statusTagType } from '../../utils/revision-format';
 import {
   useActionPolicies,
   type ActionPolicy,
   type ActionPolicyRevision,
 } from '../../hooks/api/use-action-policies';
+import { PolicyRevisionHistory } from './PolicyRevisionHistory';
 import { PolicyDetails } from './PolicyDetails';
 import { PolicyEditor } from './PolicyEditor';
 import './ActionPoliciesPage.scss';
@@ -24,21 +24,25 @@ export const ActionPoliciesPage = () => {
   const [editing, setEditing] = useState(false);
   const [activated, setActivated] = useState<number>();
 
+  const fetchPolicies = useCallback(async () => {
+    const [revisionsResponse, activePolicy] = await Promise.all([
+      listRevisions(),
+      getActivePolicy(),
+    ]);
+    const revisions = await Promise.all(revisionsResponse.data.map(({ id }) => getRevision(id)));
+    const active = activePolicy.state === 'active' ? activePolicy.revision : undefined;
+    setState({ status: 'success', active, revisions });
+  }, [getActivePolicy, getRevision, listRevisions]);
+
   const load = useCallback(async () => {
     setState({ status: 'loading' });
     try {
-      const [revisionsResponse, activePolicy] = await Promise.all([
-        listRevisions(),
-        getActivePolicy(),
-      ]);
-      const revisions = await Promise.all(revisionsResponse.data.map(({ id }) => getRevision(id)));
-      const active = activePolicy.state === 'active' ? activePolicy.revision : undefined;
-      setState({ status: 'success', active, revisions });
+      await fetchPolicies();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load action policies';
       setState({ status: 'error', message });
     }
-  }, [getActivePolicy, getRevision, listRevisions]);
+  }, [fetchPolicies]);
 
   useEffect(() => {
     void load();
@@ -66,7 +70,7 @@ export const ActionPoliciesPage = () => {
       <h1 className="title">Action Policies</h1>
       <p className="description">
         Review the active policy and its revision history. Edit the policy to activate a new
-        revision.
+        revision, or open a revision in the history to compare or roll back.
       </p>
 
       {state.status === 'error' ? (
@@ -142,25 +146,19 @@ export const ActionPoliciesPage = () => {
             )}
           </section>
 
-          <section aria-labelledby="revision-history-heading" className="action-policies__history">
-            <h2 id="revision-history-heading">Revision history</h2>
-            {state.revisions.length === 0 ? (
-              <Tile>No policy revisions are available.</Tile>
-            ) : (
-              <Accordion align="start">
-                {state.revisions.map(({ revision, policy }) => (
-                  <AccordionItem
-                    key={revision.id}
-                    title={`Revision ${revision.id} — ${revision.status}`}
-                  >
-                    <RevisionDetails revision={revision} />
-                    <h4>Policy rules</h4>
-                    <PolicyDetails policy={policy} />
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            )}
-          </section>
+          <PolicyRevisionHistory
+            active={state.active}
+            revisions={state.revisions}
+            editing={editing}
+            onRefresh={async () => {
+              await fetchPolicies();
+              setActivated(undefined);
+            }}
+            onActivate={(id) => {
+              setActivated(id);
+              void load();
+            }}
+          />
         </div>
       )}
     </div>

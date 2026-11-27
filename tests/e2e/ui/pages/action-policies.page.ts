@@ -18,6 +18,14 @@ export class ActionPoliciesPage extends BasePage {
     return this.page.getByRole("region", { name: "Revision history" });
   }
 
+  async openRevision(id: number, status: string) {
+    await this.revisionHistory().getByRole("button", { name: `Revision ${id} — ${status}` }).click();
+  }
+
+  rollbackButton(id: number): Locator {
+    return this.revisionHistory().getByRole("button", { name: `Roll back to revision ${id}` });
+  }
+
   errorNotification(): Locator {
     return this.page.locator(".cds--inline-notification--error");
   }
