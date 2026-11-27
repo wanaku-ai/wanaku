@@ -157,7 +157,7 @@ To use the tools from an agent, configure your MCP client with the endpoint `htt
 
 ## How Wanaku Processes the Request
 
-Each MCP request goes through the filter pipeline. The pipeline parses the JSON-RPC body and gets the namespace from the URL path. For `tools/list`, it returns the tools from the in-memory registry. For `tools/call`, the governance filters decide first, and then Wanaku forwards the allowed call to the upstream server with the brokered credential. Read [Architecture](architecture.md#the-filter-pipeline) for the filter order and [Tool Routing](architecture.md#tool-routing) for `tools/call`.
+Each MCP request goes through the filter pipeline. The pipeline parses the JSON-RPC body and gets the namespace from the URL path. For `tools/list`, it returns the tools from the runtime registry. For `tools/call`, the governance filters decide first, and then Wanaku forwards the allowed call to the upstream server with the brokered credential. Read [Architecture](architecture.md#the-filter-pipeline) for the filter order and [Tool Routing](architecture.md#tool-routing) for `tools/call`.
 
 ## Next steps
 

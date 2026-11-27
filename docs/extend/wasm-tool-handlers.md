@@ -217,9 +217,9 @@ With file persistence enabled, definitions use `tool-handlers.json` in `WANAKU_P
 
 ```rust
 use wanaku_feature_tool_handler::ToolHandlerFeature;
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 
-fn configure_handlers(registry: InMemoryRegistry) -> Result<ToolHandlerFeature, String> {
+fn configure_handlers(registry: RuntimeRegistry) -> Result<ToolHandlerFeature, String> {
     ToolHandlerFeature::new(registry)
         .with_persistence("/data/wanaku/tool-handlers.json")
 }

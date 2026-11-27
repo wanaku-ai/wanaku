@@ -17,7 +17,7 @@ use tracing::info;
 use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
 use wanaku_infra::persistence::FilePersistence;
 use wanaku_infra::redb_persistence::{RedbAuditPersistence, RedbRegistryPersistence, RedbStore};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_server::app::{App, AppPersistence, AppResources, AppSettings};
 use wanaku_types::audit::AuditPersistence;
 use wanaku_types::credentials::{EnvResolver, ResolverRegistry};
@@ -174,7 +174,7 @@ fn audit_persistence(
 }
 
 fn register_registry_persistence_service(
-    registry: InMemoryRegistry,
+    registry: RuntimeRegistry,
     server: &mut PingoraServerRuntime,
 ) {
     if !registry.persistence_status().enabled {
@@ -193,7 +193,7 @@ fn register_registry_persistence_service(
 /// runs on the persistent Pingora runtime (the startup discovery runtime is a
 /// one-shot). Disabled when `WANAKU_FORWARD_HEALTHCHECK_INTERVAL` is `0`.
 fn register_forward_reconnect_service(
-    registry: InMemoryRegistry,
+    registry: RuntimeRegistry,
     broker: Arc<CredentialBroker>,
     audit_sink: Option<Arc<dyn CredentialAuditSink>>,
     server: &mut PingoraServerRuntime,

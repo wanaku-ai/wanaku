@@ -17,7 +17,7 @@ use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use wanaku_feature_action_policy::ActionPolicyState;
 use wanaku_feature_evaluator::state::EvaluatorState;
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::{
     audit::{AuditCategory, AuditDecision, AuditEvent, AuditHandle, AuditStore},
     feature::{Feature, HttpContext},
@@ -28,7 +28,7 @@ use wanaku_types::{
 pub struct SimulationDeps {
     pub policy: ActionPolicyState,
     pub evaluators: EvaluatorState,
-    pub registry: InMemoryRegistry,
+    pub registry: RuntimeRegistry,
     pub governance: GovernanceConfig,
     pub audit: AuditHandle,
 }

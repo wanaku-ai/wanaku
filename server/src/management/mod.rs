@@ -24,7 +24,7 @@ use pingora_core::apps::http_app::ServeHttp;
 use pingora_core::protocols::http::ServerSession;
 
 use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::feature::{Feature, HttpContext};
 
 use self::handlers::{
@@ -47,7 +47,7 @@ use self::routes::{
 use crate::http_response::{json_err, json_ok};
 
 pub struct WanakuManagementService {
-    registry: InMemoryRegistry,
+    registry: RuntimeRegistry,
     broker: Arc<CredentialBroker>,
     audit_sink: Option<Arc<dyn CredentialAuditSink>>,
     features: Vec<Box<dyn Feature>>,
@@ -57,7 +57,7 @@ pub struct WanakuManagementService {
 
 impl WanakuManagementService {
     pub fn new(
-        registry: InMemoryRegistry,
+        registry: RuntimeRegistry,
         broker: Arc<CredentialBroker>,
         audit_sink: Option<Arc<dyn CredentialAuditSink>>,
         features: Vec<Box<dyn Feature>>,
@@ -137,7 +137,7 @@ impl ServeHttp for WanakuManagementService {
 )]
 pub(crate) async fn dispatch(
     ctx: &HttpContext<'_>,
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     broker: &CredentialBroker,
     audit_sink: Option<&dyn CredentialAuditSink>,
     features: &[Box<dyn Feature>],
@@ -268,7 +268,7 @@ pub(crate) async fn dispatch(
 #[cfg(test)]
 mod dispatch_tests {
     use super::*;
-    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_infra::registry::RuntimeRegistry;
     use wanaku_types::credentials::ResolverRegistry;
     use wanaku_types::feature::{Feature, HttpContext};
 
@@ -287,7 +287,7 @@ mod dispatch_tests {
 
     #[tokio::test]
     async fn dispatch_get_tools_returns_empty_list() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let headers = http::HeaderMap::new();
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/api/v1/tools", None, None, &headers);
@@ -300,7 +300,7 @@ mod dispatch_tests {
 
     #[tokio::test]
     async fn dispatch_unknown_path_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let headers = http::HeaderMap::new();
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/no/such/path", None, None, &headers);
@@ -312,7 +312,7 @@ mod dispatch_tests {
 
     #[tokio::test]
     async fn dispatch_post_namespace_create() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let headers = http::HeaderMap::new();
         let features: &[Box<dyn Feature>] = &[];
         let body = r#"{"name":"test-ns"}"#;
@@ -327,7 +327,7 @@ mod dispatch_tests {
 
     #[tokio::test]
     async fn dispatch_health_returns_ok() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let headers = http::HeaderMap::new();
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/healthz", None, None, &headers);
@@ -342,7 +342,7 @@ mod dispatch_tests {
 
     #[tokio::test]
     async fn dispatch_info_returns_name_and_version() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let headers = http::HeaderMap::new();
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("GET", "/api/v1/management/info", None, None, &headers);
@@ -386,7 +386,7 @@ mod dispatch_tests {
 
     #[tokio::test]
     async fn dispatch_sibling_prefix_reaches_feature() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let headers = http::HeaderMap::new();
         let features: Vec<Box<dyn Feature>> = vec![Box::new(ToolsExportFeature)];
         let ctx = HttpContext::new("GET", "/api/v1/tools-export", None, None, &headers);
@@ -405,7 +405,7 @@ mod dispatch_tests {
     async fn dispatch_sibling_prefix_mutations_return_404() {
         use wanaku_types::registry::{ForwardRegistry, NamespaceRegistry};
 
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let headers = http::HeaderMap::new();
         let features: &[Box<dyn Feature>] = &[];
         let namespaces_before = registry.list_namespaces().len();
@@ -431,7 +431,7 @@ mod dispatch_tests {
     #[tokio::test]
     async fn dispatch_forward_delete_passes_label_precondition() {
         use wanaku_types::registry::{ForwardEntry, ForwardRegistry};
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(ForwardEntry {
             name: "fwd".to_owned(),
             address: "http://x:1".to_owned(),
@@ -458,7 +458,7 @@ mod dispatch_tests {
 
     #[tokio::test]
     async fn dispatch_post_without_body_returns_400() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let headers = http::HeaderMap::new();
         let features: &[Box<dyn Feature>] = &[];
         let ctx = HttpContext::new("POST", "/api/v1/namespaces", None, None, &headers);

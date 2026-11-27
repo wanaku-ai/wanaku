@@ -1021,7 +1021,7 @@ mod tests {
     }
 
     async fn dispatch_namespace(
-        registry: &wanaku_infra::registry::InMemoryRegistry,
+        registry: &wanaku_infra::registry::RuntimeRegistry,
         method: &str,
         path: &str,
         body: Option<&str>,
@@ -1097,7 +1097,7 @@ mod tests {
 
     #[tokio::test]
     async fn namespace_crud_methods_succeed_at_runtime() {
-        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let registry = wanaku_infra::registry::RuntimeRegistry::new();
         for (method, _, path, body) in NAMESPACE_CRUD {
             let (status, _) =
                 dispatch_namespace(&registry, &method.to_uppercase(), path, body).await;
@@ -1135,7 +1135,7 @@ mod tests {
                 .unwrap_or_default(),
             "#/components/schemas/WanakuResponse_ManagementInfo"
         );
-        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let registry = wanaku_infra::registry::RuntimeRegistry::new();
         let (status, response) =
             dispatch_namespace(&registry, "GET", "/api/v1/management/info", None).await;
         assert_eq!(status, 200);
@@ -1150,7 +1150,7 @@ mod tests {
         let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
         assert!(schema_properties(&value, "NamespaceEntry").contains(&"members".to_owned()));
         assert!(value["paths"][NAMESPACE]["delete"]["responses"]["409"].is_object());
-        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let registry = wanaku_infra::registry::RuntimeRegistry::new();
         let (status, _) = dispatch_namespace(&registry, "POST", NAMESPACES, Some(TEAM)).await;
         assert_eq!(status, 200);
         let body = r#"{"name":"integration","targets":["team"]}"#;
@@ -1175,7 +1175,7 @@ mod tests {
     #[tokio::test]
     async fn namespace_update_response_matches_runtime() {
         let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
-        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let registry = wanaku_infra::registry::RuntimeRegistry::new();
         let path = TEAM_PATH;
         let body = r#"{"name":"other","labels":{"tier":"gold"},"audience":"api"}"#;
         let (status, response) = dispatch_namespace(&registry, "PUT", path, Some(body)).await;
@@ -1204,7 +1204,7 @@ mod tests {
     async fn namespace_update_rejects_bad_input_without_changes() {
         let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
         let error_schema = schema_properties(&value, "ManagementErrorResponse");
-        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let registry = wanaku_infra::registry::RuntimeRegistry::new();
         let path = TEAM_PATH;
         dispatch_namespace(&registry, "PUT", path, Some(TEAM)).await;
         let invalid = "/api/v1/namespaces/Bad_Name";

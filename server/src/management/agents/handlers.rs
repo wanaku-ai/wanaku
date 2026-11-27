@@ -1,14 +1,14 @@
 use crate::http_response::{json_err, json_ok};
 use crate::management::handlers::label_precondition;
 use http::{Response, StatusCode};
-use wanaku_infra::registry::{ConditionalRemoval, InMemoryRegistry};
+use wanaku_infra::registry::{ConditionalRemoval, RuntimeRegistry};
 use wanaku_types::agents::AgentEntry;
 
 fn view(entry: AgentEntry) -> wanaku_types::agents::AgentView {
     entry.view(&wanaku_types::config::ENV.a2a_public_url)
 }
 
-pub(super) fn list(registry: &InMemoryRegistry, query: Option<&str>) -> Response<Vec<u8>> {
+pub(super) fn list(registry: &RuntimeRegistry, query: Option<&str>) -> Response<Vec<u8>> {
     let namespace = query.and_then(|query| {
         query
             .split('&')
@@ -29,7 +29,7 @@ pub(super) fn list(registry: &InMemoryRegistry, query: Option<&str>) -> Response
     json_ok(&serde_json::json!(agents))
 }
 
-pub(super) fn get(registry: &InMemoryRegistry, namespace: &str, name: &str) -> Response<Vec<u8>> {
+pub(super) fn get(registry: &RuntimeRegistry, namespace: &str, name: &str) -> Response<Vec<u8>> {
     registry.get_agent(namespace, name).map_or_else(
         || json_err(StatusCode::NOT_FOUND, "agent not found"),
         |entry| json_ok(&serde_json::json!(view(entry))),
@@ -37,7 +37,7 @@ pub(super) fn get(registry: &InMemoryRegistry, namespace: &str, name: &str) -> R
 }
 
 pub(super) fn save(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     body: &str,
     identity: Option<(&str, &str)>,
 ) -> Response<Vec<u8>> {
@@ -66,7 +66,7 @@ pub(super) fn save(
 }
 
 pub(super) fn delete(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespace: &str,
     name: &str,
     query: Option<&str>,
@@ -92,7 +92,7 @@ mod tests {
         reason = "CRUD status and immutable identity fixtures"
     )]
     fn crud_preserves_identity_and_rejects_invalid_replacements() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let initial = r#"{"name":"worker","address":"http://first.example/rpc"}"#;
         assert_eq!(save(&registry, initial, None).status(), 200);
         assert_eq!(save(&registry, initial, None).status(), 409);
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn labels_round_trip_through_create_get_and_list() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let created = r#"{"name":"worker","address":"http://a.example/rpc","labels":{"cic.instance":"pod-a"}}"#;
         let response = save(&registry, created, None);
         assert_eq!(response.status(), 200);
@@ -155,7 +155,7 @@ mod tests {
 
     #[test]
     fn update_replaces_labels() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let created = r#"{"name":"worker","address":"http://a.example/rpc","labels":{"cic.instance":"pod-a"}}"#;
         assert_eq!(save(&registry, created, None).status(), 200);
         let updated = r#"{"name":"worker","address":"http://a.example/rpc","labels":{"cic.instance":"pod-b"}}"#;
@@ -175,13 +175,13 @@ mod tests {
         assert!(fetched["data"].get("labels").is_none());
     }
 
-    fn delete_worker(registry: &InMemoryRegistry, query: &str) -> Response<Vec<u8>> {
+    fn delete_worker(registry: &RuntimeRegistry, query: &str) -> Response<Vec<u8>> {
         delete(registry, "default", "worker", Some(query))
     }
 
     #[test]
     fn conditional_delete_follows_label_precondition() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let labeled = r#"{"name":"worker","address":"http://a.example/rpc","labels":{"cic.instance":"pod-b"}}"#;
         assert_eq!(save(&registry, labeled, None).status(), 200);
 
@@ -204,7 +204,7 @@ mod tests {
 
     #[test]
     fn delete_without_label_parameters_is_unconditional() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let labeled = r#"{"name":"worker","address":"http://a.example/rpc","labels":{"cic.instance":"pod-b"}}"#;
         assert_eq!(save(&registry, labeled, None).status(), 200);
         assert_eq!(delete_worker(&registry, "namespace=x").status(), 200);

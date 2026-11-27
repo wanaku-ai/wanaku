@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use serde_json::Value;
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::registry::{NamespaceEntry, NamespaceRegistry, ToolRegistry};
 
 pub use wanaku_types::metadata::NAMESPACE_METADATA_KEY;
@@ -29,7 +29,7 @@ fn valid_namespace_path(namespace: &str) -> bool {
 /// Resolve a qualified virtual request before governance and credential checks.
 /// The request body keeps the original concrete upstream identifier thereafter.
 fn resolve_virtual_request(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     group: &str,
     method: &str,
     request: &mut Value,
@@ -75,7 +75,7 @@ impl NamespaceFilter {
         }
         let is_virtual = ctx
             .extensions
-            .get::<InMemoryRegistry>()
+            .get::<RuntimeRegistry>()
             .and_then(|registry| registry.get_namespace(&namespace))
             .is_some_and(|entry| entry.is_virtual());
         if is_virtual {
@@ -112,7 +112,7 @@ fn resolve_virtual_context(
     body: &mut Option<Bytes>,
     group: &str,
 ) -> Result<FilterAction, FilterError> {
-    let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+    let Some(registry) = ctx.extensions.get::<RuntimeRegistry>() else {
         return Ok(namespace_error(ctx, "registry unavailable"));
     };
     let method = ctx.get_metadata(crate::MCP_METHOD_KEY).unwrap_or_default();
@@ -146,7 +146,7 @@ fn pin_tool(ctx: &mut HttpFilterContext<'_>) {
     ctx.extensions.remove::<wanaku_types::wasm::ResolvedTool>();
     let tool = ctx
         .extensions
-        .get::<InMemoryRegistry>()
+        .get::<RuntimeRegistry>()
         .and_then(|registry| {
             registry.get_tool_in_namespace(
                 ctx.get_metadata(NAMESPACE_METADATA_KEY)?,
@@ -313,7 +313,7 @@ mod virtual_tests {
         FORWARD_ID, RecordingInvoker, filter_context, registry, request, response_json,
     };
 
-    fn virtual_registry() -> InMemoryRegistry {
+    fn virtual_registry() -> RuntimeRegistry {
         let registry = registry(Some("b1"), Some("fake:token"));
         let mut binding = registry.get_binding("b1").unwrap();
         binding.restrictions.namespaces = vec!["default".to_owned()];

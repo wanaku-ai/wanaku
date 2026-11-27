@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::trace;
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::registry::PromptRegistry;
 
 crate::body_filter_boilerplate!(PromptListFilter, "wanaku_prompt_list");
@@ -33,8 +33,8 @@ impl PromptListFilter {
         let json_rpc_id =
             crate::response::json_rpc_id_from_metadata(ctx.get_metadata(crate::MCP_ID_KEY));
 
-        let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
-            tracing::error!("InMemoryRegistry not found in request extensions");
+        let Some(registry) = ctx.extensions.get::<RuntimeRegistry>() else {
+            tracing::error!("RuntimeRegistry not found in request extensions");
             return Ok(crate::response::json_rpc_error(
                 &json_rpc_id,
                 crate::response::JSONRPC_INTERNAL_ERROR,

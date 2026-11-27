@@ -1,5 +1,5 @@
 use crate::{SimulationDeps, SimulationLimits};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::registry::{
     BindingRegistry, ForwardRegistry, NamespaceRegistry, PromptRegistry, ResourceRegistry,
     ToolRegistry,
@@ -55,8 +55,8 @@ impl RegistryEntries {
         .fold(0_usize, usize::saturating_add)
     }
 }
-fn copy_registry(e: RegistryEntries) -> Result<InMemoryRegistry, &'static str> {
-    let registry = InMemoryRegistry::new();
+fn copy_registry(e: RegistryEntries) -> Result<RuntimeRegistry, &'static str> {
+    let registry = RuntimeRegistry::new();
     for ns in e.namespaces.iter().filter(|entry| !entry.is_virtual()) {
         registry
             .try_register_namespace(ns.clone())

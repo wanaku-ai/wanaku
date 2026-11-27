@@ -22,7 +22,7 @@ use wanaku_infra::credentials::{
     CredentialAuditRecord, CredentialAuditSink, CredentialBroker, ResolutionOutcome, record_audit,
 };
 use wanaku_infra::mcp_client::McpInvoker;
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 
 // The redactor is shared with the forward discovery path, so it lives in
 // `wanaku-infra`. Re-export it here so filter code refers to it as
@@ -84,7 +84,7 @@ pub async fn inject_forward_credentials(
     // to the pure core so the fail-closed paths stay unit-testable without a
     // full filter context.
     let broker = ctx.extensions.get::<Arc<CredentialBroker>>().cloned();
-    let registry = ctx.extensions.get::<InMemoryRegistry>();
+    let registry = ctx.extensions.get::<RuntimeRegistry>();
     let audit_sink = ctx
         .extensions
         .get::<Arc<dyn CredentialAuditSink>>()
@@ -110,7 +110,7 @@ pub async fn inject_forward_credentials(
 )]
 async fn inject_forward_credentials_inner(
     broker: Option<&Arc<CredentialBroker>>,
-    registry: Option<&InMemoryRegistry>,
+    registry: Option<&RuntimeRegistry>,
     audit_sink: Option<&dyn CredentialAuditSink>,
     request: &ForwardCredentialRequest<'_>,
     forward_headers: &mut HashMap<HeaderName, HeaderValue>,
@@ -372,7 +372,7 @@ mod tests {
 
     #[tokio::test]
     async fn injects_bearer_header_on_success() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         let broker = broker();
         let forward = forward(Some("b1"));
@@ -425,7 +425,7 @@ mod tests {
 
     #[tokio::test]
     async fn denies_when_broker_unavailable() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         let forward = forward(Some("b1"));
         let id = serde_json::json!(1);
@@ -456,7 +456,7 @@ mod tests {
 
     #[tokio::test]
     async fn denies_when_binding_missing() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let broker = broker();
         let forward = forward(Some("missing"));
         let id = serde_json::json!(1);
@@ -478,7 +478,7 @@ mod tests {
 
     #[tokio::test]
     async fn denies_on_client_header_collision() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         let broker = broker();
         let forward = forward(Some("b1"));
@@ -514,7 +514,7 @@ mod tests {
 
     #[tokio::test]
     async fn fails_closed_on_origin_mismatch() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         let broker = broker();
         let forward = forward(Some("b1"));
@@ -556,7 +556,7 @@ mod tests {
     async fn successful_injection_emits_one_audit_record() {
         use wanaku_infra::credentials::ResolutionOutcome;
 
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         let broker = broker();
         let forward = forward(Some("b1"));
@@ -587,7 +587,7 @@ mod tests {
     async fn fail_closed_denial_emits_one_audit_record() {
         use wanaku_infra::credentials::ResolutionOutcome;
 
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         let broker = broker();
         let forward = forward(Some("b1"));
@@ -618,7 +618,7 @@ mod tests {
 
     #[tokio::test]
     async fn broker_unavailable_emits_denial_record() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         let forward = forward(Some("b1"));
         let id = serde_json::json!(1);
@@ -647,7 +647,7 @@ mod tests {
 
     #[tokio::test]
     async fn binding_missing_emits_denial_record() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let broker = broker();
         let forward = forward(Some("missing"));
         let id = serde_json::json!(1);
@@ -676,7 +676,7 @@ mod tests {
 
     #[tokio::test]
     async fn header_collision_emits_denial_record() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         let broker = broker();
         let forward = forward(Some("b1"));
@@ -711,7 +711,7 @@ mod tests {
 
     #[tokio::test]
     async fn unusable_resolved_value_records_failure_not_allow() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         // A resolved value with a control character cannot form a valid header.
         // The broker rejects it during header construction, so the recorded

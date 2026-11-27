@@ -15,7 +15,7 @@ use praxis_filter::{FilterRegistry, PipelineExtension, RequestExtensions};
 use state::HandlerState;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::feature::{Feature, HttpContext};
 use wanaku_types::wasm::ToolHandler;
 
@@ -27,7 +27,7 @@ pub struct ToolHandlerFeature {
 
 impl ToolHandlerFeature {
     #[must_use]
-    pub fn new(registry: InMemoryRegistry) -> Self {
+    pub fn new(registry: RuntimeRegistry) -> Self {
         Self {
             state: HandlerState::new(registry),
             startup_error: Mutex::new(None),

@@ -2,7 +2,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::interactions::InMemoryInteractionStore;
 use wanaku_types::mcp::McpContext;
 
@@ -204,7 +204,7 @@ impl PreparedEvaluators {
     pub fn evaluate(
         &self,
         input: &SimulationInput<'_>,
-        registry: &InMemoryRegistry,
+        registry: &RuntimeRegistry,
     ) -> SimulationOutcome {
         self.evaluate_with_limits(input, registry, self.limits)
     }
@@ -212,7 +212,7 @@ impl PreparedEvaluators {
     pub fn evaluate_with_limits(
         &self,
         input: &SimulationInput<'_>,
-        registry: &InMemoryRegistry,
+        registry: &RuntimeRegistry,
         limits: SimulationLimits,
     ) -> SimulationOutcome {
         let evaluator = self.evaluators.iter().find(|evaluator| {
@@ -236,7 +236,7 @@ impl PreparedEvaluators {
     fn run_processor(
         evaluator: &PreparedEvaluator,
         input: &SimulationInput<'_>,
-        registry: &InMemoryRegistry,
+        registry: &RuntimeRegistry,
         limits: SimulationLimits,
     ) -> SimulationOutcome {
         let definition = Some(&evaluator.definition);
@@ -351,7 +351,7 @@ mod tests {
                 target: Some("uri"),
                 arguments: &arguments,
             },
-            &InMemoryRegistry::new(),
+            &RuntimeRegistry::new(),
         );
         assert_eq!(result.reason_code(), "evaluator_external_engine_skipped");
         assert!(result.outcome.action().is_none());
@@ -424,7 +424,7 @@ mod tests {
                     target: Some("tool"),
                     arguments: &arguments,
                 },
-                &InMemoryRegistry::new(),
+                &RuntimeRegistry::new(),
             );
             assert_eq!(result.reason_code(), expected, "{kind}");
             assert_eq!(result.engine, Some(kind));
@@ -443,7 +443,7 @@ mod tests {
                 target: Some("prompt"),
                 arguments: &arguments,
             },
-            &InMemoryRegistry::new(),
+            &RuntimeRegistry::new(),
         );
         assert_eq!(result.reason_code(), "evaluator_processor_failed");
     }
@@ -463,7 +463,7 @@ mod tests {
                 target: Some("test://uri"),
                 arguments: &arguments,
             },
-            &InMemoryRegistry::new(),
+            &RuntimeRegistry::new(),
         );
         assert_eq!(result.reason_code(), "evaluator_simulated");
         assert!(matches!(result.outcome.action(), Some(ActionResult::Pass)));
@@ -491,7 +491,7 @@ mod tests {
                 target: Some("tool"),
                 arguments: &arguments,
             },
-            &InMemoryRegistry::new(),
+            &RuntimeRegistry::new(),
         );
         assert_eq!(result.reason_code(), "evaluator_processor_failed");
     }
@@ -514,7 +514,7 @@ mod tests {
                 target: Some("tool"),
                 arguments: &arguments,
             },
-            &InMemoryRegistry::new(),
+            &RuntimeRegistry::new(),
         );
         assert_eq!(result.reason_code(), "evaluator_processor_failed");
         assert!(start.elapsed() < std::time::Duration::from_secs(5));
@@ -530,7 +530,7 @@ mod tests {
                 target: Some("tool"),
                 arguments: &arguments,
             },
-            &InMemoryRegistry::new(),
+            &RuntimeRegistry::new(),
             SimulationLimits {
                 fuel: u64::MAX,
                 memory_bytes: 64 * 1024 * 1024,
@@ -565,7 +565,7 @@ mod tests {
     #[test]
     fn wasm_host_mutation_is_suppressed() {
         use wanaku_types::registry::ToolRegistry as _;
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let tool = serde_json::from_value(serde_json::json!({
             "name": "tool", "description": "test", "uri": "test://tool", "type": "mcp-forward",
             "input_schema": {}, "namespace": "default"
@@ -618,7 +618,7 @@ mod tests {
                 target: Some("tool"),
                 arguments: &arguments,
             },
-            &InMemoryRegistry::new(),
+            &RuntimeRegistry::new(),
         );
         assert_eq!(result.reason_code(), "evaluator_simulated");
         assert!(matches!(result.outcome.action(), Some(ActionResult::Pass)));

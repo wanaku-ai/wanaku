@@ -8,9 +8,9 @@ use wanaku_types::registry::{
     validate_namespace_name,
 };
 
-use super::{ForwardChanges, InMemoryRegistry};
+use super::{ForwardChanges, RuntimeRegistry};
 
-impl InMemoryRegistry {
+impl RuntimeRegistry {
     pub(super) fn lock_namespaces(&self) -> MutexGuard<'_, ForwardChanges> {
         self.namespace_lock
             .lock()
@@ -320,8 +320,8 @@ mod tests {
         }
     }
 
-    fn populated() -> Result<InMemoryRegistry, String> {
-        let registry = InMemoryRegistry::new();
+    fn populated() -> Result<RuntimeRegistry, String> {
+        let registry = RuntimeRegistry::new();
         registry.try_register_namespace(namespace("kafka", None))?;
         registry.try_register_namespace(namespace("flink", None))?;
         registry.try_register_namespace(namespace("integration", Some(&["kafka", "flink"])))?;
@@ -511,7 +511,7 @@ mod tests {
             r#"{"namespaces":[{"name":"a"},{"name":"a","members":[]}]}"#,
             r#"{"namespaces":[{"name":"a","members":[]}],"forwards":[{"name":"f","namespace":"a","address":"http://backend/mcp"}]}"#,
         ] {
-            let registry = InMemoryRegistry::with_persistence(Arc::new(SnapshotBackend(snapshot)));
+            let registry = RuntimeRegistry::with_persistence(Arc::new(SnapshotBackend(snapshot)));
             registry.load_persisted();
             assert!(registry.get_namespace("a").is_none());
             assert!(registry.list_forwards().is_empty());
@@ -520,7 +520,7 @@ mod tests {
 
     #[test]
     fn persisted_virtual_graph_loads_and_old_namespace_shape_remains_concrete() {
-        let registry = InMemoryRegistry::with_persistence(Arc::new(SnapshotBackend(
+        let registry = RuntimeRegistry::with_persistence(Arc::new(SnapshotBackend(
             r#"{"namespaces":[{"name":"integration","targets":["kafka"]},{"name":"kafka"}]}"#,
         )));
         registry.load_persisted();

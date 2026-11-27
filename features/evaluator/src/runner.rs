@@ -140,7 +140,7 @@ mod tests {
     use std::path::Path;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::{Duration, Instant};
-    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_infra::registry::RuntimeRegistry;
     use wanaku_types::interactions::InMemoryInteractionStore;
 
     use crate::action::ActionResult;
@@ -156,7 +156,7 @@ mod tests {
 
     fn execution() -> ExecutionContext {
         ExecutionContext {
-            registry: InMemoryRegistry::new(),
+            registry: RuntimeRegistry::new(),
             interactions: InMemoryInteractionStore::new(1),
             compiled_schema: None,
             allow_side_effects: true,

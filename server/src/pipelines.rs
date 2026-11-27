@@ -8,7 +8,7 @@ use tracing::info;
 
 use wanaku_infra::credentials::CredentialBroker;
 use wanaku_infra::mcp_client::{McpInvoker, RmcpInvoker};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::feature::Feature;
 use wanaku_types::governance::GovernanceConfig;
 
@@ -25,7 +25,7 @@ pub struct PipelineDeps<'a> {
     /// Key-value store registry for filter state.
     pub kv_stores: &'a praxis_core::kv::KvStoreRegistry,
     /// Wanaku in-memory registry (tools, resources, prompts, namespaces, forwards).
-    pub wanaku_registry: &'a InMemoryRegistry,
+    pub wanaku_registry: &'a RuntimeRegistry,
     /// Immutable governance posture configuration.
     pub governance: &'a GovernanceConfig,
     /// Shared just-in-time credential broker (shared cache across requests).
@@ -41,7 +41,7 @@ impl<'a> PipelineDeps<'a> {
         filter_registry: &'a FilterRegistry,
         health_registry: &'a praxis_core::health::HealthRegistry,
         kv_stores: &'a praxis_core::kv::KvStoreRegistry,
-        wanaku_registry: &'a InMemoryRegistry,
+        wanaku_registry: &'a RuntimeRegistry,
         governance: &'a GovernanceConfig,
         broker: &'a Arc<CredentialBroker>,
         features: &'a [Box<dyn Feature>],
@@ -59,7 +59,7 @@ impl<'a> PipelineDeps<'a> {
 }
 
 struct RegistryExtension {
-    registry: InMemoryRegistry,
+    registry: RuntimeRegistry,
 }
 
 struct BrokerExtension {
@@ -212,7 +212,7 @@ mod tests {
         let filter_registry = FilterRegistry::with_builtins();
         let health_registry = praxis_core::health::build_health_registry(&[]);
         let kv_stores = praxis_core::kv::KvStoreRegistry::new();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let governance = GovernanceConfig::default();
         let broker = Arc::new(CredentialBroker::new(ResolverRegistry::new()));
 

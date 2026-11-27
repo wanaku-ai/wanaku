@@ -98,7 +98,7 @@ impl A2aFilter {
             Some((group, namespace, name, card)) => {
                 let allowed = ctx
                     .extensions
-                    .get::<wanaku_infra::registry::InMemoryRegistry>()
+                    .get::<wanaku_infra::registry::RuntimeRegistry>()
                     .is_some_and(|registry| registry.resolve_virtual_member(group, namespace));
                 if !allowed {
                     return Err(route_error(404, "A2A agent not found in virtual namespace"));
@@ -117,7 +117,7 @@ impl A2aFilter {
         }
         let Some(endpoint) = ctx
             .extensions
-            .get::<wanaku_infra::registry::InMemoryRegistry>()
+            .get::<wanaku_infra::registry::RuntimeRegistry>()
             .and_then(|registry| registry.agent_endpoint(namespace, name, card))
         else {
             return Err(route_error(404, "A2A agent not found"));
@@ -138,7 +138,7 @@ impl A2aFilter {
         }
         let address = ctx
             .extensions
-            .get::<wanaku_infra::registry::InMemoryRegistry>()
+            .get::<wanaku_infra::registry::RuntimeRegistry>()
             .and_then(|registry| registry.get_agent(namespace, name))
             .map(|entry| entry.address);
         if let Some(address) = address {
@@ -583,7 +583,7 @@ disallowed_origin_mode: reject"#,
     #[tokio::test]
     async fn virtual_agents_are_qualified_and_dispatch_only_to_members() -> Result<(), FilterError>
     {
-        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let registry = wanaku_infra::registry::RuntimeRegistry::new();
         for namespace in ["kafka", "flink", "outside"] {
             let agent = serde_json::from_value(
                 serde_json::json!({"name":"worker", "namespace":namespace, "address":format!("http://{namespace}.example/rpc")}),
@@ -683,7 +683,7 @@ disallowed_origin_mode: reject"#,
         reason = "managed selection and live update fixtures use real protocol contexts"
     )]
     async fn managed_routes_select_the_current_agent_with_namespace_isolation() {
-        let registry = wanaku_infra::registry::InMemoryRegistry::new();
+        let registry = wanaku_infra::registry::RuntimeRegistry::new();
         let default: wanaku_types::agents::AgentEntry =
             serde_json::from_str(r#"{"name":"worker","address":"http://default.example/rpc"}"#)
                 .expect("default agent");
@@ -845,7 +845,7 @@ disallowed_origin_mode: reject"#,
 
     #[tokio::test]
     async fn static_v1_discovery_uses_selected_upstream_root_for_interface_matching() {
-        let agents = wanaku_infra::registry::InMemoryRegistry::new();
+        let agents = wanaku_infra::registry::RuntimeRegistry::new();
         let entry: wanaku_types::agents::AgentEntry = serde_json::from_value(
             serde_json::json!({"name":"backend", "address":"https://backend.example/"}),
         )

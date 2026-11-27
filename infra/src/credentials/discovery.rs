@@ -22,7 +22,7 @@ use wanaku_types::registry::{BindingRegistry, ForwardEntry};
 use super::audit_sink::{CredentialAuditSink, record_audit};
 use super::broker::{BrokerError, CredentialAuditRecord, CredentialBroker, ResolutionOutcome};
 use super::redaction::CredentialRedactor;
-use crate::registry::InMemoryRegistry;
+use crate::registry::RuntimeRegistry;
 
 /// The outbound discovery headers plus the redactor for the discovery response.
 ///
@@ -68,7 +68,7 @@ pub enum DiscoveryCredentialError {
 /// the no-binding early return performs no brokerage and records nothing.
 pub async fn resolve_discovery_headers(
     broker: &CredentialBroker,
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     forward: &ForwardEntry,
     audit_sink: Option<&dyn CredentialAuditSink>,
 ) -> Result<DiscoveryExchange, DiscoveryCredentialError> {
@@ -232,7 +232,7 @@ mod tests {
     #[tokio::test]
     async fn no_binding_returns_empty() {
         let broker = broker();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let forward = forward("https://api.example.com/mcp", None);
 
         let exchange = resolve_discovery_headers(&broker, &registry, &forward, None)
@@ -247,7 +247,7 @@ mod tests {
     #[tokio::test]
     async fn missing_binding_fails_closed() {
         let broker = broker();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let forward = forward("https://api.example.com/mcp", Some("missing"));
 
         let err = resolve_discovery_headers(&broker, &registry, &forward, None)
@@ -260,7 +260,7 @@ mod tests {
     #[tokio::test]
     async fn brokerage_error_fails_closed() {
         let broker = broker();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         // The forward address origin does not match the binding origin.
         let forward = forward("https://evil.example.com/mcp", Some("b1"));
@@ -275,7 +275,7 @@ mod tests {
     #[tokio::test]
     async fn success_marks_headers_sensitive() {
         let broker = broker();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         let forward = forward("https://api.example.com/mcp", Some("b1"));
 
@@ -316,7 +316,7 @@ mod tests {
     #[tokio::test]
     async fn successful_discovery_emits_one_audit_record() {
         let broker = broker();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         let forward = forward("https://api.example.com/mcp", Some("b1"));
         let sink = RecordingSink::default();
@@ -339,7 +339,7 @@ mod tests {
     #[tokio::test]
     async fn failed_discovery_emits_one_audit_record() {
         let broker = broker();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         // The forward address origin does not match the binding origin.
         let forward = forward("https://evil.example.com/mcp", Some("b1"));
@@ -362,7 +362,7 @@ mod tests {
     #[tokio::test]
     async fn missing_binding_emits_denial_record() {
         let broker = broker();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         // The forward references a binding that is not registered.
         let forward = forward("https://api.example.com/mcp", Some("missing"));
         let sink = RecordingSink::default();
@@ -390,7 +390,7 @@ mod tests {
             FakeResolver::new().with_value("token", "bad\nvalue"),
         ));
         let broker = CredentialBroker::new(resolvers);
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(binding("b1"));
         let forward = forward("https://api.example.com/mcp", Some("b1"));
         let sink = RecordingSink::default();

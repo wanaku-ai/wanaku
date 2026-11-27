@@ -8,7 +8,7 @@ use wasmtime_wasi::{WasiCtxBuilder, WasiCtxView, WasiView};
 
 use crate::schema::CompiledSchema;
 
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::interactions::InMemoryInteractionStore;
 
 use crate::action::ActionResult;
@@ -28,7 +28,7 @@ pub enum ExecutionMode {
 
 /// Capabilities and stores available during one processor invocation.
 pub struct ExecutionContext {
-    pub registry: InMemoryRegistry,
+    pub registry: RuntimeRegistry,
     pub interactions: InMemoryInteractionStore,
     pub compiled_schema: Option<Arc<CompiledSchema>>,
     pub allow_side_effects: bool,
@@ -274,7 +274,7 @@ mod tests {
     fn infinite_loop_returns_execution_error() {
         let processor = looping_processor();
         let execution = ExecutionContext {
-            registry: InMemoryRegistry::new(),
+            registry: RuntimeRegistry::new(),
             interactions: InMemoryInteractionStore::new(10),
             compiled_schema: None,
             allow_side_effects: false,
@@ -291,7 +291,7 @@ mod tests {
     fn infinite_loop_traps_specifically_on_fuel_exhaustion() {
         let processor = looping_processor();
         let state = ExecutionContext {
-            registry: InMemoryRegistry::new(),
+            registry: RuntimeRegistry::new(),
             interactions: InMemoryInteractionStore::new(10),
             allow_side_effects: false,
             mode: ExecutionMode::Production,
@@ -323,7 +323,7 @@ mod tests {
         let result = processor
             .evaluate(
                 ExecutionContext {
-                    registry: InMemoryRegistry::new(),
+                    registry: RuntimeRegistry::new(),
                     interactions: InMemoryInteractionStore::new(1),
                     compiled_schema: None,
                     allow_side_effects: true,

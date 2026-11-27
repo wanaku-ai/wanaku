@@ -12,7 +12,7 @@ use wanaku_infra::credentials::{
 use wanaku_infra::mcp_client::{ForwardDiscovery, Listing, McpClientError};
 use wanaku_infra::registry::{
     ConditionalRemoval, DiscoveredForward, ForwardCapabilities, ForwardDiscoveryRequest,
-    ForwardPublicationError, InMemoryRegistry, PublishedForwardUpdate,
+    ForwardPublicationError, PublishedForwardUpdate, RuntimeRegistry,
 };
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::NormalizedOrigin;
@@ -22,13 +22,13 @@ use wanaku_types::registry::{
     ResourceRegistry, ToolEntry, ToolRegistry,
 };
 
-pub(super) fn handle_tool_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+pub(super) fn handle_tool_list(registry: &RuntimeRegistry) -> Response<Vec<u8>> {
     let tools = registry.list_tools();
     json_ok(&serde_json::json!(tools))
 }
 
 pub(super) fn handle_tool_get(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespace: &str,
     name: &str,
 ) -> Response<Vec<u8>> {
@@ -44,7 +44,7 @@ pub(super) fn handle_tool_get(
 /// Enables or disables a tool. A disabled tool stays in the management API but
 /// MCP clients cannot list or use it.
 pub(super) fn handle_tool_set_enabled(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespace: &str,
     name: &str,
     enabled: bool,
@@ -63,7 +63,7 @@ pub(super) fn handle_tool_set_enabled(
 }
 
 pub(super) fn handle_tool_delete(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespace: &str,
     name: &str,
 ) -> Response<Vec<u8>> {
@@ -80,13 +80,13 @@ pub(super) fn handle_tool_delete(
     }
 }
 
-pub(super) fn handle_resource_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+pub(super) fn handle_resource_list(registry: &RuntimeRegistry) -> Response<Vec<u8>> {
     let resources = registry.list_resources();
     json_ok(&serde_json::json!(resources))
 }
 
 pub(super) fn handle_resource_get(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespace: &str,
     name: &str,
 ) -> Response<Vec<u8>> {
@@ -102,7 +102,7 @@ pub(super) fn handle_resource_get(
 /// Enables or disables a resource. A disabled resource stays in the management API but
 /// MCP clients cannot list or use it.
 pub(super) fn handle_resource_set_enabled(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespace: &str,
     name: &str,
     enabled: bool,
@@ -124,7 +124,7 @@ pub(super) fn handle_resource_set_enabled(
 }
 
 pub(super) fn handle_resource_delete(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespace: &str,
     name: &str,
 ) -> Response<Vec<u8>> {
@@ -139,13 +139,13 @@ pub(super) fn handle_resource_delete(
     }
 }
 
-pub(super) fn handle_prompt_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+pub(super) fn handle_prompt_list(registry: &RuntimeRegistry) -> Response<Vec<u8>> {
     let prompts = registry.list_prompts();
     json_ok(&serde_json::json!(prompts))
 }
 
 pub(super) fn handle_prompt_get(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespace: &str,
     name: &str,
 ) -> Response<Vec<u8>> {
@@ -161,7 +161,7 @@ pub(super) fn handle_prompt_get(
 /// Enables or disables a prompt. A disabled prompt stays in the management API but
 /// MCP clients cannot list or use it.
 pub(super) fn handle_prompt_set_enabled(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespace: &str,
     name: &str,
     enabled: bool,
@@ -183,7 +183,7 @@ pub(super) fn handle_prompt_set_enabled(
 }
 
 pub(super) fn handle_prompt_delete(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespace: &str,
     name: &str,
 ) -> Response<Vec<u8>> {
@@ -198,12 +198,12 @@ pub(super) fn handle_prompt_delete(
     }
 }
 
-pub(super) fn handle_namespace_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+pub(super) fn handle_namespace_list(registry: &RuntimeRegistry) -> Response<Vec<u8>> {
     let namespaces = registry.list_namespaces();
     json_ok(&serde_json::json!(namespaces))
 }
 
-pub(super) fn handle_namespace_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+pub(super) fn handle_namespace_get(registry: &RuntimeRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_namespace(name) {
         Some(ns) => json_ok(&serde_json::json!(ns)),
         None => json_err(
@@ -218,23 +218,20 @@ pub(super) fn handle_namespace_get(registry: &InMemoryRegistry, name: &str) -> R
 /// The response contains only non-secret binding metadata. Bindings hold
 /// opaque secret references, never resolved secret values, so this endpoint
 /// cannot leak credentials.
-pub(super) fn handle_binding_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+pub(super) fn handle_binding_list(registry: &RuntimeRegistry) -> Response<Vec<u8>> {
     let bindings = registry.list_bindings();
     json_ok(&serde_json::json!(bindings))
 }
 
 /// Returns the non-secret metadata of a single credential binding by id.
-pub(super) fn handle_binding_get(registry: &InMemoryRegistry, id: &str) -> Response<Vec<u8>> {
+pub(super) fn handle_binding_get(registry: &RuntimeRegistry, id: &str) -> Response<Vec<u8>> {
     match registry.get_binding(id) {
         Some(binding) => json_ok(&serde_json::json!(binding)),
         None => json_err(StatusCode::NOT_FOUND, &format!("binding not found: {id}")),
     }
 }
 
-pub(super) fn handle_namespace_create(
-    registry: &InMemoryRegistry,
-    body: &str,
-) -> Response<Vec<u8>> {
+pub(super) fn handle_namespace_create(registry: &RuntimeRegistry, body: &str) -> Response<Vec<u8>> {
     let namespace: NamespaceEntry = match serde_json::from_str(body) {
         Ok(n) => n,
         Err(e) => {
@@ -273,7 +270,7 @@ pub(super) fn handle_namespace_create(
 }
 
 pub(super) fn handle_namespace_update(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     path_name: &str,
     body: &str,
 ) -> Response<Vec<u8>> {
@@ -307,10 +304,7 @@ pub(super) fn handle_namespace_update(
     }
 }
 
-pub(super) fn handle_namespace_delete(
-    registry: &InMemoryRegistry,
-    name: &str,
-) -> Response<Vec<u8>> {
+pub(super) fn handle_namespace_delete(registry: &RuntimeRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.try_remove_namespace(name) {
         Ok(true) => {
             info!(namespace = %name, "removed namespace via management API");
@@ -324,12 +318,12 @@ pub(super) fn handle_namespace_delete(
     }
 }
 
-pub(super) fn handle_forward_list(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+pub(super) fn handle_forward_list(registry: &RuntimeRegistry) -> Response<Vec<u8>> {
     let forwards = registry.list_forwards();
     json_ok(&serde_json::json!(forwards))
 }
 
-pub(super) fn handle_forward_get(registry: &InMemoryRegistry, name: &str) -> Response<Vec<u8>> {
+pub(super) fn handle_forward_get(registry: &RuntimeRegistry, name: &str) -> Response<Vec<u8>> {
     match registry.get_forward(name) {
         Some(forward) => json_ok(&serde_json::json!(forward)),
         None => json_err(StatusCode::NOT_FOUND, &format!("forward not found: {name}")),
@@ -337,7 +331,7 @@ pub(super) fn handle_forward_get(registry: &InMemoryRegistry, name: &str) -> Res
 }
 
 pub(super) async fn handle_forward_create(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     broker: &CredentialBroker,
     audit_sink: Option<&dyn CredentialAuditSink>,
     body: &str,
@@ -419,7 +413,7 @@ pub(super) fn label_precondition(query: Option<&str>) -> impl Fn(&HashMap<String
 }
 
 pub(super) fn handle_forward_delete(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     broker: &CredentialBroker,
     name: &str,
     query: Option<&str>,
@@ -446,7 +440,7 @@ pub(super) fn handle_forward_delete(
 }
 
 pub(super) async fn handle_forward_refresh(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     broker: &CredentialBroker,
     audit_sink: Option<&dyn CredentialAuditSink>,
     name: &str,
@@ -489,7 +483,7 @@ fn forward_publication_error(error: &ForwardPublicationError) -> Response<Vec<u8
 /// binding no longer matches. A mismatched binding fails closed at use time; the
 /// warning is an early operator signal to update the binding.
 fn revalidate_forward_credentials(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     broker: &CredentialBroker,
     forward: &ForwardEntry,
 ) {
@@ -530,7 +524,7 @@ fn revalidate_forward_credentials(
 /// redacted status message when a configured discovery binding cannot be
 /// brokered. Callers must not run discovery when this returns an error.
 async fn discovery_headers_or_status(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     broker: &CredentialBroker,
     audit_sink: Option<&dyn CredentialAuditSink>,
     forward: &ForwardEntry,
@@ -624,7 +618,7 @@ fn redact_server_info(redactor: &CredentialRedactor, info: McpServerInfo) -> Mcp
 /// management API. The supplied entry selects the forward by name. The
 /// registry supplies the configuration and identity for the new probe.
 pub async fn discover_and_update_forward(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     broker: &CredentialBroker,
     audit_sink: Option<&dyn CredentialAuditSink>,
     forward: &ForwardEntry,
@@ -636,7 +630,7 @@ pub async fn discover_and_update_forward(
 }
 
 pub(super) async fn discover_and_publish(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     broker: &CredentialBroker,
     audit_sink: Option<&dyn CredentialAuditSink>,
     request: ForwardDiscoveryRequest,
@@ -663,8 +657,8 @@ pub struct PreparedForwardUpdate {
 
 /// Run discovery without changing the registry or holding a registry lock.
 ///
-/// Obtain the request with [InMemoryRegistry::begin_forward_refresh] or
-/// [InMemoryRegistry::begin_forward_registration]. Publish the result with
+/// Obtain the request with [RuntimeRegistry::begin_forward_refresh] or
+/// [RuntimeRegistry::begin_forward_registration]. Publish the result with
 /// [apply_forward_update].
 pub fn prepare_forward_update<'a>(
     broker: &'a CredentialBroker,
@@ -687,7 +681,7 @@ pub fn prepare_forward_update<'a>(
 }
 
 async fn discover_forward_update(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     broker: &CredentialBroker,
     audit_sink: Option<&dyn CredentialAuditSink>,
     forward: &ForwardEntry,
@@ -708,7 +702,7 @@ async fn discover_forward_update(
 /// unchanged. The registry checks the precondition and publishes capabilities
 /// and status in one write critical section.
 pub fn apply_forward_update(
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     prepared: PreparedForwardUpdate,
 ) -> Result<PublishedForwardUpdate, ForwardPublicationError> {
     let published = registry.publish_forward_discovery(prepared.request, prepared.result);
@@ -925,7 +919,7 @@ fn prompt_entries(forward: &ForwardEntry, prompts: &[serde_json::Value]) -> Vec<
 #[cfg(test)]
 mod forward_helpers_tests {
     use super::*;
-    use wanaku_infra::registry::{InMemoryRegistry, PublishedCounts};
+    use wanaku_infra::registry::{PublishedCounts, RuntimeRegistry};
     use wanaku_types::registry::{PromptRegistry, ToolRegistry};
 
     fn forward_at(name: &str, address: &str) -> ForwardEntry {
@@ -949,7 +943,7 @@ mod forward_helpers_tests {
 
     /// Publish a successful discovery of `tools` and `prompts` for `forward`.
     fn publish(
-        registry: &InMemoryRegistry,
+        registry: &RuntimeRegistry,
         forward: &ForwardEntry,
         tools: &[serde_json::Value],
         prompts: &[serde_json::Value],
@@ -964,13 +958,13 @@ mod forward_helpers_tests {
             .counts
     }
 
-    fn tool_names(registry: &InMemoryRegistry) -> Vec<String> {
+    fn tool_names(registry: &RuntimeRegistry) -> Vec<String> {
         let mut names: Vec<_> = registry.list_tools().into_iter().map(|t| t.name).collect();
         names.sort();
         names
     }
 
-    fn prepared_probe(registry: &InMemoryRegistry, succeeded: bool) -> PreparedForwardUpdate {
+    fn prepared_probe(registry: &RuntimeRegistry, succeeded: bool) -> PreparedForwardUpdate {
         let request = registry
             .begin_forward_refresh("remote")
             .expect("probe request");
@@ -987,7 +981,7 @@ mod forward_helpers_tests {
         PreparedForwardUpdate { request, result }
     }
 
-    fn assert_stale(registry: &InMemoryRegistry, prepared: PreparedForwardUpdate) {
+    fn assert_stale(registry: &RuntimeRegistry, prepared: PreparedForwardUpdate) {
         assert!(matches!(
             apply_forward_update(registry, prepared),
             Err(ForwardPublicationError::Stale(name)) if name == "remote"
@@ -1000,7 +994,7 @@ mod forward_helpers_tests {
     #[test]
     fn probe_result_does_not_restore_a_deleted_forward() {
         for succeeded in [true, false] {
-            let registry = InMemoryRegistry::new();
+            let registry = RuntimeRegistry::new();
             registry.register_forward(forward_at("remote", "http://remote:8080/mcp"));
             let prepared = prepared_probe(&registry, succeeded);
 
@@ -1015,7 +1009,7 @@ mod forward_helpers_tests {
     fn probe_result_cannot_overwrite_same_address_replacement_or_recreation() {
         for succeeded in [true, false] {
             for recreate in [true, false] {
-                let registry = InMemoryRegistry::new();
+                let registry = RuntimeRegistry::new();
                 let current = forward_at("remote", "http://remote:8080/mcp");
                 registry.register_forward(current.clone());
                 let prepared = prepared_probe(&registry, succeeded);
@@ -1042,7 +1036,7 @@ mod forward_helpers_tests {
     #[test]
     fn probe_result_rejects_a_referenced_binding_change() {
         for succeeded in [true, false] {
-            let registry = InMemoryRegistry::new();
+            let registry = RuntimeRegistry::new();
             let mut forward = forward_at("remote", "http://remote:8080/mcp");
             forward
                 .credential_bindings
@@ -1078,7 +1072,7 @@ mod forward_helpers_tests {
 
     #[test]
     fn probe_result_updates_status_of_an_unchanged_forward() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let mut forward = forward_at("remote", "http://remote:8080/mcp");
         forward.available = false;
         registry.register_forward(forward);
@@ -1190,7 +1184,7 @@ mod forward_helpers_tests {
 
     #[test]
     fn preparation_does_not_mutate_the_registry() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let forward = forward_at("remote", "http://remote:8080/mcp");
         let found = discovery(
             complete(&[serde_json::json!({"name": "echo"})]),
@@ -1205,7 +1199,7 @@ mod forward_helpers_tests {
 
     #[test]
     fn unsupported_optional_listing_is_not_a_failure() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let forward = forward_at("remote", "http://remote:8080/mcp");
         let counts = publish(
             &registry,
@@ -1228,7 +1222,7 @@ mod forward_helpers_tests {
 
     #[test]
     fn incomplete_listing_keeps_previous_capabilities_and_marks_unavailable() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let forward = forward_at("remote", "http://remote:8080/mcp");
         let tools = [
             serde_json::json!({"name": "a"}),
@@ -1268,7 +1262,7 @@ mod forward_helpers_tests {
 
     #[test]
     fn successful_rediscovery_replaces_stale_entries_and_restores_availability() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let mut forward = forward_at("remote", "http://remote:8080/mcp");
         publish(
             &registry,
@@ -1295,7 +1289,7 @@ mod forward_helpers_tests {
 
     #[test]
     fn replacement_keeps_other_forwards_with_the_same_address() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let address = "http://shared:8080/mcp";
         let first = forward_at("first", address);
         let second = forward_at("second", address);
@@ -1328,7 +1322,7 @@ mod forward_helpers_tests {
         .expect("forward")
     }
 
-    fn owner(registry: &InMemoryRegistry, namespace: &str, name: &str) -> Option<String> {
+    fn owner(registry: &RuntimeRegistry, namespace: &str, name: &str) -> Option<String> {
         registry
             .get_tool(namespace, name)
             .and_then(|tool| tool.forward_id)
@@ -1337,7 +1331,7 @@ mod forward_helpers_tests {
     #[test]
     fn virtual_target_rejection_keeps_previous_forward_and_inventory()
     -> Result<(), Box<dyn std::error::Error>> {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let original = forward_in("backend", "kafka");
         publish(
             &registry,
@@ -1375,7 +1369,7 @@ mod forward_helpers_tests {
 
     #[test]
     fn same_upstream_is_exposed_in_two_namespaces() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let broker = CredentialBroker::new(wanaku_types::credentials::ResolverRegistry::new());
         let tools = [serde_json::json!({"name": "echo"})];
         let prompts = [serde_json::json!({"name": "greet"})];
@@ -1408,7 +1402,7 @@ mod forward_helpers_tests {
         reason = "covers conflict, refresh, and removal"
     )]
     fn same_name_in_one_namespace_is_not_overwritten_and_is_reported() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let broker = CredentialBroker::new(wanaku_types::credentials::ResolverRegistry::new());
         let first = forward_at("first", "http://one:8080/mcp");
         let second = forward_at("second", "http://two:8080/mcp");
@@ -1467,7 +1461,7 @@ mod forward_helpers_tests {
 
     #[test]
     fn freed_name_is_published_on_the_next_refresh() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let broker = CredentialBroker::new(wanaku_types::credentials::ResolverRegistry::new());
         let first = forward_at("first", "http://one:8080/mcp");
         let second = forward_at("second", "http://two:8080/mcp");
@@ -1490,7 +1484,7 @@ mod forward_helpers_tests {
 
     #[test]
     fn management_lookups_use_the_namespace_parameter() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let tools = [serde_json::json!({"name": "echo"})];
         publish(&registry, &forward_in("a", "default"), &tools, &[]);
         publish(&registry, &forward_in("b", "other"), &tools, &[]);
@@ -1523,7 +1517,7 @@ mod forward_helpers_tests {
 
     #[tokio::test]
     async fn failed_refresh_keeps_capabilities_and_marks_forward_unavailable() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         // An unroutable address makes discovery fail fast.
         let forward = forward_at("remote", "http://127.0.0.1:1/mcp");
         publish(
@@ -1553,7 +1547,7 @@ mod forward_helpers_tests {
             .expect("bind fixture");
         let address = listener.local_addr().expect("fixture address");
         let mut forward = forward_at("remote", &format!("http://{address}/mcp"));
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(forward.clone());
 
         let broker = CredentialBroker::new(wanaku_types::credentials::ResolverRegistry::new());
@@ -1592,7 +1586,7 @@ mod forward_helpers_tests {
 
     #[test]
     fn rediscovery_keeps_disabled_entries_disabled() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let forward = forward_at("remote-forward", "http://remote:8080/mcp");
         let tools = [
             serde_json::json!({"name": "off"}),
@@ -1620,7 +1614,7 @@ mod forward_helpers_tests {
 
     #[test]
     fn set_enabled_on_missing_entry_is_not_found() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             handle_tool_set_enabled(&registry, "default", "missing", true).status(),
             StatusCode::NOT_FOUND
@@ -1682,7 +1676,7 @@ mod forward_helpers_tests {
     clippy::cast_possible_wrap,
     reason = "registry counts won't exceed i64::MAX"
 )]
-pub(super) fn handle_statistics(registry: &InMemoryRegistry) -> Response<Vec<u8>> {
+pub(super) fn handle_statistics(registry: &RuntimeRegistry) -> Response<Vec<u8>> {
     let tools_count = registry.tool_count() as i64;
     let resources_count = registry.resource_count() as i64;
     let prompts_count = registry.prompt_count() as i64;
@@ -1716,7 +1710,7 @@ mod tests {
 
     use http::Response;
     use wanaku_infra::credentials::CredentialBroker;
-    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_infra::registry::RuntimeRegistry;
     use wanaku_types::registry::{
         BindingRegistry, ForwardEntry, ForwardRegistry, PromptEntry, PromptRegistry, ResourceEntry,
         ResourceRegistry, ToolEntry, ToolRegistry,
@@ -1737,7 +1731,7 @@ mod tests {
 
     #[test]
     fn generic_tool_mutations_reject_runtime_owned_handlers() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let mut tool = test_tool("handler");
         tool.type_ = "wasm".to_owned();
         tool.id = Some("binding-version".to_owned());
@@ -1812,7 +1806,7 @@ mod tests {
 
     #[test]
     fn tool_list_empty_then_populated() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let resp = handle_tool_list(&registry);
         assert_eq!(resp.status(), 200);
         assert_eq!(data_field(&resp).as_array().map(|a| a.len()), Some(0));
@@ -1825,14 +1819,14 @@ mod tests {
 
     #[test]
     fn tool_get_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let resp = handle_tool_get(&registry, "default", "no-such-tool");
         assert_eq!(resp.status(), 404);
     }
 
     #[test]
     fn tool_delete_existing() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_tool(test_tool("to-delete"));
 
         let resp = handle_tool_delete(&registry, "default", "to-delete");
@@ -1846,7 +1840,7 @@ mod tests {
 
     #[test]
     fn tool_delete_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             handle_tool_delete(&registry, "default", "ghost").status(),
             404
@@ -1857,7 +1851,7 @@ mod tests {
 
     #[test]
     fn resource_list_empty_then_populated() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             data_field(&handle_resource_list(&registry))
                 .as_array()
@@ -1876,7 +1870,7 @@ mod tests {
 
     #[test]
     fn resource_get_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             handle_resource_get(&registry, "default", "nope").status(),
             404
@@ -1885,7 +1879,7 @@ mod tests {
 
     #[test]
     fn resource_delete_existing() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_resource(test_resource("del-res"));
 
         assert_eq!(
@@ -1900,7 +1894,7 @@ mod tests {
 
     #[test]
     fn resource_delete_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             handle_resource_delete(&registry, "default", "nope").status(),
             404
@@ -1911,7 +1905,7 @@ mod tests {
 
     #[test]
     fn prompt_list_empty_then_populated() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             data_field(&handle_prompt_list(&registry))
                 .as_array()
@@ -1930,7 +1924,7 @@ mod tests {
 
     #[test]
     fn prompt_get_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             handle_prompt_get(&registry, "default", "nope").status(),
             404
@@ -1939,7 +1933,7 @@ mod tests {
 
     #[test]
     fn prompt_delete_existing() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_prompt(test_prompt("del-p"));
         assert_eq!(
             handle_prompt_delete(&registry, "default", "del-p").status(),
@@ -1953,7 +1947,7 @@ mod tests {
 
     #[test]
     fn prompt_delete_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             handle_prompt_delete(&registry, "default", "nope").status(),
             404
@@ -1964,7 +1958,7 @@ mod tests {
 
     #[test]
     fn namespace_create_and_get_roundtrip() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let body = r#"{"name":"finance"}"#;
 
         assert_eq!(handle_namespace_create(&registry, body).status(), 200);
@@ -1978,7 +1972,7 @@ mod tests {
 
     #[test]
     fn namespace_create_with_legacy_path_field() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let body = r#"{"path":"finance"}"#;
 
         assert_eq!(handle_namespace_create(&registry, body).status(), 200);
@@ -1989,7 +1983,7 @@ mod tests {
 
     #[test]
     fn namespace_create_validates_name() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             handle_namespace_create(&registry, r#"{"name":"Bad Name"}"#).status(),
             400
@@ -2010,7 +2004,7 @@ mod tests {
 
     #[test]
     fn namespace_create_duplicate_returns_409_and_keeps_entry() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let body = r#"{"name":"dup-ns","labels":{"team":"a"}}"#;
         assert_eq!(handle_namespace_create(&registry, body).status(), 200);
 
@@ -2020,13 +2014,13 @@ mod tests {
         assert_eq!(data["labels"]["team"], "a");
     }
 
-    async fn create_forward(registry: &InMemoryRegistry, body: &str) -> Response<Vec<u8>> {
+    async fn create_forward(registry: &RuntimeRegistry, body: &str) -> Response<Vec<u8>> {
         handle_forward_create(registry, &test_broker(), None, body, false).await
     }
 
     #[tokio::test]
     async fn forward_create_rejects_invalid_namespace() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let body = r#"{"name":"fwd","address":"http://localhost:1/mcp","namespace":"Bad_NS"}"#;
         assert_eq!(create_forward(&registry, body).await.status(), 400);
         assert!(registry.get_forward("fwd").is_none());
@@ -2035,7 +2029,7 @@ mod tests {
 
     #[tokio::test]
     async fn forward_create_rejects_non_http_address() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         for address in ["ftp://host/mcp", "host/mcp", "not a url"] {
             let body = serde_json::json!({"name": "fwd", "address": address}).to_string();
             assert_eq!(
@@ -2049,7 +2043,7 @@ mod tests {
 
     #[tokio::test]
     async fn forward_create_duplicate_returns_409_and_keeps_state() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         register_owned_forward(&registry, "pod-a");
         let body = r#"{"name":"owned-fwd","address":"http://other.example/mcp"}"#;
 
@@ -2063,7 +2057,7 @@ mod tests {
 
     #[test]
     fn forward_create_with_replace_drops_credentials_cached_for_old_address() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(cached_forward("cred-fwd"));
         // Builds its own runtime, so this test cannot run inside `tokio::test`.
         let broker = broker_with_cached_forward("cred-fwd");
@@ -2081,7 +2075,7 @@ mod tests {
 
     #[tokio::test]
     async fn forward_replace_with_failed_discovery_keeps_previous_registration() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         register_owned_forward(&registry, "pod-a");
         let body = r#"{"name":"owned-fwd","address":"http://127.0.0.1:1/mcp","labels":{"cic.instance":"pod-b"}}"#;
 
@@ -2110,7 +2104,7 @@ mod tests {
 
     #[test]
     fn namespace_update_uses_url_parameter() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         handle_namespace_create(&registry, r#"{"name":"original"}"#);
 
         let update_body = r#"{"name":"ignored"}"#;
@@ -2123,7 +2117,7 @@ mod tests {
 
     #[test]
     fn namespace_list_has_default_then_grows() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             data_field(&handle_namespace_list(&registry))
                 .as_array()
@@ -2142,13 +2136,13 @@ mod tests {
 
     #[test]
     fn namespace_get_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(handle_namespace_get(&registry, "nope").status(), 404);
     }
 
     #[test]
     fn forward_namespace_appears_in_namespace_list() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(ForwardEntry {
             name: "example-mcp".to_owned(),
             address: "http://localhost:9090/mcp".to_owned(),
@@ -2181,7 +2175,7 @@ mod tests {
 
     #[test]
     fn namespace_delete_existing() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         handle_namespace_create(&registry, r#"{"name":"del-ns"}"#);
         assert_eq!(handle_namespace_delete(&registry, "del-ns").status(), 200);
         assert_eq!(handle_namespace_get(&registry, "del-ns").status(), 404);
@@ -2189,19 +2183,19 @@ mod tests {
 
     #[test]
     fn namespace_delete_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(handle_namespace_delete(&registry, "ghost").status(), 404);
     }
 
     #[test]
     fn namespace_create_invalid_json_returns_400() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(handle_namespace_create(&registry, "!!!").status(), 400);
     }
 
     #[test]
     fn namespace_update_invalid_json_returns_400() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(handle_namespace_update(&registry, "x", "???").status(), 400);
     }
 
@@ -2228,7 +2222,7 @@ mod tests {
 
     #[test]
     fn binding_list_empty_then_populated() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             data_field(&handle_binding_list(&registry))
                 .as_array()
@@ -2247,7 +2241,7 @@ mod tests {
 
     #[test]
     fn binding_get_returns_metadata_without_secrets() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(sample_binding("b1"));
 
         let resp = handle_binding_get(&registry, "b1");
@@ -2267,7 +2261,7 @@ mod tests {
 
     #[test]
     fn binding_get_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(handle_binding_get(&registry, "nope").status(), 404);
     }
 
@@ -2275,7 +2269,7 @@ mod tests {
 
     #[test]
     fn forward_list_and_get() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(ForwardEntry {
             name: "upstream".to_owned(),
             address: "http://remote:8080".to_owned(),
@@ -2303,13 +2297,13 @@ mod tests {
 
     #[test]
     fn forward_get_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(handle_forward_get(&registry, "missing").status(), 404);
     }
 
     #[test]
     fn forward_delete_existing() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(ForwardEntry {
             name: "del-fwd".to_owned(),
             address: "http://x:1".to_owned(),
@@ -2329,7 +2323,7 @@ mod tests {
 
     #[test]
     fn forward_delete_nonexistent_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             handle_forward_delete(&registry, &test_broker(), "nope", None).status(),
             404
@@ -2337,7 +2331,7 @@ mod tests {
     }
 
     /// Register a forward owned by `owner` with one discovered tool.
-    fn register_owned_forward(registry: &InMemoryRegistry, owner: &str) {
+    fn register_owned_forward(registry: &RuntimeRegistry, owner: &str) {
         let mut forward = cached_forward("owned-fwd");
         forward
             .labels
@@ -2349,13 +2343,13 @@ mod tests {
         registry.register_tool(tool);
     }
 
-    fn conditional_delete(registry: &InMemoryRegistry, query: &str) -> Response<Vec<u8>> {
+    fn conditional_delete(registry: &RuntimeRegistry, query: &str) -> Response<Vec<u8>> {
         handle_forward_delete(registry, &test_broker(), "owned-fwd", Some(query))
     }
 
     #[test]
     fn forward_conditional_delete_with_matching_labels_removes_forward_and_tools() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         register_owned_forward(&registry, "pod-a");
         let resp = conditional_delete(&registry, "label.cic.instance=pod-a&other=ignored");
         assert_eq!(resp.status(), 200);
@@ -2366,7 +2360,7 @@ mod tests {
 
     #[test]
     fn forward_conditional_delete_with_different_label_returns_409_and_keeps_forward() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         register_owned_forward(&registry, "pod-b");
         let resp = conditional_delete(&registry, "label.cic.instance=pod-a");
         assert_eq!(resp.status(), 409);
@@ -2381,7 +2375,7 @@ mod tests {
 
     #[test]
     fn forward_conditional_delete_with_absent_label_returns_409() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         register_owned_forward(&registry, "pod-a");
         let resp = conditional_delete(&registry, "label.cic.instance=pod-a&label.zone=eu");
         assert_eq!(resp.status(), 409);
@@ -2391,7 +2385,7 @@ mod tests {
 
     #[test]
     fn forward_conditional_delete_of_missing_forward_returns_404() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert_eq!(
             conditional_delete(&registry, "label.cic.instance=pod-a").status(),
             404
@@ -2400,7 +2394,7 @@ mod tests {
 
     #[test]
     fn forward_delete_without_label_parameters_is_unconditional() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         register_owned_forward(&registry, "pod-b");
         assert_eq!(conditional_delete(&registry, "unrelated=1").status(), 200);
         assert!(registry.get_forward("owned-fwd").is_none());
@@ -2482,7 +2476,7 @@ mod tests {
 
     #[test]
     fn forward_delete_invalidates_cached_credentials() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(cached_forward("cred-fwd"));
         let broker = broker_with_cached_forward("cred-fwd");
 
@@ -2497,7 +2491,7 @@ mod tests {
 
     #[test]
     fn revalidate_forward_credentials_drops_cached_entries() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let broker = broker_with_cached_forward("cred-fwd");
 
         super::revalidate_forward_credentials(&registry, &broker, &cached_forward("cred-fwd"));
@@ -2510,7 +2504,7 @@ mod tests {
 
     #[test]
     fn statistics_empty_registry() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let resp = handle_statistics(&registry);
         assert_eq!(resp.status(), 200);
 
@@ -2523,7 +2517,7 @@ mod tests {
 
     #[test]
     fn statistics_populated_registry() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
 
         registry.register_tool(test_tool("t1"));
         registry.register_tool(test_tool("t2"));
@@ -2551,7 +2545,7 @@ mod tests {
 
     #[test]
     fn tool_serializes_camel_case_keys() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let mut tool = test_tool("cc");
         tool.input_schema =
             serde_json::json!({"type":"object","properties":{"msg":{"type":"string"}}});
@@ -2570,7 +2564,7 @@ mod tests {
 
     #[test]
     fn tool_serializes_optional_camel_case_keys() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let mut tool = test_tool("cc-opt");
         tool.forward_id = Some("remote-forward".to_owned());
         registry.register_tool(tool);
@@ -2585,7 +2579,7 @@ mod tests {
 
     #[test]
     fn resource_serializes_camel_case_keys() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let mut res = test_resource("cc-res");
         res.mime_type = "text/plain".to_owned();
         registry.register_resource(res);
@@ -2605,7 +2599,7 @@ mod tests {
 
     #[test]
     fn success_response_has_null_error() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let resp = handle_tool_list(&registry);
         let body = parse_body(&resp);
         assert!(body.get("error").is_some());
@@ -2614,7 +2608,7 @@ mod tests {
 
     #[test]
     fn error_response_has_null_data() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let resp = handle_tool_get(&registry, "default", "nonexistent");
         let body = parse_body(&resp);
         assert!(body.get("data").is_some());

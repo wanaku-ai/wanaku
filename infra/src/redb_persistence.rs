@@ -174,7 +174,7 @@ impl RedbRegistryPersistence {
                 ))
             })?;
         }
-        crate::registry::InMemoryRegistry::new()
+        crate::registry::RuntimeRegistry::new()
             .validate_snapshot_namespaces(&snapshot)
             .map_err(|error| {
                 PersistenceError::Database(format!("invalid namespace graph: {error}"))
@@ -532,7 +532,7 @@ mod tests {
 
     #[test]
     fn registry_changes_reach_redb_through_the_persistence_worker() {
-        use crate::registry::InMemoryRegistry;
+        use crate::registry::RuntimeRegistry;
         use std::time::Duration;
         use wanaku_types::registry::ToolRegistry;
 
@@ -543,7 +543,7 @@ mod tests {
         let store = RedbStore::open(dir.path().join(DATABASE_FILE)).unwrap();
         {
             let backend = Arc::new(RedbRegistryPersistence::new(store.clone()));
-            let registry = InMemoryRegistry::with_persistence(backend);
+            let registry = RuntimeRegistry::with_persistence(backend);
             registry.load_persisted();
             registry.register_tool(tool(None, "a", "v1"));
             registry.register_tool(tool(None, "b", "v1"));
@@ -552,7 +552,7 @@ mod tests {
             assert!(registry.persistence_status().last_error.is_none());
         }
         let backend = Arc::new(RedbRegistryPersistence::new(store));
-        let registry = InMemoryRegistry::with_persistence(backend);
+        let registry = RuntimeRegistry::with_persistence(backend);
         registry.load_persisted();
         let reloaded = registry.get_tool(DEFAULT_NAMESPACE, "a").unwrap();
         assert_eq!(reloaded.description, "v1");
@@ -614,13 +614,13 @@ mod tests {
 
     #[test]
     fn failed_commit_is_reported_in_registry_status() {
-        use crate::registry::InMemoryRegistry;
+        use crate::registry::RuntimeRegistry;
         use std::time::Duration;
         use wanaku_types::registry::ToolRegistry;
 
         let fail = Arc::new(AtomicBool::new(false));
         let store = failing_store(&fail);
-        let registry = InMemoryRegistry::with_persistence(Arc::new(RedbRegistryPersistence::new(
+        let registry = RuntimeRegistry::with_persistence(Arc::new(RedbRegistryPersistence::new(
             store.clone(),
         )));
         registry.load_persisted();

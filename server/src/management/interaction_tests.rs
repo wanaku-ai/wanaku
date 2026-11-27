@@ -2,13 +2,13 @@ use super::dispatch;
 
 use wanaku_feature_intercept::InterceptFeature;
 use wanaku_infra::credentials::CredentialBroker;
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::credentials::ResolverRegistry;
 use wanaku_types::feature::{Feature, HttpContext};
 
 #[tokio::test]
 async fn dispatch_interaction_routes_return_404() {
-    let registry = InMemoryRegistry::new();
+    let registry = RuntimeRegistry::new();
     let broker = CredentialBroker::new(ResolverRegistry::new());
     let headers = http::HeaderMap::new();
     let features: Vec<Box<dyn Feature>> = vec![Box::new(InterceptFeature::new())];

@@ -19,7 +19,7 @@ use std::sync::Arc;
 use wanaku_feature_evaluator::action::ActionResult;
 use wanaku_feature_evaluator::engine::CompiledEvaluator;
 use wanaku_feature_evaluator::schema::CompiledSchema;
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::interactions::InMemoryInteractionStore;
 use wanaku_types::registry::ToolRegistry;
 
@@ -55,7 +55,7 @@ fn eval_context(
 fn audit_capabilities_prevent_real_processor_registry_writes() {
     let path = action_path("assembly_filter_action.wasm");
     let processor = CompiledEvaluator::from_file("assembly", &path).unwrap();
-    let registry = InMemoryRegistry::new();
+    let registry = RuntimeRegistry::new();
     registry.register_tool(
         serde_json::from_value(serde_json::json!({
             "name": "alpha", "description": "test", "uri": "test", "type": "mcp-forward",
@@ -93,7 +93,7 @@ fn safety_action_blocks_on_red() {
     let result = compiled
         .evaluate(
             wanaku_feature_evaluator::engine::ExecutionContext {
-                registry: InMemoryRegistry::new(),
+                registry: RuntimeRegistry::new(),
                 interactions: InMemoryInteractionStore::new(100),
                 compiled_schema: None,
                 mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
@@ -122,7 +122,7 @@ fn safety_action_warns_on_yellow() {
     let result = compiled
         .evaluate(
             wanaku_feature_evaluator::engine::ExecutionContext {
-                registry: InMemoryRegistry::new(),
+                registry: RuntimeRegistry::new(),
                 interactions: InMemoryInteractionStore::new(100),
                 compiled_schema: None,
                 mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
@@ -151,7 +151,7 @@ fn safety_action_passes_on_green() {
     let result = compiled
         .evaluate(
             wanaku_feature_evaluator::engine::ExecutionContext {
-                registry: InMemoryRegistry::new(),
+                registry: RuntimeRegistry::new(),
                 interactions: InMemoryInteractionStore::new(100),
                 compiled_schema: None,
                 mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
@@ -181,7 +181,7 @@ fn block_action_includes_llm_result_in_reason() {
     let result = compiled
         .evaluate(
             wanaku_feature_evaluator::engine::ExecutionContext {
-                registry: InMemoryRegistry::new(),
+                registry: RuntimeRegistry::new(),
                 interactions: InMemoryInteractionStore::new(100),
                 compiled_schema: None,
                 mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
@@ -224,7 +224,7 @@ fn evaluate_with_schema_passed_to_host() {
     let result = compiled
         .evaluate(
             wanaku_feature_evaluator::engine::ExecutionContext {
-                registry: InMemoryRegistry::new(),
+                registry: RuntimeRegistry::new(),
                 interactions: InMemoryInteractionStore::new(100),
                 compiled_schema,
                 mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,
@@ -247,7 +247,7 @@ fn evaluate_with_schema_passed_to_host() {
 fn assembly_action_skips_tools_from_other_namespaces() {
     let path = action_path("assembly_filter_action.wasm");
     let processor = CompiledEvaluator::from_file("assembly", &path).unwrap();
-    let registry = InMemoryRegistry::new();
+    let registry = RuntimeRegistry::new();
     for (name, namespace) in [("shared", "default"), ("private", "tenant-b")] {
         registry.register_tool(
             serde_json::from_value(serde_json::json!({
@@ -298,7 +298,7 @@ fn safety_action_rejects_unrecognized_result() {
         let result = compiled
             .evaluate(
                 wanaku_feature_evaluator::engine::ExecutionContext {
-                    registry: InMemoryRegistry::new(),
+                    registry: RuntimeRegistry::new(),
                     interactions: InMemoryInteractionStore::new(100),
                     compiled_schema: None,
                     mode: wanaku_feature_evaluator::engine::ExecutionMode::Production,

@@ -4,7 +4,7 @@ use bytes::Bytes;
 use http::{HeaderName, HeaderValue};
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::UseScope;
 use wanaku_types::registry::{ForwardRegistry, PromptRegistry};
@@ -68,8 +68,8 @@ impl PromptGetFilter {
 
         trace!(prompt = %prompt_name, namespace = %namespace, "handling MCP prompts/get request");
 
-        let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
-            tracing::error!("InMemoryRegistry not found in request extensions");
+        let Some(registry) = ctx.extensions.get::<RuntimeRegistry>() else {
+            tracing::error!("RuntimeRegistry not found in request extensions");
             return Ok(crate::response::json_rpc_error(
                 &parsed.id,
                 crate::response::JSONRPC_INTERNAL_ERROR,
@@ -370,7 +370,7 @@ mod filter_tests {
 
     use praxis_filter::FilterAction;
     use serde_json::{Value, json};
-    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_infra::registry::RuntimeRegistry;
     use wanaku_types::registry::{PromptEntry, PromptRegistry};
 
     use super::PromptGetFilter;
@@ -390,7 +390,7 @@ mod filter_tests {
         .unwrap()
     }
 
-    async fn run(registry: &InMemoryRegistry, invoker: &Arc<RecordingInvoker>) -> FilterAction {
+    async fn run(registry: &RuntimeRegistry, invoker: &Arc<RecordingInvoker>) -> FilterAction {
         let req = request(&[]);
         let mut ctx = filter_context(&req, crate::PROMPTS_GET, registry, invoker);
         let filter = PromptGetFilter {
@@ -443,7 +443,7 @@ mod filter_tests {
         assert!(!message.contains(SECRET), "leaked: {message}");
     }
 
-    async fn assert_not_invoked(registry: &InMemoryRegistry, expected: &str) {
+    async fn assert_not_invoked(registry: &RuntimeRegistry, expected: &str) {
         let invoker = RecordingInvoker::succeeding(Value::Null);
         let response = response_json(run(registry, &invoker).await);
         assert!(

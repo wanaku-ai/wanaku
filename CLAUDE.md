@@ -54,11 +54,11 @@ See [docs/get-started/architecture.md](docs/get-started/architecture.md) for fil
 
 ### Registry Architecture
 
-**InMemoryRegistry** (`infra/src/registry.rs`):
+**RuntimeRegistry** (`infra/src/registry.rs`):
 
 - Implements ToolRegistry, ResourceRegistry, PromptRegistry, NamespaceRegistry, ForwardRegistry
 - Clone-safe `Arc<DashMap>` — shared between pipeline and mgmt API
-- Injected via `PipelineExtension`, accessed via `ctx.extensions.get::<InMemoryRegistry>()`
+- Injected via `PipelineExtension`, accessed via `ctx.extensions.get::<RuntimeRegistry>()`
 
 **Defaults:** all entries default to `namespace: "default"`, namespace IDs default to namespace name (Java CLI compat).
 
