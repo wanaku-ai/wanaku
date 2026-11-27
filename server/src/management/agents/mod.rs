@@ -3,7 +3,7 @@ mod routes;
 
 pub(super) fn dispatch(
     ctx: &wanaku_types::feature::HttpContext<'_>,
-    registry: &wanaku_infra::registry::InMemoryRegistry,
+    registry: &wanaku_infra::registry::RuntimeRegistry,
 ) -> Option<http::Response<Vec<u8>>> {
     use routes::AgentRoute;
     Some(match routes::resolve(ctx.method, ctx.path) {

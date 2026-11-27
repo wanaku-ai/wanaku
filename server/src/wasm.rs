@@ -12,7 +12,7 @@ use praxis_filter::{
 };
 use praxis_protocol::http::pingora::context::PingoraRequestCtx;
 use serde_json::{Value, json};
-use wanaku_infra::{mcp_client::McpInvoker, registry::InMemoryRegistry};
+use wanaku_infra::{mcp_client::McpInvoker, registry::RuntimeRegistry};
 use wanaku_types::{
     registry::ToolRegistry,
     wasm::{HostError, HostErrorKind, InvocationContext, McpHostClient, McpHostFactory},
@@ -21,7 +21,7 @@ use wanaku_types::{
 /// Holds only a weak pipeline reference, so the pipeline can own this extension.
 pub(crate) struct HostExtension {
     pub pipeline: Weak<FilterPipeline>,
-    pub registry: InMemoryRegistry,
+    pub registry: RuntimeRegistry,
 }
 
 impl PipelineExtension for HostExtension {
@@ -36,7 +36,7 @@ impl PipelineExtension for HostExtension {
 
 struct HostFactory {
     pipeline: Weak<FilterPipeline>,
-    registry: InMemoryRegistry,
+    registry: RuntimeRegistry,
 }
 
 impl McpHostFactory for HostFactory {
@@ -112,7 +112,7 @@ fn routing_key(key: &str) -> bool {
 
 struct ScopedClient {
     pipeline: Weak<FilterPipeline>,
-    registry: InMemoryRegistry,
+    registry: RuntimeRegistry,
     concrete: String,
     virtual_namespace: Option<String>,
     headers: http::HeaderMap,

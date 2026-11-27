@@ -8,18 +8,18 @@ use pingora_core::server::ShutdownWatch;
 use pingora_core::services::background::BackgroundService;
 use tracing::{info, warn};
 
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 
 const SHUTDOWN_FLUSH_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Flushes pending registry snapshots during orderly Pingora shutdown.
 pub struct RegistryPersistenceService {
-    registry: InMemoryRegistry,
+    registry: RuntimeRegistry,
 }
 
 impl RegistryPersistenceService {
     #[must_use]
-    pub const fn new(registry: InMemoryRegistry) -> Self {
+    pub const fn new(registry: RuntimeRegistry) -> Self {
         Self { registry }
     }
 }
@@ -50,6 +50,6 @@ impl BackgroundService for RegistryPersistenceService {
 
 /// Wrap the registry persistence shutdown service for Pingora registration.
 #[must_use]
-pub fn registry_persistence_service(registry: InMemoryRegistry) -> Arc<RegistryPersistenceService> {
+pub fn registry_persistence_service(registry: RuntimeRegistry) -> Arc<RegistryPersistenceService> {
     Arc::new(RegistryPersistenceService::new(registry))
 }

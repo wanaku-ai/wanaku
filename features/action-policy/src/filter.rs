@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use wanaku_filters::json_rpc::{McpRequestView, RequestViewError};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHandle, AuditStore};
 use wanaku_types::governance::{
     EnforcementMode, FailureBehavior, GovernanceConfig, GovernancePosture, NoMatchBehavior,
@@ -128,7 +128,7 @@ fn evaluate_snapshot_in_scope(
             return apply_failure(posture, id);
         }
     };
-    let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+    let Some(registry) = ctx.extensions.get::<RuntimeRegistry>() else {
         record_simple_decision(
             audit.as_ref(),
             body,
@@ -178,7 +178,7 @@ struct RequestEvaluation<'a> {
     body: Option<&'a Bytes>,
     policy: &'a crate::CompiledPolicy,
     posture: &'a GovernancePosture,
-    registry: &'a InMemoryRegistry,
+    registry: &'a RuntimeRegistry,
     id: &'a serde_json::Value,
     agent: Option<&'a str>,
     concrete_namespace: Option<&'a str>,
@@ -593,7 +593,7 @@ pub fn action_context(
     method: &str,
     namespace: &str,
     view: &McpRequestView,
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
 ) -> Result<ActionContext, RequestViewError> {
     let input = serde_json::Value::Object(view.params()?.clone());
     match method {
@@ -616,7 +616,7 @@ pub fn action_context(
 fn tool_context(
     namespace: &str,
     view: &McpRequestView,
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     input: serde_json::Value,
 ) -> Result<ActionContext, RequestViewError> {
     let request = view.tool_call()?;
@@ -632,7 +632,7 @@ fn tool_context(
 fn resource_context(
     namespace: &str,
     view: &McpRequestView,
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     input: serde_json::Value,
 ) -> Result<ActionContext, RequestViewError> {
     let request = view.resource_read()?;
@@ -766,7 +766,7 @@ mod tests {
                 praxis_protocol::http::pingora::context::PingoraRequestCtx::default();
             let mut ctx = protocol.build_filter_context(&pipeline, &request, None);
             ctx.extensions.insert(state);
-            ctx.extensions.insert(InMemoryRegistry::new());
+            ctx.extensions.insert(RuntimeRegistry::new());
             ctx.extensions.insert(AuditHandle::new(recorder.clone()));
             ctx.set_metadata(wanaku_types::NAMESPACE_METADATA_KEY, "kafka");
             ctx.set_metadata(VIRTUAL_NAMESPACE_METADATA_KEY, "integration");
@@ -804,7 +804,7 @@ mod tests {
 
     #[test]
     fn policy_uses_the_tool_definition_selected_before_replacement() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let selected: ToolEntry = serde_json::from_value(serde_json::json!({
             "name":"delete", "description":"", "uri":"", "type":"wasm",
             "namespace":"default", "inputSchema":{}, "labels":{"risk":"high"}
@@ -836,7 +836,7 @@ mod tests {
 
     #[test]
     fn virtual_policy_targets_are_qualified() -> Result<(), FilterError> {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let posture = GovernancePosture::default();
         let policy = compile_policy(
             &serde_json::json!({"id":"allow", "effect":"allow", "selectors":{
@@ -863,7 +863,7 @@ mod tests {
     #[test]
     #[expect(clippy::too_many_lines, reason = "three governed MCP method fixtures")]
     fn denies_tool_resource_and_prompt_actions() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let posture = GovernancePosture::default();
         registry.register_tool(ToolEntry {
             name: "delete".to_owned(),
@@ -953,7 +953,7 @@ mod tests {
 
     #[test]
     fn explicit_allow_and_no_match_continue() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let posture = GovernancePosture {
             no_match: NoMatchBehavior::Allow,
             ..GovernancePosture::default()
@@ -1004,7 +1004,7 @@ mod tests {
         reason = "allow and deny fixtures verify emitted audit evidence"
     )]
     fn allowed_and_blocked_mcp_requests_emit_correlated_audit_events() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let posture = GovernancePosture::default();
         let store = InMemoryAuditStore::new(10);
         let id = serde_json::json!(7);
@@ -1134,7 +1134,7 @@ mod tests {
         reason = "resource and tool registry fixtures verify URI isolation"
     )]
     fn resource_name_comes_from_registry_and_tool_uri_is_not_exposed() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let posture = GovernancePosture {
             no_match: NoMatchBehavior::Allow,
             ..GovernancePosture::default()
@@ -1223,7 +1223,7 @@ mod tests {
 
     #[test]
     fn malformed_governed_request_is_safely_rejected() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let posture = GovernancePosture::default();
         let policy = compile_policy(&serde_json::json!({
             "id": "deny", "effect": "deny", "selectors": {"operation": TOOLS_CALL}
@@ -1291,7 +1291,7 @@ mod tests {
 
     #[test]
     fn audit_mode_does_not_enforce_policy_denial() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let store = InMemoryAuditStore::new(1);
         let policy = compile_policy(&serde_json::json!({
             "id": "deny", "effect": "deny", "selectors": {"operation": TOOLS_CALL}
@@ -1349,7 +1349,7 @@ mod tests {
 
     #[test]
     fn a2a_agent_rules_apply_without_an_audit_store_or_actor() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let policy = compile_policy(&serde_json::json!({
             "id": "deny-agent", "effect": "deny", "reason_code": "agent_denied",
             "selectors": {"target_type": "agent", "target_name": {"matcher": "exact", "value": "worker"}, "operation": "SendMessage"},
@@ -1388,7 +1388,7 @@ mod tests {
         reason = "A2A posture and correlated audit fixtures"
     )]
     fn a2a_decisions_use_posture_and_emit_protocol_specific_audit() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let store = InMemoryAuditStore::new(10);
         let policy = compile_policy(&serde_json::json!({
             "id": "deny-task", "effect": "deny", "selectors": {"target_type": "agent", "operation": "GetTask"}
@@ -1526,7 +1526,7 @@ mod tests {
         ctx.extensions.insert(AuditHandle::new(recorder.clone()));
         ctx.set_metadata(wanaku_filters::MCP_NAME_KEY, "unsafe");
 
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let posture = GovernancePosture::default();
         let id = serde_json::json!(7);
         let policy = compile_policy(&serde_json::json!({
@@ -1636,7 +1636,7 @@ mod tests {
         let mut ctx = protocol.build_filter_context(&pipeline, &http_request, None);
         ctx.extensions.insert(AuditHandle::new(recorder.clone()));
         ctx.extensions.insert(state.clone());
-        ctx.extensions.insert(InMemoryRegistry::new());
+        ctx.extensions.insert(RuntimeRegistry::new());
         ctx.set_metadata(wanaku_filters::MCP_METHOD_KEY, TOOLS_CALL);
         ctx.set_metadata(wanaku_filters::MCP_NAME_KEY, "safe");
         let posture = GovernancePosture::default();

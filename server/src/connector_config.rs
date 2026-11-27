@@ -4,13 +4,13 @@ use std::collections::{BTreeMap, HashSet};
 
 use serde::de::DeserializeOwned;
 use serde_yaml::Value;
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::connectors::{ConnectorInstance, ConnectorProfile, ProfileVersion};
 use wanaku_types::registry::{
     BindingRegistry, ForwardRegistry, NamespaceEntry, NamespaceRegistry, validate_namespace_name,
 };
 
-pub(crate) fn validate(root: &Value, registry: &InMemoryRegistry) -> Result<(), String> {
+pub(crate) fn validate(root: &Value, registry: &RuntimeRegistry) -> Result<(), String> {
     let custom = definitions::<ConnectorProfile>(root, "connector_profiles")?;
     let instances = definitions::<ConnectorInstance>(root, "connector_instances")?;
     if custom.is_empty() && instances.is_empty() {
@@ -83,7 +83,7 @@ fn profiles_by_version(
 fn validate_instance(
     instance: &ConnectorInstance,
     profiles: &BTreeMap<ProfileVersion, ConnectorProfile>,
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
 ) -> Result<(), String> {
     let profile = profiles
         .get(&instance.profile)
@@ -108,11 +108,11 @@ fn validate_instance(
 #[cfg(test)]
 mod tests {
     use super::validate;
-    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_infra::registry::RuntimeRegistry;
 
     #[test]
     fn rejects_duplicate_profile_versions_and_reserved_builtin_names() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let duplicate = r#"
 connector_profiles:
   - &profile
@@ -140,7 +140,7 @@ connector_profiles:
 
     #[test]
     fn malformed_connector_definitions_do_not_echo_submitted_values() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let instances = r#"
   - profile: {name: generic-mcp, version: 1}
     name: partner

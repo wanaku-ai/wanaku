@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use wanaku_feature_tool_handler::ToolHandlerFeature;
 use wanaku_feature_tool_handler::config::HandlerDefinition;
 use wanaku_feature_tool_handler::state::HandlerState;
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::feature::{Feature, HttpContext};
 use wanaku_types::wasm::{HostError, HostErrorKind, McpHostClient, ToolHandler, ToolTarget};
 
@@ -86,7 +86,7 @@ impl Runtime {
         Self::new(directory, component)
     }
     fn new(directory: tempfile::TempDir, component: PathBuf) -> Result<Self, TestError> {
-        let state = HandlerState::new(InMemoryRegistry::new());
+        let state = HandlerState::new(RuntimeRegistry::new());
         let definition = definition(&component)?;
         state.replace(vec![definition.clone()])?;
         Ok(Self {
@@ -123,7 +123,7 @@ impl Runtime {
 
 #[test]
 fn excessive_concurrency_is_rejected_before_runtime_construction() -> TestResult {
-    let state = HandlerState::new(InMemoryRegistry::new());
+    let state = HandlerState::new(RuntimeRegistry::new());
     let mut definition = definition(Path::new("unused.wasm"))?;
     definition.limits.max_concurrent = usize::MAX;
     let error = state
@@ -147,7 +147,7 @@ async fn structured_result_survives_restart_and_removal() -> TestResult {
             .await?,
         expected
     );
-    let restored = HandlerState::new(InMemoryRegistry::new()).with_persistence(&persisted)?;
+    let restored = HandlerState::new(RuntimeRegistry::new()).with_persistence(&persisted)?;
     assert_eq!(
         restored
             .call(target(&restored)?, json!({}), client(json!({})))
@@ -157,7 +157,7 @@ async fn structured_result_survives_restart_and_removal() -> TestResult {
     assert!(restored.remove("default", "handler")?);
     assert!(restored.list()?.is_empty());
     assert!(
-        HandlerState::new(InMemoryRegistry::new())
+        HandlerState::new(RuntimeRegistry::new())
             .with_persistence(&persisted)?
             .list()?
             .is_empty()
@@ -345,7 +345,7 @@ async fn management_status(
 #[tokio::test]
 async fn management_routes_activate_read_and_remove_bindings() -> TestResult {
     let runtime = Runtime::result(&json!({"content":[]}))?;
-    let feature = ToolHandlerFeature::new(InMemoryRegistry::new());
+    let feature = ToolHandlerFeature::new(RuntimeRegistry::new());
     let body = serde_json::to_string(&vec![runtime.definition])?;
     assert_eq!(
         management_status(&feature, "PUT", Some(&body)).await?,

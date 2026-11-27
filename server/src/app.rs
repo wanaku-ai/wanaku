@@ -16,7 +16,7 @@ use tracing::info;
 use wanaku_infra::audit::InMemoryAuditStore;
 use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
 use wanaku_infra::metrics::MetricsStore;
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::audit::{AuditHandle, AuditPersistence};
 use wanaku_types::credentials::{CredentialBinding, NormalizedOrigin};
 use wanaku_types::feature::Feature;
@@ -70,7 +70,7 @@ pub struct AppResources {
 /// registry, broker, policy, evaluator, and audit state.
 pub struct App {
     /// Shared Wanaku registry.
-    pub registry: InMemoryRegistry,
+    pub registry: RuntimeRegistry,
     /// Shared credential broker.
     pub broker: Arc<CredentialBroker>,
     /// Credential audit sink that writes into the shared audit store.
@@ -183,15 +183,15 @@ impl App {
     }
 }
 
-fn build_registry(backend: Option<Arc<dyn PersistenceBackend>>) -> InMemoryRegistry {
+fn build_registry(backend: Option<Arc<dyn PersistenceBackend>>) -> RuntimeRegistry {
     match backend {
         Some(backend) => {
             info!("registry persistence enabled");
-            let registry = InMemoryRegistry::with_persistence(backend);
+            let registry = RuntimeRegistry::with_persistence(backend);
             registry.load_persisted();
             registry
         }
-        None => InMemoryRegistry::new(),
+        None => RuntimeRegistry::new(),
     }
 }
 
@@ -210,7 +210,7 @@ fn build_features(
     audit: wanaku_feature_audit::AuditFeature,
     metrics_store: &MetricsStore,
     settings: &AppSettings<'_>,
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     persistence: FeaturePersistence,
 ) -> Result<Vec<Box<dyn Feature>>, String> {
     let action_policy = build_action_policy(persistence.action_policy);
@@ -304,7 +304,7 @@ fn build_evaluator(
 
 fn load_config(
     wanaku_config: Option<&serde_yaml::Value>,
-    wanaku_registry: &InMemoryRegistry,
+    wanaku_registry: &RuntimeRegistry,
     broker: &Arc<CredentialBroker>,
     audit_sink: Option<&dyn CredentialAuditSink>,
     features: &[Box<dyn Feature>],
@@ -326,7 +326,7 @@ fn load_config(
 )]
 fn load_core_config(
     config: &serde_yaml::Value,
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     broker: &Arc<CredentialBroker>,
     audit_sink: Option<&dyn CredentialAuditSink>,
 ) -> Result<(), String> {
@@ -370,7 +370,7 @@ fn load_core_config(
 
 fn load_namespace_definitions(
     config: &serde_yaml::Value,
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
 ) -> Result<Vec<NamespaceEntry>, String> {
     let namespaces = config
         .get("namespaces")
@@ -395,7 +395,7 @@ fn load_namespace_definitions(
 
 fn load_forward_definitions(
     config: &serde_yaml::Value,
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespaces: &[NamespaceEntry],
 ) -> Result<Vec<ForwardEntry>, String> {
     let mut forwards = Vec::new();
@@ -434,7 +434,7 @@ fn load_forward_definitions(
 /// registration. Malformed or invalid bindings are logged and skipped so a
 /// single bad entry does not stop the rest of the configuration from loading.
 #[expect(clippy::too_many_lines, reason = "binding validation is sequential")]
-fn load_bindings(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
+fn load_bindings(config: &serde_yaml::Value, registry: &RuntimeRegistry) {
     let Some(binding_list) = config.get("bindings").and_then(|b| b.as_sequence()) else {
         return;
     };
@@ -482,7 +482,7 @@ fn load_bindings(config: &serde_yaml::Value, registry: &InMemoryRegistry) {
 #[cfg(test)]
 mod tests {
     use super::load_bindings;
-    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_infra::registry::RuntimeRegistry;
     use wanaku_types::registry::BindingRegistry;
 
     #[test]
@@ -493,7 +493,7 @@ mod tests {
         use wanaku_types::credentials::ResolverRegistry;
         use wanaku_types::registry::NamespaceRegistry;
         let broker = Arc::new(CredentialBroker::new(ResolverRegistry::new()));
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let config = serde_yaml::from_str(
             "namespaces:\n  - name: integration\n    targets: [kafka]\n  - name: kafka\n",
         )?;
@@ -510,7 +510,7 @@ mod tests {
             "namespaces: [{name: integration, members: []}]\nforwards: [{name: f, address: 'http://backend/mcp', namespace: integration}]",
             "namespaces: [{name: kafka}, {name: kafka}]",
         ] {
-            let registry = InMemoryRegistry::new();
+            let registry = RuntimeRegistry::new();
             let config = serde_yaml::from_str(yaml)?;
             assert!(super::load_core_config(&config, &registry, &broker, None).is_err());
         }
@@ -536,7 +536,7 @@ bindings:
 "#,
         )
         .unwrap();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
 
         load_bindings(&config, &registry);
 
@@ -563,7 +563,7 @@ bindings:
 "#,
         )
         .unwrap();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
 
         load_bindings(&config, &registry);
 
@@ -589,7 +589,7 @@ bindings:
 "#,
         )
         .unwrap();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
 
         load_bindings(&config, &registry);
 
@@ -600,7 +600,7 @@ bindings:
     #[test]
     fn load_bindings_is_noop_without_bindings_key() {
         let config: serde_yaml::Value = serde_yaml::from_str("forwards: []").unwrap();
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
 
         load_bindings(&config, &registry);
 

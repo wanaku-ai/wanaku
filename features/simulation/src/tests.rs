@@ -4,7 +4,7 @@ pub(crate) fn deps() -> SimulationDeps {
     SimulationDeps {
         policy: ActionPolicyState::new(),
         evaluators: EvaluatorState::new(),
-        registry: InMemoryRegistry::new(),
+        registry: RuntimeRegistry::new(),
         governance: GovernanceConfig::default(),
         audit: AuditHandle::new(Arc::new(InMemoryAuditStore::new(100))),
     }

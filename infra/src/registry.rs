@@ -70,8 +70,9 @@ fn insert_unless_taken<T>(
     }
 }
 
+/// Shared runtime registry for the pipeline and management API, with optional persistence.
 #[derive(Clone)]
-pub struct InMemoryRegistry {
+pub struct RuntimeRegistry {
     agents: Arc<DashMap<String, crate::agents::RegisteredAgent>>,
     tools: Arc<DashMap<EntryKey, ToolEntry>>,
     resources: Arc<DashMap<EntryKey, ResourceEntry>>,
@@ -85,7 +86,7 @@ pub struct InMemoryRegistry {
     inject_request_id: Arc<AtomicBool>,
 }
 
-impl InMemoryRegistry {
+impl RuntimeRegistry {
     pub fn new() -> Self {
         let namespaces = DashMap::new();
         namespaces.insert(
@@ -791,13 +792,13 @@ fn lock_state(shared: &PersistenceShared) -> std::sync::MutexGuard<'_, Persisten
     }
 }
 
-impl Default for InMemoryRegistry {
+impl Default for RuntimeRegistry {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ToolRegistry for InMemoryRegistry {
+impl ToolRegistry for RuntimeRegistry {
     fn list_tools(&self) -> Vec<ToolEntry> {
         self.tools
             .iter()
@@ -914,7 +915,7 @@ impl ToolRegistry for InMemoryRegistry {
     }
 }
 
-impl ResourceRegistry for InMemoryRegistry {
+impl ResourceRegistry for RuntimeRegistry {
     fn list_resources(&self) -> Vec<ResourceEntry> {
         self.resources
             .iter()
@@ -1024,7 +1025,7 @@ impl ResourceRegistry for InMemoryRegistry {
     }
 }
 
-impl PromptRegistry for InMemoryRegistry {
+impl PromptRegistry for RuntimeRegistry {
     fn list_prompts(&self) -> Vec<PromptEntry> {
         self.prompts
             .iter()
@@ -1134,7 +1135,7 @@ impl PromptRegistry for InMemoryRegistry {
     }
 }
 
-impl NamespaceRegistry for InMemoryRegistry {
+impl NamespaceRegistry for RuntimeRegistry {
     fn list_namespaces(&self) -> Vec<NamespaceEntry> {
         self.namespaces
             .iter()
@@ -1163,7 +1164,7 @@ impl NamespaceRegistry for InMemoryRegistry {
     }
 }
 
-impl ForwardRegistry for InMemoryRegistry {
+impl ForwardRegistry for RuntimeRegistry {
     fn list_forwards(&self) -> Vec<ForwardEntry> {
         self.forwards
             .iter()
@@ -1189,7 +1190,7 @@ impl ForwardRegistry for InMemoryRegistry {
     }
 }
 
-impl BindingRegistry for InMemoryRegistry {
+impl BindingRegistry for RuntimeRegistry {
     fn list_bindings(&self) -> Vec<CredentialBinding> {
         self.bindings
             .iter()
@@ -1281,7 +1282,7 @@ mod tests {
 
     #[test]
     fn register_and_list_tools() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_tool(sample_tool());
         let tools = registry.list_tools();
         assert_eq!(tools.len(), 1);
@@ -1290,7 +1291,7 @@ mod tests {
 
     #[test]
     fn get_tool_by_name() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_tool(sample_tool());
         let tool = registry.get_tool(DEFAULT_NAMESPACE, "test-tool");
         assert!(tool.is_some());
@@ -1302,7 +1303,7 @@ mod tests {
 
     #[test]
     fn get_missing_tool_returns_none() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert!(
             registry
                 .get_tool(DEFAULT_NAMESPACE, "nonexistent")
@@ -1312,7 +1313,7 @@ mod tests {
 
     #[test]
     fn remove_tool() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_tool(sample_tool());
         assert!(registry.remove_tool(DEFAULT_NAMESPACE, "test-tool"));
         assert!(registry.get_tool(DEFAULT_NAMESPACE, "test-tool").is_none());
@@ -1320,7 +1321,7 @@ mod tests {
 
     #[test]
     fn disabled_tool_is_hidden_from_namespace_lookups() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_tool(sample_tool());
 
         assert!(registry.set_tool_enabled(DEFAULT_NAMESPACE, "test-tool", false));
@@ -1349,7 +1350,7 @@ mod tests {
 
     #[test]
     fn set_enabled_on_missing_entry_returns_false() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert!(!registry.set_tool_enabled(DEFAULT_NAMESPACE, "missing", false));
         assert!(!registry.set_resource_enabled(DEFAULT_NAMESPACE, "missing", false));
         assert!(!registry.set_prompt_enabled(DEFAULT_NAMESPACE, "missing", false));
@@ -1365,7 +1366,7 @@ mod tests {
 
     #[test]
     fn generic_tool_mutation_preserves_handler_bindings() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let tool = handler_tool("managed-binding");
         registry.register_tool(tool.clone());
         for enabled in [Some(false), None] {
@@ -1384,7 +1385,7 @@ mod tests {
 
     #[test]
     fn generic_tool_mutation_changes_unmanaged_entries() -> Result<(), String> {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let tool = sample_tool();
         registry.register_tool(tool.clone());
         let disabled =
@@ -1406,7 +1407,7 @@ mod tests {
 
     #[test]
     fn handler_swap_keeps_current_binding_when_persistence_fails() -> Result<(), String> {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.enable_request_id_injection();
         let first = handler_tool("binding-1");
         registry.swap_handler_tools(&[], vec![first.clone()])?;
@@ -1426,7 +1427,7 @@ mod tests {
 
     #[test]
     fn handler_swap_rejects_stale_bindings_without_changes() -> Result<(), String> {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.enable_request_id_injection();
         let first = handler_tool("binding-1");
         registry.swap_handler_tools(&[], vec![first.clone()])?;
@@ -1448,7 +1449,7 @@ mod tests {
 
     #[test]
     fn handler_swap_rejects_foreign_owners_without_changes() -> Result<(), String> {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let replacement = handler_tool("binding-1");
         registry.swap_handler_tools(&[], vec![replacement.clone()])?;
         let mut foreign = owned_tool(&replacement.name, DEFAULT_NAMESPACE, "foreign");
@@ -1485,7 +1486,7 @@ mod tests {
 
     #[test]
     fn same_name_in_two_namespaces_keeps_both_entries() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_tool(owned_tool("echo", "default", "a"));
         registry.register_tool(owned_tool("echo", "other", "b"));
 
@@ -1512,7 +1513,7 @@ mod tests {
         reason = "covers skip, replacement, and local owners"
     )]
     fn register_unless_taken_keeps_the_entry_of_another_owner() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_tool(owned_tool("echo", "default", "a"));
 
         let skipped = registry.register_tools_unless_taken(vec![
@@ -1561,7 +1562,7 @@ mod tests {
 
     #[test]
     fn remove_owned_by_keeps_entries_of_other_owners() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_tool(owned_tool("echo", "default", "a"));
         registry.register_tool(owned_tool("echo", "other", "b"));
         registry.register_tool(owned_tool("extra", "third", "b"));
@@ -1588,7 +1589,7 @@ mod tests {
 
     #[test]
     fn disabled_resource_is_hidden_from_namespace_lookups() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_resource(sample_resource());
 
         assert!(registry.set_resource_enabled(DEFAULT_NAMESPACE, "test-resource", false));
@@ -1607,7 +1608,7 @@ mod tests {
 
     #[test]
     fn disabled_prompt_is_hidden_from_namespace_lookups() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_prompt(PromptEntry {
             name: "test-prompt".to_owned(),
             description: String::new(),
@@ -1635,7 +1636,7 @@ mod tests {
 
     #[test]
     fn register_and_list_resources() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_resource(sample_resource());
         let resources = registry.list_resources();
         assert_eq!(resources.len(), 1);
@@ -1644,7 +1645,7 @@ mod tests {
 
     #[test]
     fn get_resource_by_name() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_resource(sample_resource());
         let res = registry.get_resource(DEFAULT_NAMESPACE, "test-resource");
         assert!(res.is_some());
@@ -1656,7 +1657,7 @@ mod tests {
 
     #[test]
     fn remove_resource() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_resource(sample_resource());
         assert!(registry.remove_resource(DEFAULT_NAMESPACE, "test-resource"));
         assert!(
@@ -1668,7 +1669,7 @@ mod tests {
 
     #[test]
     fn register_tool_skips_injection_when_disabled() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let tool = ToolEntry {
             name: "test".to_owned(),
             description: "test tool".to_owned(),
@@ -1703,7 +1704,7 @@ mod tests {
 
     #[test]
     fn register_tool_injects_when_enabled() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.enable_request_id_injection();
         let tool = ToolEntry {
             name: "test".to_owned(),
@@ -1772,7 +1773,7 @@ mod tests {
 
     #[test]
     fn register_and_get_binding() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(sample_binding("b1", "fwd-a"));
 
         let binding = registry.get_binding("b1").expect("binding should exist");
@@ -1783,7 +1784,7 @@ mod tests {
 
     #[test]
     fn list_bindings_for_forward_filters_by_owner() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(sample_binding("b1", "fwd-a"));
         registry.register_binding(sample_binding("b2", "fwd-a"));
         registry.register_binding(sample_binding("b3", "fwd-b"));
@@ -1795,7 +1796,7 @@ mod tests {
 
     #[test]
     fn register_binding_bumps_revision_on_change() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(sample_binding("b1", "fwd-a"));
 
         // Identical re-registration keeps the revision unchanged.
@@ -1817,7 +1818,7 @@ mod tests {
 
     #[test]
     fn remove_binding_removes_entry() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_binding(sample_binding("b1", "fwd-a"));
         assert!(registry.remove_binding("b1"));
         assert!(registry.get_binding("b1").is_none());
@@ -1836,7 +1837,7 @@ mod tests {
 
     #[test]
     fn remove_forward_if_reports_each_outcome() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert!(matches!(
             registry.remove_forward_if("owned", owned_by("a")),
             ConditionalRemoval::NotFound
@@ -1856,7 +1857,7 @@ mod tests {
 
     #[test]
     fn remove_forward_if_keeps_upsert_made_after_owner_read() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(owned_forward("a"));
         // Instance "a" reads its forward, then instance "b" replaces it.
         assert!(registry.get_forward("owned").is_some());
@@ -1877,7 +1878,7 @@ mod tests {
     #[test]
     fn remove_forward_if_is_atomic_with_concurrent_upsert() {
         for _ in 0..200 {
-            let registry = InMemoryRegistry::new();
+            let registry = RuntimeRegistry::new();
             registry.register_forward(owned_forward("a"));
             let outcome = std::thread::scope(|scope| {
                 let remover = scope.spawn(|| registry.remove_forward_if("owned", owned_by("a")));
@@ -1904,7 +1905,7 @@ mod tests {
 
     #[test]
     fn register_forward_registers_referenced_namespace() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(sample_forward("example-mcp", Some("test-ns")));
 
         let namespace = registry.get_namespace("test-ns");
@@ -1924,7 +1925,7 @@ mod tests {
 
     #[test]
     fn register_forward_without_namespace_uses_default() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(sample_forward("example-mcp", None));
 
         let forward = registry
@@ -1936,7 +1937,7 @@ mod tests {
 
     #[test]
     fn multiple_forwards_share_single_namespace_entry() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(sample_forward("forward-a", Some("shared-ns")));
         registry.register_forward(sample_forward("forward-b", Some("shared-ns")));
 
@@ -1954,7 +1955,7 @@ mod tests {
 
     #[test]
     fn register_forward_does_not_clobber_existing_namespace() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         let mut labels = HashMap::new();
         labels.insert("team".to_owned(), "finance".to_owned());
         registry.register_namespace(NamespaceEntry {
@@ -1980,7 +1981,7 @@ mod tests {
 
     #[test]
     fn register_forward_with_invalid_namespace_is_rejected() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(sample_forward("example-mcp", Some("Invalid NS")));
 
         assert!(
@@ -2017,7 +2018,7 @@ mod tests {
         let backend = Arc::new(SnapshotBackend {
             forward: sample_forward("persisted-forward", Some("persisted-ns")),
         });
-        let registry = InMemoryRegistry::with_persistence(backend);
+        let registry = RuntimeRegistry::with_persistence(backend);
 
         registry.load_persisted();
 
@@ -2055,7 +2056,7 @@ mod tests {
             "resources": [{"name": "r", "location": "l", "type": "mcp-forward"}],
             "prompts": [{"name": "p"}]
         })));
-        let registry = InMemoryRegistry::with_persistence(backend);
+        let registry = RuntimeRegistry::with_persistence(backend);
         registry.load_persisted();
 
         let legacy = registry.get_tool(DEFAULT_NAMESPACE, "legacy");
@@ -2079,7 +2080,7 @@ mod tests {
         let backend = Arc::new(FixedSnapshot(serde_json::json!({
             "tools": [tool("default", "a"), tool("other", "b")]
         })));
-        let registry = InMemoryRegistry::with_persistence(backend);
+        let registry = RuntimeRegistry::with_persistence(backend);
         registry.load_persisted();
 
         assert_eq!(registry.tool_count(), 2);
@@ -2144,7 +2145,7 @@ mod tests {
             first_entered: first_entered_tx,
             release_first: Mutex::new(release_first_rx),
         });
-        let registry = InMemoryRegistry::with_persistence(backend.clone());
+        let registry = RuntimeRegistry::with_persistence(backend.clone());
 
         registry.register_tool(sample_tool());
         assert!(
@@ -2198,7 +2199,7 @@ mod tests {
 
     #[test]
     fn persistence_failure_is_reported_by_flush_and_status() {
-        let registry = InMemoryRegistry::with_persistence(Arc::new(FailingBackend));
+        let registry = RuntimeRegistry::with_persistence(Arc::new(FailingBackend));
         registry.register_tool(sample_tool());
 
         assert!(registry.flush_persistence(Duration::from_secs(2)).is_err());
@@ -2213,7 +2214,7 @@ mod tests {
 
     #[test]
     fn disabled_persistence_has_no_pending_work() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
 
         assert!(registry.flush_persistence(Duration::from_secs(1)).is_ok());
         assert_eq!(
@@ -2259,7 +2260,7 @@ mod tests {
     #[test]
     fn agent_labels_survive_persistence_and_old_snapshots_load() {
         let backend = Arc::new(Backend(Mutex::new(String::new())));
-        let registry = InMemoryRegistry::with_persistence(backend.clone());
+        let registry = RuntimeRegistry::with_persistence(backend.clone());
         assert!(
             registry
                 .save_agent(labeled_agent("a"), false)
@@ -2268,14 +2269,14 @@ mod tests {
         registry
             .flush_persistence(Duration::from_secs(2))
             .expect("persisted");
-        let recovered = InMemoryRegistry::with_persistence(backend);
+        let recovered = RuntimeRegistry::with_persistence(backend);
         recovered.load_persisted();
         let agent = recovered.get_agent("default", "worker").expect("recovered");
         assert_eq!(agent.labels.get("owner").map(String::as_str), Some("a"));
 
         let old = r#"{"agents":[{"name":"worker","address":"http://agent.example/rpc"}]}"#;
         let old_backend = Arc::new(Backend(Mutex::new(old.to_owned())));
-        let from_old = InMemoryRegistry::with_persistence(old_backend);
+        let from_old = RuntimeRegistry::with_persistence(old_backend);
         from_old.load_persisted();
         let agent = from_old.get_agent("default", "worker").expect("old agent");
         assert!(agent.labels.is_empty());
@@ -2283,7 +2284,7 @@ mod tests {
 
     #[test]
     fn remove_agent_if_reports_each_outcome() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         assert!(matches!(
             registry.remove_agent_if("default", "worker", agent_owned_by("a")),
             ConditionalRemoval::NotFound
@@ -2312,7 +2313,7 @@ mod tests {
     /// Run a conditional delete for owner "a" and an update to owner "b" at
     /// the same time.
     fn race_owner_delete_with_update(
-        registry: &InMemoryRegistry,
+        registry: &RuntimeRegistry,
     ) -> (ConditionalRemoval<wanaku_types::agents::AgentEntry>, bool) {
         std::thread::scope(|scope| {
             let remover =
@@ -2329,7 +2330,7 @@ mod tests {
     #[test]
     fn remove_agent_if_is_atomic_with_concurrent_update() {
         for _ in 0..200 {
-            let registry = InMemoryRegistry::new();
+            let registry = RuntimeRegistry::new();
             registry
                 .save_agent(labeled_agent("a"), false)
                 .expect("create");
@@ -2360,7 +2361,7 @@ mod tests {
     )]
     fn agents_are_isolated_updated_live_and_recovered_from_snapshots() {
         let backend = Arc::new(Backend(Mutex::new(String::new())));
-        let registry = InMemoryRegistry::with_persistence(backend.clone());
+        let registry = RuntimeRegistry::with_persistence(backend.clone());
         let mut agent: wanaku_types::agents::AgentEntry =
             serde_json::from_str(r#"{"name":"worker","address":"http://first.example/rpc"}"#)
                 .expect("agent");
@@ -2405,7 +2406,7 @@ mod tests {
         registry
             .flush_persistence(Duration::from_secs(2))
             .expect("persisted");
-        let recovered = InMemoryRegistry::with_persistence(backend);
+        let recovered = RuntimeRegistry::with_persistence(backend);
         recovered.load_persisted();
         assert_eq!(recovered.list_agents().len(), 2);
         assert!(recovered.get_namespace("blue").is_some());

@@ -6,7 +6,7 @@ use bytes::Bytes;
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use std::collections::HashMap;
 use wanaku_infra::metrics::{GovernanceOutcome, MetricsStore, SkipReason};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::audit::{AuditCategory, AuditDecision, AuditEvent, AuditHandle, AuditStore};
 use wanaku_types::governance::{AuditLevel, EnforcementMode, GovernanceConfig, GovernancePosture};
 use wanaku_types::interactions::{InMemoryInteractionStore, InteractionStore};
@@ -131,7 +131,7 @@ impl EvaluatorFilter {
                 Outcome::Skipped(Skip::ExternalEvaluationDisabled),
             );
         }
-        let Some(registry) = ctx.extensions.get::<InMemoryRegistry>().cloned() else {
+        let Some(registry) = ctx.extensions.get::<RuntimeRegistry>().cloned() else {
             config.record_failure(&evaluator.name);
             return finish(
                 ctx,
@@ -545,7 +545,7 @@ fn dispatch_action(
                 .to_owned();
             let catalog: HashMap<_, _> = ctx
                 .extensions
-                .get::<InMemoryRegistry>()
+                .get::<RuntimeRegistry>()
                 .map(|registry| registry.list_tools_in_namespace(&namespace))
                 .unwrap_or_default()
                 .into_iter()
@@ -760,7 +760,7 @@ mod tests {
 
     #[test]
     fn filter_tools_lists_only_tools_in_the_request_namespace() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         for (name, namespace) in [("shared", "curated"), ("private", "tenant-b")] {
             registry.register_tool(
                 serde_json::from_value(serde_json::json!({
@@ -1050,7 +1050,7 @@ mod tests {
             governance.default.audit_level = AuditLevel::Full;
             ctx.extensions.insert(governance);
             ctx.extensions.insert(state);
-            ctx.extensions.insert(InMemoryRegistry::new());
+            ctx.extensions.insert(RuntimeRegistry::new());
             ctx.extensions.insert(InMemoryInteractionStore::new(10));
             let store = InMemoryAuditStore::new(10);
             ctx.extensions
@@ -1176,13 +1176,13 @@ mod tests {
         state: &EvaluatorState,
         posture: GovernancePosture,
     ) -> (FilterAction, AuditEvent) {
-        Box::pin(processor_result(state, posture, &InMemoryRegistry::new())).await
+        Box::pin(processor_result(state, posture, &RuntimeRegistry::new())).await
     }
 
     async fn processor_result(
         state: &EvaluatorState,
         posture: GovernancePosture,
-        registry: &InMemoryRegistry,
+        registry: &RuntimeRegistry,
     ) -> (FilterAction, AuditEvent) {
         let request = request();
         let mut ctx = make_filter_context(&request);
@@ -1262,7 +1262,7 @@ mod tests {
         ctx.set_metadata(wanaku_filters::MCP_METHOD_KEY, wanaku_types::TOOLS_CALL);
         ctx.set_metadata(wanaku_filters::MCP_NAME_KEY, "tool");
         ctx.extensions.insert(state);
-        ctx.extensions.insert(InMemoryRegistry::new());
+        ctx.extensions.insert(RuntimeRegistry::new());
         ctx.extensions.insert(InMemoryInteractionStore::new(10));
         ctx.extensions.insert(GovernanceConfig {
             default: posture.clone(),
@@ -1307,7 +1307,7 @@ mod tests {
                     target: Some("tool"),
                     arguments: &arguments,
                 },
-                &InMemoryRegistry::new(),
+                &RuntimeRegistry::new(),
             );
             assert_eq!(
                 simulated.outcome.side_effects_suppressed(),
@@ -1395,7 +1395,7 @@ mod tests {
             (EnforcementMode::Audit, "default"),
             (EnforcementMode::Enforce, "prod"),
         ] {
-            let registry = InMemoryRegistry::new();
+            let registry = RuntimeRegistry::new();
             registry.register_tool(
                 serde_json::from_value(serde_json::json!({
                     "name": "tool", "description": "test", "uri": "test://tool",
@@ -1654,7 +1654,7 @@ mod tests {
             ..GovernanceConfig::default()
         });
         ctx.extensions.insert(state);
-        ctx.extensions.insert(InMemoryRegistry::new());
+        ctx.extensions.insert(RuntimeRegistry::new());
         ctx.extensions.insert(InMemoryInteractionStore::new(10));
         let store = InMemoryAuditStore::new(10);
         ctx.extensions
@@ -1805,7 +1805,7 @@ mod tests {
             ..GovernanceConfig::default()
         });
         ctx.extensions.insert(state);
-        ctx.extensions.insert(InMemoryRegistry::new());
+        ctx.extensions.insert(RuntimeRegistry::new());
         ctx.extensions.insert(InMemoryInteractionStore::new(10));
         let store = InMemoryAuditStore::new(10);
         ctx.extensions

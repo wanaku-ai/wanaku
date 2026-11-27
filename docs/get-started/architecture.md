@@ -25,7 +25,7 @@ Under the hood, Wanaku is an HTTP filter pipeline. Actions flow through a chain 
 │  │  Evaluator → Tool/Resource/Prompt → Static Response    │ │
 │  └────────────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │              In-Memory Registry (DashMap)              │ │
+│  │              Runtime Registry (DashMap)                │ │
 │  │  Tools │ Resources │ Prompts │ Forwards │ Namespaces   │ │
 │  └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────┬────────────────────────────┘
@@ -43,7 +43,7 @@ Under the hood, Wanaku is an HTTP filter pipeline. Actions flow through a chain 
 
 1. Agent sends an MCP action (tool call, resource read, prompt get) to `/{namespace}/mcp`
 2. Governance pipeline intercepts: namespace resolution, action policy, evaluators. An external oauth2-proxy handles identity before the request reaches Wanaku
-3. Filters query the in-memory registry for tools/resources/prompts
+3. Filters query the runtime registry for tools/resources/prompts
 4. For tool calls: the proxy forwards the action to the backend system registered as the tool's forward address — the agent never reaches the backend directly
 5. Response flows back through filters, wrapped in JSON-RPC
 
@@ -157,7 +157,7 @@ Wanaku uses the praxis-ai `McpFilter` classifier to parse JSON-RPC and set the `
 
 | Capability | Praxis-ai Broker | Wanaku Filters |
 |---|---|---|
-| Tool catalog | Static YAML config | Dynamic `InMemoryRegistry`, populated at runtime via management API |
+| Tool catalog | Static YAML config | Dynamic `RuntimeRegistry`, populated at runtime via management API |
 | Namespace isolation | None | Per-namespace filtering (`/finance/mcp` sees only `finance` tools) |
 | Tool execution | L7 proxy forwarding to Pingora clusters (stateless profile only; unsupported in current profile) | MCP-to-MCP forwarding via `rmcp` crate |
 | Forward discovery | None | Auto-discovers tools from upstream MCP servers on registration |
@@ -179,7 +179,7 @@ Wanaku uses the praxis-ai `McpFilter` classifier to parse JSON-RPC and set the `
 
 ## The Registry
 
-The registry is the source of truth for tools, resources, prompts, namespaces, and forwards. `InMemoryRegistry` in `infra/src/registry.rs` implements this in-memory data structure.
+The `RuntimeRegistry` in `infra/src/registry.rs` holds the live registry data for the filter pipeline and management API. It can save snapshots through a persistence backend.
 
 **Key design:**
 
@@ -192,7 +192,7 @@ The registry is the source of truth for tools, resources, prompts, namespaces, a
 This listing shows the main maps. Refer to `infra/src/registry.rs` for the complete struct.
 
 ```rust
-pub struct InMemoryRegistry {
+pub struct RuntimeRegistry {
     agents: Arc<DashMap<String, RegisteredAgent>>,
     tools: Arc<DashMap<(String, String), ToolEntry>>,         // (namespace, name)
     resources: Arc<DashMap<(String, String), ResourceEntry>>, // (namespace, name)

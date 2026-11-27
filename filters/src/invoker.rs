@@ -43,7 +43,7 @@ pub mod testing {
     use serde_json::Value;
     use wanaku_infra::credentials::CredentialBroker;
     use wanaku_infra::mcp_client::{CallToolResponse, McpClientError, McpInvoker};
-    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_infra::registry::RuntimeRegistry;
     use wanaku_types::credentials::CredentialPurpose;
     use wanaku_types::credentials::binding::{
         BindingRestrictions, CacheRules, CredentialBinding, NormalizedOrigin,
@@ -184,8 +184,8 @@ pub mod testing {
     /// that invocation binding. With `secret_ref`, the registry also stores a
     /// bearer binding under that id that resolves the secret reference.
     /// `"fake:token"` resolves to [`SECRET`]; other references fail.
-    pub fn registry(binding: Option<&str>, secret_ref: Option<&str>) -> InMemoryRegistry {
-        let registry = InMemoryRegistry::new();
+    pub fn registry(binding: Option<&str>, secret_ref: Option<&str>) -> RuntimeRegistry {
+        let registry = RuntimeRegistry::new();
         let mut credential_bindings = HashMap::new();
         if let Some(id) = binding {
             credential_bindings.insert(CredentialPurpose::Invocation, id.to_owned());
@@ -225,7 +225,7 @@ pub mod testing {
     pub fn filter_context<'a>(
         req: &'a Request,
         method: &str,
-        registry: &InMemoryRegistry,
+        registry: &RuntimeRegistry,
         invoker: &Arc<RecordingInvoker>,
     ) -> HttpFilterContext<'a> {
         let mut extensions = RequestExtensions::default();

@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use praxis_filter::{FilterAction, HttpFilterContext};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::registry::NamespaceRegistry;
 
 pub(super) fn catalog(ctx: &HttpFilterContext<'_>, public_origin: &str) -> Option<FilterAction> {
@@ -19,7 +19,7 @@ pub(super) fn catalog(ctx: &HttpFilterContext<'_>, public_origin: &str) -> Optio
             "use GET to list virtual namespace agents",
         ));
     }
-    let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+    let Some(registry) = ctx.extensions.get::<RuntimeRegistry>() else {
         return Some(super::route_error(503, "registry unavailable"));
     };
     if registry

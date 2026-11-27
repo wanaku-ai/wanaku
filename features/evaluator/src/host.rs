@@ -7,7 +7,7 @@ bindgen!({
 
 pub use wanaku::evaluator::types;
 
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::interactions::{InMemoryInteractionStore, InteractionStore};
 use wanaku_types::registry::{DEFAULT_NAMESPACE, ToolRegistry};
 
@@ -18,7 +18,7 @@ use crate::schema::CompiledSchema;
 
 /// Host state available to the WASM guest during evaluation.
 pub struct HostState {
-    pub registry: InMemoryRegistry,
+    pub registry: RuntimeRegistry,
     pub interactions: InMemoryInteractionStore,
     pub action: ActionResult,
     pub allow_side_effects: bool,
@@ -210,7 +210,7 @@ mod tests {
 
     fn host_state() -> HostState {
         HostState {
-            registry: InMemoryRegistry::new(),
+            registry: RuntimeRegistry::new(),
             interactions: InMemoryInteractionStore::new(16),
             action: ActionResult::Pass,
             allow_side_effects: true,

@@ -22,14 +22,14 @@ use pingora_core::services::background::BackgroundService;
 use tracing::{debug, info};
 
 use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::registry::ForwardRegistry;
 
 use super::handlers::discover_and_publish;
 
 /// Periodically re-probes unavailable forwards and restores them once reachable.
 pub struct ForwardReconnectService {
-    registry: InMemoryRegistry,
+    registry: RuntimeRegistry,
     broker: Arc<CredentialBroker>,
     audit_sink: Option<Arc<dyn CredentialAuditSink>>,
     interval: Duration,
@@ -40,7 +40,7 @@ impl ForwardReconnectService {
     /// `interval`.
     #[must_use]
     pub const fn new(
-        registry: InMemoryRegistry,
+        registry: RuntimeRegistry,
         broker: Arc<CredentialBroker>,
         audit_sink: Option<Arc<dyn CredentialAuditSink>>,
         interval: Duration,
@@ -112,7 +112,7 @@ impl BackgroundService for ForwardReconnectService {
 /// a Pingora background service via [`pingora_core::services::background::GenBackgroundService`].
 #[must_use]
 pub fn reconnect_service(
-    registry: InMemoryRegistry,
+    registry: RuntimeRegistry,
     broker: Arc<CredentialBroker>,
     audit_sink: Option<Arc<dyn CredentialAuditSink>>,
     interval: Duration,
@@ -149,7 +149,7 @@ mod tests {
 
     #[tokio::test]
     async fn run_once_skips_when_all_available() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(forward("healthy", true));
 
         let svc =
@@ -163,7 +163,7 @@ mod tests {
 
     #[tokio::test]
     async fn run_once_probes_only_unavailable() {
-        let registry = InMemoryRegistry::new();
+        let registry = RuntimeRegistry::new();
         registry.register_forward(forward("healthy", true));
         registry.register_forward(forward("down-1", false));
         registry.register_forward(forward("down-2", false));

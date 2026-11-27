@@ -839,7 +839,7 @@ mod action_result {
 mod host {
     use super::*;
     use wanaku_feature_evaluator::engine::{CompiledEvaluator, ExecutionContext, ExecutionMode};
-    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_infra::registry::RuntimeRegistry;
     use wanaku_types::interactions::InMemoryInteractionStore;
     use wanaku_types::registry::ToolRegistry;
 
@@ -855,8 +855,8 @@ mod host {
     }
 
     /// Registry with the tool that `side-effects.wat` copies to `prod`.
-    fn registry_with_tool() -> InMemoryRegistry {
-        let registry = InMemoryRegistry::new();
+    fn registry_with_tool() -> RuntimeRegistry {
+        let registry = RuntimeRegistry::new();
         registry.register_tool(
             serde_json::from_value(serde_json::json!({
                 "name": "tool", "description": "test", "uri": "test://tool",
@@ -867,7 +867,7 @@ mod host {
         registry
     }
 
-    fn run_side_effects(registry: &InMemoryRegistry, allow_side_effects: bool) -> bool {
+    fn run_side_effects(registry: &RuntimeRegistry, allow_side_effects: bool) -> bool {
         let processor =
             CompiledEvaluator::from_file("side-effects", &fixture_path("side-effects.wat"))
                 .expect("side-effects fixture must compile");

@@ -8,11 +8,11 @@ use wanaku_types::registry::{
     inject_request_id_arg,
 };
 
-use super::{EntryKey, InMemoryRegistry};
+use super::{EntryKey, RuntimeRegistry};
 
 /// An in-flight discovery request captured before contacting an upstream.
 pub struct ForwardDiscoveryRequest {
-    registry: InMemoryRegistry,
+    registry: RuntimeRegistry,
     target: ForwardEntry,
     previous: Option<ForwardEntry>,
     generation: Arc<()>,
@@ -22,7 +22,7 @@ pub struct ForwardDiscoveryRequest {
 impl ForwardDiscoveryRequest {
     /// Registry that supplied this request's configuration and identity.
     #[must_use]
-    pub const fn registry(&self) -> &InMemoryRegistry {
+    pub const fn registry(&self) -> &RuntimeRegistry {
         &self.registry
     }
 
@@ -111,7 +111,7 @@ impl ForwardChanges {
     }
     fn request(
         &mut self,
-        registry: &InMemoryRegistry,
+        registry: &RuntimeRegistry,
         target: ForwardEntry,
         previous: Option<ForwardEntry>,
     ) -> ForwardDiscoveryRequest {
@@ -133,7 +133,7 @@ impl ForwardChanges {
     }
 }
 
-impl InMemoryRegistry {
+impl RuntimeRegistry {
     /// Capture the current forward configuration and relevant binding identities
     /// for refresh. The registry releases the lock before returning the request.
     pub fn begin_forward_refresh(&self, name: &str) -> Option<ForwardDiscoveryRequest> {

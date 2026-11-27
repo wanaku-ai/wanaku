@@ -6,7 +6,7 @@ use serde_json::Value;
 use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::registry::{DEFAULT_NAMESPACE, NamespaceRegistry, ToolRegistry};
 use wanaku_types::wasm::{HostError, HostErrorKind, McpHostClient, ToolHandler, ToolTarget};
 
@@ -17,7 +17,7 @@ type Snapshot = BTreeMap<Key, Arc<CompiledHandler>>;
 /// Clone-safe runtime state. Each call retains its selected compiled version.
 #[derive(Clone)]
 pub struct HandlerState {
-    registry: InMemoryRegistry,
+    registry: RuntimeRegistry,
     active: Arc<RwLock<Snapshot>>,
     mutation: Arc<Mutex<()>>,
     persistence: Option<PathBuf>,
@@ -25,7 +25,7 @@ pub struct HandlerState {
 
 impl HandlerState {
     #[must_use]
-    pub fn new(registry: InMemoryRegistry) -> Self {
+    pub fn new(registry: RuntimeRegistry) -> Self {
         // A registry snapshot alone cannot make a handler executable.
         for entry in registry
             .list_tools()

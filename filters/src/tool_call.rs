@@ -4,7 +4,7 @@ use bytes::Bytes;
 use http::{HeaderName, HeaderValue};
 use praxis_filter::{FilterAction, FilterError, HttpFilterContext};
 use tracing::{trace, warn};
-use wanaku_infra::registry::InMemoryRegistry;
+use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::config::ENV;
 use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::UseScope;
@@ -33,7 +33,7 @@ fn parse_body(body: &Option<Bytes>, json_rpc_id: serde_json::Value) -> ParsedBod
 
 fn resolve_tool(
     ctx: &HttpFilterContext<'_>,
-    registry: &InMemoryRegistry,
+    registry: &RuntimeRegistry,
     namespace: &str,
     tool_name: &str,
     id: &serde_json::Value,
@@ -109,7 +109,7 @@ fn resolve_forward(
     id: &serde_json::Value,
 ) -> Result<wanaku_types::registry::ForwardEntry, FilterAction> {
     let tool_name = tool.name.as_str();
-    let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
+    let Some(registry) = ctx.extensions.get::<RuntimeRegistry>() else {
         return Err(crate::response::json_rpc_error(
             id,
             crate::response::JSONRPC_INTERNAL_ERROR,
@@ -242,8 +242,8 @@ impl ToolCallFilter {
             "parsed tools/call request body (x-request-id stripped, argument values not logged)"
         );
 
-        let Some(registry) = ctx.extensions.get::<InMemoryRegistry>() else {
-            tracing::error!("InMemoryRegistry not found in request extensions");
+        let Some(registry) = ctx.extensions.get::<RuntimeRegistry>() else {
+            tracing::error!("RuntimeRegistry not found in request extensions");
             return Ok(crate::response::json_rpc_error(
                 &parsed.id,
                 crate::response::JSONRPC_INTERNAL_ERROR,
@@ -1154,7 +1154,7 @@ mod filter_tests {
 
     use praxis_filter::FilterAction;
     use serde_json::{Value, json};
-    use wanaku_infra::registry::InMemoryRegistry;
+    use wanaku_infra::registry::RuntimeRegistry;
     use wanaku_types::registry::{FORWARD_HEADERS_LABEL, ToolEntry, ToolRegistry};
 
     use super::ToolCallFilter;
@@ -1185,7 +1185,7 @@ mod filter_tests {
         .unwrap()
     }
 
-    async fn run(registry: &InMemoryRegistry, invoker: &Arc<RecordingInvoker>) -> FilterAction {
+    async fn run(registry: &RuntimeRegistry, invoker: &Arc<RecordingInvoker>) -> FilterAction {
         let req = request(&[("x-client-token", "client-value")]);
         let mut ctx = filter_context(&req, crate::TOOLS_CALL, registry, invoker);
         ctx.set_metadata(crate::MCP_NAME_KEY, "echo");
@@ -1299,7 +1299,7 @@ mod filter_tests {
         assert!(!message.contains(SECRET), "leaked: {message}");
     }
 
-    async fn assert_not_invoked(registry: &InMemoryRegistry, expected: &str) {
+    async fn assert_not_invoked(registry: &RuntimeRegistry, expected: &str) {
         let invoker = RecordingInvoker::succeeding(Value::Null);
         let response = response_json(run(registry, &invoker).await);
         assert!(
@@ -1337,7 +1337,7 @@ mod filter_tests {
     }
 
     /// Call `echo` in `namespace` and return the invocations.
-    async fn invocations_in(registry: &InMemoryRegistry, namespace: &str) -> Vec<Invocation> {
+    async fn invocations_in(registry: &RuntimeRegistry, namespace: &str) -> Vec<Invocation> {
         let invoker = RecordingInvoker::succeeding(json!({"content": []}));
         let req = request(&[]);
         let mut ctx = filter_context(&req, crate::TOOLS_CALL, registry, &invoker);
