@@ -97,8 +97,9 @@ export const PolicyDetails = ({ policy }: PolicyDetailsProps) => {
 
   return (
     <Accordion align="start">
-      {rules.map((rule) => (
-        <AccordionItem key={rule.id} title={`${rule.id} — ${rule.effect}`}>
+      {/* A revision has a fixed rule order, even when rule IDs are duplicated. */}
+      {rules.map((rule, index) => (
+        <AccordionItem key={`${index}-${rule.id}`} title={`${rule.id} — ${rule.effect}`}>
           <RuleDetails rule={rule} />
         </AccordionItem>
       ))}

@@ -310,6 +310,9 @@ test.describe("Action policy revision rollback", () => {
   test("compares a selected revision with the active policy by rule ID", async ({ page }) => {
     await mockActionPolicies(page, history);
     await policies.goto();
+    const mountedComparisons = policies.revisionHistory().locator('[aria-label="Rule comparison"]');
+    await expect(policies.revisionHistory().getByRole("button", { name: "Revision 2 — superseded" })).toBeVisible();
+    await expect(mountedComparisons).toHaveCount(0);
     await policies.openRevision(2, "superseded");
 
     const comparison = policies.revisionHistory().getByRole("region", { name: "Rule comparison" });
@@ -322,9 +325,15 @@ test.describe("Action policy revision rollback", () => {
     await expect(modified.getByText('"effect": "allow"', { exact: false })).toBeVisible();
     await expect(policies.revisionHistory().getByText("operator", { exact: true })).toBeVisible();
     await expect(policies.revisionHistory().getByText("test-checksum", { exact: true }).last()).toBeVisible();
+    await policies.openRevision(2, "superseded");
+    await expect(mountedComparisons).toHaveCount(0);
   });
 
   test("compares rejected rules with duplicate IDs and hides rollback", async ({ page }) => {
+    const duplicateKeyWarnings: string[] = [];
+    page.on("console", (message) => {
+      if (message.text().includes("same key")) duplicateKeyWarnings.push(message.text());
+    });
     const rejected = { ...rejectedRevision, failure_reason: "duplicate rule ID" };
     await mockActionPolicies(page, {
       ...history,
@@ -338,7 +347,18 @@ test.describe("Action policy revision rollback", () => {
     const modified = comparison.locator("details").filter({ hasText: "Modified — protect-production" });
     await modified.getByText("Modified — protect-production").click();
     await expect(modified.getByText('"effect": "allow"', { exact: false })).toBeVisible();
-    await expect(policies.revisionHistory()).toContainText("duplicate rule ID");
+    const policyRules = policies.revisionHistory();
+    const allow = policyRules.getByRole("button", { name: "protect-production — allow", exact: true });
+    const deny = policyRules.getByRole("button", { name: "protect-production — deny", exact: true });
+    await allow.click();
+    await deny.click();
+    await expect(allow).toHaveAttribute("aria-expanded", "true");
+    await expect(deny).toHaveAttribute("aria-expanded", "true");
+    await allow.click();
+    await expect(allow).toHaveAttribute("aria-expanded", "false");
+    await expect(deny).toHaveAttribute("aria-expanded", "true");
+    expect(duplicateKeyWarnings).toEqual([]);
+    await expect(policyRules).toContainText("duplicate rule ID");
     await expect(policies.rollbackButton(2)).toHaveCount(0);
   });
 
@@ -359,6 +379,10 @@ test.describe("Action policy revision rollback", () => {
     await policies.confirmation().getByRole("button", { name: "Roll back", exact: true }).click();
     await expect(policies.activePolicy()).toContainText("Revision 4 is now active");
     await expect(policies.activePolicy()).toContainText("prior-only");
+    await policies.openRevision(4, "active");
+    await expect(policies.revisionHistory().getByRole("button", { name: "prior-only — allow" })).toBeVisible();
+    await expect(policies.revisionHistory().getByRole("button", { name: "Revision 3 — superseded" })).toBeVisible();
+    await expect(policies.revisionHistory().getByRole("button", { name: "Revision 2 — superseded" })).toBeVisible();
     expect(activationRequests).toEqual([{ id: 2, body: { expected_revision: 3 } }]);
   });
 
@@ -387,12 +411,16 @@ test.describe("Action policy revision rollback", () => {
       hasText: "Added — prior-only",
     });
     await expect(comparison.getByRole("heading")).toHaveText("Comparison with active revision 4");
+    await expect(policies.revisionHistory().getByRole("button", { name: "Revision 4 — active" })).toBeVisible();
+    await expect(policies.revisionHistory().getByRole("button", { name: "Revision 3 — superseded" })).toBeVisible();
     expect(activationRequests).toHaveLength(1);
 
     await policies.rollbackButton(2).click();
     await expect(policies.confirmation()).toContainText("It replaces active revision 4");
     await policies.confirmation().getByRole("button", { name: "Roll back", exact: true }).click();
     await expect(policies.activePolicy()).toContainText("Revision 5 is now active");
+    await expect(policies.revisionHistory().getByRole("button", { name: "Revision 5 — active" })).toBeVisible();
+    await expect(policies.revisionHistory().getByRole("button", { name: "Revision 4 — superseded" })).toBeVisible();
     expect(activationRequests[1]).toEqual({ id: 2, body: { expected_revision: 4 } });
   });
 });

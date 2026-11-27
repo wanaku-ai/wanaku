@@ -24,9 +24,19 @@ export const PolicyRevisionHistory = ({
   onRefresh,
   onActivate,
 }: PolicyRevisionHistoryProps) => {
+  const [openRevisions, setOpenRevisions] = useState<Set<number>>(() => new Set());
   const [rollback, setRollback] = useState<{ id: number; expected?: number }>();
   const [rollbackError, setRollbackError] = useState<{ message: string; conflict: boolean }>();
   const [busy, setBusy] = useState(false);
+
+  const toggleRevision = (id: number, isOpen: boolean) => {
+    setOpenRevisions((previous) => {
+      const next = new Set(previous);
+      if (isOpen) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
 
   const closeRollback = () => {
     setRollback(undefined);
@@ -67,12 +77,13 @@ export const PolicyRevisionHistory = ({
             {revisions.map(({ revision, policy }) => (
               <AccordionItem
                 key={revision.id}
+                onHeadingClick={({ isOpen }) => toggleRevision(revision.id, isOpen)}
                 title={`Revision ${revision.id} — ${revision.status}`}
               >
                 <RevisionDetails revision={revision} />
                 <h4>Policy rules</h4>
                 <PolicyDetails policy={policy} />
-                {active && active.revision.id !== revision.id && (
+                {openRevisions.has(revision.id) && active && active.revision.id !== revision.id && (
                   <PolicyComparison active={active} policy={policy} />
                 )}
                 {revision.status === 'superseded' && active?.revision.id !== revision.id && (

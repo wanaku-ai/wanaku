@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type {
   ActionPolicy,
   ActionPolicyRevision,
@@ -26,13 +27,13 @@ const groupRules = (policy: ActionPolicy) => {
 const formatRules = (rules: ActionPolicyRule[]) =>
   JSON.stringify(rules.length === 1 ? rules[0] : rules, null, 2);
 
-export const PolicyComparison = ({
+export const PolicyComparison = memo(function PolicyComparison({
   active,
   policy,
 }: {
   active: ActionPolicyRevision;
   policy: ActionPolicy;
-}) => {
+}) {
   const activeRules = groupRules(active.policy);
   const selectedRules = groupRules(policy);
   const ids = [...new Set([...activeRules.keys(), ...selectedRules.keys()])];
@@ -71,4 +72,4 @@ export const PolicyComparison = ({
       )}
     </section>
   );
-};
+});
