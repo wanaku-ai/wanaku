@@ -619,6 +619,7 @@ fn protected_routing_metadata(key: &str) -> bool {
             | VIRTUAL_NAMESPACE_METADATA_KEY
             | wanaku_filters::MCP_METHOD_KEY
             | wanaku_filters::MCP_NAME_KEY
+            | wanaku_filters::MCP_ID_KEY
     ) || key.starts_with("wanaku.a2a.")
         || key.starts_with("a2a.")
 }
@@ -934,6 +935,7 @@ mod tests {
             ActionResult::Warn("secret".into()),
             ActionResult::FilterTools(vec![]),
             ActionResult::SetMetadata("injected".into(), "secret".into()),
+            ActionResult::SetMetadata(wanaku_types::NAMESPACE_METADATA_KEY.into(), "secret".into()),
         ] {
             let mut ctx = make_filter_context(&request);
             let mut body = Some(Bytes::from_static(b"original"));
@@ -1135,8 +1137,11 @@ mod tests {
         for key in [
             wanaku_types::NAMESPACE_METADATA_KEY,
             VIRTUAL_NAMESPACE_METADATA_KEY,
+            wanaku_filters::MCP_METHOD_KEY,
             wanaku_filters::MCP_NAME_KEY,
+            wanaku_filters::MCP_ID_KEY,
             "wanaku.a2a.agent",
+            "a2a.task",
         ] {
             let request = request();
             let mut ctx = make_filter_context(&request);
@@ -1148,9 +1153,32 @@ mod tests {
                 wanaku_types::TOOLS_CALL,
                 "test",
             )?;
-            assert!(matches!(action, FilterAction::Reject(_)));
+            let FilterAction::Reject(rejection) = action else {
+                unreachable!("protected key was not rejected");
+            };
+            let body: serde_json::Value = serde_json::from_slice(&rejection.body.unwrap()).unwrap();
+            let error = serde_json::json!({
+                "code": -32002, "message": "evaluator cannot change routing metadata"
+            });
+            assert_eq!(body["error"], error);
             assert_eq!(ctx.get_metadata(key), Some("original"));
         }
+        Ok(())
+    }
+
+    #[test]
+    fn evaluator_sets_custom_metadata() -> Result<(), FilterError> {
+        let request = request();
+        let mut ctx = make_filter_context(&request);
+        let action = dispatch_action(
+            &mut ctx,
+            &mut None,
+            ActionResult::SetMetadata("wanaku.risk_level".to_owned(), "high".to_owned()),
+            wanaku_types::TOOLS_CALL,
+            "test",
+        )?;
+        assert!(matches!(action, FilterAction::Continue));
+        assert_eq!(ctx.get_metadata("wanaku.risk_level"), Some("high"));
         Ok(())
     }
 

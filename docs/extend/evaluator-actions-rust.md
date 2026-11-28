@@ -138,6 +138,8 @@ log::warn("message");
 log::error("message");
 ```
 
+An action cannot set a routing key, such as `wanaku.namespace` or `mcp.name`. See [Metadata Propagation](../govern/evaluators.md#metadata-propagation) for the reserved keys.
+
 ## Step 4: Build
 
 ```bash

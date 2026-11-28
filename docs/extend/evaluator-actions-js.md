@@ -104,6 +104,8 @@ filterTools(["tool-1", "tool-2", "tool-3"]);
 setMetadata("wanaku.risk_level", "high");
 ```
 
+An action cannot set a routing key, such as `wanaku.namespace` or `mcp.name`. See [Metadata Propagation](../govern/evaluators.md#metadata-propagation) for the reserved keys.
+
 ### Validation (`wanaku:evaluator/validation`)
 
 ```javascript

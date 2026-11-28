@@ -373,11 +373,32 @@ import { setMetadata } from 'wanaku:evaluator/response';
 export function evaluate(ctx) {
   const risk = JSON.parse(ctx.llmResult).risk_level;
   setMetadata("wanaku.risk_level", risk);
-  setMetadata("wanaku.evaluator", "safety-gate");
 }
 ```
 
 Downstream filters can read this metadata and make decisions (e.g., extra logging for high-risk calls, rate limiting).
+
+An action sets one key for each evaluation. If the action calls `setMetadata` more than one time, only the last call has an effect. Thus, a reserved key in the last call rejects the request, and the keys of the earlier calls are not applied.
+
+An action cannot set these reserved keys:
+
+| Key | Set by |
+|---|---|
+| `mcp.method` | MCP filter |
+| `mcp.name` | MCP filter |
+| `wanaku.namespace` | Namespace filter |
+| `wanaku.virtual_namespace` | Namespace filter |
+| `mcp.id` | MCP filters. Wanaku uses it as the JSON-RPC `id` of a response |
+| Any key that starts with `a2a.` or `wanaku.a2a.` | A2A filters |
+
+Wanaku does not keep caller identity or governance decisions in request metadata. Thus, the table above is the complete list of reserved keys.
+
+The evaluator filter checks the key before it changes the metadata. Thus, the request keeps the route that governance evaluated.
+
+- In `enforce` mode, a reserved key rejects the request with JSON-RPC error `-32002` and the message `evaluator cannot change routing metadata`. The metadata does not change.
+- In `audit` mode, the evaluator filter does not apply any action. The metadata does not change, and the request continues.
+
+All other keys are allowed. Use a prefix that is specific to your evaluator, for example `wanaku.risk_level`.
 
 ## Performance Notes
 

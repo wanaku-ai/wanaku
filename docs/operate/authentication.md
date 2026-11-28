@@ -57,6 +57,31 @@ For the Compose setup, clients use `http://localhost:8543/realms/wanaku`; the se
 
 Wanaku always serves OAuth protected-resource metadata for MCP endpoints at `/.well-known/oauth-protected-resource/{namespace}/mcp`. When `WANAKU_AUTH_ISSUER` is set, the `authorization_servers` list contains the Wanaku host. When it is unset, the route returns HTTP 200 with an empty `authorization_servers` list. The OpenID discovery, `/authorize`, `/token`, and `/register` routes are active only when `WANAKU_AUTH_ISSUER` is set.
 
+## Protected-resource challenge
+
+When oauth2-proxy rejects an MCP request without a token, it returns HTTP 401 without a `WWW-Authenticate` header. MCP clients that follow the MCP authorization specification then request the well-known address for the endpoint. For `/default/mcp`, this address is `/.well-known/oauth-protected-resource/default/mcp`. Wanaku serves the metadata at this address, and the proxy permits it without a token.
+
+Some MCP clients find the metadata only from a `resource_metadata` value in the `WWW-Authenticate` header. For these clients, add the header in a reverse proxy in front of oauth2-proxy. The NGINX example below adds the header only to 401 responses. Replace `https://wanaku.example.com` with the public address of the MCP proxy.
+
+```nginx
+map $status $wanaku_mcp_challenge {
+    401     'Bearer resource_metadata="https://wanaku.example.com/.well-known/oauth-protected-resource$uri"';
+    default "";
+}
+
+server {
+    listen 443 ssl;
+    server_name wanaku.example.com;
+
+    location / {
+        proxy_pass http://oauth2-proxy-mcp:4181;
+        add_header WWW-Authenticate $wanaku_mcp_challenge always;
+    }
+}
+```
+
+NGINX does not send a header with an empty value. Thus, other responses do not get the header.
+
 ## Proxy behavior
 
 The MCP proxy accepts bearer tokens with the configured Wanaku MCP audience. MCP endpoints use `/{namespace}/mcp`, such as `/default/mcp`. Pass the full endpoint to the CLI. The CLI does not infer or select a namespace from a bare server origin.

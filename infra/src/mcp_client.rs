@@ -302,7 +302,7 @@ pub async fn call_tool(
         .map_err(|e| McpClientError::CallTool {
             url: url.clone(),
             tool_name: tool_name.to_owned(),
-            message: e.to_string(),
+            message: call_tool_error_message(&e),
         })?;
 
     let is_error = result.is_error.unwrap_or(false);
@@ -312,6 +312,17 @@ pub async fn call_tool(
         message: format!("unsupported MCP tool result: {e}"),
     })?;
     Ok(CallToolResponse { result, is_error })
+}
+
+/// rmcp reports a result it cannot parse, such as a content block of an
+/// unknown type, as an unexpected response. Name the likely cause.
+fn call_tool_error_message(error: &rmcp::ServiceError) -> String {
+    match error {
+        rmcp::ServiceError::UnexpectedResponse => {
+            "unsupported MCP tool result: the result is malformed or contains an unsupported content type".to_owned()
+        }
+        other => other.to_string(),
+    }
 }
 
 #[expect(
@@ -1016,10 +1027,12 @@ mod tests {
             json!({"message": "billing"}),
             Default::default(),
         )
-        .await;
+        .await
+        .expect_err("unsupported content");
         assert!(matches!(
-            response,
-            Err(super::McpClientError::CallTool { .. })
+            &response,
+            super::McpClientError::CallTool { message, .. } if message ==
+                "unsupported MCP tool result: the result is malformed or contains an unsupported content type"
         ));
     }
 
