@@ -6518,6 +6518,7 @@ dependencies = [
  "tikv-jemallocator",
  "tokio",
  "tracing",
+ "tracing-subscriber",
  "utoipa",
  "wanaku-feature-action-policy",
  "wanaku-feature-audit",
@@ -6531,6 +6532,7 @@ dependencies = [
  "wanaku-filters",
  "wanaku-infra",
  "wanaku-types",
+ "wiremock",
  "yaml_serde",
 ]
 

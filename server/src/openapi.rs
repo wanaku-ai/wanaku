@@ -360,6 +360,42 @@ const fn list_bindings() {}
 )]
 const fn get_binding() {}
 
+#[utoipa::path(post, path = "/api/v1/bindings", tag = "Bindings",
+    description = "Creates a binding definition. The server assigns its revision. Supply opaque secret references.",
+    request_body = CredentialBinding,
+    responses(
+        (status = 201, description = "Credential binding created", body = WanakuResponse<CredentialBinding>),
+        (status = 400, description = "Invalid credential binding definition", body = ManagementErrorResponse),
+        (status = 409, description = "Binding ID already exists or revision is exhausted", body = ManagementErrorResponse),
+        (status = 413, description = "Request body too large", body = ManagementErrorResponse),
+    )
+)]
+const fn create_binding() {}
+
+#[utoipa::path(put, path = "/api/v1/bindings/{id}", tag = "Bindings",
+    description = "Replaces an existing binding definition. The body ID must match the path ID. The owning forward stays fixed.",
+    params(("id" = String, Path, description = "Credential binding id")),
+    request_body = CredentialBinding,
+    responses(
+        (status = 200, description = "Credential binding updated", body = WanakuResponse<CredentialBinding>),
+        (status = 400, description = "Invalid credential binding definition or mismatched ID", body = ManagementErrorResponse),
+        (status = 404, description = "Binding not found", body = ManagementErrorResponse),
+        (status = 409, description = "Owner changed or revision is exhausted", body = ManagementErrorResponse),
+        (status = 413, description = "Request body too large", body = ManagementErrorResponse),
+    )
+)]
+const fn update_binding() {}
+
+#[utoipa::path(delete, path = "/api/v1/bindings/{id}", tag = "Bindings",
+    description = "Deletes a binding definition. Forward references stay in place and fail closed when used.",
+    params(("id" = String, Path, description = "Credential binding id")),
+    responses(
+        (status = 200, description = "Credential binding removed", body = WanakuResponse<serde_json::Value>),
+        (status = 404, description = "Binding not found", body = ManagementErrorResponse),
+    )
+)]
+const fn delete_binding() {}
+
 // -- Forwards -----------------------------------------------------------------
 
 #[utoipa::path(get, path = "/api/v1/forwards", tag = "Forwards",
@@ -762,6 +798,9 @@ const fn delete_policy_replay() {}
         delete_namespace,
         list_bindings,
         get_binding,
+        create_binding,
+        update_binding,
+        delete_binding,
         list_forwards,
         get_forward,
         create_forward,
@@ -1462,17 +1501,48 @@ mod tests {
     }
 
     #[test]
+    fn includes_credential_binding_mutations() {
+        let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
+        for (path, method, statuses) in [
+            (
+                "/api/v1/bindings",
+                "post",
+                &["201", "400", "409", "413"][..],
+            ),
+            (
+                "/api/v1/bindings/{id}",
+                "put",
+                &["200", "400", "404", "409", "413"][..],
+            ),
+            ("/api/v1/bindings/{id}", "delete", &["200", "404"][..]),
+        ] {
+            let operation = &value["paths"][path][method];
+            for status in statuses {
+                assert!(
+                    operation["responses"][status].is_object(),
+                    "missing {method} {path} {status}"
+                );
+            }
+            if matches!(method, "post" | "put") {
+                assert_eq!(
+                    operation["requestBody"]["content"]["application/json"]["schema"]["$ref"],
+                    "#/components/schemas/CredentialBinding"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn includes_credential_binding_contracts() {
         let value = serde_json::to_value(ApiDoc::openapi()).unwrap_or_default();
-        let paths = value.get("paths").and_then(serde_json::Value::as_object);
         let schemas = value
             .pointer("/components/schemas")
             .and_then(serde_json::Value::as_object);
 
         for path in ["/api/v1/bindings", "/api/v1/bindings/{id}"] {
             assert!(
-                paths.is_some_and(|paths| paths.contains_key(path)),
-                "missing {path}"
+                value["paths"][path]["get"].is_object(),
+                "missing GET {path}"
             );
         }
 

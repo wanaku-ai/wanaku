@@ -206,6 +206,13 @@ pub enum BindingError {
 }
 
 impl CredentialBinding {
+    /// Normalize the upstream origin and validate the binding definition.
+    pub fn normalize_and_validate(&mut self) -> Result<(), BindingError> {
+        self.origin = NormalizedOrigin::from_address(self.origin.as_str())
+            .map_err(|_| BindingError::OriginMismatch)?;
+        self.validate()
+    }
+
     /// Validate the binding's static structure at configuration-activation time.
     pub fn validate(&self) -> Result<(), BindingError> {
         self.mechanism.validate()?;

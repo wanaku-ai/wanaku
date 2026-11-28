@@ -35,9 +35,9 @@ A `CredentialBinding` is a top-level resource, owned by exactly one forward. It 
 | `allowed_purposes` | array of strings | The purposes this binding may serve: `discovery`, `invocation`, or both. |
 | `restrictions` | object, optional | Additional scope restrictions. See [Scope and Restrictions](#scope-and-restrictions). |
 | `cache` | object, optional | Cache rules for resolved credentials. See [Caching and Invalidation](#caching-and-invalidation). |
-| `revision` | integer, optional | A counter that is part of the credential cache key. The default is `0`. Wanaku does not compare revisions or require an increment. Increment it when you change a binding, so that the broker does not reuse credentials that it cached for the earlier revision. |
+| `revision` | integer, optional | A counter in the credential cache key. Startup configuration can set the initial revision of a new binding. The default is `0`. For an existing binding, Wanaku increments the stored revision when the definition changes. For API writes, Wanaku assigns the revision and ignores the value in the request. |
 
-You author bindings in the `wanaku.yaml` configuration file, under the top-level `bindings` key. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml). The following binding injects a Bearer token that is read from the `API_TOKEN` environment variable:
+You can define bindings in the `wanaku.yaml` configuration file under the top-level `bindings` key, or create them through the management API. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml). The following binding injects a Bearer token that is read from the `API_TOKEN` environment variable:
 
 ```yaml
 bindings:
@@ -72,7 +72,7 @@ A binding declares which purposes it may serve through `allowed_purposes`. A bin
 
 ## Attaching a Binding to a Forward
 
-A forward references its bindings through the `credential_bindings` field: a map from purpose to binding id. You configure the forward in the same `wanaku.yaml` file, under the top-level `forwards` key.
+A forward references its bindings through the `credential_bindings` field: a map from purpose to binding id. For startup configuration, define the forward under the top-level `forwards` key in the same `wanaku.yaml` file.
 
 ```yaml
 forwards:
@@ -84,12 +84,12 @@ forwards:
       invocation: b1
 ```
 
-The `credential_bindings` map holds only the binding id, not the binding itself. You must also declare each referenced binding under the `bindings` key. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml).
+The `credential_bindings` map holds binding IDs. Define each referenced binding through configuration or the management API. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml).
 
 Tools, resources, and prompts carry no secret or binding reference of their own. They inherit the invocation binding through their `forwardId`. This keeps the credential surface in one place: change the binding on the forward, and every tool, resource, and prompt that forward exposes picks up the change on its next use.
 
 > [!NOTE]
-> The admin UI forward form shows a binding selector for each purpose. The selector lists only the bindings that this forward owns. A binding is owned by one forward, so its `forward_id` must equal the forward name. Type the exact forward name in the form. If no binding matches the forward name and the purpose, the selector shows an empty state. Author the binding in `wanaku.yaml` with a `forward_id` that equals the forward name.
+> The admin UI forward form shows a binding selector for each purpose. The selector lists only the bindings that this forward owns. A binding is owned by one forward, so its `forward_id` must equal the forward name. Type the exact forward name in the form. If no binding matches the forward name and the purpose, the selector shows an empty state. Create the binding with a `forward_id` that equals the forward name.
 
 ## Configuring Credentials in wanaku.yaml
 
@@ -147,12 +147,12 @@ cargo run -- --wanaku-config wanaku.yaml
 ```
 
 > [!NOTE]
-> The management API does not create bindings. The API for bindings is read-only. You author bindings in `wanaku.yaml`. Wanaku also restores bindings that were persisted in an earlier run from the registry snapshot.
+> The [binding API](../reference/management-api.md#manage-credential-bindings) creates, updates, and deletes binding definitions at runtime. Provision resolver credentials separately. An environment variable resolver reads the Wanaku process environment. Setting a binding through the API does not change that environment.
 
 <!-- -->
 
 > [!WARNING]
-> Configuration is additive over the persisted snapshot. Wanaku restores the snapshot first, then applies the `forwards` and `bindings` from `wanaku.yaml` on top, matched by name and id. If you delete a forward or a binding from `wanaku.yaml` on a deployment that uses persistence, Wanaku still restores it from the snapshot on the next start. To remove a forward, delete it with `DELETE /api/v1/forwards/{name}` or the `wanaku forwards remove` command. To remove a binding on a persistent deployment, you must also remove it from the registry snapshot. On a deployment without persistence, the configuration is the full source of truth.
+> Wanaku loads the registry snapshot first, then applies `wanaku.yaml`. A valid configured binding overrides a saved definition with the same ID, and can restore an API-deleted binding on restart. Removing a declaration from the file leaves a saved definition in place. To remove a binding across restarts, remove its declaration from the file and delete it through the API. With persistence enabled, mutations use the registry’s asynchronous snapshot writer. Without persistence, startup configuration supplies the definitions after a restart.
 
 ## Example: GitHub MCP Server
 
@@ -206,10 +206,10 @@ If the upstream server rejects discovery, Wanaku marks the forward as unavailabl
 
 | Status message | Cause | Action |
 | --- | --- | --- |
-| `requires authentication (HTTP 401). Add a credential binding for discovery to this forward in wanaku.yaml` | The forward has no discovery binding. | Add a binding as shown above. You cannot add credentials through the admin UI or the management API. |
+| `requires authentication (HTTP 401). Add a credential binding for discovery to this forward through the management API or wanaku.yaml` | The forward has no discovery binding. | Create the definition through the binding API or configuration. Provision the resolver credential separately. |
 | `requires authentication (HTTP 401)` | The forward has a discovery binding, but the upstream rejected the credential. | Make sure that the secret is set and that the token is valid. |
 | `rejected the credential: insufficient scope (HTTP 403)` | The token does not have the scopes that the upstream requires. | Give the token the necessary scopes. |
-| `discovery credential brokerage failed: credential binding not found` | The forward references a discovery binding id that is not registered. The binding is missing, or Wanaku skipped it because it is not valid. | Check the binding id. Read the startup log for `skipping invalid credential binding` and `skipping credential binding with an invalid origin` warnings. |
+| `discovery credential brokerage failed: credential binding not found` | The forward references a discovery binding id that is not registered. The binding is missing, or Wanaku skipped it because it is not valid. | Check the binding id. For startup configuration, check the log for `skipping invalid credential binding from config` or `failed to deserialize credential binding from config`. |
 | `discovery credential brokerage failed: credential brokerage failed` | The broker denied the binding or could not resolve the secret. | See the causes below. |
 | `discovery credential brokerage failed: invalid brokered credential header value` | The resolved secret is not a valid HTTP header value, for example because it ends with a line break. | Remove the line break or other control characters from the secret. |
 
@@ -320,13 +320,13 @@ The broker caches a resolved credential only when it has an expiry: either the r
 
 The cache key includes the binding id, the binding revision, the resolver scheme, the secret reference, the purpose, the forward id, the origin, and every scope dimension from the request (namespace, identity, governed item, operation) — whether or not the binding restricts that dimension. A cached credential is therefore never shared across scopes, origins, or purposes.
 
-Wanaku invalidates cached credentials in three cases:
+Wanaku stops using cached credentials for new requests in these cases:
 
-- The binding's `revision` changes.
+- The binding's `revision` changes or the binding is deleted.
 - The owning forward's address changes.
 - The forward is deleted.
 
-This guarantees a cached secret never outlives the forward it belongs to, and a revision bump on a binding immediately stops old cached values from being served.
+A recreated binding ID receives a new revision in the same server process. If the deleted binding's revision is exhausted, Wanaku rejects recreation of that ID until restart. A request that already selected the old definition can continue with that definition.
 
 ## Security Guarantees
 
@@ -396,7 +396,7 @@ Discovery redaction has the same exact-substring-matching limits as response red
 
 ## Inspecting Bindings
 
-The management API exposes two read-only routes for credential bindings. Both return only non-secret metadata — `secretRefs` shows the opaque reference string, never a resolved value.
+The management API can list bindings or retrieve a binding by ID. The responses include the opaque reference strings in `secretRefs`.
 
 ```bash
 curl http://localhost:8080/api/v1/bindings
@@ -427,7 +427,7 @@ curl http://localhost:8080/api/v1/bindings/b1
 
 Wanaku returns `404 Not Found` when no binding with the given id exists.
 
-This release does not have create, update, or delete routes for bindings. You author bindings in the `wanaku.yaml` configuration file. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml). Wanaku also persists bindings as part of the registry snapshot and restores them at startup. See [Management API](../reference/management-api.md) for the full route reference and response envelope.
+For writes and a runtime authenticated-forward example, see [Manage Credential Bindings](../reference/management-api.md#manage-credential-bindings).
 
 ## Next steps
 

@@ -24,10 +24,7 @@ interface BindingOption {
 const NONE_VALUE = '';
 
 /**
- * A read-from-config binding selector for a single purpose. Credential bindings
- * are authored in wanaku.yaml (or restored from the snapshot) and are read-only
- * here; this control only references an existing binding by id. Options are the
- * bindings that this forward owns and that allow the given purpose.
+ * Selects an existing binding owned by this forward that allows the given purpose.
  */
 export const BindingSelect: React.FC<BindingSelectProps> = ({
   id,
@@ -87,7 +84,7 @@ export const BindingSelect: React.FC<BindingSelectProps> = ({
   // than disable it silently and look broken.
   const trimmedName = forwardName.trim();
   const showEmptyState = loaded && trimmedName.length > 0 && available.length === 0 && !value;
-  const emptyStateText = `No credential binding is defined for a forward named "${trimmedName}". Author one in wanaku.yaml with forwardId: ${trimmedName}.`;
+  const emptyStateText = `No credential binding is defined for a forward named "${trimmedName}". Create one through the management API or wanaku.yaml with forwardId: ${trimmedName}.`;
 
   return (
     <Select

@@ -11,11 +11,11 @@ use wanaku_infra::credentials::{
 };
 use wanaku_infra::mcp_client::{ForwardDiscovery, Listing, McpClientError};
 use wanaku_infra::registry::{
-    ConditionalRemoval, DiscoveredForward, ForwardCapabilities, ForwardDiscoveryRequest,
-    ForwardPublicationError, PublishedForwardUpdate, RuntimeRegistry,
+    BindingWrite, BindingWriteError, ConditionalRemoval, DiscoveredForward, ForwardCapabilities,
+    ForwardDiscoveryRequest, ForwardPublicationError, PublishedForwardUpdate, RuntimeRegistry,
 };
-use wanaku_types::credentials::CredentialPurpose;
 use wanaku_types::credentials::binding::NormalizedOrigin;
+use wanaku_types::credentials::{CredentialBinding, CredentialPurpose};
 use wanaku_types::registry::{
     BindingRegistry, ForwardEntry, ForwardRegistry, MCP_FORWARD_TYPE, McpServerInfo,
     NamespaceEntry, NamespaceRegistry, PromptEntry, PromptRegistry, ResourceEntry,
@@ -227,7 +227,81 @@ pub(super) fn handle_binding_list(registry: &RuntimeRegistry) -> Response<Vec<u8
 pub(super) fn handle_binding_get(registry: &RuntimeRegistry, id: &str) -> Response<Vec<u8>> {
     match registry.get_binding(id) {
         Some(binding) => json_ok(&serde_json::json!(binding)),
-        None => json_err(StatusCode::NOT_FOUND, &format!("binding not found: {id}")),
+        None => json_err(StatusCode::NOT_FOUND, "credential binding not found"),
+    }
+}
+
+fn parse_binding(id: Option<&str>, body: &str) -> Result<CredentialBinding, &'static str> {
+    // Do not expose deserialization errors that can include request values.
+    let mut unknown_field = false;
+    let mut deserializer = serde_json::Deserializer::from_str(body);
+    let mut binding =
+        match serde_ignored::deserialize::<_, _, CredentialBinding>(&mut deserializer, |_| {
+            unknown_field = true;
+        }) {
+            Ok(binding) if !unknown_field && deserializer.end().is_ok() => binding,
+            _ => return Err("invalid credential binding JSON"),
+        };
+    // Allow PUT to address legacy IDs through the same path as GET.
+    let valid_id = id.map_or_else(
+        || {
+            !binding.id.is_empty()
+                && !matches!(binding.id.as_str(), "." | "..")
+                && binding.id.bytes().all(|byte| {
+                    byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'~')
+                })
+        },
+        |id| id == binding.id,
+    );
+    if !valid_id
+        || binding.forward_id.trim().is_empty()
+        || binding.allowed_purposes.is_empty()
+        || binding.normalize_and_validate().is_err()
+    {
+        return Err("invalid credential binding definition");
+    }
+    Ok(binding)
+}
+
+pub(super) fn handle_binding_write(
+    registry: &RuntimeRegistry,
+    id: Option<&str>,
+    body: Option<&str>,
+) -> Response<Vec<u8>> {
+    let binding = match body
+        .ok_or("request body required")
+        .and_then(|body| parse_binding(id, body))
+    {
+        Ok(binding) => binding,
+        Err(message) => return json_err(StatusCode::BAD_REQUEST, message),
+    };
+    let (write, status) = if id.is_some() {
+        (BindingWrite::Update, StatusCode::OK)
+    } else {
+        (BindingWrite::Create, StatusCode::CREATED)
+    };
+    let error = match registry.save_binding(binding, write) {
+        Ok(binding) => {
+            let mut response = json_ok(&serde_json::json!(binding));
+            *response.status_mut() = status;
+            return response;
+        }
+        Err(error) => error,
+    };
+    let status = match error {
+        BindingWriteError::NotFound => StatusCode::NOT_FOUND,
+        BindingWriteError::AlreadyExists
+        | BindingWriteError::OwnerChanged
+        | BindingWriteError::RevisionExhausted => StatusCode::CONFLICT,
+    };
+    json_err(status, &error.to_string())
+}
+
+pub(super) fn handle_binding_delete(registry: &RuntimeRegistry, id: &str) -> Response<Vec<u8>> {
+    if registry.remove_binding(id) {
+        json_ok(&serde_json::Value::Null)
+    } else {
+        json_err(StatusCode::NOT_FOUND, "credential binding not found")
     }
 }
 
@@ -549,7 +623,7 @@ fn discovery_failure_message(
             if forward.binding_for(CredentialPurpose::Discovery).is_none() =>
         {
             format!(
-                "{message}. Add a credential binding for discovery to this forward in wanaku.yaml"
+                "{message}. Add a credential binding for discovery to this forward through the management API or wanaku.yaml"
             )
         }
         _ => message,
@@ -1654,7 +1728,7 @@ mod forward_helpers_tests {
         assert_eq!(
             message,
             "MCP server at https://api.githubcopilot.com/mcp/ requires authentication (HTTP 401). \
-             Add a credential binding for discovery to this forward in wanaku.yaml"
+             Add a credential binding for discovery to this forward through the management API or wanaku.yaml"
         );
     }
 
