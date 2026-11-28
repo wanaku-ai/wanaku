@@ -4200,6 +4200,10 @@
               }
             ]
           },
+          "static": {
+            "type": "boolean",
+            "description": "`true` when the forward comes from `wanaku.yaml`. Wanaku registers a\nstatic forward again at each startup and does not persist it. The\nmanagement API always creates forwards with `false`."
+          },
           "statusMessage": {
             "type": [
               "string",

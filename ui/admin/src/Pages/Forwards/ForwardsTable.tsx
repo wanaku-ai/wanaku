@@ -96,6 +96,20 @@ export const ForwardsTable: React.FC<ForwardsTableProps> = ({
                             </TableCell>
                           );
                         }
+                        if (cell.info.header === 'name' && forward.static === true) {
+                          return (
+                            <TableCell key={cell.id}>
+                              {cell.value}{' '}
+                              <Tag
+                                type="purple"
+                                size="sm"
+                                title="Defined in wanaku.yaml. Wanaku registers it again at each startup."
+                              >
+                                Static
+                              </Tag>
+                            </TableCell>
+                          );
+                        }
                         return <TableCell key={cell.id}>{cell.value}</TableCell>;
                       })}
                       <TableCell>

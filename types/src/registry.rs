@@ -259,6 +259,11 @@ pub struct ForwardEntry {
         alias = "credential_bindings"
     )]
     pub credential_bindings: HashMap<CredentialPurpose, String>,
+    /// `true` when the forward comes from `wanaku.yaml`. Wanaku registers a
+    /// static forward again at each startup and does not persist it. The
+    /// management API always creates forwards with `false`.
+    #[serde(default, rename = "static")]
+    pub is_static: bool,
 }
 
 const fn default_true() -> bool {

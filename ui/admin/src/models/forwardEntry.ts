@@ -23,6 +23,12 @@ export interface ForwardEntry {
   /** @nullable */
   namespace?: string | null;
   serverInfo?: McpServerInfo | null;
+  /**
+   * `true` when the forward comes from `wanaku.yaml`. Wanaku registers a
+   * static forward again at each startup and does not persist it. The
+   * management API always creates forwards with `false`.
+   */
+  static?: boolean;
   /** @nullable */
   statusMessage?: string | null;
 }

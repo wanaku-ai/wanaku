@@ -98,9 +98,13 @@ export class ForwardsPage extends BasePage {
     return this.page.locator(`${Carbon.dataTable} th`).allInnerTexts();
   }
 
+  async rowHasStaticTag(name: string): Promise<boolean> {
+    return this.rowWithText(name).locator('.cds--tag', { hasText: 'Static' }).isVisible();
+  }
+
   async getRowStatusText(name: string): Promise<string> {
     const row = this.rowWithText(name);
-    const tag = row.locator('.cds--tag');
+    const tag = row.locator('.cds--tag', { hasText: /Available|Unavailable/ });
     await tag.waitFor({ state: 'visible', timeout: 5_000 });
     return tag.innerText();
   }
