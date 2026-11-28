@@ -175,7 +175,8 @@ impl WanakuEnv {
 
 /// Parses the public MCP base URL from its raw env value.
 ///
-/// Returns `None` when the value is absent, blank, or not an HTTP(S) URL.
+/// Returns `None` when the value is absent, blank, not an HTTP(S) URL, or has
+/// a query or fragment (callers append paths to it).
 /// Removes trailing slashes so callers can append `/<namespace>/mcp`.
 fn parse_mcp_public_url(raw: Option<&str>) -> Option<String> {
     let value = raw.map(str::trim).filter(|v| !v.is_empty())?;
@@ -183,7 +184,8 @@ fn parse_mcp_public_url(raw: Option<&str>) -> Option<String> {
         .strip_prefix("https://")
         .or_else(|| value.strip_prefix("http://"))
         .is_some_and(|rest| !rest.is_empty() && !rest.starts_with('/'));
-    has_host.then(|| value.trim_end_matches('/').to_owned())
+    let plain = !value.contains(['?', '#']);
+    (has_host && plain).then(|| value.trim_end_matches('/').to_owned())
 }
 
 /// Parses the forward health-check interval from its raw env value.
@@ -293,6 +295,8 @@ mod tests {
         assert_eq!(parse_mcp_public_url(Some("ftp://mcp.example.com")), None);
         assert_eq!(parse_mcp_public_url(Some("https://")), None);
         assert_eq!(parse_mcp_public_url(Some("https:///path")), None);
+        assert_eq!(parse_mcp_public_url(Some("https://h/p?x=1")), None);
+        assert_eq!(parse_mcp_public_url(Some("https://h/p#frag")), None);
     }
 
     #[test]
