@@ -2,13 +2,15 @@
 
 use std::io::{self, Write};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
+use std::time::Duration;
 
 use bytes::Bytes;
 use http::{HeaderMap, HeaderValue, Response, StatusCode, header};
 use praxis_filter::{FilterAction, Request};
 use praxis_protocol::http::pingora::context::PingoraRequestCtx;
 use serde_json::{Value, json};
+use tokio::sync::Notify;
 use tracing::instrument::WithSubscriber as _;
 use wanaku_infra::credentials::CredentialBroker;
 use wanaku_server::app::{App, AppPersistence, AppResources, AppSettings};
@@ -82,13 +84,16 @@ async fn upstream(rotation: Arc<AtomicUsize>) -> MockServer {
     server
 }
 
-fn upstream_reply(request: &wiremock::Request, secret: &str) -> ResponseTemplate {
-    let token = request
+fn bearer_token(request: &wiremock::Request) -> Option<&str> {
+    request
         .headers
         .get(header::AUTHORIZATION)
         .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.strip_prefix("Bearer "));
-    if token != Some(secret) {
+        .and_then(|value| value.strip_prefix("Bearer "))
+}
+
+fn upstream_reply(request: &wiremock::Request, secret: &str) -> ResponseTemplate {
+    if bearer_token(request) != Some(secret) {
         return ResponseTemplate::new(401);
     }
     let body = serde_json::from_slice::<Value>(&request.body).unwrap_or_default();
@@ -192,13 +197,17 @@ impl Write for LogOutput {
 }
 
 async fn register_forward(app: &App, server: &MockServer, name: &str) -> Result<Value, Error> {
-    let forward = json!({
-        "name":name, "address":server.uri(),
-        "credentialBindings":{"discovery":"upstream-token", "invocation":"upstream-token"}
-    });
+    let forward = forward_definition(server, name);
     let registered = dispatch(app, "POST", "/api/v1/forwards", Some(&forward)).await;
     assert_eq!(registered.status(), StatusCode::OK);
     Ok(serde_json::from_slice(registered.body())?)
+}
+
+fn forward_definition(server: &MockServer, name: &str) -> Value {
+    json!({
+        "name":name, "address":server.uri(),
+        "credentialBindings":{"discovery":"upstream-token", "invocation":"upstream-token"}
+    })
 }
 
 async fn request_count(server: &MockServer) -> Result<usize, Error> {
@@ -323,6 +332,70 @@ async fn runtime_binding_lifecycle_controls_discovery_and_invocation() -> TestRe
     let logs = output.0.lock().map_err(|_| "log output lock poisoned")?;
     assert!(!logs.is_empty());
     assert_redacted(&logs);
+    Ok(())
+}
+
+async fn gated_upstream() -> (MockServer, Arc<Notify>, mpsc::Sender<()>) {
+    let server = MockServer::start().await;
+    let listing_started = Arc::new(Notify::new());
+    let started = listing_started.clone();
+    let (release, wait_for_release) = mpsc::channel();
+    let wait_for_release = Mutex::new(Some(wait_for_release));
+    Mock::given(method("POST"))
+        .respond_with(move |request: &wiremock::Request| {
+            let body = serde_json::from_slice::<Value>(&request.body).unwrap_or_default();
+            if bearer_token(request) == Some(SECRETS[0]) && body["method"] == "tools/list" {
+                // Wiremock runs in a separate thread. Hold the successful list
+                // response until the binding changes in the management API.
+                started.notify_one();
+                let receiver = wait_for_release
+                    .lock()
+                    .ok()
+                    .and_then(|mut receiver| receiver.take());
+                if receiver.is_none_or(|rx| rx.recv_timeout(Duration::from_secs(10)).is_err()) {
+                    return ResponseTemplate::new(500);
+                }
+            }
+            upstream_reply(request, SECRETS[0])
+        })
+        .mount(&server)
+        .await;
+    (server, listing_started, release)
+}
+
+#[tokio::test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "checks management state before and after the discovery race"
+)]
+async fn binding_update_discards_in_flight_authenticated_discovery() -> TestResult {
+    let app = &app(Arc::new(AtomicUsize::new(0)))?;
+    let (server, listing_started, release) = gated_upstream().await;
+    let mut binding = definition(&server.uri());
+    assert_eq!(
+        dispatch(app, "POST", COLLECTION, Some(&binding))
+            .await
+            .status(),
+        StatusCode::CREATED
+    );
+    binding["cache"]["maxTtlSeconds"] = json!(599);
+    let forward = forward_definition(&server, "upstream");
+    let register = dispatch(app, "POST", "/api/v1/forwards", Some(&forward));
+    let mutate = async move {
+        tokio::time::timeout(Duration::from_secs(5), listing_started.notified()).await?;
+        let updated = dispatch(app, "PUT", BINDING, Some(&binding)).await;
+        release.send(())?;
+        assert_eq!(updated.status(), StatusCode::OK);
+        Ok::<_, Error>(())
+    };
+    let (registered, mutation) = tokio::join!(register, mutate);
+    mutation?;
+    assert_eq!(registered.status(), StatusCode::CONFLICT);
+    let forward = dispatch(app, "GET", "/api/v1/forwards/upstream", None).await;
+    assert_eq!(forward.status(), StatusCode::NOT_FOUND);
+    let tools = dispatch(app, "GET", "/api/v1/tools", None).await;
+    let tools: Value = serde_json::from_slice(tools.body())?;
+    assert_eq!(tools["data"], json!([]));
     Ok(())
 }
 

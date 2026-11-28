@@ -1221,7 +1221,7 @@ impl RuntimeRegistry {
         if !matches!(write, BindingWrite::Upsert) {
             binding.revision = 1;
         }
-        let retired_revision = changes.retired_binding_revision;
+        let retired_revision = changes.retired_binding_revisions.get(&binding.id).copied();
         binding.revision = match (write, self.get_binding(&binding.id)) {
             (BindingWrite::Create, Some(_)) => return Err(BindingWriteError::AlreadyExists),
             (BindingWrite::Update, None) => return Err(BindingWriteError::NotFound),
@@ -1243,6 +1243,7 @@ impl RuntimeRegistry {
             }),
         }
         .ok_or(BindingWriteError::RevisionExhausted)?;
+        changes.retired_binding_revisions.remove(&binding.id);
         changes.bindings.remove(&binding.id);
         self.bindings.insert(binding.id.clone(), binding.clone());
         self.persist();
@@ -1281,11 +1282,9 @@ impl BindingRegistry for RuntimeRegistry {
         let Some((_, binding)) = self.bindings.remove(id) else {
             return false;
         };
-        changes.retired_binding_revision = Some(
-            changes
-                .retired_binding_revision
-                .map_or(binding.revision, |retired| retired.max(binding.revision)),
-        );
+        changes
+            .retired_binding_revisions
+            .insert(binding.id, binding.revision);
         changes.bindings.remove(id);
         self.persist();
         true
@@ -1884,6 +1883,24 @@ mod tests {
             assert!(update.is_ok() || update == Err(BindingWriteError::NotFound));
         });
         assert!(registry.get_binding("b1").is_none());
+    }
+
+    #[test]
+    fn deleting_an_exhausted_binding_only_blocks_recreation_of_that_id() {
+        let registry = RuntimeRegistry::new();
+        let mut exhausted = sample_binding("exhausted", "fwd-a");
+        exhausted.revision = u64::MAX;
+        registry.register_binding(exhausted.clone());
+
+        assert!(registry.remove_binding(&exhausted.id));
+        assert_eq!(
+            registry.save_binding(exhausted, BindingWrite::Create),
+            Err(BindingWriteError::RevisionExhausted)
+        );
+        let unrelated = registry
+            .save_binding(sample_binding("unrelated", "fwd-a"), BindingWrite::Create)
+            .unwrap();
+        assert_eq!(unrelated.revision, 1);
     }
 
     #[test]

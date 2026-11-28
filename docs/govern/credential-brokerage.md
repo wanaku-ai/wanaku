@@ -35,7 +35,7 @@ A `CredentialBinding` is a top-level resource, owned by exactly one forward. It 
 | `allowed_purposes` | array of strings | The purposes this binding may serve: `discovery`, `invocation`, or both. |
 | `restrictions` | object, optional | Additional scope restrictions. See [Scope and Restrictions](#scope-and-restrictions). |
 | `cache` | object, optional | Cache rules for resolved credentials. See [Caching and Invalidation](#caching-and-invalidation). |
-| `revision` | integer, optional | A counter that is part of the credential cache key. The default is `0`. Wanaku does not compare revisions or require an increment. Increment it when you change a binding, so that the broker does not reuse credentials that it cached for the earlier revision. |
+| `revision` | integer, optional | A counter in the credential cache key. Startup configuration can set the initial revision of a new binding. The default is `0`. For an existing binding, Wanaku increments the stored revision when the definition changes. For API writes, Wanaku assigns the revision and ignores the value in the request. |
 
 You can define bindings in the `wanaku.yaml` configuration file under the top-level `bindings` key, or create them through the management API. See [Configuring Credentials in wanaku.yaml](#configuring-credentials-in-wanakuyaml). The following binding injects a Bearer token that is read from the `API_TOKEN` environment variable:
 
@@ -209,7 +209,7 @@ If the upstream server rejects discovery, Wanaku marks the forward as unavailabl
 | `requires authentication (HTTP 401). Add a credential binding for discovery to this forward through the management API or wanaku.yaml` | The forward has no discovery binding. | Create the definition through the binding API or configuration. Provision the resolver credential separately. |
 | `requires authentication (HTTP 401)` | The forward has a discovery binding, but the upstream rejected the credential. | Make sure that the secret is set and that the token is valid. |
 | `rejected the credential: insufficient scope (HTTP 403)` | The token does not have the scopes that the upstream requires. | Give the token the necessary scopes. |
-| `discovery credential brokerage failed: credential binding not found` | The forward references a discovery binding id that is not registered. The binding is missing, or Wanaku skipped it because it is not valid. | Check the binding id. Read the startup log for `skipping invalid credential binding` and `skipping credential binding with an invalid origin` warnings. |
+| `discovery credential brokerage failed: credential binding not found` | The forward references a discovery binding id that is not registered. The binding is missing, or Wanaku skipped it because it is not valid. | Check the binding id. For startup configuration, check the log for `skipping invalid credential binding from config` or `failed to deserialize credential binding from config`. |
 | `discovery credential brokerage failed: credential brokerage failed` | The broker denied the binding or could not resolve the secret. | See the causes below. |
 | `discovery credential brokerage failed: invalid brokered credential header value` | The resolved secret is not a valid HTTP header value, for example because it ends with a line break. | Remove the line break or other control characters from the secret. |
 
@@ -320,13 +320,13 @@ The broker caches a resolved credential only when it has an expiry: either the r
 
 The cache key includes the binding id, the binding revision, the resolver scheme, the secret reference, the purpose, the forward id, the origin, and every scope dimension from the request (namespace, identity, governed item, operation) — whether or not the binding restricts that dimension. A cached credential is therefore never shared across scopes, origins, or purposes.
 
-Wanaku invalidates cached credentials in three cases:
+Wanaku stops using cached credentials for new requests in these cases:
 
-- The binding's `revision` changes.
+- The binding's `revision` changes or the binding is deleted.
 - The owning forward's address changes.
 - The forward is deleted.
 
-This guarantees a cached secret never outlives the forward it belongs to, and a revision bump on a binding immediately stops old cached values from being served.
+A recreated binding ID receives a new revision in the same server process. If the deleted binding's revision is exhausted, Wanaku rejects recreation of that ID until restart. A request that already selected the old definition can continue with that definition.
 
 ## Security Guarantees
 

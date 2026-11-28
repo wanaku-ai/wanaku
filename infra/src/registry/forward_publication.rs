@@ -78,12 +78,12 @@ pub enum ForwardPublicationError {
     ReplacementFailed(String),
 }
 
-/// Track only registrations and bindings with live discovery requests. Remove
-/// the token on mutation, including mutations that restore identical values.
+/// Track live discovery tokens and the revisions of deleted bindings.
+/// Remove a discovery token on mutation, including changes that restore identical values.
 #[derive(Default)]
 pub(super) struct ForwardChanges {
-    // The cache is process-local. One upper bound covers all deleted IDs.
-    pub(super) retired_binding_revision: Option<u64>,
+    // The cache is process-local. Keep the last revision of each deleted binding.
+    pub(super) retired_binding_revisions: HashMap<String, u64>,
     pub(super) forwards: HashMap<String, Weak<()>>,
     pub(super) bindings: HashMap<String, Weak<()>>,
 }
