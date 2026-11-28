@@ -18,7 +18,7 @@ use wanaku_infra::credentials::{CredentialAuditSink, CredentialBroker};
 use wanaku_infra::metrics::MetricsStore;
 use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::audit::{AuditHandle, AuditPersistence};
-use wanaku_types::credentials::{CredentialBinding, NormalizedOrigin};
+use wanaku_types::credentials::CredentialBinding;
 use wanaku_types::feature::Feature;
 use wanaku_types::governance::GovernanceConfig;
 use wanaku_types::persistence::PersistenceBackend;
@@ -433,7 +433,6 @@ fn load_forward_definitions(
 /// Each entry deserializes into a [`CredentialBinding`] and is validated before
 /// registration. Malformed or invalid bindings are logged and skipped so a
 /// single bad entry does not stop the rest of the configuration from loading.
-#[expect(clippy::too_many_lines, reason = "binding validation is sequential")]
 fn load_bindings(config: &serde_yaml::Value, registry: &RuntimeRegistry) {
     let Some(binding_list) = config.get("bindings").and_then(|b| b.as_sequence()) else {
         return;
@@ -441,26 +440,9 @@ fn load_bindings(config: &serde_yaml::Value, registry: &RuntimeRegistry) {
     for binding_value in binding_list {
         match serde_yaml::from_value::<CredentialBinding>(binding_value.clone()) {
             Ok(mut binding) => {
-                // The configured origin must be the exact normalized origin the
-                // broker compares against. Normalize it here so an operator who
-                // omits the explicit port (for example `https://api.example.com`
-                // instead of `https://api.example.com:443`) does not register a
-                // binding that logs success but silently fails closed on use.
-                match NormalizedOrigin::from_address(binding.origin.as_str()) {
-                    Ok(origin) => binding.origin = origin,
-                    Err(e) => {
-                        tracing::warn!(
-                            binding_id = %binding.id,
-                            error = %e,
-                            "skipping credential binding with an invalid origin"
-                        );
-                        continue;
-                    }
-                }
-                if let Err(e) = binding.validate() {
+                if binding.normalize_and_validate().is_err() {
                     tracing::warn!(
                         binding_id = %binding.id,
-                        error = %e,
                         "skipping invalid credential binding from config"
                     );
                     continue;
@@ -472,8 +454,8 @@ fn load_bindings(config: &serde_yaml::Value, registry: &RuntimeRegistry) {
                 );
                 registry.register_binding(binding);
             }
-            Err(e) => {
-                tracing::warn!(error = %e, "failed to deserialize credential binding from config");
+            Err(_) => {
+                tracing::warn!("failed to deserialize credential binding from config");
             }
         }
     }
@@ -544,6 +526,65 @@ bindings:
         assert_eq!(binding.forward_id, "my-forward");
         assert_eq!(binding.secret_refs[0].scheme(), "env");
         assert_eq!(binding.origin.as_str(), "https://api.example.com:443");
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "checks configuration precedence across successive restarts"
+    )]
+    fn startup_config_overlays_persisted_binding_updates_and_restores_deleted_ids() {
+        use std::sync::Arc;
+        use std::time::Duration;
+
+        use wanaku_infra::persistence::FilePersistence;
+        use wanaku_infra::registry::BindingWrite;
+
+        let dir = tempfile::tempdir().unwrap();
+        let backend = Arc::new(FilePersistence::new(dir.path().join("registry.json")));
+        let config = serde_yaml::from_str(
+            r"
+bindings:
+  - id: b1
+    forward_id: upstream
+    origin: https://example.com
+    mechanism: { type: bearer }
+    secret_refs: [env:CONFIG_TOKEN]
+    allowed_purposes: [discovery]
+",
+        )
+        .unwrap();
+        let registry = super::build_registry(Some(backend.clone()));
+        load_bindings(&config, &registry);
+        let original = registry.get_binding("b1").unwrap();
+        let mut update = original.clone();
+        update.secret_refs = vec!["env:RUNTIME_TOKEN".to_owned().try_into().unwrap()];
+        let updated = registry.save_binding(update, BindingWrite::Update).unwrap();
+        registry.flush_persistence(Duration::from_secs(5)).unwrap();
+        drop(registry);
+
+        let registry = super::build_registry(Some(backend.clone()));
+        load_bindings(&serde_yaml::Value::Null, &registry);
+        assert_eq!(registry.get_binding("b1"), Some(updated.clone()));
+        load_bindings(&config, &registry);
+        let overlaid = registry.get_binding("b1").unwrap();
+        assert_eq!(overlaid.secret_refs, original.secret_refs);
+        assert!(overlaid.revision > updated.revision);
+        load_bindings(&config, &registry);
+        assert_eq!(registry.get_binding("b1"), Some(overlaid));
+
+        assert!(registry.remove_binding("b1"));
+        registry.flush_persistence(Duration::from_secs(5)).unwrap();
+        drop(registry);
+
+        let registry = super::build_registry(Some(backend));
+        load_bindings(&serde_yaml::Value::Null, &registry);
+        assert!(registry.get_binding("b1").is_none());
+        load_bindings(&config, &registry);
+        assert_eq!(
+            registry.get_binding("b1").unwrap().secret_refs,
+            original.secret_refs
+        );
     }
 
     #[test]

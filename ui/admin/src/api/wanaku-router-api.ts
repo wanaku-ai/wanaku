@@ -12,6 +12,7 @@ import type {
   AgentEntry,
   CancelPolicyReplay200,
   ConfigurePluginRequest,
+  CreateBinding201,
   CreateForwardParams,
   CredentialBinding,
   DeletePromptParams,
@@ -61,6 +62,7 @@ import type {
   ToolEntry,
   UpdateActionPolicy200,
   UpdateActionPolicyRequest,
+  UpdateBinding200,
   UpdateEvaluators200,
   UpdateEvaluatorsRequest,
   UpdateNamespace200,
@@ -944,6 +946,84 @@ export const listBindings = async (
   });
 };
 
+export type createBindingResponse201 = {
+  data: CreateBinding201;
+  status: 201;
+};
+
+export type createBindingResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type createBindingResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type createBindingResponse413 = {
+  data: ManagementErrorResponse;
+  status: 413;
+};
+
+export type createBindingResponseSuccess = createBindingResponse201 & {
+  headers: Headers;
+};
+export type createBindingResponseError = (
+  | createBindingResponse400
+  | createBindingResponse409
+  | createBindingResponse413
+) & {
+  headers: Headers;
+};
+
+export type createBindingResponse =
+  | createBindingResponseSuccess
+  | createBindingResponseError;
+
+export const getCreateBindingUrl = () => {
+  return `/api/v1/bindings`;
+};
+
+/**
+ * Creates a binding definition. The server assigns its revision. Supply opaque secret references.
+ */
+export const createBinding = async (
+  credentialBinding: CredentialBinding,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<createBindingResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit["headers"]>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<
+      string | readonly string[] | undefined
+    >(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<createBindingResponse>(getCreateBindingUrl(), {
+    ...options,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getHeaders(options?.headers),
+    },
+    body: JSON.stringify(credentialBinding),
+  });
+};
+
 export type getBindingResponse200 = {
   data: CredentialBinding;
   status: 200;
@@ -976,6 +1056,129 @@ export const getBinding = async (
   return customFetch<getBindingResponse>(getGetBindingUrl(id), {
     ...options,
     method: "GET",
+  });
+};
+
+export type updateBindingResponse200 = {
+  data: UpdateBinding200;
+  status: 200;
+};
+
+export type updateBindingResponse400 = {
+  data: ManagementErrorResponse;
+  status: 400;
+};
+
+export type updateBindingResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type updateBindingResponse409 = {
+  data: ManagementErrorResponse;
+  status: 409;
+};
+
+export type updateBindingResponse413 = {
+  data: ManagementErrorResponse;
+  status: 413;
+};
+
+export type updateBindingResponseSuccess = updateBindingResponse200 & {
+  headers: Headers;
+};
+export type updateBindingResponseError = (
+  | updateBindingResponse400
+  | updateBindingResponse404
+  | updateBindingResponse409
+  | updateBindingResponse413
+) & {
+  headers: Headers;
+};
+
+export type updateBindingResponse =
+  | updateBindingResponseSuccess
+  | updateBindingResponseError;
+
+export const getUpdateBindingUrl = (id: string) => {
+  return `/api/v1/bindings/${id}`;
+};
+
+/**
+ * Replaces an existing binding definition. The body ID must match the path ID. The owning forward stays fixed.
+ */
+export const updateBinding = async (
+  id: string,
+  credentialBinding: CredentialBinding,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<updateBindingResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit["headers"]>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<
+      string | readonly string[] | undefined
+    >(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<updateBindingResponse>(getUpdateBindingUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getHeaders(options?.headers),
+    },
+    body: JSON.stringify(credentialBinding),
+  });
+};
+
+export type deleteBindingResponse200 = {
+  data: unknown;
+  status: 200;
+};
+
+export type deleteBindingResponse404 = {
+  data: ManagementErrorResponse;
+  status: 404;
+};
+
+export type deleteBindingResponseSuccess = deleteBindingResponse200 & {
+  headers: Headers;
+};
+export type deleteBindingResponseError = deleteBindingResponse404 & {
+  headers: Headers;
+};
+
+export type deleteBindingResponse =
+  | deleteBindingResponseSuccess
+  | deleteBindingResponseError;
+
+export const getDeleteBindingUrl = (id: string) => {
+  return `/api/v1/bindings/${id}`;
+};
+
+/**
+ * Deletes a binding definition. Forward references stay in place and fail closed when used.
+ */
+export const deleteBinding = async (
+  id: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<deleteBindingResponse> => {
+  return customFetch<deleteBindingResponse>(getDeleteBindingUrl(id), {
+    ...options,
+    method: "DELETE",
   });
 };
 

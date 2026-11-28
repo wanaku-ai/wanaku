@@ -938,6 +938,65 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Bindings"
+        ],
+        "description": "Creates a binding definition. The server assigns its revision. Supply opaque secret references.",
+        "operationId": "create_binding",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialBinding"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Credential binding created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_CredentialBinding"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credential binding definition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Binding ID already exists or revision is exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/bindings/{id}": {
@@ -970,6 +1029,126 @@
           },
           "404": {
             "description": "Binding not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Bindings"
+        ],
+        "description": "Replaces an existing binding definition. The body ID must match the path ID. The owning forward stays fixed.",
+        "operationId": "update_binding",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Credential binding id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CredentialBinding"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Credential binding updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_CredentialBinding"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid credential binding definition or mismatched ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Binding not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Owner changed or revision is exhausted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Bindings"
+        ],
+        "description": "Deletes a binding definition. Forward references stay in place and fail closed when used.",
+        "operationId": "delete_binding",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Credential binding id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Credential binding removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WanakuResponse_Value"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Binding not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -6632,6 +6811,75 @@
               "total": {
                 "type": "integer",
                 "minimum": 0
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "WanakuResponse_CredentialBinding": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "A credential binding: a top-level resource operationally owned by one forward.\n\nThe binding holds only **opaque** secret references. It never stores inline\nsecret values, and management APIs expose only its non-secret metadata.",
+            "required": [
+              "id",
+              "forwardId",
+              "origin",
+              "mechanism",
+              "secretRefs",
+              "allowedPurposes"
+            ],
+            "properties": {
+              "allowedPurposes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CredentialPurpose"
+                },
+                "description": "The credential purposes this binding is allowed to serve."
+              },
+              "cache": {
+                "$ref": "#/components/schemas/CacheRules",
+                "description": "Cache rules for resolved credentials."
+              },
+              "forwardId": {
+                "type": "string",
+                "description": "The owning forward's stable identifier (the forward name)."
+              },
+              "id": {
+                "type": "string",
+                "description": "Stable, non-secret binding identifier."
+              },
+              "mechanism": {
+                "$ref": "#/components/schemas/InjectionMechanism",
+                "description": "The outbound injection mechanism."
+              },
+              "origin": {
+                "$ref": "#/components/schemas/NormalizedOrigin",
+                "description": "The exact normalized upstream origin this binding may target."
+              },
+              "restrictions": {
+                "$ref": "#/components/schemas/BindingRestrictions",
+                "description": "Optional additional restrictions."
+              },
+              "revision": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Monotonic binding revision. Any change to the binding must bump this so\ncached credentials for the old revision are never reused.",
+                "minimum": 0
+              },
+              "secretRefs": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SecretRef"
+                },
+                "description": "One or more opaque secret references resolved just in time."
               }
             }
           },

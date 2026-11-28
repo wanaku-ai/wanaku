@@ -82,6 +82,8 @@ pub enum ForwardPublicationError {
 /// the token on mutation, including mutations that restore identical values.
 #[derive(Default)]
 pub(super) struct ForwardChanges {
+    // The cache is process-local. One upper bound covers all deleted IDs.
+    pub(super) retired_binding_revision: Option<u64>,
     pub(super) forwards: HashMap<String, Weak<()>>,
     pub(super) bindings: HashMap<String, Weak<()>>,
 }

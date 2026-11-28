@@ -1,4 +1,5 @@
 import type { AgentEntry } from '../../../../ui/admin/src/models/agentEntry';
+import type { CredentialBinding } from '../../../../ui/admin/src/models/credentialBinding';
 import type { NamespaceEntry } from '../../../../ui/admin/src/models/namespaceEntry';
 import { APIRequestContext, APIResponse, expect } from '@playwright/test';
 
@@ -70,6 +71,15 @@ export class ApiHelper {
 
   async deleteForward(name: string) {
     return this.request.delete(`${this.baseUrl}/api/v1/forwards/${name}`);
+  }
+
+  async addBinding(binding: CredentialBinding) {
+    const response = await this.request.post(`${this.baseUrl}/api/v1/bindings`, { data: binding });
+    expect(response.status()).toBe(201);
+  }
+
+  async deleteBinding(id: string) {
+    return this.request.delete(`${this.baseUrl}/api/v1/bindings/${encodeURIComponent(id)}`);
   }
 
   async addNamespace(namespace: NamespaceEntry) {

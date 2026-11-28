@@ -1190,6 +1190,66 @@ impl ForwardRegistry for RuntimeRegistry {
     }
 }
 
+/// Selects the existence check for an atomic binding write.
+#[derive(Clone, Copy)]
+pub enum BindingWrite {
+    Create,
+    Update,
+    Upsert,
+}
+
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+pub enum BindingWriteError {
+    #[error("credential binding already exists")]
+    AlreadyExists,
+    #[error("credential binding not found")]
+    NotFound,
+    #[error("credential binding owner cannot change")]
+    OwnerChanged,
+    #[error("credential binding revision exhausted")]
+    RevisionExhausted,
+}
+
+impl RuntimeRegistry {
+    /// Checks and writes under the same lock used by forward publication.
+    pub fn save_binding(
+        &self,
+        mut binding: CredentialBinding,
+        write: BindingWrite,
+    ) -> Result<CredentialBinding, BindingWriteError> {
+        let mut changes = self.lock_namespaces();
+        if !matches!(write, BindingWrite::Upsert) {
+            binding.revision = 1;
+        }
+        let retired_revision = changes.retired_binding_revision;
+        binding.revision = match (write, self.get_binding(&binding.id)) {
+            (BindingWrite::Create, Some(_)) => return Err(BindingWriteError::AlreadyExists),
+            (BindingWrite::Update, None) => return Err(BindingWriteError::NotFound),
+            (BindingWrite::Update, Some(existing)) if existing.forward_id != binding.forward_id => {
+                return Err(BindingWriteError::OwnerChanged);
+            }
+            (_, Some(existing)) => {
+                binding.revision = existing.revision;
+                if binding == existing {
+                    return Ok(existing);
+                }
+                existing.revision.checked_add(1)
+            }
+            // An earlier incarnation of this ID can still be in the broker cache.
+            (_, None) => retired_revision.map_or(Some(binding.revision), |retired| {
+                retired
+                    .checked_add(1)
+                    .map(|next| next.max(binding.revision))
+            }),
+        }
+        .ok_or(BindingWriteError::RevisionExhausted)?;
+        changes.bindings.remove(&binding.id);
+        self.bindings.insert(binding.id.clone(), binding.clone());
+        self.persist();
+        Ok(binding)
+    }
+}
+
 impl BindingRegistry for RuntimeRegistry {
     fn list_bindings(&self) -> Vec<CredentialBinding> {
         self.bindings
@@ -1210,34 +1270,25 @@ impl BindingRegistry for RuntimeRegistry {
         self.bindings.get(id).map(|entry| entry.value().clone())
     }
 
-    fn register_binding(&self, mut binding: CredentialBinding) {
-        let mut changes = self.lock_namespaces();
-        // Keep the revision monotonic per binding id. Any change to the stored
-        // content bumps the revision so cached credentials keyed by the old
-        // revision are never reused. Identical re-registration keeps the
-        // revision unchanged.
-        if let Some(existing) = self.bindings.get(&binding.id) {
-            let mut probe = binding.clone();
-            probe.revision = existing.revision;
-            binding.revision = if probe == *existing.value() {
-                existing.revision
-            } else {
-                existing.revision.saturating_add(1)
-            };
+    fn register_binding(&self, binding: CredentialBinding) {
+        if self.save_binding(binding, BindingWrite::Upsert).is_err() {
+            tracing::warn!("credential binding could not be registered");
         }
-        changes.bindings.remove(&binding.id);
-        self.bindings.insert(binding.id.clone(), binding);
-        self.persist();
     }
 
     fn remove_binding(&self, id: &str) -> bool {
         let mut changes = self.lock_namespaces();
-        let removed = self.bindings.remove(id).is_some();
-        if removed {
-            changes.bindings.remove(id);
-            self.persist();
-        }
-        removed
+        let Some((_, binding)) = self.bindings.remove(id) else {
+            return false;
+        };
+        changes.retired_binding_revision = Some(
+            changes
+                .retired_binding_revision
+                .map_or(binding.revision, |retired| retired.max(binding.revision)),
+        );
+        changes.bindings.remove(id);
+        self.persist();
+        true
     }
 
     fn binding_count(&self) -> usize {
@@ -1792,6 +1843,47 @@ mod tests {
         let owned = registry.list_bindings_for_forward("fwd-a");
         assert_eq!(owned.len(), 2);
         assert!(owned.iter().all(|b| b.forward_id == "fwd-a"));
+    }
+
+    #[test]
+    fn concurrent_binding_creates_have_one_winner() {
+        let registry = RuntimeRegistry::new();
+        let start = std::sync::Barrier::new(2);
+        let (first, second) = std::thread::scope(|scope| {
+            let create = || {
+                start.wait();
+                registry.save_binding(sample_binding("b1", "fwd-a"), BindingWrite::Create)
+            };
+            let first = scope.spawn(create);
+            let second = create();
+            (first.join().unwrap(), second)
+        });
+        assert!(matches!(
+            (first, second),
+            (Ok(_), Err(BindingWriteError::AlreadyExists))
+                | (Err(BindingWriteError::AlreadyExists), Ok(_))
+        ));
+        assert_eq!(registry.binding_count(), 1);
+    }
+
+    #[test]
+    fn concurrent_binding_update_does_not_recreate_a_deleted_id() {
+        let registry = RuntimeRegistry::new();
+        registry.register_binding(sample_binding("b1", "fwd-a"));
+        let start = std::sync::Barrier::new(2);
+        std::thread::scope(|scope| {
+            let writer = scope.spawn(|| {
+                let mut changed = sample_binding("b1", "fwd-a");
+                changed.cache.max_ttl_seconds = Some(60);
+                start.wait();
+                registry.save_binding(changed, BindingWrite::Update)
+            });
+            start.wait();
+            assert!(registry.remove_binding("b1"));
+            let update = writer.join().unwrap();
+            assert!(update.is_ok() || update == Err(BindingWriteError::NotFound));
+        });
+        assert!(registry.get_binding("b1").is_none());
     }
 
     #[test]

@@ -181,6 +181,9 @@ pub(super) fn resolve_namespace_route(method: &str, path: &str) -> NamespaceRout
 pub(super) enum BindingRoute {
     List,
     GetById(String),
+    Create,
+    Update(String),
+    Delete(String),
     NotFound,
 }
 
@@ -192,6 +195,9 @@ pub(super) fn resolve_binding_route(method: &str, path: &str) -> BindingRoute {
     match (method, id) {
         ("GET", None) => BindingRoute::List,
         ("GET", Some(i)) => BindingRoute::GetById(i.to_owned()),
+        ("POST", None) => BindingRoute::Create,
+        ("PUT", Some(i)) => BindingRoute::Update(i.to_owned()),
+        ("DELETE", Some(i)) => BindingRoute::Delete(i.to_owned()),
         _ => BindingRoute::NotFound,
     }
 }
@@ -354,18 +360,6 @@ mod tests {
     }
 
     #[test]
-    fn binding_route_rejects_mutations() {
-        assert_eq!(
-            resolve_binding_route("POST", "/api/v1/bindings"),
-            BindingRoute::NotFound
-        );
-        assert_eq!(
-            resolve_binding_route("DELETE", "/api/v1/bindings/my-binding"),
-            BindingRoute::NotFound
-        );
-    }
-
-    #[test]
     fn collection_child_enforces_segment_boundary() {
         let cases = [
             ("/api/v1/tools", Some(None)),
@@ -522,6 +516,9 @@ mod tests {
             ("GET", "/api/v1/bindings", R::List),
             ("GET", "/api/v1/bindings/", R::List),
             ("GET", "/api/v1/bindings/b", R::GetById("b".into())),
+            ("POST", "/api/v1/bindings", R::Create),
+            ("PUT", "/api/v1/bindings/b", R::Update("b".into())),
+            ("DELETE", "/api/v1/bindings/b", R::Delete("b".into())),
             ("GET", "/api/v1/bindings-extra", R::NotFound),
             ("GET", "/api/v1/bindingsx/b", R::NotFound),
         ];

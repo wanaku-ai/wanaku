@@ -28,13 +28,14 @@ use wanaku_infra::registry::RuntimeRegistry;
 use wanaku_types::feature::{Feature, HttpContext};
 
 use self::handlers::{
-    handle_binding_get, handle_binding_list, handle_forward_create, handle_forward_delete,
-    handle_forward_get, handle_forward_list, handle_forward_refresh, handle_info,
-    handle_namespace_create, handle_namespace_delete, handle_namespace_get, handle_namespace_list,
-    handle_namespace_update, handle_prompt_delete, handle_prompt_get, handle_prompt_list,
-    handle_prompt_set_enabled, handle_resource_delete, handle_resource_get, handle_resource_list,
-    handle_resource_set_enabled, handle_statistics, handle_tool_delete, handle_tool_get,
-    handle_tool_list, handle_tool_set_enabled, namespace_param, replace_requested,
+    handle_binding_delete, handle_binding_get, handle_binding_list, handle_binding_write,
+    handle_forward_create, handle_forward_delete, handle_forward_get, handle_forward_list,
+    handle_forward_refresh, handle_info, handle_namespace_create, handle_namespace_delete,
+    handle_namespace_get, handle_namespace_list, handle_namespace_update, handle_prompt_delete,
+    handle_prompt_get, handle_prompt_list, handle_prompt_set_enabled, handle_resource_delete,
+    handle_resource_get, handle_resource_list, handle_resource_set_enabled, handle_statistics,
+    handle_tool_delete, handle_tool_get, handle_tool_list, handle_tool_set_enabled,
+    namespace_param, replace_requested,
 };
 #[cfg(feature = "ui")]
 use self::response::redirect_response;
@@ -229,6 +230,9 @@ pub(crate) async fn dispatch(
     match resolve_binding_route(ctx.method, ctx.path) {
         BindingRoute::List => return handle_binding_list(registry),
         BindingRoute::GetById(id) => return handle_binding_get(registry, &id),
+        BindingRoute::Create => return handle_binding_write(registry, None, ctx.body),
+        BindingRoute::Update(id) => return handle_binding_write(registry, Some(&id), ctx.body),
+        BindingRoute::Delete(id) => return handle_binding_delete(registry, &id),
         BindingRoute::NotFound => {}
     }
 

@@ -415,7 +415,7 @@ These endpoints are new in Wanaku:
 | `/api/v1/action-policies` | Deterministic action policy rules |
 | `/api/v1/policy-simulations` | Policy simulation and audit replay |
 | `/api/v1/audit/*` | Governance audit events |
-| `/api/v1/bindings` | Credential bindings (read-only) |
+| `/api/v1/bindings` | Credential binding management |
 | `/api/v1/agents` | A2A agents |
 | `GET /api/v1/metrics` | In-memory metrics snapshot |
 | `GET /api/v1/plugins` | Discovered UI plugins |

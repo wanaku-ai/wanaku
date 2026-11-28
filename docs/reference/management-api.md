@@ -78,6 +78,9 @@ The `data` value can be an object, an array, or `null`. This envelope keeps the 
 | `DELETE` | `/api/v1/agents/{namespace}/{name}` | Delete an A2A agent and remove its proxy route. Use optional `label.<key>=<value>` query parameters to delete only when the labels match. |
 | `GET` | `/api/v1/bindings` | List credential bindings. |
 | `GET` | `/api/v1/bindings/{id}` | Get a credential binding. |
+| `POST` | `/api/v1/bindings` | Create a credential binding. |
+| `PUT` | `/api/v1/bindings/{id}` | Replace a credential binding definition. |
+| `DELETE` | `/api/v1/bindings/{id}` | Delete a credential binding. |
 
 Wanaku discovers tools, resources, and prompts when you create or refresh a forward. The API does not have create routes for these entries. Tools and resources are read-only. You cannot edit them through the API.
 
@@ -298,7 +301,7 @@ Entries in different namespaces do not conflict. When you delete a forward, Wana
 
 The publication is not atomic for concurrent readers. A concurrent reader can see the new forward status before the new entries.
 
-The request body can also contain `credentialBindings`, a map from purpose (`discovery`, `invocation`) to binding id. The bindings themselves must exist in `wanaku.yaml`, because the management API cannot create bindings. See [Credential Brokerage](../govern/credential-brokerage.md#attaching-a-binding-to-a-forward).
+The request body can also contain `credentialBindings`, a map from purpose (`discovery`, `invocation`) to binding id. Create the definitions through the binding API or declare them in `wanaku.yaml`. See [Credential Brokerage](../govern/credential-brokerage.md#attaching-a-binding-to-a-forward).
 
 ### Delete a Forward Conditionally
 
@@ -319,17 +322,53 @@ Each `label.<key>=<value>` query parameter adds one precondition. You can send m
 
 Wanaku checks the labels and removes the forward in one registry operation. A concurrent `POST /api/v1/forwards` for the same name cannot occur between the check and the removal. When Wanaku deletes a forward, it also removes the cached credentials and the discovered tools, resources, and prompts of the forward. A `409` response does not change these entries.
 
-### Inspect a Credential Binding
+### Manage Credential Bindings
 
-The binding routes are read-only. They return only non-secret binding metadata — `secretRefs` lists opaque references such as `env:API_TOKEN`, never a resolved value.
+Binding responses contain metadata. Each `secretRefs` entry contains an opaque reference such as `env:API_TOKEN`. Wanaku resolves the reference when it uses the binding.
+
+| Request | Success | Errors |
+| --- | --- | --- |
+| `GET /api/v1/bindings` | `200` with the array of bindings in `data`. | |
+| `GET /api/v1/bindings/{id}` | `200` with the binding in `data`. | `404` if the ID is absent. |
+| `POST /api/v1/bindings` | `201` with the stored binding in `data`. | `400` for an invalid definition. `409` if the ID exists or the revision is exhausted. |
+| `PUT /api/v1/bindings/{id}` | `200` with the stored binding in `data`. | `400` for an invalid definition or a body ID that differs from the path ID. `404` if the ID is absent. `409` if the owner changes or the revision is exhausted. |
+| `DELETE /api/v1/bindings/{id}` | `200` with `{"data":null,"error":null}`. | `404` if the ID is absent. |
+
+Write requests with bodies larger than 1 MiB return `413`. For POST and PUT, use the complete binding definition. For new IDs, use ASCII letters, digits, hyphens, underscores, periods, or tildes. The IDs `.` and `..` are invalid. Give the owning forward's name in `forwardId` and at least one purpose in `allowedPurposes`. The owner can be a forward that you plan to register. If you omit `restrictions` or `cache`, Wanaku uses their defaults. Wanaku normalizes `origin` to the scheme, host, and explicit port.
+
+Wanaku assigns the revision and ignores the revision in the request. A definition change increments the stored revision. An identical PUT keeps the revision. A recreated ID receives a new revision within the server process. Wanaku serializes binding mutations. If two creates race for an absent ID, one succeeds and the other returns `409`. Updates and deletes operate on the definition present when each operation takes effect. Among successful concurrent updates, the last one to take effect wins.
+
+A binding change does not rewrite forward references or trigger discovery. A discovery or invocation that uses a missing binding, an incorrect owner or origin, or a disallowed purpose or scope fails closed before sending a request upstream. A mutation can take effect after a request has already selected the previous definition. Wanaku discards a discovery result if a referenced binding changes before publication.
+
+#### Register an Authenticated Forward
+
+Provision `API_TOKEN` in the Wanaku process environment before startup. The binding API manages definitions. The resolver provider manages credentials.
 
 ```bash
-curl http://localhost:8080/api/v1/bindings/b1
+curl --fail-with-body -X POST http://localhost:8080/api/v1/bindings \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "id": "upstream-auth",
+    "forwardId": "upstream-mcp",
+    "origin": "https://api.example.com:443",
+    "mechanism": {"type": "bearer"},
+    "secretRefs": ["env:API_TOKEN"],
+    "allowedPurposes": ["discovery", "invocation"]
+  }'
+
+curl --fail-with-body -X POST http://localhost:8080/api/v1/forwards \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "upstream-mcp",
+    "address": "https://api.example.com/mcp",
+    "credentialBindings": {
+      "discovery": "upstream-auth",
+      "invocation": "upstream-auth"
+    }
+  }' | jq -e '.data.forward.available'
 ```
 
-Replace `b1` with a binding ID from `GET /api/v1/bindings`.
-
-There is no create, update, or delete route for bindings in this release. Bindings are part of the registry snapshot. See [Credential Brokerage](../govern/credential-brokerage.md) for the binding schema and the brokerage flow.
+Replace the example host with your upstream host in both requests. See [Credential Brokerage](../govern/credential-brokerage.md) for restrictions, cache rules, and startup precedence.
 
 ## Feature Routes
 

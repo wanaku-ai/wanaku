@@ -1,3 +1,5 @@
+import type { CredentialBinding } from '../../../../ui/admin/src/models/credentialBinding';
+
 let _counter = 0;
 const suffix = () => {
   _counter++;
@@ -126,15 +128,7 @@ export const evaluatorRevision = (
   ...overrides,
 });
 
-export function bindingData(overrides?: Partial<{
-  id: string;
-  forwardId: string;
-  origin: string;
-  mechanism: { type: string; header?: string };
-  allowedPurposes: string[];
-  secretRefs: string[];
-  revision: number;
-}>) {
+export function bindingData(overrides?: Partial<CredentialBinding>): CredentialBinding {
   return {
     id: overrides?.id ?? `e2e-binding-${suffix()}`,
     forwardId: overrides?.forwardId ?? `e2e-forward-${suffix()}`,

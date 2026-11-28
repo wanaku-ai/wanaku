@@ -9,6 +9,7 @@ test.describe('Forwards', () => {
   let forwards: ForwardsPage;
   let api: ApiHelper;
   const createdForwards: string[] = [];
+  const createdBindings: string[] = [];
 
   test.beforeEach(async ({ page, request }) => {
     forwards = new ForwardsPage(page, `${routerUrl}/admin/`);
@@ -20,6 +21,10 @@ test.describe('Forwards', () => {
       await api.deleteForward(name).catch(() => {});
     }
     createdForwards.length = 0;
+    for (const id of createdBindings) {
+      await api.deleteBinding(id);
+    }
+    createdBindings.length = 0;
   });
 
   test('displays page title', async () => {
@@ -86,15 +91,14 @@ test.describe('Forwards', () => {
     });
   }
 
-  test('forward modal filters credential bindings by purpose', async ({ page }) => {
+  test('forward modal filters runtime credential bindings by purpose', async () => {
     const data = forwardData();
-    // A binding is usable only when it is owned by this forward and allows the
-    // purpose. Author-side bindings come from config, so the API list is mocked.
-    // One binding per purpose gives each selector a positive control.
     const discovery = bindingData({ forwardId: data.name, allowedPurposes: ['discovery'] });
     const invocation = bindingData({ forwardId: data.name, allowedPurposes: ['invocation'] });
-    await page.route('**/api/v1/bindings', (route) =>
-      route.fulfill({ json: { data: [discovery, invocation] } }));
+    for (const binding of [discovery, invocation]) {
+      createdBindings.push(binding.id);
+      await api.addBinding(binding);
+    }
 
     await forwards.goto();
     await forwards.clickAddForward();
@@ -121,8 +125,7 @@ test.describe('Forwards', () => {
     await forwards.clickAddForward();
     await forwards.fillForwardForm(data);
 
-    // The empty state (shown only after the bindings load) tells the operator to
-    // author a binding in wanaku.yaml with a matching forwardId.
+    // The empty state tells the operator to create a binding with a matching forwardId.
     await expect.poll(() => forwards.modalHasText(`forwardId: ${data.name}`)).toBe(true);
     // The mocked binding is owned by a different forward, so once loaded it is
     // never offered as an option.

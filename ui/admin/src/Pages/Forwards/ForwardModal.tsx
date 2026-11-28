@@ -93,7 +93,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
       <BindingSelect
         id="forward-discovery-binding"
         labelText="Discovery credential binding"
-        helperText="Bindings owned by this forward that allow discovery (optional). Author bindings in wanaku.yaml."
+        helperText="Bindings owned by this forward that allow discovery (optional)."
         forwardName={name}
         purpose={CredentialPurpose.discovery}
         value={discoveryBinding}
@@ -102,7 +102,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({
       <BindingSelect
         id="forward-invocation-binding"
         labelText="Invocation credential binding"
-        helperText="Bindings owned by this forward that allow invocation (optional). Author bindings in wanaku.yaml."
+        helperText="Bindings owned by this forward that allow invocation (optional)."
         forwardName={name}
         purpose={CredentialPurpose.invocation}
         value={invocationBinding}
