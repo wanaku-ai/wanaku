@@ -16,7 +16,7 @@ These control core server behavior:
 | `WANAKU_MGMT_LISTEN` | `0.0.0.0:8080` | Management API listen address (host:port) |
 | `WANAKU_A2A_LISTEN` | `0.0.0.0:8084` | Registered A2A agents listen address in the embedded pipeline. |
 | `WANAKU_A2A_PUBLIC_URL` | `http://127.0.0.1:8084/` | Public HTTP or HTTPS origin for registered agent proxy URLs and Agent Cards. |
-| `WANAKU_MCP_PUBLIC_URL` | _(unset = admin UI host and port `8081`)_ | Public HTTP or HTTPS base URL of the MCP endpoint. The admin UI uses it to show namespace MCP addresses. See [Public MCP URL](#public-mcp-url). |
+| `WANAKU_MCP_PUBLIC_URL` | _(unset = admin UI host and port `8081`)_ | Public HTTP or HTTPS base URL of the MCP endpoint. The admin UI uses it to show namespace MCP addresses. The OAuth discovery metadata uses it as the base URL. See [Public MCP URL](#public-mcp-url). |
 | `WANAKU_INFERENCE_UPSTREAM` | `127.0.0.1:11434` | Upstream for the inference-proxy pipeline (port 8083), an OpenAI-compatible passthrough. Clients call this port directly and supply their own bearer token. |
 | `WANAKU_PERSIST_BACKEND` | `file` | Persistence backend. `file` writes `registry.json` and `audit-events.json`. `redb` writes the registry and the audit events to the embedded database `wanaku.redb`. `none` disables persistence. Any other value uses file persistence and logs a warning. |
 | `WANAKU_PERSIST_PATH` | `$HOME/.wanaku/server` | Directory where Wanaku reads and writes `registry.json` or `wanaku.redb`, and the other persistence files. The default plugins path is `<WANAKU_PERSIST_PATH>/plugins`. |
@@ -72,7 +72,7 @@ When clients reach the MCP endpoint at a different host or port, set `WANAKU_MCP
 export WANAKU_MCP_PUBLIC_URL=https://wanaku-mcp.apps.example.com
 ```
 
-The value must start with `http://` or `https://`. The server removes trailing slashes. The server ignores a value that is not an HTTP or HTTPS URL. The server does not use this value to route traffic. The management API returns it in the `mcpPublicUrl` field of `GET /api/v1/management/info`.
+The value must start with `http://` or `https://`. The server removes trailing slashes. The server ignores a value that is not an HTTP or HTTPS URL, or that contains a query (`?`) or a fragment (`#`). The server does not use this value to route traffic. The management API returns it in the `mcpPublicUrl` field of `GET /api/v1/management/info`. The OAuth discovery metadata uses it as the base of the `resource` URL and of the endpoint URLs. See [Discovery base URL](../operate/authentication.md#discovery-base-url).
 
 ### Admin UI Override
 

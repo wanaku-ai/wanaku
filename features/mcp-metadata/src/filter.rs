@@ -9,6 +9,9 @@ wanaku_filters::body_filter_boilerplate!(WellKnownFilter, "wanaku_well_known");
 
 const WELL_KNOWN_PREFIX: &str = "/.well-known/oauth-protected-resource/";
 
+/// The metadata URLs depend on these headers, so caches must key on them.
+const FORWARDING_VARY: &str = "x-forwarded-proto, x-forwarded-host";
+
 impl WellKnownFilter {
     #[expect(
         clippy::too_many_lines,
@@ -30,13 +33,7 @@ impl WellKnownFilter {
             _ => return Ok(FilterAction::Continue),
         };
 
-        let host = ctx
-            .request
-            .headers
-            .get(http::header::HOST)
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("localhost:8081");
-        let base = format!("http://{host}");
+        let base = public_base(ENV.mcp_public_url.as_deref(), &ctx.request.headers);
 
         match path {
             "/.well-known/openid-configuration" | "/.well-known/oauth-authorization-server" => Ok(
@@ -81,7 +78,7 @@ impl WellKnownFilter {
         });
 
         tracing::debug!("served openid-configuration");
-        json_response(StatusCode::OK, &doc)
+        json_response(StatusCode::OK, &doc).with_header("vary", FORWARDING_VARY)
     }
 
     #[expect(
@@ -93,21 +90,14 @@ impl WellKnownFilter {
         ctx: &HttpFilterContext<'_>,
         suffix: &str,
     ) -> Result<FilterAction, FilterError> {
-        let host = ctx
-            .request
-            .headers
-            .get(http::header::HOST)
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("localhost:8081");
-
-        let resource = resource_url(host, suffix);
+        let base = public_base(ENV.mcp_public_url.as_deref(), &ctx.request.headers);
+        let resource = resource_url(&base, suffix);
         let metadata = protected_resource_metadata(&resource, ctx.extensions.get::<IssuerConfig>());
 
         tracing::debug!(resource = %resource, "served protected resource metadata");
-        Ok(FilterAction::Reject(json_response(
-            StatusCode::OK,
-            &metadata,
-        )))
+        Ok(FilterAction::Reject(
+            json_response(StatusCode::OK, &metadata).with_header("vary", FORWARDING_VARY),
+        ))
     }
 }
 
@@ -132,8 +122,36 @@ fn protected_resource_metadata(
     })
 }
 
+/// Base URL that clients use to reach the MCP listener.
+///
+/// `WANAKU_MCP_PUBLIC_URL` wins. Otherwise the scheme and host come from the
+/// `X-Forwarded-Proto` and `X-Forwarded-Host` headers that a TLS-terminating
+/// proxy sets, then from `http://` and the `Host` header.
+fn public_base(public_url: Option<&str>, headers: &http::HeaderMap) -> String {
+    if let Some(url) = public_url {
+        return url.to_owned();
+    }
+    let first = |name: &str| {
+        headers
+            .get(name)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.split(',').next())
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+    };
+    let scheme = match first("x-forwarded-proto") {
+        Some(proto) if proto.eq_ignore_ascii_case("https") => "https",
+        _ => "http",
+    };
+    let host = first("x-forwarded-host")
+        .filter(|h| !h.contains(['/', '\\', '@', ' ', '?', '#']))
+        .or_else(|| first(http::header::HOST.as_str()))
+        .unwrap_or("localhost:8081");
+    format!("{scheme}://{host}")
+}
+
 /// Preserve concrete and virtual MCP endpoint paths in resource metadata.
-fn resource_url(host: &str, suffix: &str) -> String {
+fn resource_url(base: &str, suffix: &str) -> String {
     let namespace = suffix
         .strip_suffix("/mcp")
         .or_else(|| suffix.strip_suffix("/mcp/"))
@@ -142,7 +160,7 @@ fn resource_url(host: &str, suffix: &str) -> String {
             wanaku_types::registry::validate_namespace_name(name).is_ok()
         })
         .unwrap_or("default");
-    format!("http://{host}/{namespace}/mcp")
+    format!("{base}/{namespace}/mcp")
 }
 
 #[expect(
@@ -225,20 +243,94 @@ fn json_response(status: StatusCode, value: &serde_json::Value) -> Rejection {
 mod tests {
     use super::{
         IssuerConfig, WellKnownFilter, protected_resource_metadata, proxy_token_endpoint,
-        resource_url,
+        public_base, resource_url,
     };
     use bytes::Bytes;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+    fn headers(pairs: &[(&'static str, &'static str)]) -> http::HeaderMap {
+        pairs
+            .iter()
+            .map(|(name, value)| {
+                (
+                    http::HeaderName::from_static(name),
+                    http::HeaderValue::from_static(value),
+                )
+            })
+            .collect()
+    }
+
     #[test]
     fn resource_always_names_the_namespace() {
-        assert_eq!(resource_url("h:1", "mcp"), "http://h:1/default/mcp");
-        assert_eq!(resource_url("h:1", "default/mcp"), "http://h:1/default/mcp");
-        assert_eq!(resource_url("h:1", "finance/mcp"), "http://h:1/finance/mcp");
-        assert_eq!(resource_url("h:1", "a/b/mcp"), "http://h:1/default/mcp");
+        let base = "http://h:1";
+        assert_eq!(resource_url(base, "mcp"), "http://h:1/default/mcp");
+        assert_eq!(resource_url(base, "default/mcp"), "http://h:1/default/mcp");
+        assert_eq!(resource_url(base, "finance/mcp"), "http://h:1/finance/mcp");
+        assert_eq!(resource_url(base, "a/b/mcp"), "http://h:1/default/mcp");
         assert_eq!(
-            resource_url("h:1", "virtual-ns/integration/mcp"),
+            resource_url(base, "virtual-ns/integration/mcp"),
             "http://h:1/virtual-ns/integration/mcp"
+        );
+    }
+
+    #[test]
+    fn base_without_forwarding_headers_uses_http_and_host() {
+        let base = public_base(None, &headers(&[("host", "localhost:8081")]));
+        assert_eq!(base, "http://localhost:8081");
+        assert_eq!(
+            resource_url(&base, "mcp"),
+            "http://localhost:8081/default/mcp"
+        );
+        assert_eq!(
+            resource_url(&base, "finance/mcp"),
+            "http://localhost:8081/finance/mcp"
+        );
+        assert_eq!(public_base(None, &headers(&[])), "http://localhost:8081");
+    }
+
+    #[test]
+    fn base_behind_tls_proxy_uses_forwarded_scheme_and_host() {
+        let forwarded = headers(&[
+            ("host", "wanaku-mcp:8081"),
+            ("x-forwarded-proto", "https"),
+            ("x-forwarded-host", "mcp.apps.example.com"),
+        ]);
+        let base = public_base(None, &forwarded);
+        assert_eq!(base, "https://mcp.apps.example.com");
+        assert_eq!(
+            resource_url(&base, "default/mcp"),
+            "https://mcp.apps.example.com/default/mcp"
+        );
+        assert_eq!(
+            resource_url(&base, "finance/mcp"),
+            "https://mcp.apps.example.com/finance/mcp"
+        );
+    }
+
+    #[test]
+    fn base_uses_first_forwarded_value_and_ignores_bad_values() {
+        let proto_only = headers(&[("host", "h:1"), ("x-forwarded-proto", "HTTPS, http")]);
+        assert_eq!(public_base(None, &proto_only), "https://h:1");
+        let bad = headers(&[
+            ("host", "h:1"),
+            ("x-forwarded-proto", "ftp"),
+            ("x-forwarded-host", "evil.example/path"),
+        ]);
+        assert_eq!(public_base(None, &bad), "http://h:1");
+        for host in ["h:2?x=1", "h:2#frag"] {
+            let mut query = headers(&[("host", "h:1")]);
+            query.insert("x-forwarded-host", http::HeaderValue::from_static(host));
+            assert_eq!(public_base(None, &query), "http://h:1");
+        }
+    }
+
+    #[test]
+    fn public_url_overrides_forwarding_headers() {
+        let forwarded = headers(&[("x-forwarded-proto", "http"), ("x-forwarded-host", "h:1")]);
+        let base = public_base(Some("https://mcp.example.com/proxy"), &forwarded);
+        assert_eq!(
+            resource_url(&base, "finance/mcp"),
+            "https://mcp.example.com/proxy/finance/mcp"
         );
     }
 
@@ -279,6 +371,12 @@ mod tests {
         let response = filter.serve_discovery("http://localhost:4180", &config);
         let doc: serde_json::Value =
             serde_json::from_slice(response.body.as_deref().ok_or("missing discovery body")?)?;
+        assert!(
+            response
+                .headers
+                .iter()
+                .any(|(name, value)| name == "vary" && value == super::FORWARDING_VARY)
+        );
         assert_eq!(doc["issuer"], config.issuer);
         assert_eq!(
             doc["jwks_uri"],

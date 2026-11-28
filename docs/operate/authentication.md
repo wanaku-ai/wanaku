@@ -73,6 +73,18 @@ A browser-based MCP client sends the token request to Keycloak directly. Keycloa
 
 Wanaku still serves `/.well-known/openid-configuration`. The `wanaku auth login --auth-server <mcp-origin> --realm ""` command reads the issuer from this document.
 
+## Discovery base URL
+
+The `resource` value in the protected-resource metadata must be the URL that the client uses to connect (RFC 9728, section 3.3). The Wanaku OpenID discovery document also contains `/authorize`, `/token`, and `/register` URLs. Wanaku selects the base URL of these values in this order:
+
+1. `WANAKU_MCP_PUBLIC_URL`, when it is set.
+2. The `X-Forwarded-Proto` and `X-Forwarded-Host` headers, when the request contains them.
+3. `http://` and the `Host` header.
+
+A TLS-terminating proxy, such as an OpenShift Route, an Ingress, or a load balancer, usually sets the `X-Forwarded-*` headers. Wanaku uses the first value of each header. Wanaku accepts only `http` and `https` in `X-Forwarded-Proto`. Wanaku ignores an `X-Forwarded-Host` value that contains `/`, `\`, `@`, `?`, `#`, or a space. The responses contain `Vary: x-forwarded-proto, x-forwarded-host`, so that caches keep a separate copy for each header value.
+
+Wanaku does not check the source of the `X-Forwarded-*` headers. A client can set them, but the values change only the response to that client. Set `WANAKU_MCP_PUBLIC_URL` when the proxy does not set these headers, or when you do not want Wanaku to use them.
+
 ## Proxy behavior
 
 The MCP proxy accepts bearer tokens with the configured Wanaku MCP audience. MCP endpoints use `/{namespace}/mcp`, such as `/default/mcp`. Pass the full endpoint to the CLI. The CLI does not infer or select a namespace from a bare server origin.
