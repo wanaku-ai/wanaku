@@ -12,12 +12,14 @@ import { ForwardModal } from './ForwardModal.tsx';
 import { ForwardsTable } from './ForwardsTable.tsx';
 import { useErrorNotification } from '../../hooks/error-notifications';
 import { ErrorNotification } from '../../components/ErrorNotification';
+import { DeleteConfirmationModal } from '../../components/DeleteConfirmationModal';
 
 const ForwardsPage = () => {
   const [forwards, setForwards] = useState<ForwardEntry[]>([]);
   const [isModalOpen, setModalOpen] = useState(false);
   const [openedForward, setOpenedForward] = useState<ForwardEntry>();
   const [detailForward, setDetailForward] = useState<ForwardEntry>();
+  const [staticDeletion, setStaticDeletion] = useState<ForwardEntry>();
   const { errorMessage, setErrorMessage } = useErrorNotification();
 
   function fetchForwards() {
@@ -91,7 +93,17 @@ const ForwardsPage = () => {
     }
   }
 
+  // A static forward comes back at the next startup, so ask first.
+  function handleDeleteButton(forward: ForwardEntry) {
+    if (forward.static === true) {
+      setStaticDeletion(forward);
+    } else {
+      handleDeleteForward(forward);
+    }
+  }
+
   async function handleDeleteForward(forward: ForwardEntry) {
+    setStaticDeletion(undefined);
     try {
       const response = await removeForward(forward);
       if (response.status === 200) {
@@ -135,7 +147,7 @@ const ForwardsPage = () => {
             onAdd={handleAddButton}
             onDetail={handleDetailButton}
             onEdit={handleEditButton}
-            onDelete={handleDeleteForward}
+            onDelete={handleDeleteButton}
             onRefresh={handleRefreshForward}
           />
         )}
@@ -144,6 +156,14 @@ const ForwardsPage = () => {
         <ForwardDetailModal
           forward={detailForward}
           onRequestClose={() => setDetailForward(undefined)}
+        />
+      )}
+      {staticDeletion && (
+        <DeleteConfirmationModal
+          heading="Delete static forward"
+          text={`Forward "${staticDeletion.name}" is defined in wanaku.yaml. Wanaku removes it now, but registers it again at the next startup. To remove it permanently, also remove it from wanaku.yaml.`}
+          onConfirm={() => handleDeleteForward(staticDeletion)}
+          onCancel={() => setStaticDeletion(undefined)}
         />
       )}
       {isModalOpen && (

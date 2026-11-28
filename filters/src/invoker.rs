@@ -204,6 +204,7 @@ pub mod testing {
             }
         }
         registry.register_forward(ForwardEntry {
+            is_static: false,
             name: FORWARD_ID.to_owned(),
             address: ADDRESS.to_owned(),
             namespace: None,

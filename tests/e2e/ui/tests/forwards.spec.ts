@@ -140,6 +140,35 @@ test.describe('Forwards', () => {
     await forwards.waitForForwardRemoved(data.name);
   });
 
+  test('static forward shows a tag and asks before delete', async ({ page }) => {
+    // Static forwards come only from wanaku.yaml, so the API list is mocked.
+    const data = { ...forwardData(), static: true, available: false };
+    let deleted = false;
+    await page.route('**/api/v1/forwards', (route) =>
+      route.fulfill({ json: { data: deleted ? [] : [data] } }));
+    await page.route(`**/api/v1/forwards/${data.name}`, (route) => {
+      deleted = true;
+      return route.fulfill({ json: { data: { removed: data.name } } });
+    });
+
+    await forwards.goto();
+    await forwards.waitForForwardInTable(data.name);
+    expect(await forwards.rowHasStaticTag(data.name)).toBe(true);
+
+    await forwards.clickDeleteForward(data.name);
+    await forwards.modal().waitFor({ state: 'visible' });
+    expect(await forwards.getModalHeading()).toBe('Delete static forward');
+    expect(await forwards.modalHasText('registers it again at the next startup')).toBe(true);
+    await forwards.cancelModal();
+    expect(deleted).toBe(false);
+    await forwards.waitForForwardInTable(data.name);
+
+    await forwards.clickDeleteForward(data.name);
+    await forwards.modal().getByRole('button', { name: 'OK' }).click();
+    await forwards.waitForForwardRemoved(data.name);
+    expect(deleted).toBe(true);
+  });
+
   test('detail modal shows forward info', async () => {
     const data = forwardData();
     createdForwards.push(data.name);

@@ -20,6 +20,7 @@ use wanaku_server::app::{App, AppPersistence, AppResources, AppSettings};
 use wanaku_types::credentials::ResolverRegistry;
 use wanaku_types::feature::HttpContext;
 use wanaku_types::governance::GovernanceConfig;
+use wanaku_types::persistence::{PersistenceBackend, PersistenceError, RegistrySnapshot};
 use wanaku_types::registry::{
     ForwardRegistry, PromptRegistry, ResourceRegistry, ToolEntry, ToolRegistry,
 };
@@ -602,4 +603,87 @@ async fn applications_in_one_process_have_independent_state() {
             .all(|event| event["reason_code"] == "governance_no_match"
                 && event["policy_revision"].is_null())
     );
+}
+
+/// Registry backend that keeps the last saved snapshot as JSON.
+struct MemoryRegistry(std::sync::Mutex<Value>);
+
+impl PersistenceBackend for MemoryRegistry {
+    fn load(&self) -> Result<RegistrySnapshot, PersistenceError> {
+        Ok(serde_json::from_value(self.0.lock().unwrap().clone())?)
+    }
+
+    fn save(&self, snapshot: &RegistrySnapshot) -> Result<(), PersistenceError> {
+        *self.0.lock().unwrap() = serde_json::to_value(snapshot)?;
+        Ok(())
+    }
+}
+
+#[test]
+fn startup_rediscovers_forwards_and_does_not_persist_static_or_discovered_data() {
+    // Nothing listens on port 9, so each startup discovery fails fast.
+    let snapshot = json!({
+        "forwards": [{"name": "from-api", "address": "http://127.0.0.1:9/mcp"}],
+        "tools": [
+            {"name": "stale", "description": "", "uri": "u", "type": "mcp-forward",
+             "inputSchema": {"type": "object"}, "forwardId": "from-api"},
+            {"name": "kept-off", "description": "", "uri": "u", "type": "mcp-forward",
+             "inputSchema": {"type": "object"}, "forwardId": "from-api", "enabled": false},
+            {"name": "orphan-off", "description": "", "uri": "u", "type": "mcp-forward",
+             "inputSchema": {"type": "object"}, "forwardId": "removed", "enabled": false}
+        ]
+    });
+    let backend = Arc::new(MemoryRegistry(std::sync::Mutex::new(snapshot)));
+    let config: serde_yaml::Value =
+        serde_yaml::from_str("forwards: [{name: from-config, address: 'http://127.0.0.1:9/mcp'}]")
+            .unwrap();
+    let pipeline = wanaku_server::load_config(None).expect("embedded pipeline configuration");
+    let app = App::build(
+        &AppSettings {
+            pipeline: &pipeline,
+            wanaku_config: Some(&config),
+            governance: GovernanceConfig::default(),
+            plugins_dir: None,
+        },
+        AppResources {
+            persistence: AppPersistence {
+                registry: Some(backend.clone()),
+                ..AppPersistence::default()
+            },
+            broker: Arc::new(CredentialBroker::new(ResolverRegistry::new())),
+        },
+    )
+    .expect("application assembles");
+
+    let from_config = app.registry.get_forward("from-config").unwrap();
+    assert!(from_config.is_static);
+    let from_api = app.registry.get_forward("from-api").unwrap();
+    assert!(!from_api.is_static);
+    assert!(
+        !from_api.available,
+        "discovery of the restored forward ran and failed"
+    );
+    let mut tools: Vec<_> = app
+        .registry
+        .list_tools()
+        .into_iter()
+        .map(|t| t.name)
+        .collect();
+    tools.sort();
+    assert_eq!(tools, ["kept-off"]);
+
+    app.registry
+        .flush_persistence(std::time::Duration::from_secs(5))
+        .unwrap();
+    let saved = backend.0.lock().unwrap().clone();
+    let names = |kind: &str| -> Vec<Value> {
+        saved[kind]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|e| e["name"].clone())
+            .collect()
+    };
+    assert_eq!(names("forwards"), [json!("from-api")]);
+    assert_eq!(names("tools"), [json!("kept-off")]);
 }

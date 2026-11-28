@@ -135,6 +135,7 @@ mod tests {
 
     fn forward(name: &str, available: bool) -> ForwardEntry {
         ForwardEntry {
+            is_static: false,
             name: name.to_owned(),
             // Unroutable address so discovery fails fast and deterministically.
             address: "http://127.0.0.1:1/mcp".to_owned(),

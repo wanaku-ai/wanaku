@@ -218,6 +218,7 @@ mod tests {
             credential_bindings.insert(CredentialPurpose::Discovery, id.to_owned());
         }
         ForwardEntry {
+            is_static: false,
             name: "fwd-a".to_owned(),
             address: address.to_owned(),
             namespace: None,

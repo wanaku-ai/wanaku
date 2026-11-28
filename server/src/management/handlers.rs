@@ -363,10 +363,12 @@ pub(super) async fn handle_forward_create(
 
 fn parse_forward_registration(body: &str) -> Result<ForwardEntry, String> {
     tracing::debug!(body = %body, "forward create request body");
-    let forward: ForwardEntry = serde_json::from_str(body).map_err(|error| {
+    let mut forward: ForwardEntry = serde_json::from_str(body).map_err(|error| {
         warn!(%error, "invalid forward JSON");
         format!("invalid forward JSON: {error}")
     })?;
+    // Only wanaku.yaml declares static forwards.
+    forward.is_static = false;
     if let Err(error) = NormalizedOrigin::from_address(&forward.address) {
         warn!(forward = %forward.name, %error, "forward address validation failed");
         return Err(error.to_string());
@@ -1749,6 +1751,15 @@ mod tests {
         assert_eq!(stored.id, tool.id);
     }
 
+    #[test]
+    fn management_api_cannot_create_static_forward() {
+        let forward = super::parse_forward_registration(
+            r#"{"name": "f", "address": "http://backend/mcp", "static": true}"#,
+        )
+        .unwrap();
+        assert!(!forward.is_static);
+    }
+
     fn parse_body(resp: &Response<Vec<u8>>) -> serde_json::Value {
         serde_json::from_slice(resp.body()).unwrap_or_default()
     }
@@ -2144,6 +2155,7 @@ mod tests {
     fn forward_namespace_appears_in_namespace_list() {
         let registry = RuntimeRegistry::new();
         registry.register_forward(ForwardEntry {
+            is_static: false,
             name: "example-mcp".to_owned(),
             address: "http://localhost:9090/mcp".to_owned(),
             namespace: Some("test-ns".to_owned()),
@@ -2271,6 +2283,7 @@ mod tests {
     fn forward_list_and_get() {
         let registry = RuntimeRegistry::new();
         registry.register_forward(ForwardEntry {
+            is_static: false,
             name: "upstream".to_owned(),
             address: "http://remote:8080".to_owned(),
             namespace: None,
@@ -2305,6 +2318,7 @@ mod tests {
     fn forward_delete_existing() {
         let registry = RuntimeRegistry::new();
         registry.register_forward(ForwardEntry {
+            is_static: false,
             name: "del-fwd".to_owned(),
             address: "http://x:1".to_owned(),
             namespace: None,
@@ -2463,6 +2477,7 @@ mod tests {
 
     fn cached_forward(name: &str) -> ForwardEntry {
         ForwardEntry {
+            is_static: false,
             name: name.to_owned(),
             address: "https://api.example.com/mcp".to_owned(),
             namespace: None,
@@ -2524,6 +2539,7 @@ mod tests {
         registry.register_resource(test_resource("r1"));
         registry.register_prompt(test_prompt("p1"));
         registry.register_forward(ForwardEntry {
+            is_static: false,
             name: "f1".to_owned(),
             address: "http://x:1".to_owned(),
             namespace: None,

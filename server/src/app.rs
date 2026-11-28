@@ -22,7 +22,7 @@ use wanaku_types::credentials::{CredentialBinding, NormalizedOrigin};
 use wanaku_types::feature::Feature;
 use wanaku_types::governance::GovernanceConfig;
 use wanaku_types::persistence::PersistenceBackend;
-use wanaku_types::registry::{BindingRegistry, ForwardEntry, NamespaceEntry};
+use wanaku_types::registry::{BindingRegistry, ForwardEntry, ForwardRegistry, NamespaceEntry};
 
 use crate::management::WanakuManagementService;
 use crate::pipelines::{PipelineDeps, resolve_pipelines};
@@ -91,9 +91,10 @@ impl App {
     /// Assemble the production runtime graph.
     ///
     /// The function loads the bootstrap configuration into the registry and
-    /// the features. When the bootstrap configuration declares forwards, the
-    /// function runs forward discovery on a temporary runtime. Do not call it
-    /// from inside an async runtime with forwards configured.
+    /// the features. When the registry holds forwards, from the bootstrap
+    /// configuration or from persistence, the function runs forward discovery
+    /// on a temporary runtime. Do not call it from inside an async runtime when
+    /// the registry holds forwards.
     ///
     /// # Errors
     ///
@@ -310,8 +311,9 @@ fn load_config(
     features: &[Box<dyn Feature>],
 ) -> Result<(), String> {
     if let Some(yaml) = wanaku_config {
-        load_core_config(yaml, wanaku_registry, broker, audit_sink)?;
+        load_core_config(yaml, wanaku_registry)?;
     }
+    discover_forwards(wanaku_registry, broker, audit_sink)?;
     let empty = serde_yaml::Value::Mapping(serde_yaml::Mapping::new());
     for feature in features {
         feature.load_yaml_config(wanaku_config.unwrap_or(&empty));
@@ -320,18 +322,9 @@ fn load_config(
     Ok(())
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "config loading requires sequential steps"
-)]
-fn load_core_config(
-    config: &serde_yaml::Value,
-    registry: &RuntimeRegistry,
-    broker: &Arc<CredentialBroker>,
-    audit_sink: Option<&dyn CredentialAuditSink>,
-) -> Result<(), String> {
+fn load_core_config(config: &serde_yaml::Value, registry: &RuntimeRegistry) -> Result<(), String> {
     let namespaces = load_namespace_definitions(config, registry)?;
-    let forwards = load_forward_definitions(config, registry, &namespaces)?;
+    load_forward_definitions(config, registry, &namespaces)?;
 
     for namespace in namespaces.into_iter().filter(NamespaceEntry::is_virtual) {
         registry.try_register_namespace(namespace)?;
@@ -342,29 +335,32 @@ fn load_core_config(
     // forward that references a discovery binding fails closed when the binding
     // is absent.
     load_bindings(config, registry);
-    crate::connector_config::validate(config, registry)?;
+    crate::connector_config::validate(config, registry)
+}
 
-    if !forwards.is_empty() {
-        let rt = match tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-        {
-            Ok(rt) => rt,
-            Err(e) => {
-                return Err(format!(
-                    "failed to create runtime for forward discovery: {e}"
-                ));
-            }
-        };
-
-        rt.block_on(async {
-            for fwd in &forwards {
-                info!(forward = %fwd.name, "discovering from forward");
-                crate::management::discover_and_update_forward(registry, broker, audit_sink, fwd)
-                    .await;
-            }
-        });
+/// Discover every registered forward: the static forwards from `wanaku.yaml`
+/// and the forwards restored from persistence. Wanaku does not persist
+/// discovered entries, so each forward gets its inventory from its upstream.
+fn discover_forwards(
+    registry: &RuntimeRegistry,
+    broker: &Arc<CredentialBroker>,
+    audit_sink: Option<&dyn CredentialAuditSink>,
+) -> Result<(), String> {
+    registry.remove_orphaned_forward_entries();
+    let forwards = registry.list_forwards();
+    if forwards.is_empty() {
+        return Ok(());
     }
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|e| format!("failed to create runtime for forward discovery: {e}"))?;
+    rt.block_on(async {
+        for fwd in &forwards {
+            info!(forward = %fwd.name, "discovering from forward");
+            crate::management::discover_and_update_forward(registry, broker, audit_sink, fwd).await;
+        }
+    });
     Ok(())
 }
 
@@ -397,13 +393,13 @@ fn load_forward_definitions(
     config: &serde_yaml::Value,
     registry: &RuntimeRegistry,
     namespaces: &[NamespaceEntry],
-) -> Result<Vec<ForwardEntry>, String> {
-    let mut forwards = Vec::new();
+) -> Result<(), String> {
     if let Some(fwd_list) = config.get("forwards").and_then(|f| f.as_sequence()) {
         for fwd_value in fwd_list {
             match serde_yaml::from_value::<ForwardEntry>(fwd_value.clone()) {
                 Ok(mut fwd) => {
                     fwd.available = false;
+                    fwd.is_static = true;
                     info!(forward = %fwd.name, "registered forward from config");
                     let namespace = fwd
                         .namespace
@@ -415,8 +411,7 @@ fn load_forward_definitions(
                     {
                         return Err(format!("virtual namespace {namespace} cannot own forwards"));
                     }
-                    registry.try_register_forward(fwd.clone())?;
-                    forwards.push(fwd);
+                    registry.try_register_forward(fwd)?;
                 }
                 Err(e) => {
                     tracing::warn!(error = %e, "failed to deserialize forward entry from config");
@@ -424,7 +419,7 @@ fn load_forward_definitions(
             }
         }
     }
-    Ok(forwards)
+    Ok(())
 }
 
 /// Register the credential bindings declared under the top-level `bindings`
@@ -488,16 +483,12 @@ mod tests {
     #[test]
     fn namespace_bootstrap_loads_concrete_before_virtual_and_rejects_invalid_graphs()
     -> Result<(), Box<dyn std::error::Error>> {
-        use std::sync::Arc;
-        use wanaku_infra::credentials::CredentialBroker;
-        use wanaku_types::credentials::ResolverRegistry;
         use wanaku_types::registry::NamespaceRegistry;
-        let broker = Arc::new(CredentialBroker::new(ResolverRegistry::new()));
         let registry = RuntimeRegistry::new();
         let config = serde_yaml::from_str(
             "namespaces:\n  - name: integration\n    targets: [kafka]\n  - name: kafka\n",
         )?;
-        super::load_core_config(&config, &registry, &broker, None)?;
+        super::load_core_config(&config, &registry)?;
         assert!(registry.resolve_virtual_member("integration", "kafka"));
         assert!(
             registry
@@ -512,7 +503,7 @@ mod tests {
         ] {
             let registry = RuntimeRegistry::new();
             let config = serde_yaml::from_str(yaml)?;
-            assert!(super::load_core_config(&config, &registry, &broker, None).is_err());
+            assert!(super::load_core_config(&config, &registry).is_err());
         }
         Ok(())
     }

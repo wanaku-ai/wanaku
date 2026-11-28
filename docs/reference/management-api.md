@@ -300,6 +300,12 @@ The publication is not atomic for concurrent readers. A concurrent reader can se
 
 The request body can also contain `credentialBindings`, a map from purpose (`discovery`, `invocation`) to binding id. The bindings themselves must exist in `wanaku.yaml`, because the management API cannot create bindings. See [Credential Brokerage](../govern/credential-brokerage.md#attaching-a-binding-to-a-forward).
 
+### Static Forwards
+
+A forward from `wanaku.yaml` has `"static": true`. Wanaku does not persist a static forward. Wanaku registers it again at each startup. A forward that you create through this API has `"static": false`. The API ignores a `static` value in the request body.
+
+You can delete or replace a static forward through this API. The change stays until the next startup. To remove a static forward permanently, remove it from `wanaku.yaml`. See [Registry data at startup](../operate/persistence.md#registry-data-at-startup).
+
 ### Delete a Forward Conditionally
 
 A runtime that registers its own forward can mark the forward with a label, such as `cic.instance`. A replacement instance can register the same forward name with `replace=true` before the old instance stops. To prevent the old instance from deleting the new forward, send the label as a precondition:

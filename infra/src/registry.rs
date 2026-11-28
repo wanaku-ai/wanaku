@@ -462,24 +462,33 @@ impl RuntimeRegistry {
         // Snapshots store entries as lists, so snapshots written before entries
         // were keyed by namespace load unchanged. An entry without a namespace
         // goes to the default namespace.
-        for mut tool in snapshot.tools {
+        // Discovered entries come from the next discovery. Snapshots written
+        // before this rule hold them all; keep only the disabled overrides.
+        let tools = persisted_entries(snapshot.tools, |t| (t.forward_id.as_deref(), t.enabled));
+        let resources =
+            persisted_entries(snapshot.resources, |r| (r.forward_id.as_deref(), r.enabled));
+        let prompts = persisted_entries(snapshot.prompts, |p| (p.forward_id.as_deref(), p.enabled));
+        for mut tool in tools {
             let key = normalize_key(&mut tool.namespace, &tool.name);
             inject_request_id_arg(&mut tool.input_schema);
             self.tools.insert(key, tool);
         }
-        for mut resource in snapshot.resources {
+        for mut resource in resources {
             let key = normalize_key(&mut resource.namespace, &resource.name);
             self.resources.insert(key, resource);
         }
-        for mut prompt in snapshot.prompts {
+        for mut prompt in prompts {
             let key = normalize_key(&mut prompt.namespace, &prompt.name);
             self.prompts.insert(key, prompt);
         }
         for namespace in snapshot.namespaces {
             self.namespaces.insert(namespace.name.clone(), namespace);
         }
-        for forward in snapshot.forwards {
+        // A restored forward has no inventory until its startup discovery.
+        for mut forward in snapshot.forwards {
             changes.forwards.remove(&forward.name);
+            forward.available = false;
+            forward.is_static = false;
             self.insert_forward(forward);
         }
         for binding in snapshot.bindings {
@@ -490,15 +499,44 @@ impl RuntimeRegistry {
         tracing::info!("loaded registry from persistence backend");
     }
 
+    /// Build the persisted form of the registry.
+    ///
+    /// Static forwards come from `wanaku.yaml` at each startup, so the snapshot
+    /// leaves them out. Discovered entries come from the upstream at each
+    /// discovery. The snapshot keeps only the disabled ones, so that the next
+    /// discovery keeps them disabled.
     fn snapshot(&self) -> RegistrySnapshot {
         RegistrySnapshot {
             agents: self.list_agents(),
-            tools: self.list_tools(),
-            resources: self.list_resources(),
-            prompts: self.list_prompts(),
-            forwards: self.list_forwards(),
+            tools: persisted_entries(self.list_tools(), |t| (t.forward_id.as_deref(), t.enabled)),
+            resources: persisted_entries(self.list_resources(), |r| {
+                (r.forward_id.as_deref(), r.enabled)
+            }),
+            prompts: persisted_entries(self.list_prompts(), |p| {
+                (p.forward_id.as_deref(), p.enabled)
+            }),
+            forwards: self
+                .list_forwards()
+                .into_iter()
+                .filter(|forward| !forward.is_static)
+                .collect(),
             namespaces: self.list_namespaces(),
             bindings: self.list_bindings(),
+        }
+    }
+
+    /// Remove the restored discovered entries whose forward is no longer
+    /// registered, for example a static forward removed from `wanaku.yaml`.
+    pub fn remove_orphaned_forward_entries(&self) {
+        let _guard = self.lock_namespaces();
+        let owned =
+            |forward_id: Option<&str>| forward_id.is_none_or(|id| self.forwards.contains_key(id));
+        let before = self.tools.len() + self.resources.len() + self.prompts.len();
+        self.tools.retain(|_, e| owned(e.forward_id.as_deref()));
+        self.resources.retain(|_, e| owned(e.forward_id.as_deref()));
+        self.prompts.retain(|_, e| owned(e.forward_id.as_deref()));
+        if self.tools.len() + self.resources.len() + self.prompts.len() != before {
+            self.persist();
         }
     }
 
@@ -576,6 +614,18 @@ impl RuntimeRegistry {
 
         self.forwards.insert(forward.name.clone(), forward);
     }
+}
+
+/// Keep the entries that are not discovered, and the discovered entries that
+/// are disabled.
+fn persisted_entries<T>(entries: Vec<T>, meta: impl Fn(&T) -> (Option<&str>, bool)) -> Vec<T> {
+    entries
+        .into_iter()
+        .filter(|entry| {
+            let (forward_id, enabled) = meta(entry);
+            forward_id.is_none() || !enabled
+        })
+        .collect()
 }
 
 /// Non-sensitive registry persistence state for health and shutdown handling.
@@ -1741,6 +1791,7 @@ mod tests {
 
     fn sample_forward(name: &str, namespace: Option<&str>) -> ForwardEntry {
         ForwardEntry {
+            is_static: false,
             name: name.to_owned(),
             address: "http://localhost:9090/mcp".to_owned(),
             namespace: namespace.map(str::to_owned),
@@ -2075,8 +2126,9 @@ mod tests {
         let tool = |namespace: &str, forward_id: &str| {
             serde_json::json!({"name": "echo", "description": "", "uri": "u",
                 "type": "mcp-forward", "inputSchema": {"type": "object"},
-                "namespace": namespace, "forwardId": forward_id})
+                "namespace": namespace, "forwardId": forward_id, "enabled": false})
         };
+        // Disabled overrides are the discovered entries that a snapshot keeps.
         let backend = Arc::new(FixedSnapshot(serde_json::json!({
             "tools": [tool("default", "a"), tool("other", "b")]
         })));
@@ -2255,6 +2307,54 @@ mod tests {
 
     fn agent_owned_by(owner: &str) -> impl Fn(&wanaku_types::agents::AgentEntry) -> bool + '_ {
         move |agent| agent.labels.get("owner").map(String::as_str) == Some(owner)
+    }
+
+    #[test]
+    fn snapshot_keeps_runtime_data_and_drops_static_and_discovered_data() {
+        let backend = Arc::new(Backend(Mutex::new(String::new())));
+        let registry = RuntimeRegistry::with_persistence(backend.clone());
+        registry.register_forward(ForwardEntry {
+            is_static: true,
+            ..sample_forward("from-config", None)
+        });
+        registry.register_forward(sample_forward("from-api", None));
+        registry.register_tool(ToolEntry {
+            name: "direct".to_owned(),
+            ..sample_tool()
+        });
+        registry.register_tool(owned_tool("discovered", DEFAULT_NAMESPACE, "from-api"));
+        registry.register_tool(owned_tool("disabled", DEFAULT_NAMESPACE, "from-api"));
+        registry.register_tool(owned_tool(
+            "config-disabled",
+            DEFAULT_NAMESPACE,
+            "from-config",
+        ));
+        assert!(registry.set_tool_enabled(DEFAULT_NAMESPACE, "disabled", false));
+        assert!(registry.set_tool_enabled(DEFAULT_NAMESPACE, "config-disabled", false));
+        registry
+            .flush_persistence(Duration::from_secs(2))
+            .expect("persisted");
+
+        let recovered = RuntimeRegistry::with_persistence(backend);
+        recovered.load_persisted();
+
+        assert!(recovered.get_forward("from-config").is_none());
+        let forward = recovered.get_forward("from-api").expect("runtime forward");
+        assert!(!forward.available, "a restored forward waits for discovery");
+        assert!(!forward.is_static);
+        let names = |registry: &RuntimeRegistry| {
+            let mut names: Vec<_> = registry.list_tools().into_iter().map(|t| t.name).collect();
+            names.sort();
+            names
+        };
+        assert_eq!(
+            names(&recovered),
+            ["config-disabled", "direct", "disabled"],
+            "only direct tools and disabled overrides are persisted"
+        );
+
+        recovered.remove_orphaned_forward_entries();
+        assert_eq!(names(&recovered), ["direct", "disabled"]);
     }
 
     #[test]

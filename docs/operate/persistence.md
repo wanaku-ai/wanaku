@@ -46,34 +46,47 @@ The registry gets data from three sources: `wanaku.yaml`, the management API (al
 
 ### Static and dynamic data
 
-- **Static data** is the data that you write in `wanaku.yaml` before startup: forwards, namespaces, credential bindings, and feature settings.
+- **Static data** is the data that you write in `wanaku.yaml` before startup: forwards, namespaces, credential bindings, and feature settings. A forward from `wanaku.yaml` is a static forward. The management API and the Admin UI show it with `"static": true`.
 - **Runtime data** is the data that you add, change, or remove through the management API after startup.
 - **Discovered data** is the tools, resources, resource templates, and prompts that Wanaku gets from an upstream MCP server when it discovers a forward. Each discovered entry has a `forwardId` that identifies its forward.
 
-The registry snapshot contains all three kinds of registry data. Wanaku saves the discovered entries together with the forwards, namespaces, credential bindings, agents, and the tools that you register directly.
+### What Wanaku persists
+
+| Data | Persisted |
+|---|---|
+| Static forwards | No. Wanaku registers them from `wanaku.yaml` at each startup. |
+| Forwards from the management API | Yes |
+| Discovered entries | No. Wanaku discovers them again at each startup. |
+| A disabled discovered entry | Yes, so that it stays disabled after the next discovery |
+| Tools, resources, and prompts that you register directly | Yes |
+| Agents, namespaces, and credential bindings | Yes |
+
+The management API always creates a forward with `"static": false`. The API ignores a `static` value in the request body.
 
 ### Startup order
 
-1. Wanaku loads the registry snapshot from the persistence backend.
+1. Wanaku loads the registry snapshot from the persistence backend. Each restored forward is unavailable until its discovery succeeds.
 2. Wanaku registers the `namespaces` from `wanaku.yaml`.
-3. Wanaku registers the `forwards` from `wanaku.yaml` and marks each one unavailable.
+3. Wanaku registers the `forwards` from `wanaku.yaml` as static forwards and marks each one unavailable.
 4. Wanaku registers the `bindings` from `wanaku.yaml`.
-5. Wanaku discovers each forward from `wanaku.yaml`. If the discovery succeeds, Wanaku replaces the entries that the forward owns and marks the forward available.
-6. The features load their sections of `wanaku.yaml`.
+5. Wanaku removes the restored disabled entries of forwards that are not registered.
+6. Wanaku discovers each registered forward, static or restored. If the discovery succeeds, Wanaku publishes the entries of the forward and marks the forward available. An entry that was disabled stays disabled.
+7. The features load their sections of `wanaku.yaml`.
+
+Startup discovers the forwards one after the other. Each unreachable upstream adds its connection timeout to the startup time. If a discovery fails, the forward stays unavailable and has no entries. The background reconnect loop tries the discovery again. See `WANAKU_FORWARD_HEALTHCHECK_INTERVAL` in [Wanaku environment variables](../reference/environment-variables.md).
 
 ### Precedence
 
 - An entry in `wanaku.yaml` replaces a persisted entry with the same name. This rule applies to forwards, namespaces, and credential bindings. `wanaku.yaml` wins at each startup.
-- A change that you make through the management API to an entry from `wanaku.yaml` stays until the next restart. At the next startup, the `wanaku.yaml` entry replaces it.
+- You can delete a static forward through the management API or the Admin UI. Wanaku removes it until the next startup. To remove it permanently, also remove it from `wanaku.yaml`. The Admin UI shows a warning before it deletes a static forward.
+- A change that you make through the management API to a static forward stays until the next startup. At the next startup, the `wanaku.yaml` entry replaces it.
+- If you remove a forward from `wanaku.yaml`, Wanaku does not register it at the next startup.
 - In one namespace, a discovered name belongs to one forward. Discovery does not replace an entry that a different forward owns. See [Name Conflicts in a Namespace](../reference/management-api.md#name-conflicts-in-a-namespace).
 - Evaluator and action-policy revisions and WASM tool handlers have their own rules. See [Evaluator Revision Persistence](#evaluator-revision-persistence), [Action Policy Revision Persistence](#action-policy-revision-persistence), and [WASM tool handler persistence](#wasm-tool-handler-persistence).
 
-### Limits of the current behavior
+### Snapshots from earlier versions
 
-- Wanaku does not record which source created a forward. If you remove a forward from `wanaku.yaml`, the persisted forward stays in the registry. Delete it through the management API.
-- At startup, Wanaku discovers only the forwards from `wanaku.yaml`. A forward that you registered through the management API keeps its persisted entries and its persisted `available` value. Wanaku does not query its upstream server again at startup.
-- The background reconnect loop probes only the forwards that are unavailable. To get the current entries of an available forward, refresh it. See [Tool Routing](../get-started/architecture.md#tool-routing).
-- If the discovery of a forward from `wanaku.yaml` fails at startup, Wanaku keeps the persisted entries of that forward. Wanaku refuses calls to the forward until a discovery succeeds.
+A snapshot from an earlier version can contain forwards from `wanaku.yaml` and all discovered entries. At startup, Wanaku ignores the discovered entries that are enabled. Wanaku restores the persisted forwards as runtime forwards. A forward that is still in `wanaku.yaml` becomes static again, and Wanaku removes it from the next snapshot. A forward that you removed from `wanaku.yaml` before the upgrade stays in the registry. Delete it through the management API.
 
 ## Embedded redb Persistence
 

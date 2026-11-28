@@ -433,6 +433,7 @@ mod dispatch_tests {
         use wanaku_types::registry::{ForwardEntry, ForwardRegistry};
         let registry = RuntimeRegistry::new();
         registry.register_forward(ForwardEntry {
+            is_static: false,
             name: "fwd".to_owned(),
             address: "http://x:1".to_owned(),
             namespace: None,

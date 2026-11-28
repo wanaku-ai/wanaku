@@ -34,7 +34,7 @@ plugins:
 
 Wanaku loads these top-level sections from `wanaku.yaml`:
 
-- `forwards` — core forward bootstrap configuration
+- `forwards` — core forward bootstrap configuration. These forwards are static: Wanaku registers them at each startup and does not persist them. See [Registry data at startup](../operate/persistence.md#registry-data-at-startup)
 - `namespaces` — concrete namespace definitions and virtual namespace memberships
 - `bindings` — credential bindings that forwards reference for brokered authentication. See [Credential Brokerage](../govern/credential-brokerage.md#configuring-credentials-in-wanakuyaml)
 - `llm_connections` — named LLM connections (model/url/api_key) for evaluators; config-only, never exposed via the management API

@@ -34,6 +34,12 @@ export const ForwardDetailModal: React.FC<ForwardDetailModalProps> = ({
             </div>
           )}
           <div>
+            <strong>Source:</strong>{' '}
+            {forward.static === true
+              ? 'wanaku.yaml (static: Wanaku registers it again at each startup)'
+              : 'Management API'}
+          </div>
+          <div>
             <strong>Address:</strong> {forward.address}
           </div>
           <div>
