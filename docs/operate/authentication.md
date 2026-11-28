@@ -55,7 +55,23 @@ The public issuer URL must be accessible to clients and browsers. Wanaku uses th
 
 For the Compose setup, clients use `http://localhost:8543/realms/wanaku`; the server container uses `http://keycloak:8080/realms/wanaku` for token requests. This keeps public discovery metadata and browser redirects usable from the host.
 
-Wanaku always serves OAuth protected-resource metadata for MCP endpoints at `/.well-known/oauth-protected-resource/{namespace}/mcp`. When `WANAKU_AUTH_ISSUER` is set, the `authorization_servers` list contains the Wanaku host. When it is unset, the route returns HTTP 200 with an empty `authorization_servers` list. The OpenID discovery, `/authorize`, `/token`, and `/register` routes are active only when `WANAKU_AUTH_ISSUER` is set.
+Wanaku always serves OAuth protected-resource metadata for MCP endpoints at `/.well-known/oauth-protected-resource/{namespace}/mcp`. When `WANAKU_AUTH_ISSUER` is set, the `authorization_servers` list contains the `WANAKU_AUTH_ISSUER` value. When it is unset, the route returns HTTP 200 with an empty `authorization_servers` list. The OpenID discovery, `/authorize`, `/token`, and `/register` routes are active only when `WANAKU_AUTH_ISSUER` is set.
+
+## OAuth discovery flow
+
+An MCP client discovers the authorization server in these steps:
+
+1. The client sends a request to the MCP endpoint without a token. The proxy returns HTTP 401.
+2. The client gets the protected-resource metadata from `/.well-known/oauth-protected-resource/{namespace}/mcp`.
+3. The client reads the issuer URL from the `authorization_servers` list.
+4. The client gets the authorization server metadata from the issuer. Keycloak serves it at `{issuer}/.well-known/openid-configuration`.
+5. The client uses the authorization, token, and registration endpoints of the issuer.
+
+The `issuer` value in the Keycloak metadata is the same URL as the `authorization_servers` entry. Clients that validate this match (RFC 8414, section 3.3) accept the metadata.
+
+A browser-based MCP client sends the token request to Keycloak directly. Keycloak adds CORS headers only for the origins in the **Web Origins** setting of the client. Add the origin of the browser client to the Keycloak client. A client that Keycloak creates through dynamic registration has no web origins, so set them on that client after registration. Native and command-line clients do not need CORS.
+
+Wanaku still serves `/.well-known/openid-configuration`. The `wanaku auth login --auth-server <mcp-origin> --realm ""` command reads the issuer from this document.
 
 ## Proxy behavior
 

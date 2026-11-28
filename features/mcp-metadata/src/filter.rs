@@ -101,22 +101,7 @@ impl WellKnownFilter {
             .unwrap_or("localhost:8081");
 
         let resource = resource_url(host, suffix);
-
-        let issuer_config = ctx.extensions.get::<IssuerConfig>();
-        let has_issuer = issuer_config.is_some_and(|c| !c.issuer.is_empty());
-
-        let host_str = format!("http://{host}");
-        let auth_servers: Vec<&str> = if has_issuer {
-            vec![host_str.as_str()]
-        } else {
-            vec![]
-        };
-
-        let metadata = serde_json::json!({
-            "resource": &resource,
-            "authorization_servers": auth_servers,
-            "bearer_methods_supported": ["header"],
-        });
+        let metadata = protected_resource_metadata(&resource, ctx.extensions.get::<IssuerConfig>());
 
         tracing::debug!(resource = %resource, "served protected resource metadata");
         Ok(FilterAction::Reject(json_response(
@@ -124,6 +109,27 @@ impl WellKnownFilter {
             &metadata,
         )))
     }
+}
+
+/// RFC 9728 metadata for `resource`.
+///
+/// `authorization_servers` names the public issuer itself. A client gets the
+/// authorization server metadata from the issuer, so the `issuer` value in that
+/// metadata matches the identifier the client used (RFC 8414, section 3.3).
+fn protected_resource_metadata(
+    resource: &str,
+    issuer_config: Option<&IssuerConfig>,
+) -> serde_json::Value {
+    let auth_servers: Vec<&str> = issuer_config
+        .map(|c| c.issuer.as_str())
+        .filter(|issuer| !issuer.is_empty())
+        .into_iter()
+        .collect();
+    serde_json::json!({
+        "resource": resource,
+        "authorization_servers": auth_servers,
+        "bearer_methods_supported": ["header"],
+    })
 }
 
 /// Preserve concrete and virtual MCP endpoint paths in resource metadata.
@@ -217,7 +223,10 @@ fn json_response(status: StatusCode, value: &serde_json::Value) -> Rejection {
 
 #[cfg(test)]
 mod tests {
-    use super::{IssuerConfig, WellKnownFilter, proxy_token_endpoint, resource_url};
+    use super::{
+        IssuerConfig, WellKnownFilter, protected_resource_metadata, proxy_token_endpoint,
+        resource_url,
+    };
     use bytes::Bytes;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -231,6 +240,31 @@ mod tests {
             resource_url("h:1", "virtual-ns/integration/mcp"),
             "http://h:1/virtual-ns/integration/mcp"
         );
+    }
+
+    #[test]
+    fn authorization_server_is_the_public_issuer() {
+        let config = IssuerConfig::new(
+            "http://localhost:8543/realms/wanaku".into(),
+            Some("http://keycloak:8080/realms/wanaku".into()),
+        );
+        let doc = protected_resource_metadata("http://localhost:4181/default/mcp", Some(&config));
+        assert_eq!(doc["resource"], "http://localhost:4181/default/mcp");
+        // The client follows this entry and gets the metadata from the issuer,
+        // whose `issuer` value is the same URL (RFC 8414, section 3.3).
+        assert_eq!(
+            doc["authorization_servers"],
+            serde_json::json!([config.issuer])
+        );
+    }
+
+    #[test]
+    fn no_authorization_server_without_issuer() {
+        let empty = IssuerConfig::new(String::new(), None);
+        for config in [None, Some(&empty)] {
+            let doc = protected_resource_metadata("http://h:1/default/mcp", config);
+            assert_eq!(doc["authorization_servers"], serde_json::json!([]));
+        }
     }
 
     #[test]

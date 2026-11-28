@@ -440,7 +440,7 @@ The MCP listener (port 8081) serves this route, not the management API. For exam
 curl http://localhost:8081/.well-known/oauth-protected-resource/default/mcp
 ```
 
-The `resource` field always contains the namespace, for example `http://localhost:8081/default/mcp`. When `WANAKU_AUTH_ISSUER` is set, `authorization_servers` contains the Wanaku host. When it is not set, the list is empty. MCP clients use this document to find the authorization server. An external authentication proxy enforces access to the MCP endpoint. See [Authentication](../operate/authentication.md).
+The `resource` field always contains the namespace, for example `http://localhost:8081/default/mcp`. When `WANAKU_AUTH_ISSUER` is set, `authorization_servers` contains the `WANAKU_AUTH_ISSUER` value. When it is not set, the list is empty. MCP clients use this document to find the authorization server. An external authentication proxy enforces access to the MCP endpoint. See [Authentication](../operate/authentication.md).
 
 ### Web UI Plugins
 
