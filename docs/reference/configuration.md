@@ -13,6 +13,8 @@ Wanaku uses environment variables and two optional YAML files. It does not use a
 2. **Runtime YAML files** — loaded from CLI args (e.g., `wanaku-server --pipeline-config pipeline.yaml --wanaku-config wanaku.yaml`)
 3. **Embedded defaults** — compiled into the binary
 
+This order applies to settings. For registry entries, an entry in `wanaku.yaml` replaces a persisted entry with the same name at each startup. See [Registry data at startup](../operate/persistence.md#registry-data-at-startup).
+
 ## Which source to change
 
 - [Wanaku environment variables](environment-variables.md): listen addresses, persistence, the Admin UI override, header forwarding, and feature limits.
