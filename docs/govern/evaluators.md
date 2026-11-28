@@ -378,9 +378,9 @@ export function evaluate(ctx) {
 
 Downstream filters can read this metadata and make decisions (e.g., extra logging for high-risk calls, rate limiting).
 
-An action sets one key for each evaluation. If the action calls `setMetadata` more than one time, only the last call has an effect.
+An action sets one key for each evaluation. If the action calls `setMetadata` more than one time, only the last call has an effect. Thus, a reserved key in the last call rejects the request, and the keys of the earlier calls are not applied.
 
-Routing keys are reserved. An action cannot set these keys:
+An action cannot set these reserved keys:
 
 | Key | Set by |
 |---|---|
@@ -388,7 +388,10 @@ Routing keys are reserved. An action cannot set these keys:
 | `mcp.name` | MCP filter |
 | `wanaku.namespace` | Namespace filter |
 | `wanaku.virtual_namespace` | Namespace filter |
+| `mcp.id` | MCP filters. Wanaku uses it as the JSON-RPC `id` of a response |
 | Any key that starts with `a2a.` or `wanaku.a2a.` | A2A filters |
+
+Wanaku does not keep caller identity or governance decisions in request metadata. Thus, the table above is the complete list of reserved keys.
 
 The evaluator filter checks the key before it changes the metadata. Thus, the request keeps the route that governance evaluated.
 

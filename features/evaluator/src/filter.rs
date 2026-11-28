@@ -619,6 +619,7 @@ fn protected_routing_metadata(key: &str) -> bool {
             | VIRTUAL_NAMESPACE_METADATA_KEY
             | wanaku_filters::MCP_METHOD_KEY
             | wanaku_filters::MCP_NAME_KEY
+            | wanaku_filters::MCP_ID_KEY
     ) || key.starts_with("wanaku.a2a.")
         || key.starts_with("a2a.")
 }
@@ -1138,6 +1139,7 @@ mod tests {
             VIRTUAL_NAMESPACE_METADATA_KEY,
             wanaku_filters::MCP_METHOD_KEY,
             wanaku_filters::MCP_NAME_KEY,
+            wanaku_filters::MCP_ID_KEY,
             "wanaku.a2a.agent",
             "a2a.task",
         ] {
@@ -1155,11 +1157,10 @@ mod tests {
                 unreachable!("protected key was not rejected");
             };
             let body: serde_json::Value = serde_json::from_slice(&rejection.body.unwrap()).unwrap();
-            assert_eq!(body["error"]["code"], -32002);
-            assert_eq!(
-                body["error"]["message"],
-                "evaluator cannot change routing metadata"
-            );
+            let error = serde_json::json!({
+                "code": -32002, "message": "evaluator cannot change routing metadata"
+            });
+            assert_eq!(body["error"], error);
             assert_eq!(ctx.get_metadata(key), Some("original"));
         }
         Ok(())

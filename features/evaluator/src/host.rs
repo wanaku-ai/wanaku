@@ -287,6 +287,19 @@ mod tests {
         assert!(matches!(state.action, ActionResult::SetMetadata(k, v) if k == "k" && v == "v"));
     }
 
+    #[test]
+    fn response_set_metadata_keeps_only_the_last_call() {
+        // A mixed update never applies in part: the action holds one key,
+        // and the filter checks that key before it changes any metadata.
+        let mut state = host_state();
+        state.set_metadata("wanaku.risk_level".to_owned(), "high".to_owned());
+        state.set_metadata("wanaku.namespace".to_owned(), "other".to_owned());
+        assert!(matches!(
+            state.action,
+            ActionResult::SetMetadata(k, v) if k == "wanaku.namespace" && v == "other"
+        ));
+    }
+
     // ---- validation ----
 
     #[test]
