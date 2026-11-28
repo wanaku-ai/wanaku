@@ -504,7 +504,7 @@ Users authenticate via oauth2-proxy's browser-based login flow (PKCE). CLI clien
 
 **Wanaku-side metadata:**
 
-The `features/mcp-metadata/` crate exposes RFC 9728 OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. When `WANAKU_AUTH_ISSUER` is set, the `authorization_servers` list of this read-only endpoint contains the Wanaku host, which proxies the OAuth routes to the issuer. When it is unset, the list is empty.
+The `features/mcp-metadata/` crate exposes RFC 9728 OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource/{namespace}/mcp`. When `WANAKU_AUTH_ISSUER` is set, the `authorization_servers` list of this read-only endpoint contains the issuer URL. MCP clients get the authorization server metadata from the issuer. When it is unset, the list is empty.
 
 When auth is disabled:
 
