@@ -40,6 +40,7 @@ filter_chains:
       - filter: wanaku_well_known
       - filter: wanaku_mcp_init
       - filter: wanaku_action_policy
+      - filter: wanaku_mcp_integrity
       - filter: wanaku_evaluator
       - filter: wanaku_tool_list
       - filter: wanaku_tool_call

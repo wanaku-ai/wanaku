@@ -10,6 +10,7 @@ pub mod credentials;
 pub mod feature;
 pub mod governance;
 pub mod http_response;
+pub mod integrity;
 pub mod interactions;
 pub mod mcp;
 pub mod mcp_methods;

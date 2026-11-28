@@ -35,6 +35,7 @@ filter_chains:
       - filter: wanaku_well_known
       - filter: wanaku_mcp_init
       - filter: wanaku_action_policy
+      - filter: wanaku_mcp_integrity
       - filter: wanaku_evaluator
       - filter: wanaku_tool_list
       - filter: wanaku_tool_call
@@ -138,3 +139,112 @@ If you reorder filters and requests start failing, check the logs. The filter th
 - [Wanaku configuration file](wanaku-yaml.md): configure forwards, evaluators, and governance.
 - [Architecture](../get-started/architecture.md): see how the filters process a request.
 - [Ports and endpoints](ports-and-endpoints.md): find the default listener addresses.
+
+## MCP content integrity
+
+Content scanning is a defense-in-depth control. Keep authorization, tool input
+validation, and credential controls enabled. A scan can miss harmful content, and
+a rule can match safe content.
+
+Set `rules` on the `wanaku_mcp_integrity` filter in the MCP chain. Put the filter
+after `wanaku_action_policy` and before `wanaku_evaluator`. The MCP chain
+must buffer the request body. The scanner request limit applies to the
+serialized scanner payload. The pipeline sets the inbound body limit.
+The embedded configuration has no rules and sends no content to scanners.
+
+```yaml
+- filter: wanaku_mcp_integrity
+  rules:
+    - id: service_token
+      kind: tool_result
+      check: { type: secret_pattern, pattern: '\bsvc_[A-Z0-9]{24}\b' }
+      action: redact
+    - id: argument_size
+      kind: tool_arguments
+      check: { type: size, max_bytes: 16384 }
+      action: block
+    - id: upstream_message
+      kind: upstream_error
+      pointer: /message
+      check: { type: field }
+      action: redact
+```
+
+The `kind` values are `tool_arguments`, `tool_result`, `resource_contents`,
+`prompt_contents`, and `upstream_error`. A rule inspects the argument object,
+the JSON-RPC result, or the JSON-RPC error object. An MCP result with
+`isError: true` uses the local rules for both `tool_result` and `upstream_error`.
+The external scanner receives it as `upstream_error` if configured for that
+kind. Otherwise, it receives it as `tool_result` if configured for that kind.
+Error rules inspect the response after credential redaction.
+
+Set `pointer` to a JSON Pointer to select a field or an array element.
+Encode a literal tilde as `~0` and a literal slash as `~1`. The filter rejects
+invalid escapes during configuration. Omit `pointer` to select the full value.
+A rule with a pointer that does not exist
+does not match.
+
+| Check type | Match condition |
+| --- | --- |
+| `size` | The compact JSON encoding uses more than `max_bytes` bytes. |
+| `type` | The selected value differs from `expected`. The values are `null`, `boolean`, `number`, `string`, `array`, and `object`. |
+| `field` | The selected field or array element exists, including a null value. A nonempty pointer is required. |
+| `secret_pattern` | The regular expression `pattern` matches a string value in the selected content. The check includes nested string values. |
+
+Use distinct rule IDs to identify findings in the audit log. If more than one
+rule matches, the filter uses the first applicable action in this order.
+
+1. `block` rejects the request or withholds the result with error `-32003`.
+2. `require_approval` rejects the request or withholds the result with error
+   `-32004`. The filter does not queue, resume, or replay the action.
+3. `redact` applies all matching redaction rules. A field check replaces the
+   selected value with `[REDACTED]`. A secret-pattern check replaces each
+   matching string with `[REDACTED]`. The normal tool argument schema still
+   applies. On responses, redaction can change text payloads, prompt
+   descriptions, and string values in structured tool output and JSON-RPC error
+   messages and data. A redaction that changes the response structure or a
+   protocol field, such as a content type, prompt role, resource URI, or error
+   code, blocks the response in enforce mode.
+4. `tag` passes the content and records the matching rule as an audit tag.
+5. `allow` passes the content and records any findings. This is also the action
+   when no rule matches.
+
+Audit events include the content kind, effective action, and each finding's
+rule ID, check, scanner, and proposed action. Findings exclude the scanned
+content. Use `tag` or the namespace's audit mode to review false positives.
+
+In enforce mode, the namespace's `on_failure` setting controls scanner failures.
+With `deny`, a scanner failure blocks the content. With `allow`, the filter
+still applies successful local findings. Audit mode records the findings and
+failures and passes the original content. Disabled mode skips inspection in
+that namespace. If a request uses a virtual namespace, the filter also applies
+the posture of that namespace.
+
+### Optional external scanner
+
+To send content to a trusted external scanner, add an `external` section to the
+filter. List each content kind that the scanner can receive.
+
+```yaml
+- filter: wanaku_mcp_integrity
+  external:
+    id: trusted_scanner
+    url: https://scanner.example.com/inspect
+    kinds: [tool_result]
+    action: block
+```
+
+The filter sends an HTTPS POST with a JSON object containing `kind` and
+`content`. The scanner must return a successful HTTP status and a JSON object
+with one Boolean field, `matched`. The configured action applies when
+`matched` is true. External results support `allow`, `tag`, `block`, and
+`require_approval`. Use local rules for redaction.
+
+The scanner has 500 milliseconds for the complete HTTP exchange. The request
+limit is 1 MiB and the reply limit is 4 KiB. The filter does not follow
+redirects or send client headers. The scanner receives content after local
+redaction. The filter skips the external scan when local findings require
+blocking or approval. Arguments added from forwarded headers use local rules
+only. If the scanner exceeds a limit, returns an invalid reply, or fails the
+HTTP exchange, the filter records the failure and applies the namespace's
+failure posture.

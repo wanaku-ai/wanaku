@@ -214,9 +214,15 @@ impl ResourceReadFilter {
                 redactor,
             };
 
-            return self
+            let response = self
                 .handle_forwarded_read(&address, resource_uri, &parsed, exchange)
-                .await;
+                .await?;
+            return Ok(crate::integrity::inspect_response(
+                ctx,
+                wanaku_types::integrity::ContentKind::ResourceContents,
+                response,
+            )
+            .await);
         }
 
         warn!(uri = %resource_uri, resource_type = %resource.type_, "unsupported resource type — only MCP-forwarded resources are supported");
@@ -266,7 +272,7 @@ impl ResourceReadFilter {
                 // Redact any injected secret the upstream may have echoed into its
                 // error text before it reaches the logs or the agent.
                 let message = redactor.redact(&e.to_string());
-                warn!(uri = %resource_uri, error = %message, "MCP forward resource read failed");
+                warn!(uri = %resource_uri, "MCP forward resource read failed");
                 Ok(crate::response::json_rpc_host_error(
                     &parsed.id,
                     crate::response::JSONRPC_INTERNAL_ERROR,

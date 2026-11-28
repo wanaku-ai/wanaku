@@ -82,6 +82,7 @@ macro_rules! body_filter_boilerplate {
 }
 
 pub mod credentials;
+pub mod integrity;
 pub mod invoker;
 pub mod json_rpc;
 pub mod mcp_id;
