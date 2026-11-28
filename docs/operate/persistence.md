@@ -1,6 +1,6 @@
 ---
 title: Persist registry and revision state
-description: Configure Wanaku file persistence for the registry and for evaluator and action-policy revisions, and update pre-release revision files.
+description: Configure Wanaku file persistence for the registry and for evaluator and action-policy revisions, learn which startup source wins, and update pre-release revision files.
 ---
 
 # Persist registry and revision state
@@ -39,6 +39,41 @@ export WANAKU_PERSIST_BACKEND=none
 ```
 
 With `none`, the registry stays in memory. Wanaku loses all registry changes at restart.
+
+## Registry data at startup
+
+The registry gets data from three sources: `wanaku.yaml`, the management API (also used by the CLI and the Admin UI), and the discovery of forwards. This section tells which data Wanaku persists and which source wins when two sources define the same entry.
+
+### Static and dynamic data
+
+- **Static data** is the data that you write in `wanaku.yaml` before startup: forwards, namespaces, credential bindings, and feature settings.
+- **Runtime data** is the data that you add, change, or remove through the management API after startup.
+- **Discovered data** is the tools, resources, resource templates, and prompts that Wanaku gets from an upstream MCP server when it discovers a forward. Each discovered entry has a `forwardId` that identifies its forward.
+
+The registry snapshot contains all three kinds of registry data. Wanaku saves the discovered entries together with the forwards, namespaces, credential bindings, agents, and the tools that you register directly.
+
+### Startup order
+
+1. Wanaku loads the registry snapshot from the persistence backend.
+2. Wanaku registers the `namespaces` from `wanaku.yaml`.
+3. Wanaku registers the `forwards` from `wanaku.yaml` and marks each one unavailable.
+4. Wanaku registers the `bindings` from `wanaku.yaml`.
+5. Wanaku discovers each forward from `wanaku.yaml`. If the discovery succeeds, Wanaku replaces the entries that the forward owns and marks the forward available.
+6. The features load their sections of `wanaku.yaml`.
+
+### Precedence
+
+- An entry in `wanaku.yaml` replaces a persisted entry with the same name. This rule applies to forwards, namespaces, and credential bindings. `wanaku.yaml` wins at each startup.
+- A change that you make through the management API to an entry from `wanaku.yaml` stays until the next restart. At the next startup, the `wanaku.yaml` entry replaces it.
+- In one namespace, a discovered name belongs to one forward. Discovery does not replace an entry that a different forward owns. See [Name Conflicts in a Namespace](../reference/management-api.md#name-conflicts-in-a-namespace).
+- Evaluator and action-policy revisions and WASM tool handlers have their own rules. See [Evaluator Revision Persistence](#evaluator-revision-persistence), [Action Policy Revision Persistence](#action-policy-revision-persistence), and [WASM tool handler persistence](#wasm-tool-handler-persistence).
+
+### Limits of the current behavior
+
+- Wanaku does not record which source created a forward. If you remove a forward from `wanaku.yaml`, the persisted forward stays in the registry. Delete it through the management API.
+- At startup, Wanaku discovers only the forwards from `wanaku.yaml`. A forward that you registered through the management API keeps its persisted entries and its persisted `available` value. Wanaku does not query its upstream server again at startup.
+- The background reconnect loop probes only the forwards that are unavailable. To get the current entries of an available forward, refresh it. See [Tool Routing](../get-started/architecture.md#tool-routing).
+- If the discovery of a forward from `wanaku.yaml` fails at startup, Wanaku keeps the persisted entries of that forward. Wanaku refuses calls to the forward until a discovery succeeds.
 
 ## Embedded redb Persistence
 

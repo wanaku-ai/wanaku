@@ -5,7 +5,7 @@ description: "Reference for the Wanaku wanaku.yaml file: top-level sections, key
 
 # Wanaku configuration file (wanaku.yaml)
 
-The Wanaku configuration bootstraps core registry entries and feature settings at startup. This file is optional. If you omit it, Wanaku can still restore the registry from the default file snapshot. If no snapshot exists, the registry starts empty.
+The Wanaku configuration bootstraps core registry entries and feature settings at startup. This file is optional. If you omit it, Wanaku can still restore the registry from the default file snapshot. If no snapshot exists, the registry starts empty. When `wanaku.yaml` and the snapshot contain an entry with the same name, the `wanaku.yaml` entry wins. See [Registry data at startup](../operate/persistence.md#registry-data-at-startup).
 
 **Location:** Pass with `--wanaku-config`:
 
