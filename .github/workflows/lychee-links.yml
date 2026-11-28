@@ -40,6 +40,8 @@ jobs:
         with:
           args: >-
             --no-progress
+            --host-concurrency 2
+            --host-request-interval 500ms
             --include-fragments
             --exclude-path .claude
             --exclude-path .specify
