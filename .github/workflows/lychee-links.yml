@@ -38,6 +38,7 @@ jobs:
       - name: Check links
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
+          # Check links to this repository's main branch against the proposed tree on main builds.
           args: >-
             --no-progress
             --host-concurrency 2
@@ -47,6 +48,8 @@ jobs:
             --exclude-path .specify
             --exclude-path .oss-ai-helper-rules
             --exclude-path CONTRIBUTING.md
+            ${{ (github.base_ref == 'main' || github.ref == 'refs/heads/main') &&
+                format('--remap ''^https://github\.com/wanaku-ai/wanaku/blob/main/(.*) file://{0}/$1''', github.workspace) || '' }}
             '**/*.md'
           fail: true
 
