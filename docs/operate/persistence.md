@@ -1,6 +1,6 @@
 ---
 title: Persist registry and revision state
-description: Configure Wanaku file persistence for the registry and for evaluator and action-policy revisions, learn which startup source wins, and update pre-release revision files.
+description: Configure registry and revision persistence, learn which startup source wins for registry entries, and update pre-release revision files.
 ---
 
 # Persist registry and revision state
